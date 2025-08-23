@@ -403,13 +403,14 @@ def _build_stable_id(prefix: str, value: Any, digest_length: int = 16) -> str:
     return f"{prefix}_{digest}"
 
 
-def _doc_id_from_result(result: Any) -> str:
-    """Create a stable document node id from a search result.
+def _id_from_result(result: Any, prefix: str) -> str:
+    """Create a stable node id from a search result using a given prefix.
 
-    Prefer using a stable cryptographic hash based on a deterministic identifier:
+    Shared logic for document and section identifiers:
     - Use result.source_url if present
     - Otherwise fallback to the first 100 characters of result.text
-    The final id format is: doc_{source_type}_{digest}
+    - Include result.source_type (defaulting to "unknown") in the id
+    The final id format is: {prefix}_{source_type}_{digest}
     where digest is the first 16 characters of the SHA-256 hexdigest.
     """
     source_type = getattr(result, "source_type", "") or "unknown"
@@ -420,25 +421,14 @@ def _doc_id_from_result(result: Any) -> str:
         preferred_identifier = str(preferred_identifier)
 
     digest = hashlib.sha256(preferred_identifier.encode("utf-8")).hexdigest()[:16]
-    return f"doc_{source_type}_{digest}"
+    return f"{prefix}_{source_type}_{digest}"
+
+
+def _doc_id_from_result(result: Any) -> str:
+    """Create a stable document node id from a search result."""
+    return _id_from_result(result, "doc")
 
 
 def _section_id_from_result(result: Any) -> str:
-    """Create a stable section node id from a search result.
-
-    Use the same defensive strategy as document ID generation for consistency:
-    - Prefer result.source_url when present
-    - Otherwise fallback to the first 100 characters of result.text
-    - Use result.source_type (defaulting to "unknown") in the prefix
-    The final id format is: section_{source_type}_{digest}
-    where digest is the first 16 characters of the SHA-256 hexdigest.
-    """
-    source_type = getattr(result, "source_type", "") or "unknown"
-    preferred_identifier = getattr(result, "source_url", None)
-    if not preferred_identifier:
-        preferred_identifier = (getattr(result, "text", "") or "")[:100]
-    if not isinstance(preferred_identifier, str):
-        preferred_identifier = str(preferred_identifier)
-
-    digest = hashlib.sha256(preferred_identifier.encode("utf-8")).hexdigest()[:16]
-    return f"section_{source_type}_{digest}"
+    """Create a stable section node id from a search result."""
+    return _id_from_result(result, "section")

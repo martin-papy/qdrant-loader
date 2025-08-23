@@ -143,7 +143,7 @@ class CitationNetworkAnalyzer:
         self,
         sibling_reference: str,
         doc_lookup: dict[str, SearchResult],
-        current_doc: SearchResult,
+        current_doc: SearchResult | None = None,
     ) -> str | None:
         """Find document that matches a sibling reference.
 
@@ -165,14 +165,15 @@ class CitationNetworkAnalyzer:
 
         for doc_id, candidate in doc_lookup.items():
             # Prefer siblings within the same source type when known
-            if getattr(current_doc, "source_type", None) and (
-                candidate.source_type != current_doc.source_type
-            ):
-                continue
+            if current_doc is not None:
+                if getattr(current_doc, "source_type", None) and (
+                    candidate.source_type != current_doc.source_type
+                ):
+                    continue
 
-            # Skip self
-            if candidate is current_doc:
-                continue
+                # Skip self
+                if candidate is current_doc:
+                    continue
 
             cand_title_norm = normalize_title(getattr(candidate, "source_title", ""))
             if not cand_title_norm:
@@ -184,19 +185,20 @@ class CitationNetworkAnalyzer:
             ):
                 # Validate using parent metadata if both sides provide it
                 parent_ok = True
-                cur_parent_id = getattr(current_doc, "parent_id", None)
-                cand_parent_id = getattr(candidate, "parent_id", None)
-                if cur_parent_id is not None and cand_parent_id is not None:
-                    parent_ok = cur_parent_id == cand_parent_id
+                if current_doc is not None:
+                    cur_parent_id = getattr(current_doc, "parent_id", None)
+                    cand_parent_id = getattr(candidate, "parent_id", None)
+                    if cur_parent_id is not None and cand_parent_id is not None:
+                        parent_ok = cur_parent_id == cand_parent_id
 
-                if parent_ok:
-                    cur_parent_doc_id = getattr(current_doc, "parent_document_id", None)
-                    cand_parent_doc_id = getattr(candidate, "parent_document_id", None)
-                    if (
-                        cur_parent_doc_id is not None
-                        and cand_parent_doc_id is not None
-                    ):
-                        parent_ok = cur_parent_doc_id == cand_parent_doc_id
+                    if parent_ok:
+                        cur_parent_doc_id = getattr(current_doc, "parent_document_id", None)
+                        cand_parent_doc_id = getattr(candidate, "parent_document_id", None)
+                        if (
+                            cur_parent_doc_id is not None
+                            and cand_parent_doc_id is not None
+                        ):
+                            parent_ok = cur_parent_doc_id == cand_parent_doc_id
 
                 if parent_ok:
                     return doc_id
