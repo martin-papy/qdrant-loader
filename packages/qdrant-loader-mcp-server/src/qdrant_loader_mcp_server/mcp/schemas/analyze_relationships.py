@@ -12,6 +12,7 @@ def get_analyze_relationships_tool_schema() -> dict[str, Any]:
                 "query": {
                     "type": "string",
                     "description": "Search query to get documents for analysis",
+                    "minLength": 1,
                 },
                 "limit": {
                     "type": "integer",

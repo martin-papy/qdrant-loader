@@ -36,15 +36,53 @@ def get_expand_cluster_tool_schema() -> dict[str, Any]:
         },
         "outputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "cluster_id": {
                     "type": "string",
                     "description": "The expanded cluster ID",
                 },
-                "cluster_info": {"type": "object", "description": "Detailed cluster information"},
-                "documents": {"type": "array", "description": "Full list of documents in the cluster"},
-                "pagination": {"type": "object", "description": "Pagination information"},
+                "cluster_info": {
+                    "type": "object",
+                    "description": "Detailed cluster information",
+                    "additionalProperties": False,
+                    "properties": {
+                        "cluster_name": {"type": "string"},
+                        "cluster_theme": {"type": "string"},
+                        "document_count": {"type": "integer"},
+                    },
+                },
+                "documents": {
+                    "type": "array",
+                    "description": "Full list of documents in the cluster",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "id": {"type": "string"},
+                            "text": {"type": "string"},
+                            "metadata": {
+                                "type": "object",
+                                "additionalProperties": True,
+                            },
+                        },
+                        "required": ["id", "text"],
+                    },
+                },
+                "pagination": {
+                    "type": "object",
+                    "description": "Pagination information",
+                    "additionalProperties": False,
+                    "properties": {
+                        "page": {"type": "integer"},
+                        "page_size": {"type": "integer"},
+                        "total": {"type": "integer"},
+                        "has_more": {"type": "boolean"},
+                    },
+                    "required": ["page", "page_size", "total", "has_more"],
+                },
             },
+            "required": ["cluster_id", "documents", "pagination"],
         },
     }
 

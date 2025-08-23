@@ -26,36 +26,46 @@ class StructuredResultFormatters:
         max_results: int = 20,
     ) -> list[dict[str, Any]]:
         """Create structured search results as a list of formatted results."""
-        return [
-            {
-                "document_id": getattr(result, "document_id", ""),
-                "title": (result.get_display_title() if hasattr(result, "get_display_title") else None) or getattr(result, "source_title", None) or "Untitled",
-                "content": result.text,
-                "content_snippet": (
-                    result.text[:300] + "..." if len(result.text) > 300 else result.text
-                ),
-                "source_type": getattr(result, "source_type", "unknown"),
-                "source_url": getattr(result, "source_url", None),
-                "file_path": getattr(result, "file_path", None),
-                "score": getattr(result, "score", 0.0),
-                "created_at": getattr(result, "created_at", None),
-                "updated_at": getattr(result, "updated_at", None),
-                "metadata": {
-                    "breadcrumb": getattr(result, "breadcrumb_text", None),
-                    "hierarchy_context": getattr(result, "hierarchy_context", None),
-                    "project_info": result.get_project_info() if hasattr(result, "get_project_info") else None,
-                    "project_id": getattr(result, "project_id", None),
+        formatted_results: list[dict[str, Any]] = []
+        for result in results[:max_results]:
+            raw_text = getattr(result, "text", None)
+            if raw_text is None:
+                normalized_text = ""
+            elif isinstance(raw_text, str):
+                normalized_text = raw_text
+            else:
+                normalized_text = str(raw_text)
+
+            formatted_results.append(
+                {
+                    "document_id": getattr(result, "document_id", ""),
+                    "title": (result.get_display_title() if hasattr(result, "get_display_title") else None) or getattr(result, "source_title", None) or "Untitled",
+                    "content": normalized_text,
+                    "content_snippet": (
+                        normalized_text[:300] + "..." if len(normalized_text) > 300 else normalized_text
+                    ),
+                    "source_type": getattr(result, "source_type", "unknown"),
+                    "source_url": getattr(result, "source_url", None),
                     "file_path": getattr(result, "file_path", None),
-                    "word_count": getattr(result, "word_count", None),
-                    "chunk_index": getattr(result, "chunk_index", None),
-                    "total_chunks": getattr(result, "total_chunks", None),
-                    "is_attachment": getattr(result, "is_attachment", False),
-                    "depth": FormatterUtils.extract_synthetic_depth(result),
-                    "has_children": FormatterUtils.extract_has_children(result),
-                },
-            }
-            for result in results[:max_results]
-        ]
+                    "score": getattr(result, "score", 0.0),
+                    "created_at": getattr(result, "created_at", None),
+                    "updated_at": getattr(result, "updated_at", None),
+                    "metadata": {
+                        "breadcrumb": getattr(result, "breadcrumb_text", None),
+                        "hierarchy_context": getattr(result, "hierarchy_context", None),
+                        "project_info": result.get_project_info() if hasattr(result, "get_project_info") else None,
+                        "project_id": getattr(result, "project_id", None),
+                        "file_path": getattr(result, "file_path", None),
+                        "word_count": getattr(result, "word_count", None),
+                        "chunk_index": getattr(result, "chunk_index", None),
+                        "total_chunks": getattr(result, "total_chunks", None),
+                        "is_attachment": getattr(result, "is_attachment", False),
+                        "depth": FormatterUtils.extract_synthetic_depth(result),
+                        "has_children": FormatterUtils.extract_has_children(result),
+                    },
+                }
+            )
+        return formatted_results
 
     @staticmethod 
     def create_structured_hierarchy_results(
@@ -81,11 +91,19 @@ class StructuredResultFormatters:
             
             for result in results:
                 parent_id = FormatterUtils.extract_synthetic_parent_id(result)
+                raw_text = getattr(result, "text", None)
+                if raw_text is None:
+                    normalized_text = ""
+                elif isinstance(raw_text, str):
+                    normalized_text = raw_text
+                else:
+                    normalized_text = str(raw_text)
+
                 doc_data = {
                     "document_id": getattr(result, "document_id", ""),
                     "title": (result.get_display_title() if hasattr(result, "get_display_title") else None) or getattr(result, "source_title", None) or "Untitled",
                     "content_snippet": (
-                        result.text[:200] + "..." if len(result.text) > 200 else result.text
+                        normalized_text[:200] + "..." if len(normalized_text) > 200 else normalized_text
                     ),
                     "source_type": getattr(result, "source_type", "unknown"),
                     "score": getattr(result, "score", 0.0),
@@ -169,6 +187,14 @@ class StructuredResultFormatters:
             attachments = []
             
             for result in results:
+                raw_text = getattr(result, "text", None)
+                if raw_text is None:
+                    normalized_text = ""
+                elif isinstance(raw_text, str):
+                    normalized_text = raw_text
+                else:
+                    normalized_text = str(raw_text)
+
                 attachment_info = {
                     "document_id": getattr(result, "document_id", ""),
                     "filename": FormatterUtils.extract_safe_filename(result),
@@ -176,7 +202,7 @@ class StructuredResultFormatters:
                     "source_type": getattr(result, "source_type", "unknown"),
                     "score": getattr(result, "score", 0.0),
                     "content_snippet": (
-                        result.text[:150] + "..." if len(result.text) > 150 else result.text
+                        normalized_text[:150] + "..." if len(normalized_text) > 150 else normalized_text
                     ),
                 }
                 
@@ -203,6 +229,14 @@ class StructuredResultFormatters:
                 } if include_metadata else {},
             })
         
+        def _normalized_text(r: Any) -> str:
+            rt = getattr(r, "text", None)
+            if rt is None:
+                return ""
+            if isinstance(rt, str):
+                return rt
+            return str(rt)
+
         return {
             "results": [
                 {
@@ -215,7 +249,7 @@ class StructuredResultFormatters:
                     },
                     "source_type": getattr(result, "source_type", "unknown"),
                     "score": getattr(result, "score", 0.0),
-                    "content_snippet": result.text[:150] + "..." if len(result.text) > 150 else result.text,
+                    "content_snippet": _normalized_text(result)[:150] + "..." if len(_normalized_text(result)) > 150 else _normalized_text(result),
                     "metadata": {
                         "file_path": getattr(result, "file_path", None),
                         "source_url": getattr(result, "source_url", None),
