@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..interfaces import Ranker
-from ....components.models import HybridSearchResult
+from ....components.search_result_models import HybridSearchResult
 
 
 class DefaultRanker(Ranker):

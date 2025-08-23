@@ -13,6 +13,16 @@ from ..utils import (
 )
 
 
+def _normalize_runtime(value: str) -> str:
+    """Normalize runtime/technology variants to canonical names.
+
+    - Returns "node.js" for any of {"node", "nodejs", "node.js"}
+    - Otherwise returns the lowercased cleaned input
+    """
+    v = (value or "").lower()
+    return "node.js" if v in {"node", "nodejs", "node.js"} else v
+
+
 def get_shared_entities(doc1: SearchResult, doc2: SearchResult) -> list[str]:
     ents1 = extract_texts_from_mixed(doc1.entities)
     ents2 = extract_texts_from_mixed(doc2.entities)
@@ -179,11 +189,7 @@ def has_shared_technologies(doc1: SearchResult, doc2: SearchResult) -> bool:
     ents1 = set(extract_entities(getattr(doc1, "entities", [])))
     ents2 = set(extract_entities(getattr(doc2, "entities", [])))
 
-    def norm(e: str) -> str:
-        e = (e or "").lower()
-        return "node.js" if e in {"node", "nodejs", "node.js"} else e
-
-    if {norm(e) for e in ents1} & {norm(e) for e in ents2}:
+    if {_normalize_runtime(e) for e in ents1} & {_normalize_runtime(e) for e in ents2}:
         return True
 
     title1 = (doc1.source_title or "").lower()
@@ -195,11 +201,7 @@ def get_shared_technologies_count(doc1: SearchResult, doc2: SearchResult) -> int
     entities1 = set(extract_texts_from_mixed(getattr(doc1, "entities", []) or []))
     entities2 = set(extract_texts_from_mixed(getattr(doc2, "entities", []) or []))
 
-    def norm(e: str) -> str:
-        e = (e or "").lower()
-        return "node.js" if e in {"node", "nodejs", "node.js"} else e
-
-    shared_entities = {norm(e) for e in entities1} & {norm(e) for e in entities2}
+    shared_entities = {_normalize_runtime(e) for e in entities1} & {_normalize_runtime(e) for e in entities2}
     if shared_entities:
         return len(shared_entities)
 
@@ -255,8 +257,13 @@ def calculate_metadata_similarity(doc1: SearchResult, doc2: SearchResult) -> flo
         getattr(doc2, "has_images", False),
         getattr(doc2, "has_links", False),
     ]
-    assert len(features1) == len(features2)
-    feature_similarity = sum(f1 == f2 for f1, f2 in zip(features1, features2)) / len(features1)
+    min_len = min(len(features1), len(features2))
+    if min_len == 0:
+        feature_similarity = 0.0
+    else:
+        feature_similarity = sum(
+            f1 == f2 for f1, f2 in zip(features1, features2)
+        ) / float(min_len)
     similarity_factors.append(feature_similarity)
 
     if getattr(doc1, "word_count", None) and getattr(doc2, "word_count", None):
