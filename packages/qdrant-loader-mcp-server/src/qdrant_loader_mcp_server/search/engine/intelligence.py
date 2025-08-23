@@ -134,12 +134,10 @@ class IntelligenceOperations:
             )
 
             if not target_results:
-                return [
-                    {
-                        "error": "No target document found",
-                        "target_query": target_query,
-                    }
-                ]
+                return {
+                    "error": "No target document found",
+                    "target_query": target_query,
+                }
 
             target_doc = target_results[0]
 
@@ -152,12 +150,10 @@ class IntelligenceOperations:
             )
 
             if len(comparison_results) < 2:
-                return [
-                    {
-                        "error": "Need at least 1 comparison document",
-                        "comparison_count": len(comparison_results),
-                    }
-                ]
+                return {
+                    "error": "Need at least 1 comparison document",
+                    "comparison_count": len(comparison_results),
+                }
 
             # Parse similarity metrics
             metric_enums = []

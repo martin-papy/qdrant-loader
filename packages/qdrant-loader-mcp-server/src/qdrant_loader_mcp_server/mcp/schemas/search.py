@@ -12,6 +12,7 @@ def get_search_tool_schema() -> dict[str, Any]:
                 "query": {
                     "type": "string",
                     "description": "The search query in natural language",
+                    "minLength": 1,
                 },
                 "source_types": {
                     "type": "array",
@@ -26,47 +27,79 @@ def get_search_tool_schema() -> dict[str, Any]:
                         ],
                     },
                     "description": "Optional list of source types to filter results",
+                    "minItems": 1,
+                    "uniqueItems": True,
                 },
                 "project_ids": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Optional list of project IDs to filter results",
+                    "minItems": 1,
+                    "uniqueItems": True,
                 },
                 "limit": {
                     "type": "integer",
                     "description": "Maximum number of results to return",
                     "default": 5,
+                    "minimum": 1,
                 },
             },
             "required": ["query"],
+            "additionalProperties": False,
         },
         "outputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "results": {
                     "type": "array",
                     "items": {
                         "type": "object",
+                        "additionalProperties": False,
                         "properties": {
                             "score": {"type": "number"},
                             "title": {"type": "string"},
                             "content": {"type": "string"},
-                            "source_type": {"type": "string"},
+                            "source_type": {
+                                "type": "string",
+                                "enum": [
+                                    "git",
+                                    "confluence",
+                                    "jira",
+                                    "documentation",
+                                    "localfile",
+                                ],
+                            },
                             "metadata": {
                                 "type": "object",
+                                "additionalProperties": False,
                                 "properties": {
                                     "file_path": {"type": "string"},
                                     "project_id": {"type": "string"},
-                                    "created_at": {"type": "string"},
-                                    "last_modified": {"type": "string"},
+                                    "created_at": {"type": "string", "format": "date-time"},
+                                    "last_modified": {"type": "string", "format": "date-time"},
                                 },
+                                "required": [
+                                    "file_path",
+                                    "project_id",
+                                    "created_at",
+                                    "last_modified",
+                                ],
                             },
                         },
+                        "required": [
+                            "score",
+                            "title",
+                            "content",
+                            "source_type",
+                            "metadata",
+                        ],
                     },
                 },
                 "total_found": {"type": "integer"},
                 "query_context": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "original_query": {"type": "string"},
                         "source_types_filtered": {
