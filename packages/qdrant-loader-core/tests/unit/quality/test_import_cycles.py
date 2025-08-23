@@ -14,7 +14,9 @@ def _iter_python_files(base: Path) -> List[Path]:
 
 def _module_name_from_path(src_root: Path, file_path: Path) -> str:
     rel = file_path.relative_to(src_root).with_suffix("")
-    return ".".join((src_root.name, *rel.parts))
+    # Build module name from relative parts only to avoid duplicating the package segment
+    # e.g. "qdrant_loader_core/llm/x.py" -> "qdrant_loader_core.llm.x"
+    return ".".join(rel.parts)
 
 
 def _resolve_relative_import(current_module: str, module: str | None, level: int) -> str | None:
@@ -98,7 +100,10 @@ def _has_cycles(graph: Dict[str, Set[str]], scope_prefix: str) -> Tuple[bool, Li
 
 def test_no_import_cycles_in_core_llm():
     pkg_root = Path(__file__).resolve().parents[3]
-    src_root = pkg_root / "src" / "qdrant_loader_core"
+    # Prefer repository-style "src" layout; fall back to package root if not present
+    src_root = pkg_root / "src"
+    if not src_root.exists():
+        src_root = pkg_root
     graph, _ = _collect_edges(src_root, SCOPE_PREFIX)
     has_cycles, cycles = _has_cycles(graph, SCOPE_PREFIX)
     assert not has_cycles, f"Import cycles detected in core LLM modules: {cycles}"
