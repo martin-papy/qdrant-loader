@@ -15,21 +15,22 @@ def get_expand_document_tool_schema() -> dict[str, Any]:
                 },
                 "include_metadata": {
                     "type": "boolean",
-                    "description": "Include detailed metadata (default: true)",
+                    "description": "Include detailed metadata (optional, default: true)",
                     "default": True,
                 },
                 "include_hierarchy": {
                     "type": "boolean",
-                    "description": "Include hierarchy information for Confluence documents (default: true)",
+                    "description": "Include hierarchy information for Confluence documents (optional, default: true)",
                     "default": True,
                 },
                 "include_attachments": {
                     "type": "boolean",
-                    "description": "Include attachment information if available (default: true)",
+                    "description": "Include attachment information if available (optional, default: true)",
                     "default": True,
                 },
             },
             "required": ["document_id"],
+            "additionalProperties": False,
         },
         "outputSchema": {
             "type": "object",

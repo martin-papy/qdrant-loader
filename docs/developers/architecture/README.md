@@ -120,7 +120,7 @@ QDrant Loader is built on several key architectural principles:
 Implementation notes:
 
 - Jira uses `request_with_policy` with project-configured `requests_per_minute`.
-- Confluence and PublicDocs use a conservative default limiter; can be surfaced in config later.
+- Confluence and PublicDocs expose `requests_per_minute` in config (defaults: Confluence 60 RPM, PublicDocs 120 RPM).
 
 **Interface (simplified)**:
 

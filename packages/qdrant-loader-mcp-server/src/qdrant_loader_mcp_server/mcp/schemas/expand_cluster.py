@@ -17,11 +17,13 @@ def get_expand_cluster_tool_schema() -> dict[str, Any]:
                     "type": "integer",
                     "description": "Maximum number of documents to return from cluster (default: 20)",
                     "default": 20,
+                    "minimum": 1,
                 },
                 "offset": {
                     "type": "integer",
                     "description": "Number of documents to skip for pagination (default: 0)",
                     "default": 0,
+                    "minimum": 0,
                 },
                 "include_metadata": {
                     "type": "boolean",
@@ -30,6 +32,7 @@ def get_expand_cluster_tool_schema() -> dict[str, Any]:
                 },
             },
             "required": ["cluster_id"],
+            "additionalProperties": False,
         },
         "outputSchema": {
             "type": "object",

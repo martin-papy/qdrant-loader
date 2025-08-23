@@ -204,6 +204,11 @@ projects:
 |--------|------|-------------|---------|
 | `enable_file_conversion` | bool | Enable file conversion for attachments | `true` |
 | `download_attachments` | bool | Download and process attachments | `true` |
+
+### Rate limiting
+
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
 | `requests_per_minute` | int | API rate limit (RPM) | `60` |
 
 ## 🚀 Usage Examples

@@ -240,39 +240,75 @@ class FacetedSearchOperations:
         for facet in suggestions.facets:
             # Calculate how many documents have values for this facet
             covered_count = 0
-            facet_name = facet.name.lower()
+            facet_key = str(facet.name).lower()
+
+            # Explicit normalized facet key to document attribute mapping
+            facet_to_attrs: dict[str, tuple[str, ...]] = {
+                "source": ("source_type", "source"),
+                "project": ("project_id", "project_ids", "project"),
+                "created": ("created_at", "created", "timestamp"),
+                "date": ("created_at", "updated_at", "date"),
+                "content_type": ("content_type", "mime_type", "type"),
+                "topic": ("topics", "tags", "labels"),
+                "entity": ("entities", "named_entities"),
+            }
+
+            # Normalize a few common variants to our keys
+            normalized_key = facet_key
+            if facet_key in {"source_type", "source types", "sources"}:
+                normalized_key = "source"
+            elif facet_key in {"projects", "project id", "project ids"}:
+                normalized_key = "project"
+            elif facet_key in {"created at", "creation date", "time", "datetime"}:
+                normalized_key = "created"
+            elif facet_key in {"content", "type", "mime"}:
+                normalized_key = "content_type"
+            elif facet_key in {"topics", "labels", "tags"}:
+                normalized_key = "topic"
+            elif facet_key in {"entities", "ner"}:
+                normalized_key = "entity"
+
+            mapped_attrs = facet_to_attrs.get(normalized_key)
 
             for doc in documents:
-                # Check various document attributes that might match this facet
                 has_value = False
-                
-                # Source type facet
-                if "source" in facet_name and hasattr(doc, "source_type"):
-                    has_value = bool(doc.source_type)
-                    
-                # Project facet  
-                elif "project" in facet_name and hasattr(doc, "project_id"):
-                    has_value = bool(doc.project_id)
-                    
-                # Date/time facets
-                elif any(time_word in facet_name for time_word in ["date", "time", "created"]):
-                    has_value = bool(getattr(doc, "created_at", None))
-                    
-                # Content type facets
-                elif "content" in facet_name or "type" in facet_name:
-                    has_value = bool(getattr(doc, "content_type", None))
-                    
-                # Topic facets
-                elif "topic" in facet_name:
-                    has_value = bool(getattr(doc, "topics", None))
-                    
-                # Entity facets
-                elif "entity" in facet_name:
-                    has_value = bool(getattr(doc, "entities", None))
-                    
-                # Default: check if document has any relevant metadata
+
+                if mapped_attrs:
+                    for attr in mapped_attrs:
+                        value = getattr(doc, attr, None)
+                        if value is None and isinstance(doc, dict):
+                            value = doc.get(attr)
+                        # Treat iterables specially: non-empty list/tuple/set/etc counts
+                        if isinstance(value, (list, tuple, set)):
+                            if len(value) > 0:
+                                has_value = True
+                                break
+                        else:
+                            if bool(value):
+                                has_value = True
+                                break
                 else:
-                    has_value = True  # Assume coverage for unknown facet types
+                    # Fallback: check metadata mapping if present; otherwise conservative False
+                    metadata = getattr(doc, "metadata", None)
+                    if metadata is None and isinstance(doc, dict):
+                        metadata = doc.get("metadata")
+                    if isinstance(metadata, dict):
+                        # Try direct key, or normalized variations
+                        value = metadata.get(facet_key)
+                        if value is None:
+                            value = metadata.get(normalized_key)
+                        if value is None:
+                            # Try common singular/plural variants
+                            if facet_key.endswith("s"):
+                                value = metadata.get(facet_key[:-1])
+                            else:
+                                value = metadata.get(f"{facet_key}s")
+                        if isinstance(value, (list, tuple, set)):
+                            has_value = len(value) > 0
+                        else:
+                            has_value = bool(value)
+                    else:
+                        has_value = False
 
                 if has_value:
                     covered_count += 1
