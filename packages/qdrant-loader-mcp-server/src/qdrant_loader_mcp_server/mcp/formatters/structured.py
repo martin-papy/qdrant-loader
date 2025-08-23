@@ -5,8 +5,14 @@ This module handles the creation of complex, structured result formats
 for MCP responses that require detailed organization and presentation.
 """
 
-from typing import Any
-from ...search.components.search_result_models import HybridSearchResult
+from typing import Any, TYPE_CHECKING
+
+# Backward-compatible import for HybridSearchResult across branches
+try:  # Prefer current location
+    from ...search.components.search_result_models import HybridSearchResult  # type: ignore[assignment]
+except Exception:  # ImportError | ModuleNotFoundError
+    # Fallback for older layout
+    from ...search.components.models.hybrid import HybridSearchResult  # type: ignore[assignment]
 from .utils import FormatterUtils
 
 

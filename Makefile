@@ -32,9 +32,10 @@ test-coverage: ## Run tests with coverage report
 quality: ## Run quality gates (import cycles, module sizes) for qdrant-loader
 	cd packages/qdrant-loader && pytest -q tests/unit/quality -v
 
-quality-all: ## Run quality gates for all packages (apply when present)
+quality-all: ## Run quality gates for all packages (currently qdrant-loader and qdrant-loader-core)
 	cd packages/qdrant-loader && pytest -q tests/unit/quality -v
-	# Add per-package quality directories here if/when created
+	cd packages/qdrant-loader-core && pytest -q tests/unit/quality -v
+	# Add additional per-package quality directories here if/when created
 
 lint: ## Run linting on all packages
 	ruff check packages/
