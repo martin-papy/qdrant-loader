@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 import uuid
 
 
@@ -32,9 +32,9 @@ class RelationshipType(Enum):
 
 @dataclass
 class GraphNode:
-    id: str
     node_type: NodeType
     title: str
+    id: Optional[str] = None
     content: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -48,7 +48,7 @@ class GraphNode:
     keywords: list[str] = field(default_factory=list)
 
     def __post_init__(self):
-        if not self.id:
+        if self.id is None or self.id == "":
             # Deterministic UUIDv5 id derived from stable inputs (node_type + title)
             # Fixed namespace ensures stable generation across runs/processes
             node_namespace = uuid.UUID("8f5b3e78-9b8c-4f07-b54e-27f7ac1d5a11")
