@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from ....models import SearchResult
 from ..models import SimilarityMetric
 from ..utils import (
@@ -52,13 +54,26 @@ def combine_metric_scores(metric_scores: dict[SimilarityMetric, float]) -> float
 
 
 def calculate_semantic_similarity_spacy(spacy_analyzer, text1: str, text2: str) -> float:
-    """Compute spaCy vector similarity on truncated texts, mirroring legacy behavior."""
+    """Compute spaCy vector similarity on truncated texts, mirroring legacy behavior.
+
+    Only expected, recoverable errors are handled; unexpected exceptions propagate.
+    """
+    logger = logging.getLogger(__name__)
     try:
         doc1_analyzed = spacy_analyzer.nlp((text1 or "")[:500])
         doc2_analyzed = spacy_analyzer.nlp((text2 or "")[:500])
         return float(doc1_analyzed.similarity(doc2_analyzed))
-    except Exception:
+    except (AttributeError, ValueError, OSError) as e:
+        logger.error(
+            "spaCy similarity failed (recoverable): %s | len1=%d len2=%d",
+            e,
+            len(text1 or ""),
+            len(text2 or ""),
+        )
         return 0.0
+    except Exception:
+        # Let unexpected exceptions bubble up for visibility
+        raise
 
 
 def calculate_text_similarity(doc1: SearchResult, doc2: SearchResult) -> float:
@@ -177,17 +192,9 @@ def has_reusable_architecture_patterns(doc1: SearchResult, doc2: SearchResult) -
 
 
 def has_shared_technologies(doc1: SearchResult, doc2: SearchResult) -> bool:
-    def extract_entities(entities):
-        texts = []
-        for ent in entities or []:
-            if isinstance(ent, dict):
-                texts.append((ent.get("text", "") or "").lower())
-            elif isinstance(ent, str):
-                texts.append(ent.lower())
-        return [t for t in texts if t]
-
-    ents1 = set(extract_entities(getattr(doc1, "entities", [])))
-    ents2 = set(extract_entities(getattr(doc2, "entities", [])))
+    # Reuse the shared extraction logic for consistency across helpers
+    ents1 = set(extract_texts_from_mixed(getattr(doc1, "entities", []) or []))
+    ents2 = set(extract_texts_from_mixed(getattr(doc2, "entities", []) or []))
 
     if {_normalize_runtime(e) for e in ents1} & {_normalize_runtime(e) for e in ents2}:
         return True
