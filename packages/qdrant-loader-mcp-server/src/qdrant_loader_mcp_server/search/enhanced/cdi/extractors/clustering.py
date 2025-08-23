@@ -32,18 +32,18 @@ class DefaultClusterer(Clusterer):
             from ..calculators import (
                 DocumentSimilarityCalculator as LegacySimilarityCalculator,  # type: ignore[misc]
             )
-        except Exception:
+        except ImportError as e_primary:
             try:
                 from ...cross_document_intelligence import (
                     DocumentSimilarityCalculator as LegacySimilarityCalculator,  # type: ignore
                     DocumentClusterAnalyzer as LegacyClusterAnalyzer,  # type: ignore
                 )
-            except Exception as e:
+            except ImportError as e_legacy:
                 raise ImportError(
                     "Unable to import DocumentClusterAnalyzer/DocumentSimilarityCalculator from CDI modules or "
                     "legacy cross_document_intelligence. Attempted imports: 'from ..analyzers', 'from ..calculators', "
                     "and legacy 'from ...cross_document_intelligence'."
-                ) from e
+                ) from e_legacy
 
         self._legacy_similarity = LegacySimilarityCalculator(similarity_calculator.spacy_analyzer)  # type: ignore[attr-defined]
         self._legacy = LegacyClusterAnalyzer(self._legacy_similarity)

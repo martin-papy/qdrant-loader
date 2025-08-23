@@ -97,7 +97,9 @@ class CitationNetworkAnalyzer:
             # Add sibling relationships
             if doc.sibling_sections:
                 for sibling in doc.sibling_sections:
-                    sibling_doc_id = self._find_sibling_document(sibling, doc_lookup)
+                    sibling_doc_id = self._find_sibling_document(
+                        sibling, doc_lookup, doc
+                    )
                     if sibling_doc_id and sibling_doc_id != doc_id:
                         network.edges.append(
                             (
@@ -138,13 +140,66 @@ class CitationNetworkAnalyzer:
         return None
 
     def _find_sibling_document(
-        self, sibling_reference: str, doc_lookup: dict[str, SearchResult]
+        self,
+        sibling_reference: str,
+        doc_lookup: dict[str, SearchResult],
+        current_doc: SearchResult,
     ) -> str | None:
-        """Find document that matches a sibling reference."""
-        # Try title-based matching
-        for doc_id, doc in doc_lookup.items():
-            if sibling_reference.lower() in doc.source_title.lower():
-                return doc_id
+        """Find document that matches a sibling reference.
+
+        Uses normalized whole-phrase matching and, when available, validates
+        via explicit hierarchy metadata (matching parent identifiers) to avoid
+        false positives from broad substring checks.
+        """
+        import re
+
+        if not sibling_reference:
+            return None
+
+        def normalize_title(value: str) -> str:
+            # Lowercase and keep word characters joined by single spaces
+            tokens = re.findall(r"\w+", (value or "").lower())
+            return " ".join(tokens)
+
+        target_norm = normalize_title(sibling_reference)
+
+        for doc_id, candidate in doc_lookup.items():
+            # Prefer siblings within the same source type when known
+            if getattr(current_doc, "source_type", None) and (
+                candidate.source_type != current_doc.source_type
+            ):
+                continue
+
+            # Skip self
+            if candidate is current_doc:
+                continue
+
+            cand_title_norm = normalize_title(getattr(candidate, "source_title", ""))
+            if not cand_title_norm:
+                continue
+
+            # Exact normalized title match or whole-phrase match using word boundaries
+            if target_norm == cand_title_norm or re.search(
+                r"\b" + re.escape(target_norm) + r"\b", cand_title_norm
+            ):
+                # Validate using parent metadata if both sides provide it
+                parent_ok = True
+                cur_parent_id = getattr(current_doc, "parent_id", None)
+                cand_parent_id = getattr(candidate, "parent_id", None)
+                if cur_parent_id is not None and cand_parent_id is not None:
+                    parent_ok = cur_parent_id == cand_parent_id
+
+                if parent_ok:
+                    cur_parent_doc_id = getattr(current_doc, "parent_document_id", None)
+                    cand_parent_doc_id = getattr(candidate, "parent_document_id", None)
+                    if (
+                        cur_parent_doc_id is not None
+                        and cand_parent_doc_id is not None
+                    ):
+                        parent_ok = cur_parent_doc_id == cand_parent_doc_id
+
+                if parent_ok:
+                    return doc_id
 
         return None
 
