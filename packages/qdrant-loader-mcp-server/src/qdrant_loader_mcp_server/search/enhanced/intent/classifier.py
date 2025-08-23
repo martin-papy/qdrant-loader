@@ -30,8 +30,37 @@ class IntentClassifier:
     """Advanced intent classification using spaCy analysis and behavioral patterns."""
 
     def __init__(self, spacy_analyzer):
-        """Initialize the intent classifier."""
-        self.spacy_analyzer = spacy_analyzer
+        """Initialize the intent classifier.
+
+        The constructor validates that the spaCy analyzer dependency is available.
+        If a valid analyzer instance is not provided, it attempts a runtime import.
+        On failure, it raises an ImportError with actionable guidance so callers
+        fail fast rather than encountering None-attribute errors later.
+        """
+        if spacy_analyzer is None:
+            try:
+                # Attempt a fresh import to avoid circular import timing issues
+                from ...nlp.spacy_analyzer import (  # type: ignore
+                    SpaCyQueryAnalyzer as _SpaCyQueryAnalyzer,
+                    QueryAnalysis as _QueryAnalysis,
+                )
+                self.spacy_analyzer = _SpaCyQueryAnalyzer()
+            except Exception as exc:  # ImportError or runtime init failure
+                raise ImportError(
+                    "SpaCyQueryAnalyzer is not available. Ensure 'qdrant-loader-mcp-server' "
+                    "dependencies are installed and that '.../nlp/spacy_analyzer.py' is importable. "
+                    "If you're running in a minimal environment, install spaCy and the required "
+                    "models (e.g., 'python -m spacy download en_core_web_sm')."
+                ) from exc
+        else:
+            self.spacy_analyzer = spacy_analyzer
+
+        # Final sanity check to fail fast if analyzer is misconfigured
+        if not hasattr(self.spacy_analyzer, "analyze_query_semantic"):
+            raise ImportError(
+                "Provided spaCy analyzer does not implement 'analyze_query_semantic'. "
+                "Pass a compatible analyzer or install the default SpaCyQueryAnalyzer."
+            )
         self.logger = LoggingConfig.get_logger(__name__)
 
         # Intent classification patterns using spaCy linguistic features
@@ -343,6 +372,12 @@ class IntentClassifier:
             logger.debug(f"Using cached intent classification for: {query[:50]}...")
             return cached
 
+        # Ensure analyzer is available and valid (extra safety beyond __init__)
+        if not hasattr(self.spacy_analyzer, "analyze_query_semantic"):
+            raise ImportError(
+                "SpaCy analyzer is not initialized correctly. Missing 'analyze_query_semantic'."
+            )
+
         try:
             # Step 1: Perform spaCy semantic analysis
             spacy_analysis = self.spacy_analyzer.analyze_query_semantic(query)
@@ -430,6 +465,7 @@ class IntentClassifier:
             "query_length": len(query.split()),
             "has_question_mark": "?" in query,
             "starts_with_question_word": False,
+            "starts_with_verb": False,
             "has_imperative_verbs": False,
             "has_modal_verbs": False,
             # spaCy-derived features
@@ -525,8 +561,12 @@ class IntentClassifier:
 
         # POS pattern analysis
         pos_patterns = spacy_analysis.pos_patterns
+        features["starts_with_verb"] = bool(pos_patterns) and pos_patterns[0] == "VERB"
+        # Imperative: sentence starts with a verb and does not start with a question word
         features["has_imperative_verbs"] = (
-            "VERB" in pos_patterns and features["starts_with_question_word"]
+            ("VERB" in pos_patterns)
+            and features["starts_with_verb"]
+            and not features.get("starts_with_question_word", False)
         )
         features["has_modal_verbs"] = any(
             pos in ["MD", "MODAL"] for pos in pos_patterns

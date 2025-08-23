@@ -3,6 +3,20 @@ from __future__ import annotations
 from typing import Any
 
 
+class _StdLogger:
+    def debug(self, *args, **kwargs):
+        pass
+
+    def info(self, *args, **kwargs):
+        pass
+
+    def warning(self, *args, **kwargs):
+        pass
+
+    def error(self, *args, **kwargs):
+        pass
+
+
 class HybridEngineAPI:
     def __init__(
         self,
@@ -29,19 +43,6 @@ class HybridEngineAPI:
                 self.logger = LoggingConfig.get_logger(__name__)
             except Exception:
                 # Last-resort fallback to stdlib logger-like shim
-                class _StdLogger:
-                    def debug(self, *args, **kwargs):
-                        pass
-
-                    def info(self, *args, **kwargs):
-                        pass
-
-                    def warning(self, *args, **kwargs):
-                        pass
-
-                    def error(self, *args, **kwargs):
-                        pass
-
                 self.logger = _StdLogger()
         else:
             self.logger = logger

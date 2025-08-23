@@ -130,7 +130,32 @@ def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
 
 
 def extract_project_info(metadata_extractor: Any, metadata: dict) -> dict:
-    project_info = metadata_extractor.extract_project_info(metadata)
+    """Safely extract project info using a provided extractor.
+
+    Ensures extractor has a callable `extract_project_info` attribute and guards against
+    exceptions thrown by the extractor. Always returns a mapping with expected keys.
+    """
+    # Default safe shape
+    safe_empty: Dict[str, Any] = {
+        "project_id": None,
+        "project_name": None,
+        "project_description": None,
+        "collection_name": None,
+    }
+
+    # Validate extractor interface
+    if not hasattr(metadata_extractor, "extract_project_info"):
+        return safe_empty
+    extract_callable = getattr(metadata_extractor, "extract_project_info")
+    if not callable(extract_callable):
+        return safe_empty
+
+    try:
+        project_info = extract_callable(metadata)
+    except Exception:
+        # Fail closed to safe shape if extractor raises
+        return safe_empty
+
     data: Dict[str, Any] = {}
     if project_info:
         if isinstance(project_info, dict):

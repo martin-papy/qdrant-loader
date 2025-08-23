@@ -16,9 +16,6 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
     from ...models import SearchResult
-else:
-    SpaCyQueryAnalyzer = Any
-    SearchResult = Any
 
 from ....utils.logging import LoggingConfig
 from .models import (
@@ -41,10 +38,14 @@ from .utils import (
 logger = LoggingConfig.get_logger(__name__)
 
 
+class RecoverableBuildError(Exception):
+    """Raised for expected parsing/validation issues during graph building."""
+
+
 class GraphBuilder:
     """Build knowledge graph from document metadata and search results."""
 
-    def __init__(self, spacy_analyzer: SpaCyQueryAnalyzer | None = None):
+    def __init__(self, spacy_analyzer: "SpaCyQueryAnalyzer" | None = None):
         """Initialize the graph builder."""
         # Import SpaCyQueryAnalyzer at runtime to avoid circular import
         if spacy_analyzer is None:
@@ -55,7 +56,7 @@ class GraphBuilder:
         logger.info("Initialized graph builder")
 
     def build_from_search_results(
-        self, search_results: list[SearchResult]
+        self, search_results: list["SearchResult"]
     ) -> Any:  # KnowledgeGraph - avoiding circular import
         """Build knowledge graph from search results metadata."""
         # Import KnowledgeGraph at runtime to avoid circular import
@@ -95,17 +96,17 @@ class GraphBuilder:
 
             return graph
 
-        except (ValueError, KeyError) as exc:
-            # Known issues from malformed inputs or missing keys: log and return a clear error indicator
-            logger.exception("Recoverable error while building knowledge graph", exc_info=exc)
+        except (ValueError, KeyError, json.JSONDecodeError, IndexError, RecoverableBuildError) as exc:
+            # Known/parsing/validation issues: log and return a clear recoverable indicator
+            logger.exception("Recoverable error while building knowledge graph", error=str(exc))
             return None
         except Exception as exc:
             # Unexpected/critical exceptions should propagate after logging for caller visibility
-            logger.exception("Unexpected error while building knowledge graph", exc_info=exc)
+            logger.exception("Unexpected error while building knowledge graph", error=str(exc))
             raise
 
     def _create_document_nodes(
-        self, search_results: list[SearchResult]
+        self, search_results: list["SearchResult"]
     ) -> list[GraphNode]:
         """Create document and section nodes from search results."""
 
@@ -164,7 +165,7 @@ class GraphBuilder:
         return nodes
 
     def _create_concept_nodes(
-        self, search_results: list[SearchResult]
+        self, search_results: list["SearchResult"]
     ) -> tuple[list[GraphNode], list[GraphNode]]:
         """Create entity and topic nodes from extracted metadata."""
 
@@ -210,7 +211,7 @@ class GraphBuilder:
         return entity_nodes, topic_nodes
 
     def _create_relationships(
-        self, search_results: list[SearchResult], graph: Any  # KnowledgeGraph - avoiding circular import
+        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create relationships between graph nodes."""
 
@@ -247,7 +248,7 @@ class GraphBuilder:
         return edges
 
     def _create_entity_relationships(
-        self, search_results: list[SearchResult], graph: Any  # KnowledgeGraph - avoiding circular import
+        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create entity-related relationships."""
 
@@ -279,7 +280,7 @@ class GraphBuilder:
         return edges
 
     def _create_topic_relationships(
-        self, search_results: list[SearchResult], graph: Any  # KnowledgeGraph - avoiding circular import
+        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create topic-related relationships."""
 
@@ -307,7 +308,7 @@ class GraphBuilder:
         return edges
 
     def _create_entity_cooccurrence(
-        self, search_results: list[SearchResult], graph: Any  # KnowledgeGraph - avoiding circular import
+        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create entity co-occurrence relationships."""
 
@@ -374,16 +375,16 @@ class GraphBuilder:
         """Calculate similarity between two nodes."""
         return calculate_node_similarity(node1, node2)
 
-    def _extract_entities(self, result: SearchResult) -> list[str]:
+    def _extract_entities(self, result: "SearchResult") -> list[str]:
         return extract_entities_from_result(result)
 
-    def _extract_topics(self, result: SearchResult) -> list[str]:
+    def _extract_topics(self, result: "SearchResult") -> list[str]:
         return extract_topics_from_result(result)
 
-    def _extract_concepts(self, result: SearchResult) -> list[str]:
+    def _extract_concepts(self, result: "SearchResult") -> list[str]:
         return extract_concepts_from_result(result)
 
-    def _extract_keywords(self, result: SearchResult) -> list[str]:
+    def _extract_keywords(self, result: "SearchResult") -> list[str]:
         return extract_keywords_from_result(result)
 
 
@@ -425,14 +426,19 @@ def _doc_id_from_result(result: Any) -> str:
 def _section_id_from_result(result: Any) -> str:
     """Create a stable section node id from a search result.
 
-    Compute a deterministic SHA-256 hash from the section text and
-    use a short prefix of the digest to keep IDs concise.
-    The final id format is: section_{digest_prefix}
-    where digest_prefix is the first 12 characters of the SHA-256 hexdigest.
+    Use the same defensive strategy as document ID generation for consistency:
+    - Prefer result.source_url when present
+    - Otherwise fallback to the first 100 characters of result.text
+    - Use result.source_type (defaulting to "unknown") in the prefix
+    The final id format is: section_{source_type}_{digest}
+    where digest is the first 16 characters of the SHA-256 hexdigest.
     """
-    text = getattr(result, "text", "") or ""
-    if not isinstance(text, str):
-        text = str(text)
+    source_type = getattr(result, "source_type", "") or "unknown"
+    preferred_identifier = getattr(result, "source_url", None)
+    if not preferred_identifier:
+        preferred_identifier = (getattr(result, "text", "") or "")[:100]
+    if not isinstance(preferred_identifier, str):
+        preferred_identifier = str(preferred_identifier)
 
-    digest_prefix = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-    return f"section_{digest_prefix}"
+    digest = hashlib.sha256(preferred_identifier.encode("utf-8")).hexdigest()[:16]
+    return f"section_{source_type}_{digest}"

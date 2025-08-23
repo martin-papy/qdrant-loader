@@ -43,7 +43,15 @@ class GraphTraverser:
         self.graph = knowledge_graph
         # Import SpaCyQueryAnalyzer at runtime to avoid circular import
         if spacy_analyzer is None:
-            from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
+            try:
+                from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
+            except ImportError as exc:
+                logger.exception(
+                    "SpaCyQueryAnalyzer is not available. Ensure optional NLP deps are installed (e.g., 'pip install spacy' and required models)."
+                )
+                raise ImportError(
+                    "SpaCyQueryAnalyzer (and its spacy dependency) is missing. Install optional NLP extras to enable semantic traversal."
+                ) from exc
             self.spacy_analyzer = SpaCyQueryAnalyzer()
         else:
             self.spacy_analyzer = spacy_analyzer
