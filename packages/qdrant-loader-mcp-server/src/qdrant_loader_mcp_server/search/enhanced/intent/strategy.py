@@ -316,10 +316,19 @@ class AdaptiveSearchStrategy:
                         config.expansion_aggressiveness * (1 - blend_factor)
                         + secondary_config.expansion_aggressiveness * blend_factor
                     )
-                    config.diversity_factor = max(
-                        config.diversity_factor,
-                        secondary_config.diversity_factor * blend_factor,
+                    # Safely handle potential None values for diversity_factor
+                    left = (
+                        config.diversity_factor
+                        if config.diversity_factor is not None
+                        else 0
                     )
+                    right_base = (
+                        secondary_config.diversity_factor
+                        if secondary_config.diversity_factor is not None
+                        else 0
+                    )
+                    right = right_base * blend_factor
+                    config.diversity_factor = max(left, right)
 
         return config
 

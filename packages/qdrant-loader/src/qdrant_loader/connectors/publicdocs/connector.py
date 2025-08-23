@@ -1,7 +1,5 @@
 """Public documentation connector implementation."""
 
-import asyncio
-
 import fnmatch
 import logging
 import warnings
@@ -98,7 +96,7 @@ class PublicDocsConnector(BaseConnector):
 
             # Initialize rate limiter for crawling (configurable)
             self._rate_limiter = RateLimiter.per_minute(
-                getattr(self.config, "requests_per_minute", 120)
+                self.config.requests_per_minute
             )
 
         return self
@@ -261,9 +259,6 @@ class PublicDocsConnector(BaseConnector):
                                     overall_timeout=60.0,
                                 )
                                 html = await _read_text(response)
-                                # Some mocks may return a coroutine-of-coroutine
-                                if asyncio.iscoroutine(html):  # type: ignore[arg-type]
-                                    html = await html  # type: ignore[assignment]
                                 attachment_metadata = self._extract_attachments(
                                     html, page, doc_id
                                 )

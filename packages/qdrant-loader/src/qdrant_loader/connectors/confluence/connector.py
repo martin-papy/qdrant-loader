@@ -332,6 +332,44 @@ class ConfluenceConnector(BaseConnector):
             )
             return []
 
+    async def _process_attachments_for_document(
+        self, content: dict, document: Document
+    ) -> list[Document]:
+        """Process attachments for a given content item and parent document.
+
+        Checks configuration flags and uses the attachment downloader to
+        fetch and convert attachments into child documents.
+
+        Args:
+            content: Confluence content item
+            document: Parent document corresponding to the content item
+
+        Returns:
+            List of generated attachment documents (may be empty)
+        """
+        if not (self.config.download_attachments and self.attachment_downloader):
+            return []
+
+        try:
+            content_id = content.get("id")
+            attachments = await self._get_content_attachments(content_id)
+            if not attachments:
+                return []
+
+            attachment_docs = await self.attachment_downloader.fetch_and_process(
+                attachments, document
+            )
+            logger.debug(
+                f"Processed {len(attachment_docs)} attachments for {content.get('type')} '{content.get('title')}'",
+                content_id=content.get("id"),
+            )
+            return attachment_docs
+        except Exception as e:
+            logger.error(
+                f"Failed to process attachments for {content.get('type')} '{content.get('title')}' (ID: {content.get('id')}): {e!s}"
+            )
+            return []
+
     def _should_process_content(self, content: dict) -> bool:
         """Check if content should be processed based on labels.
 
@@ -751,33 +789,10 @@ class ConfluenceConnector(BaseConnector):
                                 if document:
                                     documents.append(document)
 
-                                    # Process attachments if enabled
-                                    if (
-                                        self.config.download_attachments
-                                        and self.attachment_downloader
-                                    ):
-                                        try:
-                                            content_id = content.get("id")
-                                            attachments = (
-                                                await self._get_content_attachments(
-                                                    content_id
-                                                )
-                                            )
-
-                                            if attachments:
-                                                attachment_docs = await self.attachment_downloader.fetch_and_process(
-                                                    attachments, document
-                                                )
-                                                documents.extend(attachment_docs)
-
-                                                logger.debug(
-                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
-                                                )
-                                        except Exception as e:
-                                            logger.error(
-                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
-                                                f"(ID: {content['id']}): {e!s}"
-                                            )
+                                    attachment_docs = await self._process_attachments_for_document(
+                                        content, document
+                                    )
+                                    documents.extend(attachment_docs)
 
                                     logger.debug(
                                         f"Processed {content['type']} '{content['title']}' "
@@ -850,33 +865,10 @@ class ConfluenceConnector(BaseConnector):
                                 if document:
                                     documents.append(document)
 
-                                    # Process attachments if enabled
-                                    if (
-                                        self.config.download_attachments
-                                        and self.attachment_downloader
-                                    ):
-                                        try:
-                                            content_id = content.get("id")
-                                            attachments = (
-                                                await self._get_content_attachments(
-                                                    content_id
-                                                )
-                                            )
-
-                                            if attachments:
-                                                attachment_docs = await self.attachment_downloader.fetch_and_process(
-                                                    attachments, document
-                                                )
-                                                documents.extend(attachment_docs)
-
-                                                logger.debug(
-                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
-                                                )
-                                        except Exception as e:
-                                            logger.error(
-                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
-                                                f"(ID: {content['id']}): {e!s}"
-                                            )
+                                    attachment_docs = await self._process_attachments_for_document(
+                                        content, document
+                                    )
+                                    documents.extend(attachment_docs)
 
                                     logger.debug(
                                         f"Processed {content['type']} '{content['title']}' "

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
-import hashlib
+import uuid
 
 
 class NodeType(Enum):
@@ -49,12 +49,12 @@ class GraphNode:
 
     def __post_init__(self):
         if not self.id:
-            # Deterministic, collision-resistant id derived from stable inputs
-            base = f"{self.node_type.value}::{self.title}".encode("utf-8", errors="ignore")
-            digest = hashlib.sha256(base).hexdigest()
-            # Keep concise but reasonably unique segment
-            short = digest[:16]
-            self.id = f"{self.node_type.value}_{short}"
+            # Deterministic UUIDv5 id derived from stable inputs (node_type + title)
+            # Fixed namespace ensures stable generation across runs/processes
+            node_namespace = uuid.UUID("8f5b3e78-9b8c-4f07-b54e-27f7ac1d5a11")
+            name = f"{self.node_type.value}::{self.title}"
+            deterministic_uuid = uuid.uuid5(node_namespace, name)
+            self.id = f"{self.node_type.value}_{deterministic_uuid}"
 
 
 @dataclass
