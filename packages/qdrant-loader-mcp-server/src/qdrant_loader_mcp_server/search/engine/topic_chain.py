@@ -5,6 +5,8 @@ This module implements topic-driven search chain functionality
 for progressive discovery and exploration of related content.
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -176,7 +178,7 @@ class TopicChainOperations:
         max_links: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
-    ) -> dict:
+    ) -> TopicChainResult:
         """🔥 NEW: Perform search with full topic chain analysis.
 
         This combines topic chain generation and execution for complete
@@ -248,6 +250,10 @@ class TopicChainOperations:
         """Organize chain results by exploration depth."""
         organized = {}
 
+        # Defensive: handle None or empty chain_results
+        if not chain_results:
+            return organized
+
         for link in topic_chain.chain_links:
             depth = link.chain_position
             query = link.query
@@ -259,8 +265,8 @@ class TopicChainOperations:
                     "total_results": 0,
                 }
 
-            if query in chain_results:
-                results = chain_results[query]
+            results = chain_results.get(query)
+            if results is not None:
                 organized[depth]["queries"].append({
                     "query": query,
                     "topics": [link.topic_focus] + link.related_topics,

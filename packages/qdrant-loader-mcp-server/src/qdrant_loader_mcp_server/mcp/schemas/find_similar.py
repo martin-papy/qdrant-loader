@@ -12,10 +12,12 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                 "target_query": {
                     "type": "string",
                     "description": "Query to find the target document",
+                    "minLength": 1,
                 },
                 "comparison_query": {
                     "type": "string",
                     "description": "Query to get documents to compare against",
+                    "minLength": 1,
                 },
                 "similarity_metrics": {
                     "type": "array",
@@ -49,9 +51,11 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                 },
             },
             "required": ["target_query", "comparison_query"],
+            "additionalProperties": False,
         },
         "outputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "similar_documents": {
                     "type": "array",
@@ -60,21 +64,28 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                         "properties": {
                             "document_id": {"type": "string"},
                             "title": {"type": "string"},
-                            "similarity_score": {"type": "number"},
+                            "similarity_score": {"type": "number", "minimum": 0, "maximum": 1},
                             "similarity_metrics": {
                                 "type": "object",
                                 "properties": {
-                                    "entity_overlap": {"type": "number"},
-                                    "topic_overlap": {"type": "number"},
-                                    "semantic_similarity": {"type": "number"},
-                                    "metadata_similarity": {"type": "number"},
-                                    "hierarchical_distance": {"type": "number"},
-                                    "content_features": {"type": "number"},
+                                    "entity_overlap": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "topic_overlap": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "semantic_similarity": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "metadata_similarity": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "hierarchical_distance": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "content_features": {"type": "number", "minimum": 0, "maximum": 1},
                                 },
+                                "additionalProperties": False,
                             },
                             "similarity_reason": {"type": "string"},
                             "content_preview": {"type": "string"},
                         },
+                        "required": [
+                            "document_id",
+                            "title",
+                            "similarity_score",
+                        ],
+                        "additionalProperties": False,
                     },
                 },
                 "target_document": {
@@ -90,9 +101,21 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                     "properties": {
                         "total_compared": {"type": "integer"},
                         "similar_found": {"type": "integer"},
-                        "highest_similarity": {"type": "number"},
-                        "metrics_used": {"type": "array", "items": {"type": "string"}},
+                        "highest_similarity": {"type": "number", "minimum": 0, "maximum": 1},
+                        "metrics_used": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "minItems": 1,
+                            "uniqueItems": True,
+                        },
                     },
+                    "required": [
+                        "total_compared",
+                        "similar_found",
+                        "highest_similarity",
+                        "metrics_used",
+                    ],
+                    "additionalProperties": False,
                 },
             },
         },
