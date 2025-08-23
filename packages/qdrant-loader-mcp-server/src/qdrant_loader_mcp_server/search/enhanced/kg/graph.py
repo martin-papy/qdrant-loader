@@ -39,12 +39,38 @@ class KnowledgeGraph:
         try:
             if node.id in self.nodes:
                 logger.debug(f"Node {node.id} already exists, updating")
+                # Remove stale index entries for the existing node before overwrite
+                old = self.nodes[node.id]
+                try:
+                    self.node_type_index[old.node_type].discard(node.id)
+                except Exception:
+                    pass
+                for old_entity in getattr(old, "entities", []):
+                    try:
+                        self.entity_index[old_entity.lower()].discard(node.id)
+                    except Exception:
+                        pass
+                for old_topic in getattr(old, "topics", []):
+                    try:
+                        self.topic_index[old_topic.lower()].discard(node.id)
+                    except Exception:
+                        pass
 
+            # Overwrite node object and update graph node attributes
             self.nodes[node.id] = node
-            self.graph.add_node(node.id, **node.metadata)
+            if node.id in self.graph:
+                try:
+                    # Replace attributes with current metadata
+                    self.graph.nodes[node.id].clear()
+                except Exception:
+                    pass
+                self.graph.nodes[node.id].update(node.metadata)
+            else:
+                self.graph.add_node(node.id, **node.metadata)
+
+            # Add to indices for fast lookup
             self.node_type_index[node.node_type].add(node.id)
 
-            # Index entities and topics for fast lookup
             for entity in node.entities:
                 self.entity_index[entity.lower()].add(node.id)
             for topic in node.topics:

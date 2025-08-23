@@ -33,10 +33,21 @@ def create_embeddings_provider_from_env(logger: Optional[Any] = None) -> Any | N
         llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
         embeddings_provider = create_provider(llm_settings)
         return embeddings_provider
-    except Exception:
+    except ImportError as e:
         if logger is not None:
             try:
-                logger.debug("Embeddings provider unavailable; falling back to None")
+                logger.debug("Embeddings provider import failed; falling back to None", exc_info=True)
+            except Exception:
+                pass
+        return None
+    except Exception as e:
+        if logger is not None:
+            try:
+                # Log full stack for unexpected provider errors
+                try:
+                    logger.exception("Error creating embeddings provider; falling back to None")
+                except Exception:
+                    logger.debug("Error creating embeddings provider; falling back to None: %s", e, exc_info=True)
             except Exception:
                 pass
         return None

@@ -1,20 +1,12 @@
 from __future__ import annotations
 
 from typing import Any
+import logging
 
-
-class _StdLogger:
-    def debug(self, *args, **kwargs):
-        pass
-
-    def info(self, *args, **kwargs):
-        pass
-
-    def warning(self, *args, **kwargs):
-        pass
-
-    def error(self, *args, **kwargs):
-        pass
+# Module-level logger with a NullHandler to avoid "No handler" warnings when
+# the application's logging configuration does not attach any handlers.
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class HybridEngineAPI:
@@ -42,8 +34,8 @@ class HybridEngineAPI:
 
                 self.logger = LoggingConfig.get_logger(__name__)
             except Exception:
-                # Last-resort fallback to stdlib logger-like shim
-                self.logger = _StdLogger()
+                # Fallback to module logger so logs are not silently dropped
+                self.logger = logging.getLogger(__name__)
         else:
             self.logger = logger
 
