@@ -4,12 +4,11 @@ from pathlib import Path
 from typing import Any
 
 from click.exceptions import ClickException
+from qdrant_loader.utils.logging import LoggingConfig
 
 
 # Back-compat shim for tests that import _get_logger from cli.cli
 def _get_logger():
-    from qdrant_loader.utils.logging import LoggingConfig
-
     return LoggingConfig.get_logger(__name__)
 
 
@@ -22,8 +21,6 @@ def setup_workspace(workspace_path: Path):
 
         create_workspace_structure(workspace_path)
         workspace_config = _setup(workspace_path)
-        from qdrant_loader.utils.logging import LoggingConfig
-
         logger = LoggingConfig.get_logger(__name__)
         logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
         if workspace_config.env_path:
@@ -47,18 +44,12 @@ def load_config_with_workspace(
         from qdrant_loader.config import initialize_config_with_workspace
 
         if workspace_config:
-            from qdrant_loader.utils.logging import LoggingConfig
-
             LoggingConfig.get_logger(__name__).debug("Loading configuration in workspace mode")
             initialize_config_with_workspace(workspace_config, skip_validation=skip_validation)
         else:
-            from qdrant_loader.utils.logging import LoggingConfig
-
             LoggingConfig.get_logger(__name__).debug("Loading configuration in traditional mode")
             load_config(config_path, env_path, skip_validation)
     except Exception as e:
-        from qdrant_loader.utils.logging import LoggingConfig
-
         LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
         raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
 
@@ -66,8 +57,6 @@ def load_config_with_workspace(
 def create_database_directory(path: Path) -> bool:
     try:
         abs_path = path.resolve()
-        from qdrant_loader.utils.logging import LoggingConfig
-
         LoggingConfig.get_logger(__name__).info(
             "The database directory does not exist", path=str(abs_path)
         )
@@ -92,8 +81,6 @@ def load_config(
 
         if config_path is not None:
             if not config_path.exists():
-                from qdrant_loader.utils.logging import LoggingConfig
-
                 LoggingConfig.get_logger(__name__).error("config_not_found", path=str(config_path))
                 raise ClickException(f"Config file not found: {str(config_path)!s}")
             initialize_config(config_path, env_path, skip_validation=skip_validation)
@@ -125,7 +112,5 @@ def load_config(
         elif isinstance(e, ClickException):
             raise e from None
         else:
-            from qdrant_loader.utils.logging import LoggingConfig
-
             LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
             raise ClickException(f"Failed to load configuration: {str(e)!s}") from e

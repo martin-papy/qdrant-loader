@@ -38,7 +38,7 @@ def build_cloud_search_params(space_key: str, content_types: list[str] | None, c
         safe_types = _sanitize_content_types(content_types)
         cql += f" and type in ({','.join(safe_types)})"
     params["cql"] = cql
-    if cursor:
+    if cursor is not None:
         params["cursor"] = cursor
     return params
 
