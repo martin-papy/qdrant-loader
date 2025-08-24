@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from ...enhanced.cross_document_intelligence import SimilarityMetric
+from ...enhanced.cdi import SimilarityMetric
 from ...components.search_result_models import HybridSearchResult
 
 
