@@ -118,11 +118,6 @@ async def run_init_command(
                 target = e.path.resolve()
             if not _create_database_directory(target):
                 raise ClickException("Database directory creation declined. Exiting.") from e
-            # After directory creation, initialize config once before retry
-            if config is not None:
-                initialize_config(config, env, skip_validation=False)
-            else:
-                initialize_config(Path("config.yaml"), env, skip_validation=False)
 
             if attempts >= max_retries:
                 raise ClickException(

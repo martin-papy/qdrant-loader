@@ -59,8 +59,7 @@ async def cluster_documents(
     if not isinstance(min_cluster_size, int) or min_cluster_size < 1:
         raise ValueError("'min_cluster_size' must be an int greater than or equal to 1")
     total_documents = len(documents)
-    if max_clusters > total_documents:
-        raise ValueError("'max_clusters' cannot exceed the total number of documents")
+    # Allow max_clusters greater than total documents; downstream analyzer may cap it.
     if min_cluster_size > total_documents:
         raise ValueError("'min_cluster_size' cannot exceed the total number of documents")
     if not isinstance(strategy, ClusteringStrategy):

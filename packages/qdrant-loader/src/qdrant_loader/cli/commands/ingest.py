@@ -32,25 +32,18 @@ async def run_pipeline_ingestion(
         )
     except Exception as e:
         ingestion_error = e
+        # Record full stack trace for ingestion failures
+        logger.exception("Ingestion failed")
     cleanup_error: Exception | None = None
     try:
         await pipeline.cleanup()
     except Exception as e:
         cleanup_error = e
         if ingestion_error is not None:
-            logger.error(
-                "Cleanup failed after ingestion exception",
-                error=str(e),
-                error_type=type(e).__name__,
-                exc_info=True,
-            )
+            # If ingestion already failed, annotate that cleanup also failed
+            logger.exception("Cleanup failed after ingestion exception")
         else:
-            logger.error(
-                "Cleanup failed after successful ingestion",
-                error=str(e),
-                error_type=type(e).__name__,
-                exc_info=True,
-            )
+            logger.exception("Cleanup failed after successful ingestion")
     if ingestion_error is not None:
         raise ingestion_error
     if cleanup_error is not None:
