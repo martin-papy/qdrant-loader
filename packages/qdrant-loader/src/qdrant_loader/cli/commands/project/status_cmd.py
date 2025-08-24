@@ -27,11 +27,15 @@ async def run_project_status(
         except Exception:
             return None
 
-    contexts = (
-        {project_id: project_manager.get_project_context(project_id)}
-        if project_id
-        else project_manager.get_all_project_contexts()
-    )
+    if project_id:
+        from click.exceptions import BadParameter
+
+        context = project_manager.get_project_context(project_id)
+        if context is None:
+            raise BadParameter(f"Project not found: {project_id}")
+        contexts = {project_id: context}
+    else:
+        contexts = project_manager.get_all_project_contexts()
 
     results = []
     for context in contexts.values():

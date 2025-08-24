@@ -8,7 +8,7 @@ async def read_text_response(response) -> str:
 
 
 async def get_text(session, url: str) -> str:
-    response = await session.get(url)
-    return await read_text_response(response)
+    async with session.get(url) as response:
+        return await read_text_response(response)
 
 
