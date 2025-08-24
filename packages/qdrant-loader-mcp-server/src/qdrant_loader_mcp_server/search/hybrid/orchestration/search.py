@@ -132,49 +132,27 @@ async def run_search(
         try:
             engine_rc = getattr(engine, "result_combiner", None)
             if engine_rc is not None:
-                # Restore vector_weight
-                try:
-                    engine_rc.vector_weight = original_vector_weight
-                except Exception as e:
+                restorations = [
+                    ("vector_weight", original_vector_weight),
+                    ("keyword_weight", original_keyword_weight),
+                    ("min_score", original_min_score),
+                ]
+                for attr_name, original_value in restorations:
                     try:
-                        logger.error(
-                            "Failed to restore result_combiner.vector_weight to %r on %s: %s",
-                            original_vector_weight,
-                            type(engine_rc).__name__,
-                            e,
-                            exc_info=True,
-                        )
-                    except Exception:
-                        # Never allow logging to raise
-                        pass
-                # Restore keyword_weight
-                try:
-                    engine_rc.keyword_weight = original_keyword_weight
-                except Exception as e:
-                    try:
-                        logger.error(
-                            "Failed to restore result_combiner.keyword_weight to %r on %s: %s",
-                            original_keyword_weight,
-                            type(engine_rc).__name__,
-                            e,
-                            exc_info=True,
-                        )
-                    except Exception:
-                        pass
-                # Restore min_score
-                try:
-                    engine_rc.min_score = original_min_score
-                except Exception as e:
-                    try:
-                        logger.error(
-                            "Failed to restore result_combiner.min_score to %r on %s: %s",
-                            original_min_score,
-                            type(engine_rc).__name__,
-                            e,
-                            exc_info=True,
-                        )
-                    except Exception:
-                        pass
+                        setattr(engine_rc, attr_name, original_value)
+                    except Exception as e:  # noqa: F841 - keep behavior
+                        try:
+                            logger.error(
+                                "Failed to restore result_combiner.%s to %r on %s: %s",
+                                attr_name,
+                                original_value,
+                                type(engine_rc).__name__,
+                                e,
+                                exc_info=True,
+                            )
+                        except Exception:
+                            # Never allow logging to raise
+                            pass
         except Exception:
             # Never raise from restoration; preserve original exception flow
             try:

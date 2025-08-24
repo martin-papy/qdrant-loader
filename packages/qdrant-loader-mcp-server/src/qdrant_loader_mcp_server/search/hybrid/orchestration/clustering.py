@@ -21,7 +21,7 @@ async def cluster_documents(
         documents: Non-empty list of `HybridSearchResult` to cluster.
         strategy: Clustering strategy (instance of `ClusteringStrategy`).
         max_clusters: Maximum number of clusters to produce. Must be int > 0.
-        min_cluster_size: Minimum documents per cluster. Must be int >= 1 and <= max_clusters.
+        min_cluster_size: Minimum documents per cluster. Must be int >= 1 and <= total documents.
 
     Returns:
         Dict with the following structure:
@@ -58,8 +58,11 @@ async def cluster_documents(
         raise ValueError("'max_clusters' must be an int greater than 0")
     if not isinstance(min_cluster_size, int) or min_cluster_size < 1:
         raise ValueError("'min_cluster_size' must be an int greater than or equal to 1")
-    if min_cluster_size > max_clusters:
-        raise ValueError("'min_cluster_size' cannot be greater than 'max_clusters'")
+    total_documents = len(documents)
+    if max_clusters > total_documents:
+        raise ValueError("'max_clusters' cannot exceed the total number of documents")
+    if min_cluster_size > total_documents:
+        raise ValueError("'min_cluster_size' cannot exceed the total number of documents")
     if not isinstance(strategy, ClusteringStrategy):
         raise ValueError("'strategy' must be an instance of ClusteringStrategy")
     start_time = time.time()

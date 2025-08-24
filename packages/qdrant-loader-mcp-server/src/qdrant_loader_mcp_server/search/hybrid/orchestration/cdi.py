@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, List
+import inspect
 
 from ...enhanced.cdi import SimilarityMetric
 from ...components.search_result_models import HybridSearchResult
@@ -9,7 +10,7 @@ from ...components.search_result_models import HybridSearchResult
 async def analyze_document_relationships(engine: Any, documents: list[HybridSearchResult]) -> dict[str, Any]:
     result = engine.cross_document_engine.analyze_document_relationships(documents)
     # Handle both async and sync implementations defensively
-    if hasattr(result, "__await__"):
+    if inspect.isawaitable(result):
         return await result  # type: ignore[no-any-return]
     return result  # type: ignore[no-any-return]
 

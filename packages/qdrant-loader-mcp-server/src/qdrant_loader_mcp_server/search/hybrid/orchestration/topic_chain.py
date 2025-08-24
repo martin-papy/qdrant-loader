@@ -15,8 +15,22 @@ async def generate_topic_search_chain(
     initialize_from_search: bool = True,
 ) -> TopicSearchChain:
     # Use public accessor instead of private attribute
-    if initialize_from_search and not getattr(engine, "is_topic_chains_initialized", False):
-        await _initialize_topic_relationships(engine, query)
+    if initialize_from_search:
+        try:
+            init_attr = getattr(engine, "is_topic_chains_initialized", False)
+            is_initialized: bool
+            if callable(init_attr):
+                init_result = init_attr()
+                if inspect.isawaitable(init_result):
+                    init_result = await init_result
+                is_initialized = bool(init_result)
+            else:
+                is_initialized = bool(init_attr)
+        except Exception:
+            # Be conservative: if we cannot determine, assume not initialized
+            is_initialized = False
+        if not is_initialized:
+            await _initialize_topic_relationships(engine, query)
     result = engine.topic_chain_generator.generate_search_chain(
         original_query=query, strategy=strategy, max_links=max_links
     )
