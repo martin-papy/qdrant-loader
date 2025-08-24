@@ -4,8 +4,11 @@ from typing import Any, List, Optional
 
 
 def analyze_entity_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
-    entities_a = set(cluster_a.shared_entities or [])
-    entities_b = set(cluster_b.shared_entities or [])
+    # Defensive input validation
+    if cluster_a is None or cluster_b is None:
+        return None
+    entities_a = set(getattr(cluster_a, "shared_entities", []) or [])
+    entities_b = set(getattr(cluster_b, "shared_entities", []) or [])
     if not entities_a or not entities_b:
         return None
     overlap = entities_a & entities_b
@@ -22,8 +25,18 @@ def analyze_entity_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
 
 
 def analyze_topic_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
-    topics_a = set(cluster_a.shared_topics or [])
-    topics_b = set(cluster_b.shared_topics or [])
+    # Defensive input validation similar to analyze_entity_overlap
+    if cluster_a is None or cluster_b is None:
+        return None
+    topics_a_raw = getattr(cluster_a, "shared_topics", None)
+    topics_b_raw = getattr(cluster_b, "shared_topics", None)
+    if not topics_a_raw or not topics_b_raw:
+        return None
+    try:
+        topics_a = set(topics_a_raw)
+        topics_b = set(topics_b_raw)
+    except TypeError:
+        return None
     if not topics_a or not topics_b:
         return None
     overlap = topics_a & topics_b
