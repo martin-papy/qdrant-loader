@@ -29,7 +29,11 @@ class ResultDeduplicator:
                 key = key_obj  # type: ignore[assignment]
             except TypeError:
                 # Deterministic serialization for unhashable keys
-                key = json.dumps(key_obj, sort_keys=True, default=str)
+                try:
+                    key = json.dumps(key_obj, sort_keys=True, default=str)
+                except Exception:
+                    # Fall back to a stable string representation
+                    key = repr(key_obj)
             if key not in seen:
                 seen.add(key)
                 unique.append(item)

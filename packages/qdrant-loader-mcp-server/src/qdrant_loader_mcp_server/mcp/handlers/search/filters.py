@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 import os
+from ....mcp.formatters.utils import FormatterUtils
 
 from ....search.components.search_result_models import HybridSearchResult
 
@@ -101,7 +102,6 @@ def apply_lightweight_attachment_filters(
             if file_type_extractor is not None:
                 file_type = file_type_extractor(result)
             else:
-                from ....mcp.formatters.utils import FormatterUtils
                 file_type = FormatterUtils.extract_file_type_minimal(result)
             if file_type != attachment_filter["file_type"]:
                 continue

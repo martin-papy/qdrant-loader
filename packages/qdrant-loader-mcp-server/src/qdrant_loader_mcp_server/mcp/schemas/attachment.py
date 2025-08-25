@@ -8,6 +8,7 @@ def get_attachment_search_tool_schema() -> dict[str, Any]:
         "annotations": {"read-only": True},
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "query": {
                     "type": "string",
@@ -15,6 +16,7 @@ def get_attachment_search_tool_schema() -> dict[str, Any]:
                 },
                 "attachment_filter": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "attachments_only": {
                             "type": "boolean",
@@ -31,10 +33,12 @@ def get_attachment_search_tool_schema() -> dict[str, Any]:
                         "file_size_min": {
                             "type": "integer",
                             "description": "Minimum file size in bytes",
+                            "minimum": 0,
                         },
                         "file_size_max": {
                             "type": "integer",
                             "description": "Maximum file size in bytes",
+                            "minimum": 0,
                         },
                         "author": {
                             "type": "string",

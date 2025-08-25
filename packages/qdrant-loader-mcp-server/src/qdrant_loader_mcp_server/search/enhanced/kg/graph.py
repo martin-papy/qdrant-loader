@@ -180,7 +180,24 @@ class KnowledgeGraph:
             edge_data = self.graph.get_edge_data(node_id, neighbor_id)
             if edge_data:
                 for _key, data in edge_data.items():
-                    relationship = RelationshipType(data["relationship"])
+                    rel_value = data.get("relationship")
+                    if rel_value is None:
+                        logger.debug(
+                            "Skipping edge with missing relationship metadata: %s -> %s",
+                            node_id,
+                            neighbor_id,
+                        )
+                        continue
+                    try:
+                        relationship = RelationshipType(rel_value)
+                    except ValueError:
+                        logger.warning(
+                            "Skipping edge with invalid relationship value '%s': %s -> %s",
+                            rel_value,
+                            node_id,
+                            neighbor_id,
+                        )
+                        continue
                     if relationship_types is None or relationship in relationship_types:
                         edge_key = (node_id, neighbor_id, relationship.value)
                         if edge_key in self.edges:

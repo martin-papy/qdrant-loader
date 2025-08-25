@@ -33,17 +33,70 @@ class IntelligenceResultFormatters:
 • Documents Analyzed: {analysis.get('query_metadata', {}).get('document_count', 0)}
 """
 
-        clusters = analysis.get("document_clusters", [])
-        if clusters:
-            formatted += "\n🗂️ **Document Clusters:**\n"
-            for i, cluster in enumerate(clusters[:3], 1):  # Show first 3 clusters
-                formatted += (
-                    f"• Cluster {i}: {len(cluster.get('documents', []))} documents\n"
-                )
+        # Accept multiple shapes for clusters
+        clusters_candidate = None
+        for key in ("document_clusters", "topic_clusters", "entity_clusters", "clusters"):
+            value = analysis.get(key)
+            if value:
+                clusters_candidate = value
+                break
 
-        conflicts = analysis.get("conflict_analysis", {}).get("conflicting_pairs", [])
-        if conflicts:
-            formatted += f"\n⚠️ **Conflicts Detected:** {len(conflicts)} conflicting document pairs\n"
+        cluster_list: list[Any] = []
+        if isinstance(clusters_candidate, list):
+            cluster_list = clusters_candidate
+        elif isinstance(clusters_candidate, dict):
+            # Some producers return a dict of clusters
+            cluster_list = list(clusters_candidate.values())
+
+        if cluster_list:
+            formatted += "\n🗂️ **Document Clusters:**\n"
+            for i, cluster in enumerate(cluster_list[:3], 1):  # Show first 3 clusters
+                count = 0
+                if isinstance(cluster, dict):
+                    items = (
+                        cluster.get("documents")
+                        or cluster.get("items")
+                        or cluster.get("members")
+                    )
+                    if isinstance(items, list):
+                        count = len(items)
+                    else:
+                        try:
+                            count = len(cluster)
+                        except Exception:
+                            count = 0
+                else:
+                    try:
+                        count = len(cluster)  # type: ignore[arg-type]
+                    except Exception:
+                        count = 0
+
+                formatted += f"• Cluster {i}: {count} documents\n"
+
+        # Aggregate conflicts across possible locations/shapes
+        conflict_lists: list[list[Any]] = []
+        conflict_analysis = analysis.get("conflict_analysis", {}) or {}
+        for key in ("conflicting_pairs", "conflicts"):
+            lst = conflict_analysis.get(key)
+            if isinstance(lst, list):
+                conflict_lists.append(lst)
+
+        for key in ("conflicts", "conflicting_pairs"):
+            lst = analysis.get(key)
+            if isinstance(lst, list):
+                conflict_lists.append(lst)
+
+        entity_relationships = analysis.get("entity_relationships", {}) or {}
+        for key in ("conflicting_pairs", "conflicts"):
+            lst = entity_relationships.get(key)
+            if isinstance(lst, list):
+                conflict_lists.append(lst)
+
+        total_conflicts = sum(len(lst) for lst in conflict_lists)
+        if total_conflicts:
+            formatted += (
+                f"\n⚠️ **Conflicts Detected:** {total_conflicts} conflicting document pairs\n"
+            )
 
         return formatted
 
@@ -56,20 +109,63 @@ class IntelligenceResultFormatters:
         formatted = f"🔍 **Similar Documents** ({len(similar_docs)} found)\n\n"
 
         for i, doc_info in enumerate(similar_docs[:5], 1):  # Show top 5
-            score = doc_info.get("similarity_score", 0)
+            # Robust similarity score extraction
+            score_value: Any = None
+            for key in ("overall_similarity", "similarity_score"):
+                if key in doc_info:
+                    score_value = doc_info.get(key)
+                    break
+            if score_value is None:
+                similarity_scores = doc_info.get("similarity_scores")
+                if isinstance(similarity_scores, dict):
+                    if "overall" in similarity_scores:
+                        score_value = similarity_scores.get("overall")
+                    else:
+                        for v in similarity_scores.values():
+                            if isinstance(v, (int, float)):
+                                score_value = v
+                                break
+                elif isinstance(similarity_scores, list):
+                    for v in similarity_scores:
+                        if isinstance(v, (int, float)):
+                            score_value = v
+                            break
+            try:
+                score = float(score_value) if score_value is not None else 0.0
+            except (TypeError, ValueError):
+                score = 0.0
+
             document = doc_info.get("document", {})
-            reasons = doc_info.get("similarity_reasons", [])
+
+            # Title extraction: document.source_title -> document.title -> top-level
+            title_value = None
+            if isinstance(document, dict):
+                title_value = document.get("source_title") or document.get("title")
+            else:
+                title_value = getattr(document, "source_title", None) or getattr(
+                    document, "title", None
+                )
+            if not title_value:
+                title_value = doc_info.get("source_title") or doc_info.get("title")
+
+            # Reasons extraction: prefer list but normalize strings
+            reasons_value = (
+                doc_info.get("similarity_reasons")
+                or doc_info.get("reason")
+                or doc_info.get("explanations")
+                or doc_info.get("reasons")
+            )
+            reasons_list: list[str] = []
+            if isinstance(reasons_value, list):
+                reasons_list = [str(r) for r in reasons_value]
+            elif isinstance(reasons_value, str):
+                reasons_list = [reasons_value]
 
             formatted += f"**{i}. Similarity Score: {score:.3f}**\n"
-            # Support both dict-based and object-based documents for title
-            if isinstance(document, dict):
-                source_title = document.get("source_title")
-            else:
-                source_title = getattr(document, "source_title", None)
-            if source_title:
-                formatted += f"• Title: {source_title}\n"
-            if reasons:
-                formatted += f"• Reasons: {', '.join(reasons)}\n"
+            if title_value:
+                formatted += f"• Title: {title_value}\n"
+            if reasons_list:
+                formatted += f"• Reasons: {', '.join(reasons_list)}\n"
             formatted += "\n"
 
         return formatted
@@ -145,19 +241,37 @@ class IntelligenceResultFormatters:
         for i, content in enumerate(complementary[:5], 1):  # Show top 5
             document = content.get("document", {})
             relevance = content.get("relevance_score", 0)
-            reason = content.get("recommendation_reason", "")
+
+            # Flattened or nested title
+            title_value = (
+                content.get("title")
+                or content.get("source_title")
+            )
+            if not title_value:
+                if isinstance(document, dict):
+                    title_value = document.get("source_title") or "Unknown"
+                else:
+                    title_value = getattr(document, "source_title", "Unknown")
+            title_value = title_value or "Unknown"
+
+            # Reasons and strategy
+            reason = (
+                content.get("reason")
+                or content.get("recommendation_reason")
+            ) or ""
+            if not reason and isinstance(document, dict):
+                reason = document.get("recommendation_reason", "") or document.get("reason", "")
+            elif not reason and document is not None:
+                reason = getattr(document, "recommendation_reason", "") or getattr(document, "reason", "")
+            strategy = content.get("strategy")
 
             formatted += f"**{i}. Complementary Score: {relevance:.3f}**\n"
-            # Prefer dict access when document is a dict, otherwise use getattr
-            if isinstance(document, dict):
-                title_value = document.get('source_title', 'Unknown')
-            else:
-                title_value = getattr(document, 'source_title', 'Unknown')
             formatted += f"• Title: {title_value}\n"
-
             if reason:
                 formatted += f"• Why Complementary: {reason}\n"
-                
+            if strategy:
+                formatted += f"• Strategy: {strategy}\n"
+
             formatted += "\n"
 
         return formatted
@@ -178,12 +292,29 @@ class IntelligenceResultFormatters:
 
         for i, cluster in enumerate(cluster_list[:5], 1):  # Show first 5 clusters
             documents = cluster.get("documents", [])
-            coherence = cluster.get("coherence_score", 0)
-            centroid_topics = cluster.get("centroid_topics", [])
-            shared_entities = cluster.get("shared_entities", [])
+            cluster_metadata = cluster.get("cluster_metadata", {}) if isinstance(cluster, dict) else {}
+            coherence = (
+                cluster_metadata.get("coherence_score", cluster.get("coherence_score", 0))
+                if isinstance(cluster, dict)
+                else 0
+            )
+            centroid_topics = (
+                cluster_metadata.get("centroid_topics", cluster.get("centroid_topics", []))
+                if isinstance(cluster, dict)
+                else []
+            )
+            shared_entities = (
+                cluster_metadata.get("shared_entities", cluster.get("shared_entities", []))
+                if isinstance(cluster, dict)
+                else []
+            )
             cluster_summary = cluster.get("cluster_summary", "")
 
-            cluster_id = cluster.get("id", f"cluster_{i}")
+            cluster_id = (
+                cluster_metadata.get("id", cluster.get("id", f"cluster_{i}"))
+                if isinstance(cluster, dict)
+                else f"cluster_{i}"
+            )
             formatted += f"**Cluster {i} (ID: {cluster_id})**\n"
             formatted += f"• Documents: {len(documents)}\n"
             formatted += f"• Coherence Score: {coherence:.3f}\n"
@@ -202,11 +333,37 @@ class IntelligenceResultFormatters:
         # Add summary statistics
         total_docs = sum(len(cluster.get("documents", [])) for cluster in cluster_list)
         cluster_count = len(cluster_list)
-        avg_coherence = (
-            sum(cluster.get("coherence_score", 0) for cluster in cluster_list) / cluster_count
-            if cluster_count > 0
-            else 0.0
-        )
+
+        # Compute average coherence using nested cluster_metadata when present;
+        # if no per-cluster coherence is provided at all, fall back to overall_coherence.
+        per_cluster_coherences: list[float] = []
+        any_coherence_present = False
+        for cluster in cluster_list:
+            if not isinstance(cluster, dict):
+                per_cluster_coherences.append(0.0)
+                continue
+            cluster_metadata = cluster.get("cluster_metadata", {}) or {}
+            if "coherence_score" in cluster_metadata:
+                any_coherence_present = True
+                value = cluster_metadata.get("coherence_score")
+            elif "coherence_score" in cluster:
+                any_coherence_present = True
+                value = cluster.get("coherence_score")
+            else:
+                value = 0.0
+            try:
+                per_cluster_coherences.append(float(value))
+            except (TypeError, ValueError):
+                per_cluster_coherences.append(0.0)
+
+        if cluster_count > 0 and any_coherence_present:
+            avg_coherence = sum(per_cluster_coherences) / cluster_count
+        else:
+            metadata = clusters.get("clustering_metadata", {})
+            try:
+                avg_coherence = float(metadata.get("overall_coherence", 0.0))
+            except (TypeError, ValueError):
+                avg_coherence = 0.0
         
         formatted += f"📊 **Summary:**\n"
         formatted += f"• Total Clusters: {len(cluster_list)}\n"

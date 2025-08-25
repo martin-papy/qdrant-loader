@@ -8,6 +8,7 @@ def get_hierarchy_search_tool_schema() -> dict[str, Any]:
         "annotations": {"read-only": True},
         "inputSchema": {
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "query": {
                     "type": "string",
