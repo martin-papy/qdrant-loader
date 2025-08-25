@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, Awaitable
 
 from ...components.search_result_models import HybridSearchResult
 from ...models import SearchResult
@@ -55,7 +55,7 @@ class Recommender(Protocol):
 
 
 class ConflictDetector(Protocol):
-    async def detect(self, results: list[SearchResult]) -> ConflictAnalysis:
+    def detect(self, results: list[SearchResult]) -> ConflictAnalysis | Awaitable[ConflictAnalysis]:
         ...
 
 

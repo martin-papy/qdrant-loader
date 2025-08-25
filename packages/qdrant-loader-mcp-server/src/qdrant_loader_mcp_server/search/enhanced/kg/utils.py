@@ -54,6 +54,44 @@ def calculate_node_similarity(node1: GraphNode, node2: GraphNode) -> float:
     return total_similarity
 
 
+def _get_relationship_value(edge: GraphEdge | object) -> str:
+    """Safely extract the relationship value string from an edge.
+
+    Handles Enum, None, raw string, or objects with a ``value`` attribute.
+    Falls back to "unknown" when it cannot determine a proper value.
+    """
+    relationship_type = getattr(edge, "relationship_type", None)
+    if relationship_type is None:
+        return "unknown"
+    # Enum-like objects expose a .value string
+    try:
+        from enum import Enum
+
+        if isinstance(relationship_type, Enum):
+            value = getattr(relationship_type, "value", None)
+            if isinstance(value, str) and value:
+                return value
+            return "unknown"
+    except Exception:
+        # If Enum isn't available or isinstance check fails, continue with other strategies
+        pass
+
+    # Raw string
+    if isinstance(relationship_type, str):
+        return relationship_type
+
+    # Objects with a .value attribute
+    value_attr = getattr(relationship_type, "value", None)
+    if isinstance(value_attr, str) and value_attr:
+        return value_attr
+
+    # Fallback to string conversion; ensure we always return something
+    try:
+        return str(relationship_type)
+    except Exception:
+        return "unknown"
+
+
 def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNode]) -> list[str]:
     """Build a human-readable reasoning path from a traversal.
 
@@ -69,7 +107,7 @@ def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNod
         if source_node is None or target_node is None:
             logger = logging.getLogger(__name__)
             edge_id = getattr(edge, "id", "N/A")
-            relationship = getattr(getattr(edge, "relationship_type", None), "value", str(getattr(edge, "relationship_type", "N/A")))
+            relationship = _get_relationship_value(edge)
             logger.warning(
                 "KG reasoning: missing node(s) for edge. edge_id=%s relationship=%s source_id=%s found=%s target_id=%s found=%s",
                 edge_id,
@@ -83,7 +121,7 @@ def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNod
         source_title = source_node.title if source_node is not None else f"UNKNOWN NODE {getattr(edge, 'source_id', 'N/A')}"
         target_title = target_node.title if target_node is not None else f"UNKNOWN NODE {getattr(edge, 'target_id', 'N/A')}"
 
-        relationship_value = getattr(getattr(edge, "relationship_type", None), "value", str(getattr(edge, "relationship_type", "unknown")))
+        relationship_value = _get_relationship_value(edge)
 
         reasoning.append(
             f"{source_title} --{relationship_value}--> {target_title} "

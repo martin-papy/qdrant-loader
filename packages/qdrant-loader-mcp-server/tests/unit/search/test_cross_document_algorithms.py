@@ -800,6 +800,37 @@ class TestConflictDetectorAlgorithms:
         assert 0.0 <= low_confidence <= 1.0
 
 
+import pytest
+
+
+@pytest.fixture
+def _simple_spacy_analyzer():
+    class _Dummy:
+        pass
+
+    return _Dummy()
+
+
+class TestConflictDetectorStatsAccessor:
+    def test_get_stats_returns_dict_and_never_raises(self, _simple_spacy_analyzer):
+        detector = ConflictDetector(_simple_spacy_analyzer)
+        # No stats yet
+        stats = detector.get_stats()
+        assert isinstance(stats, dict)
+        assert stats == {}
+
+        # Populate private last stats and ensure accessor returns it
+        setattr(detector, "_last_stats", {"pairs_analyzed": 10, "llm_enabled": False})
+        stats2 = detector.get_stats()
+        assert stats2 == {"pairs_analyzed": 10, "llm_enabled": False}
+
+    def test_get_last_stats_backward_compatible(self, _simple_spacy_analyzer):
+        detector = ConflictDetector(_simple_spacy_analyzer)
+        setattr(detector, "_last_stats", {"conflicts_found": 3})
+        stats = detector.get_last_stats()
+        assert stats == {"conflicts_found": 3}
+
+
 class TestCrossDocumentIntelligenceEnginePerformance:
     """Test performance characteristics of the main engine."""
 

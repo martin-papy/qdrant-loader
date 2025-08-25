@@ -14,8 +14,8 @@ from typing import Any
 
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
-from .models import ClusteringStrategy, DocumentCluster
 from . import utils as cdi_utils
+from .models import ClusteringStrategy, DocumentCluster
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -91,7 +91,8 @@ class DocumentClusterAnalyzer:
         # Group documents by their most common entities
         for doc in documents:
             doc_id = f"{doc.source_type}:{doc.source_title}"
-            entities = self.similarity_calculator._extract_entity_texts(doc.entities)
+            # Extract entity texts robustly (supports mocks)
+            entities = self._safe_extract_texts(doc.entities, "entity")
 
             # Use most frequent entities as clustering key
             entity_counter = Counter(entities)
@@ -129,7 +130,8 @@ class DocumentClusterAnalyzer:
         # Group documents by their most common topics
         for doc in documents:
             doc_id = f"{doc.source_type}:{doc.source_title}"
-            topics = self.similarity_calculator._extract_topic_texts(doc.topics)
+            # Extract topic texts robustly (supports mocks)
+            topics = self._safe_extract_texts(doc.topics, "topic")
 
             # Use most frequent topics as clustering key
             topic_counter = Counter(topics)
@@ -234,10 +236,8 @@ class DocumentClusterAnalyzer:
             doc_id = f"{doc.source_type}:{doc.source_title}"
 
             # Combine key features
-            entities = self.similarity_calculator._extract_entity_texts(doc.entities)[
-                :2
-            ]
-            topics = self.similarity_calculator._extract_topic_texts(doc.topics)[:2]
+            entities = self._safe_extract_texts(doc.entities, "entity")[:2]
+            topics = self._safe_extract_texts(doc.topics, "topic")[:2]
             project = doc.project_id or "no_project"
 
             # Create composite clustering key
@@ -643,3 +643,26 @@ class DocumentClusterAnalyzer:
     def _categorize_cluster_size(self, size: int) -> str:
         """Categorize cluster size (delegates to CDI utils)."""
         return cdi_utils.categorize_cluster_size(size)
+
+    def _safe_extract_texts(self, items: list[dict | str] | None, kind: str = "") -> list[str]:
+        """Extract texts from entity/topic lists robustly.
+
+        - Uses calculator public API when available
+        - Falls back to CDI utils
+        - Handles mocks by coercing iterables to list, returns [] on errors
+        """
+        try:
+            if items is None:
+                return []
+            # Prefer calculator public methods if present
+            if kind == "entity" and hasattr(self.similarity_calculator, "extract_entity_texts"):
+                result = self.similarity_calculator.extract_entity_texts(items)
+            elif kind == "topic" and hasattr(self.similarity_calculator, "extract_topic_texts"):
+                result = self.similarity_calculator.extract_topic_texts(items)
+            else:
+                result = cdi_utils.extract_texts_from_mixed(items)
+
+            # Convert mocks/iterables to concrete list of strings
+            return [str(x) for x in list(result)] if result is not None else []
+        except Exception:
+            return []

@@ -287,30 +287,23 @@ class IntelligenceOperations:
                 "project_ids": project_ids,
             }
 
-            # Inject detector runtime stats if available for richer structured output
+            # Inject detector runtime stats via public accessor for structured output
             try:
                 detector = self.engine.hybrid_search.cross_document_engine.conflict_detector
-                # Prefer public accessor; fall back to attribute if available
+                get_stats = getattr(detector, "get_stats", None) or getattr(detector, "get_last_stats", None)
                 raw_stats = {}
-                try:
-                    getter = getattr(detector, "get_last_stats", None)
-                    if callable(getter):
-                        raw_stats = getter() or {}
-                    else:
-                        raw_stats = getattr(detector, "last_stats", {}) or {}
-                except Exception:
-                    raw_stats = {}
+                if callable(get_stats):
+                    raw_stats = get_stats() or {}
 
-                if raw_stats:
+                if isinstance(raw_stats, dict) and raw_stats:
                     # Filter to JSON-safe scalar values only
                     safe_stats = {}
                     for key, value in raw_stats.items():
-                        if isinstance(value, (str, int, float, bool)) and not key.startswith('partial_'):
+                        if isinstance(value, (str, int, float, bool)) and not str(key).startswith('partial_'):
                             safe_stats[key] = value
-                    
                     if safe_stats:
                         conflicts["query_metadata"]["detector_stats"] = safe_stats
-            except (AttributeError, TypeError) as e:
+            except Exception as e:
                 self.logger.debug("Failed to access detector stats", error=str(e))
 
             # Store lightweight, JSON-serializable representations of documents

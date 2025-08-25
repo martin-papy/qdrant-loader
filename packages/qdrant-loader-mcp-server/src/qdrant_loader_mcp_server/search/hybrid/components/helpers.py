@@ -41,16 +41,22 @@ async def combine_results(
     source_types: list[str] | None,
     project_ids: list[str] | None,
 ):
-    if result_combiner.min_score is None or result_combiner.min_score > engine_min_score:
-        result_combiner.min_score = engine_min_score
-    return await result_combiner.combine_results(
-        vector_results,
-        keyword_results,
-        query_context,
-        limit,
-        source_types,
-        project_ids,
-    )
+    previous_min_score = getattr(result_combiner, "min_score", None)
+    should_override = previous_min_score is None or previous_min_score > engine_min_score
+    if should_override:
+        setattr(result_combiner, "min_score", engine_min_score)
+    try:
+        return await result_combiner.combine_results(
+            vector_results,
+            keyword_results,
+            query_context,
+            limit,
+            source_types,
+            project_ids,
+        )
+    finally:
+        if should_override:
+            setattr(result_combiner, "min_score", previous_min_score)
 
 
 def build_filter(vector_search_service: Any, project_ids: list[str] | None) -> Any:

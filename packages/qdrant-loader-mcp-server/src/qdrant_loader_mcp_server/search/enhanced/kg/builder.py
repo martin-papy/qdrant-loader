@@ -141,12 +141,13 @@ class GraphBuilder:
 
             # Create section node
             section_id = _section_id_from_result(result)
+            # Build a safe title string for slicing
+            _raw_title = result.section_title or result.breadcrumb_text or "Section"
+            _safe_title = _raw_title if isinstance(_raw_title, str) else str(_raw_title or "")
             section_node = GraphNode(
                 id=section_id,
                 node_type=NodeType.SECTION,
-                title=(result.section_title or result.breadcrumb_text or "Section")[
-                    -50:
-                ],  # Last 50 chars
+                title=(_safe_title or "")[-50:],  # Last 50 chars
                 content=result.text,
                 metadata={
                     "parent_document": doc_id,

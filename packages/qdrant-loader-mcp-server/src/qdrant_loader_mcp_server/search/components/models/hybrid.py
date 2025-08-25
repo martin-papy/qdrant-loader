@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+from pathlib import PurePosixPath, PureWindowsPath
 
 from .base import BaseSearchResult
 from .project import ProjectInfo
@@ -406,12 +407,32 @@ class HybridSearchResult:
         return None
 
     def is_root_document(self) -> bool:
-        # Local files: treat roots as paths with at most two segments (e.g., repo/file)
+        # Local files: determine roots using normalized path semantics (POSIX or Windows)
         if self.source_type == "localfile":
             fp = self.file_path
-            if isinstance(fp, str):
-                parts = [p for p in fp.split("/") if p]
-                return len(parts) <= 2
+            if isinstance(fp, str) and fp.strip():
+                try:
+                    # Choose Windows parsing if backslashes dominate; otherwise POSIX
+                    if "\\" in fp and ("/" not in fp or fp.count("\\") >= fp.count("/")):
+                        p = PureWindowsPath(fp)
+                    else:
+                        # Normalize any accidental backslashes for POSIX parsing
+                        p = PurePosixPath(fp.replace("\\", "/"))
+
+                    parts = list(p.parts)
+                    # Remove drive/root anchors (e.g., 'C:\\', '/' or '\\\\server\\share\\')
+                    anchor = p.anchor
+                    meaningful_parts = [part for part in parts if part and part != anchor and part not in ("/", "\\")]
+
+                    # If repo name is present as leading part, ignore it for depth calculation
+                    repo = self.repo_name or ""
+                    if repo and meaningful_parts and meaningful_parts[0] == repo:
+                        meaningful_parts = meaningful_parts[1:]
+
+                    # Root document when there's only a single name part
+                    return len(meaningful_parts) <= 1
+                except Exception:
+                    return False
             return False
         # Other sources: root documents have no parent identifiers
         return self.parent_id is None and self.parent_document_id is None

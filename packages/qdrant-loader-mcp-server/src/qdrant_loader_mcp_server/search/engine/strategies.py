@@ -82,18 +82,7 @@ class StrategySelector:
         self.logger.info(f"Strategy analysis: {analysis}")
         self.logger.info(f"Strategy scores: {strategy_scores}")
         self.logger.info(f"Selected strategy: {getattr(best_strategy, 'value', str(best_strategy))}")
-
-        # Validate against ClusteringStrategy enum; fallback to safe default
-        if not isinstance(best_strategy, ClusteringStrategy):
-            try:
-                best_strategy = ClusteringStrategy(str(best_strategy))
-            except ValueError as e:
-                self.logger.warning(
-                    f"Unsupported clustering strategy '{best_strategy}', falling back to 'mixed_features'",
-                    error=str(e),
-                )
-                best_strategy = ClusteringStrategy.MIXED_FEATURES
-
+        # best_strategy is already a ClusteringStrategy from the mapping above
         return best_strategy
 
     def analyze_document_characteristics(self, documents: list) -> dict[str, float]:
@@ -136,9 +125,9 @@ class StrategySelector:
         unique_projects = len({p for p in project_ids if p})
         total_docs = len(documents)
 
-        # High project distribution means documents are well-distributed across projects
-        if unique_projects > 1:
-            project_distribution = min(1.0, unique_projects / (total_docs * 0.5))
+        # Fraction of documents from unique projects; guard division by zero
+        if total_docs > 0:
+            project_distribution = min(1.0, unique_projects / total_docs)
         else:
             project_distribution = 0
 

@@ -56,10 +56,32 @@ class CrossDocumentPipeline:
             raise RuntimeError("recommender not configured")
         return self.recommender.recommend(target, pool)
 
-    async def detect_conflicts(self, results: list[SearchResult]) -> ConflictAnalysis:
+    def detect_conflicts(self, results: list[SearchResult]) -> ConflictAnalysis:
         if self.conflict_detector is None:
             raise RuntimeError("conflict_detector not configured")
-        return await self.conflict_detector.detect(results)
+        # Support both sync and async detector implementations transparently
+        detector = self.conflict_detector
+        try:
+            result = detector.detect(results)
+        except TypeError:
+            # In case the detector requires awaitable invocation but was called incorrectly
+            # defer to a clear runtime error rather than silently failing
+            raise
+        # If the detector returns an awaitable (legacy async implementation), run it to completion
+        try:
+            import inspect
+            if inspect.isawaitable(result):
+                import asyncio
+                return asyncio.run(result)  # type: ignore[no-any-return]
+        except RuntimeError:
+            # If we're already in an event loop, create a new loop to run the task
+            import asyncio
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(result)  # type: ignore[no-any-return]
+            finally:
+                loop.close()
+        return result  # type: ignore[return-value]
 
     def rank(self, results: list[HybridSearchResult]) -> list[HybridSearchResult]:
         if self.ranker is None:

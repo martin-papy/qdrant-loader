@@ -14,18 +14,32 @@ import warnings
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
 from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from .models import DocumentSimilarity, RelationshipType, SimilarityMetric
 from .extractors.similarity_helpers import (
-    get_shared_entities as cdi_get_shared_entities,
-    get_shared_topics as cdi_get_shared_topics,
-    combine_metric_scores as cdi_combine_metric_scores,
-    calculate_semantic_similarity_spacy as cdi_calc_semantic_spacy,
-    calculate_metadata_similarity as cdi_calc_metadata_similarity,
     calculate_content_features_similarity as cdi_calc_content_features_similarity,
+)
+from .extractors.similarity_helpers import (
     calculate_entity_overlap as cdi_calculate_entity_overlap,
+)
+from .extractors.similarity_helpers import (
+    calculate_metadata_similarity as cdi_calc_metadata_similarity,
+)
+from .extractors.similarity_helpers import (
+    calculate_semantic_similarity_spacy as cdi_calc_semantic_spacy,
+)
+from .extractors.similarity_helpers import (
     calculate_topic_overlap as cdi_calculate_topic_overlap,
 )
-from .utils import hierarchical_distance_from_breadcrumbs, extract_texts_from_mixed
+from .extractors.similarity_helpers import (
+    combine_metric_scores as cdi_combine_metric_scores,
+)
+from .extractors.similarity_helpers import (
+    get_shared_entities as cdi_get_shared_entities,
+)
+from .extractors.similarity_helpers import (
+    get_shared_topics as cdi_get_shared_topics,
+)
+from .models import DocumentSimilarity, RelationshipType, SimilarityMetric
+from .utils import extract_texts_from_mixed, hierarchical_distance_from_breadcrumbs
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -105,21 +119,8 @@ class DocumentSimilarityCalculator:
     def _calculate_entity_overlap(
         self, doc1: SearchResult, doc2: SearchResult
     ) -> float:
-        """Calculate entity overlap between documents."""
-        # Use CDI utils directly; this method remains for backward compatibility
-        entities1 = extract_texts_from_mixed(getattr(doc1, "entities", []) or [])
-        entities2 = extract_texts_from_mixed(getattr(doc2, "entities", []) or [])
-
-        if not entities1 and not entities2:
-            return 0.0
-        if not entities1 or not entities2:
-            return 0.0
-
-        # Jaccard similarity
-        intersection = len(set(entities1) & set(entities2))
-        union = len(set(entities1) | set(entities2))
-
-        return intersection / union if union > 0 else 0.0
+        """Calculate entity overlap between documents (delegates to CDI helper)."""
+        return cdi_calculate_entity_overlap(doc1, doc2)
 
     def _calculate_topic_overlap(self, doc1: SearchResult, doc2: SearchResult) -> float:
         """Deprecated. Use CDI extractors.calculate_topic_overlap instead.
@@ -198,11 +199,19 @@ class DocumentSimilarityCalculator:
         """Get shared topics between documents (delegates to CDI helper)."""
         return cdi_get_shared_topics(doc1, doc2)
 
+    def extract_entity_texts(self, entities: list[dict | str]) -> list[str]:
+        """Extract entity texts (public API delegating to CDI utils)."""
+        return extract_texts_from_mixed(entities)
+
+    def extract_topic_texts(self, topics: list[dict | str]) -> list[str]:
+        """Extract topic texts (public API delegating to CDI utils)."""
+        return extract_texts_from_mixed(topics)
+
     def _extract_entity_texts(self, entities: list[dict | str]) -> list[str]:
         """Deprecated. Use CDI utils instead: `utils.extract_texts_from_mixed`.
 
         Replacement: use CDI utils `extract_texts_from_mixed`.
-        
+
         TODO: Remove this wrapper after 2026-01-01; ensure all callers are migrated.
         """
         warnings.warn(
@@ -217,7 +226,7 @@ class DocumentSimilarityCalculator:
         """Deprecated. Use CDI utils instead: `utils.extract_texts_from_mixed`.
 
         Replacement: use CDI utils `extract_texts_from_mixed`.
-        
+
         TODO: Remove this wrapper after 2026-01-01; ensure all callers are migrated.
         """
         warnings.warn(
