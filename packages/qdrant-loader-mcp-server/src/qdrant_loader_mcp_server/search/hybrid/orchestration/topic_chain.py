@@ -65,14 +65,11 @@ async def execute_topic_chain_search(
                 project_ids=project_ids,
             )
             chain_results[link.query] = link_results
-        except Exception as e:  # noqa: F841 - keep behavior
-            try:
-                # Log exception with context without altering behavior
-                engine.logger.exception(
-                    "Error running topic chain for query=%s", link.query
-                )
-            except Exception:
-                pass
+        except Exception as e:
+            # Log the exception with context; include traceback
+            engine.logger.exception(
+                "Error running topic chain for query=%s", link.query, exc_info=e
+            )
             chain_results[link.query] = []
 
     return chain_results

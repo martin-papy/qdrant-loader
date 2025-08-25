@@ -15,6 +15,9 @@ def create_database_directory(path: Path) -> bool:
     # Use is_dir() in addition to exists() to avoid false positives in tests that patch exists
     if abs_path.exists() and abs_path.is_dir():
         return True
+    # If a filesystem entry exists at the path but it's not a directory, fail early
+    if abs_path.exists() and not abs_path.is_dir():
+        raise click.ClickException(f"Path exists and is not a directory: {abs_path}")
     # Prompt user with explicit path information
     if click.confirm(f"Directory does not exist: {abs_path}. Create it?", default=True):
         try:

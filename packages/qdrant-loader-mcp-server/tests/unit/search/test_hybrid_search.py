@@ -349,11 +349,36 @@ async def test_keyword_search(hybrid_search, mock_qdrant_client):
 
 @pytest.mark.asyncio
 async def test_combine_results(hybrid_search):
-    """Covered in test_hybrid_combining; keep a minimal assertion for continuity."""
-    hybrid_search._vector_search = AsyncMock(return_value=[{"score": 0.5, "text": "a", "metadata": {}, "source_type": "git"}])
-    hybrid_search._keyword_search = AsyncMock(return_value=[{"score": 0.2, "text": "a", "metadata": {}, "source_type": "git"}])
-    out = await hybrid_search._combine_results([], [], {}, 5)
+    """Verify combination logic computes expected scores, sorts, and preserves fields."""
+    # Deterministic mock results
+    vec_results = [
+        {"score": 0.9, "text": "doc1", "metadata": {"title": "T1"}, "source_type": "git"},
+        {"score": 0.6, "text": "doc2", "metadata": {"title": "T2"}, "source_type": "confluence"},
+    ]
+    kw_results = [
+        {"score": 0.1, "text": "doc1", "metadata": {"title": "T1"}, "source_type": "git"},
+        {"score": 0.8, "text": "doc3", "metadata": {"title": "T3"}, "source_type": "jira"},
+    ]
+    # Use engine defaults: vector 0.6, keyword 0.3 ->
+    # doc1 combined ~ 0.9*0.6 + 0.1*0.3 = 0.54 + 0.03 = 0.57
+    # doc2 combined ~ 0.6*0.6 + 0.0*0.3 = 0.36
+    # doc3 combined ~ 0.0*0.6 + 0.8*0.3 = 0.24
+    # Ensure low threshold so all combined results are kept
+    original_min = getattr(hybrid_search, "min_score", 0.0)
+    hybrid_search.min_score = 0.0
+    out = await hybrid_search._combine_results(vec_results, kw_results, {}, 10)
+    # Restore original min_score
+    hybrid_search.min_score = original_min
     assert isinstance(out, list)
+    assert len(out) == 3
+    # Sorted by score desc: doc1, doc2, doc3
+    assert [r.text for r in out] == ["doc1", "doc2", "doc3"]
+    # Check top score approximately expected (metadata boosting may adjust slightly)
+    assert out[0].score >= 0.57
+    assert out[0].text == "doc1"
+    # Original fields preserved
+    assert out[0].source_type in ["git", "confluence", "jira"]
+    assert hasattr(out[0], "source_title")
 
 
 @pytest.mark.asyncio

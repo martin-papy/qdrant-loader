@@ -251,10 +251,12 @@ class TestRealEndToEndPhase2_3:
         )
 
         # Validate the result structure (this would catch attribute errors)
-        # The method returns a list on success, but may return an empty dict when no target is found.
-        assert isinstance(similar_docs, (list, dict))
+        # Accept a list on success, or an empty dict when no target is found.
+        assert isinstance(similar_docs, list) or (
+            isinstance(similar_docs, dict) and not similar_docs
+        )
 
-        if similar_docs:
+        if isinstance(similar_docs, list) and similar_docs:
             for doc_info in similar_docs:
                 # These assertions would have caught our attribute errors
                 assert "document" in doc_info

@@ -15,6 +15,7 @@ Key Features:
 """
 
 # Re-export the main classes for convenience and backward compatibility
+# Avoid importing engine here to prevent cyclic imports with CDI extractors
 from .cdi.analyzers import DocumentClusterAnalyzer
 from .cdi.calculators import DocumentSimilarityCalculator
 from .cdi.citations import CitationNetworkAnalyzer

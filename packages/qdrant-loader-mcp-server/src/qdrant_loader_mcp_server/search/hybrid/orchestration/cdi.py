@@ -25,8 +25,16 @@ async def find_similar_documents(
     similarity_calculator = engine.cross_document_engine.similarity_calculator
     similar_docs = []
     for doc in documents:
-        if doc == target_document:
-            continue
+        # Prefer ID-based comparison to avoid relying on object equality
+        doc_id = getattr(doc, "document_id", getattr(doc, "id", None))
+        target_id = getattr(target_document, "document_id", getattr(target_document, "id", None))
+        if doc_id is not None and target_id is not None:
+            if doc_id == target_id:
+                continue
+        else:
+            # Fallback defensively to identity check if IDs are unavailable
+            if doc is target_document:
+                continue
         similarity = similarity_calculator.calculate_similarity(
             target_document, doc, similarity_metrics
         )

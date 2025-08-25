@@ -24,8 +24,9 @@ def attachment_metadata_from_dict(data: Dict[str, Any], parent_document_id: str)
         raise ValueError("Attachment 'download_url' is required and cannot be empty.")
 
     # Optional fields with safe conversions/defaults
-    filename = str(data.get("filename", "unknown"))
-    mime_type = str(data.get("mime_type", "application/octet-stream"))
+    # Ensure None becomes default and whitespace is trimmed
+    filename = (data.get("filename") or "").strip() or "unknown"
+    mime_type = (data.get("mime_type") or "").strip() or "application/octet-stream"
 
     # Safely coerce size to int
     size_value = data.get("size", 0)
