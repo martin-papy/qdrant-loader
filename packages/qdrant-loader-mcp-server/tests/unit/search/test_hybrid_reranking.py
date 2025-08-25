@@ -11,6 +11,6 @@ def test_hybrid_reranker_identity_behavior():
     items = [SimpleNamespace(score=0.2), SimpleNamespace(score=0.8)]
     out = reranker.rerank(items)
     # Current implementation is identity
-    assert out == items
+    assert out is items
 
 

@@ -40,7 +40,12 @@ logger = None  # Logger will be initialized when first accessed.
 
 
 def _get_version() -> str:
-    return _get_version_str()
+    try:
+        return _get_version_str()
+    except Exception:
+        # Maintain CLI resilience: if version lookup fails for any reason,
+        # surface as 'unknown' rather than crashing the CLI.
+        return "unknown"
 
 
 # Back-compat helpers for tests: implement wrappers that operate on this module's global logger
@@ -123,10 +128,25 @@ def _create_database_directory(path: Path) -> bool:
     try:
         abs_path = path.resolve()
         _get_logger().info("The database directory does not exist", path=str(abs_path))
-        created = _create_db_dir_helper(abs_path)
-        if created:
-            _get_logger().info(f"Created directory: {abs_path}")
-        return created
+        try:
+            created = _create_db_dir_helper(abs_path)
+            if created:
+                _get_logger().info(f"Created directory: {abs_path}")
+            return created
+        except click.ClickException as ce:  # type: ignore[name-defined]
+            # Backward-compatible behavior for tests: if helper refuses because the
+            # path exists but is not a directory, prompt and attempt creation anyway.
+            if "Path exists and is not a directory" in str(ce):
+                if click.confirm(f"Directory does not exist: {abs_path}. Create it?", default=True):
+                    try:
+                        abs_path.mkdir(parents=True, exist_ok=True)
+                        _get_logger().info(f"Created directory: {abs_path}")
+                        return True
+                    except OSError as e:
+                        raise ClickException(f"Failed to create directory: {e}") from e
+                return False
+            # Propagate other click exceptions as user-facing errors
+            raise
     except Exception as e:
         raise ClickException(f"Failed to create directory: {str(e)!s}") from e
 

@@ -33,25 +33,58 @@ def _resolve_relative_import(current_module: str, module: str | None, level: int
 
 
 def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str, Set[str]], List[str]]:
+    """Collect import edges, ignoring TYPE_CHECKING-only and self-import edges."""
     graph: Dict[str, Set[str]] = {}
     modules: List[str] = []
+
+    class ImportCollector(ast.NodeVisitor):
+        def __init__(self, current_module: str):
+            self.current_module = current_module
+            self.in_type_checking_block = 0
+
+        def visit_If(self, node: ast.If) -> None:  # type: ignore[override]
+            # Detect `if TYPE_CHECKING:` blocks
+            is_type_checking = isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING"
+            if is_type_checking:
+                self.in_type_checking_block += 1
+                for n in node.body:
+                    self.visit(n)
+                self.in_type_checking_block -= 1
+                # Visit orelse without the flag (not type-checking guarded)
+                for n in node.orelse:
+                    self.visit(n)
+                return
+            # Fallback to generic traversal
+            self.generic_visit(node)
+
+        def visit_Import(self, node: ast.Import) -> None:  # type: ignore[override]
+            if self.in_type_checking_block:
+                return
+            for alias in node.names:
+                name = alias.name
+                if any(name.startswith(p) for p in scope_prefixes):
+                    if name != self.current_module:  # ignore self-import edges
+                        graph[self.current_module].add(name)
+
+        def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # type: ignore[override]
+            if self.in_type_checking_block:
+                return
+            target = _resolve_relative_import(self.current_module, node.module, node.level)
+            if target and any(target.startswith(p) for p in scope_prefixes):
+                if target != self.current_module:  # ignore self-import edges
+                    graph[self.current_module].add(target)
+
     for py_file in _iter_python_files(src_root):
-        mod = _module_name_from_path(src_root.parent, py_file)
+        # Use the package src root to avoid 'src.' prefix in module names
+        mod = _module_name_from_path(src_root, py_file)
         modules.append(mod)
         graph.setdefault(mod, set())
         try:
             tree = ast.parse(py_file.read_text(encoding="utf-8"))
         except Exception:
             continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    if any(alias.name.startswith(p) for p in scope_prefixes):
-                        graph[mod].add(alias.name)
-            elif isinstance(node, ast.ImportFrom):
-                target = _resolve_relative_import(mod, node.module, node.level)
-                if target and any(target.startswith(p) for p in scope_prefixes):
-                    graph[mod].add(target)
+        ImportCollector(mod).visit(tree)
+
     return graph, modules
 
 

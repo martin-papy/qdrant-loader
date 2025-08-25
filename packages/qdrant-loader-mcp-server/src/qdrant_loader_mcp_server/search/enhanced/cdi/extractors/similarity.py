@@ -16,8 +16,10 @@ class DefaultSimilarityComputer(SimilarityComputer):
     """Adapter around the legacy similarity logic."""
 
     def __init__(self, spacy_analyzer: SpaCyQueryAnalyzer):
-        from ...cross_document_intelligence import (
-            DocumentSimilarityCalculator as LegacySimilarityCalculator,  # type: ignore
+        # Import directly from CDI calculators to avoid cyclic import via
+        # cross_document_intelligence re-export module.
+        from ..calculators import (
+            DocumentSimilarityCalculator as LegacySimilarityCalculator,  # type: ignore[misc]
         )
 
         self._legacy = LegacySimilarityCalculator(spacy_analyzer)

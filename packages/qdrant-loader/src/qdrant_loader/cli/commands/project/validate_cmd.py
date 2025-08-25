@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from collections.abc import Mapping
 
 
 def run_project_validate(
@@ -46,9 +47,16 @@ def run_project_validate(
         all_sources = _get_all_sources_from_config(sources_cfg)
         for source_name, source_config in all_sources.items():
             try:
-                if not getattr(source_config, "source_type", None):
+                if isinstance(source_config, Mapping):
+                    source_type = source_config.get("source_type")
+                    source_val = source_config.get("source")
+                else:
+                    source_type = getattr(source_config, "source_type", None)
+                    source_val = getattr(source_config, "source", None)
+
+                if not source_type:
                     source_errors.append(f"Missing source_type for {source_name}")
-                if not getattr(source_config, "source", None):
+                if not source_val:
                     source_errors.append(f"Missing source for {source_name}")
             except Exception as e:
                 source_errors.append(f"Error in {source_name}: {str(e)}")

@@ -106,8 +106,9 @@ def extract_attachments(
                 else:
                     filename = "download"
 
-                # If there is no extension, keep generic octet-stream
-                file_ext = filename.split(".")[-1].lower() if "." in filename else ""
+                # If there is no extension, keep generic octet-stream.
+                # Preserve multi-part extensions like .tar.gz by taking everything after the first dot.
+                file_ext = filename.split(".", 1)[1].lower() if "." in filename else ""
                 mime_type = get_mime_type_from_extension(file_ext)
 
                 # Stable id using index in the deduplicated list
