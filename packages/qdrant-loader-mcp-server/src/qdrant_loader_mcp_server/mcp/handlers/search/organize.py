@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 import re
 
-from ....search.components.search_result_models import HybridSearchResult
+from ....search.components.models.hybrid import HybridSearchResult
 
 
 def organize_by_hierarchy(

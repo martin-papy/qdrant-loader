@@ -165,7 +165,7 @@ class GraphTraverser:
                 result = TraversalResult(
                     path=path + [node_id],
                     nodes=[self.graph.nodes[nid] for nid in path + [node_id]],
-                    relationships=edges,
+                    edges=edges,
                     total_weight=total_weight,
                     semantic_score=semantic_score,
                     hop_count=hops,
@@ -221,7 +221,7 @@ class GraphTraverser:
                 result = TraversalResult(
                     path=path + [node_id],
                     nodes=[self.graph.nodes[nid] for nid in path + [node_id]],
-                    relationships=edges,
+                    edges=edges,
                     total_weight=total_weight,
                     semantic_score=semantic_score,
                     hop_count=hops,
@@ -283,7 +283,7 @@ class GraphTraverser:
                 result = TraversalResult(
                     path=path + [node_id],
                     nodes=[self.graph.nodes[nid] for nid in path + [node_id]],
-                    relationships=edges,
+                    edges=edges,
                     total_weight=total_weight,
                     semantic_score=semantic_score,
                     hop_count=hops,
@@ -353,7 +353,7 @@ class GraphTraverser:
                 result = TraversalResult(
                     path=path + [node_id],
                     nodes=[self.graph.nodes[nid] for nid in path + [node_id]],
-                    relationships=edges,
+                    edges=edges,
                     total_weight=total_weight,
                     semantic_score=semantic_score,
                     hop_count=hops,
