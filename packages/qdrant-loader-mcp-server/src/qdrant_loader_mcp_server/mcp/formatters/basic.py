@@ -58,8 +58,9 @@ class BasicResultFormatters:
             formatted_result += f"\nRepo: {result.repo_name}"
 
         # Additional hierarchy info for Confluence
-        if result.source_type == "confluence" and result.hierarchy_context:
-            formatted_result += f"\n🏗️ {result.hierarchy_context}"
+        hierarchy_context = getattr(result, "hierarchy_context", None)
+        if result.source_type == "confluence" and hierarchy_context:
+            formatted_result += f"\n🏗️ {hierarchy_context}"
 
         # Parent info (for hierarchy, not for attachment items themselves)
         if result.parent_title and not result.is_attachment:

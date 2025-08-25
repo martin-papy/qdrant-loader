@@ -18,7 +18,7 @@ def get_analyze_relationships_tool_schema() -> dict[str, Any]:
                     "type": "integer",
                     "description": "Maximum number of documents to analyze",
                     "default": 20,
-                    "minimum": 0,
+                    "minimum": 1,
                     "maximum": 1000,
                 },
                 "source_types": {

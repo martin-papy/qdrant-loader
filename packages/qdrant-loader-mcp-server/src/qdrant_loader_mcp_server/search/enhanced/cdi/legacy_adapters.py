@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import re
 
 from ....utils.logging import LoggingConfig
 
@@ -27,7 +28,6 @@ class LegacyConflictDetectorAdapter:
             patterns = []
 
             # Version conflicts
-            import re
             version_pattern = r'version\s+(\d+\.\d+\.\d+)'
             versions1 = re.findall(version_pattern, text1.lower())
             versions2 = re.findall(version_pattern, text2.lower())

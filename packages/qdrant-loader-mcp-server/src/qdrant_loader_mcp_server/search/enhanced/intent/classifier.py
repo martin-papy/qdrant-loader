@@ -13,15 +13,18 @@ from typing import Any, TYPE_CHECKING
 from ....utils.logging import LoggingConfig
 from .models import IntentType, SearchIntent
 
+_SPACY_IMPORT_ERROR: BaseException | None = None
+
 if TYPE_CHECKING:
     from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
 else:
-    # Runtime imports to avoid circular dependencies
     try:
         from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
-    except ImportError:
-        QueryAnalysis = None
-        SpaCyQueryAnalyzer = None
+    except (ImportError, ModuleNotFoundError) as _exc:  # pragma: no cover - optional dep
+        # Provide safe sentinels for runtime to avoid NameErrors in annotations
+        QueryAnalysis = Any  # type: ignore[assignment]
+        SpaCyQueryAnalyzer = Any  # type: ignore[assignment]
+        _SPACY_IMPORT_ERROR = _exc
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -38,22 +41,17 @@ class IntentClassifier:
         fail fast rather than encountering None-attribute errors later.
         """
         if spacy_analyzer is None:
-            try:
-                # Attempt a fresh import to avoid circular import timing issues
-                from ...nlp.spacy_analyzer import (  # type: ignore
-                    SpaCyQueryAnalyzer as _SpaCyQueryAnalyzer,
-                    QueryAnalysis as _QueryAnalysis,
-                )
-                self.spacy_analyzer = _SpaCyQueryAnalyzer()
-            except Exception as exc:  # ImportError or runtime init failure
+            # Do not perform ad-hoc imports here; require explicit injection
+            if _SPACY_IMPORT_ERROR is not None:
                 raise ImportError(
-                    "SpaCyQueryAnalyzer is not available. Ensure 'qdrant-loader-mcp-server' "
-                    "dependencies are installed and that '.../nlp/spacy_analyzer.py' is importable. "
-                    "If you're running in a minimal environment, install spaCy and the required "
-                    "models (e.g., 'python -m spacy download en_core_web_sm')."
-                ) from exc
-        else:
-            self.spacy_analyzer = spacy_analyzer
+                    "SpaCyQueryAnalyzer is not available. Install optional NLP deps (spacy and model) "
+                    "and provide an initialized analyzer instance to IntentClassifier."
+                ) from _SPACY_IMPORT_ERROR
+            raise ImportError(
+                "A spaCy analyzer instance must be provided to IntentClassifier. "
+                "Use SpaCyQueryAnalyzer() and pass it explicitly."
+            )
+        self.spacy_analyzer = spacy_analyzer
 
         # Final sanity check to fail fast if analyzer is misconfigured
         if not hasattr(self.spacy_analyzer, "analyze_query_semantic"):

@@ -610,10 +610,12 @@ class ComplementaryContentFinder:
     ) -> bool:
         """Check if documents have different levels of content complexity."""
         # Compare word counts if available
-        if doc1.word_count and doc2.word_count:
-            ratio = max(doc1.word_count, doc2.word_count) / min(
-                doc1.word_count, doc2.word_count
-            )
+        wc1 = int(getattr(doc1, "word_count", 0) or 0)
+        wc2 = int(getattr(doc2, "word_count", 0) or 0)
+
+        # Guard against None or non-positive counts to avoid ZeroDivisionError
+        if wc1 > 0 and wc2 > 0:
+            ratio = max(wc1, wc2) / min(wc1, wc2)
             if ratio > 2.0:  # One document is significantly longer
                 return True
 

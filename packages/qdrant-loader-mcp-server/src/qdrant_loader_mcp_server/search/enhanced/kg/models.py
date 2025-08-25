@@ -85,7 +85,7 @@ class TraversalStrategy(Enum):
 class TraversalResult:
     path: list[str]
     nodes: list[GraphNode]
-    relationships: list[GraphEdge]
+    edges: list[GraphEdge]
     total_weight: float
     semantic_score: float
     hop_count: int
