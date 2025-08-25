@@ -74,9 +74,6 @@ class GraphTraverser:
             if start_node_id not in self.graph.nodes:
                 continue
 
-            # Use a fresh visited set for each start node to avoid cross-contamination
-            visited = set()
-
             # Perform traversal based on strategy
             if strategy == TraversalStrategy.BREADTH_FIRST:
                 node_results = self._breadth_first_traversal(
@@ -85,7 +82,6 @@ class GraphTraverser:
                     max_hops,
                     max_results,
                     min_weight,
-                    visited,
                 )
             elif strategy == TraversalStrategy.WEIGHTED:
                 node_results = self._weighted_traversal(
@@ -94,7 +90,6 @@ class GraphTraverser:
                     max_hops,
                     max_results,
                     min_weight,
-                    visited,
                 )
             elif strategy == TraversalStrategy.CENTRALITY:
                 node_results = self._centrality_traversal(
@@ -103,7 +98,6 @@ class GraphTraverser:
                     max_hops,
                     max_results,
                     min_weight,
-                    visited,
                 )
             elif strategy == TraversalStrategy.SEMANTIC:
                 node_results = self._semantic_traversal(
@@ -112,7 +106,6 @@ class GraphTraverser:
                     max_hops,
                     max_results,
                     min_weight,
-                    visited,
                 )
             else:
                 node_results = self._breadth_first_traversal(
@@ -121,7 +114,6 @@ class GraphTraverser:
                     max_hops,
                     max_results,
                     min_weight,
-                    visited,
                 )
 
             results.extend(node_results)
@@ -137,7 +129,6 @@ class GraphTraverser:
         max_hops: int,
         max_results: int,
         min_weight: float,
-        visited: set[str],
     ) -> list[TraversalResult]:
         """Breadth-first traversal implementation."""
 
@@ -152,7 +143,7 @@ class GraphTraverser:
         while queue and len(results) < max_results:
             node_id, path, edges, total_weight, hops = queue.popleft()
 
-            if node_id in local_visited or hops >= max_hops:
+            if node_id in local_visited or hops > max_hops:
                 continue
 
             local_visited.add(node_id)
@@ -196,7 +187,6 @@ class GraphTraverser:
         max_hops: int,
         max_results: int,
         min_weight: float,
-        visited: set[str],
     ) -> list[TraversalResult]:
         """Weighted traversal prioritizing strong relationships."""
 
@@ -208,7 +198,7 @@ class GraphTraverser:
         while heap and len(results) < max_results:
             neg_weight, node_id, path, edges, total_weight, hops = heapq.heappop(heap)
 
-            if node_id in local_visited or hops >= max_hops:
+            if node_id in local_visited or hops > max_hops:
                 continue
 
             local_visited.add(node_id)
@@ -255,7 +245,6 @@ class GraphTraverser:
         max_hops: int,
         max_results: int,
         min_weight: float,
-        visited: set[str],
     ) -> list[TraversalResult]:
         """Traversal prioritizing high-centrality nodes."""
 
@@ -270,7 +259,7 @@ class GraphTraverser:
                 heap
             )
 
-            if node_id in local_visited or hops >= max_hops:
+            if node_id in local_visited or hops > max_hops:
                 continue
 
             local_visited.add(node_id)
@@ -317,7 +306,6 @@ class GraphTraverser:
         max_hops: int,
         max_results: int,
         min_weight: float,
-        visited: set[str],
     ) -> list[TraversalResult]:
         """Traversal prioritizing semantic similarity to query."""
 
@@ -328,7 +316,6 @@ class GraphTraverser:
                 max_hops,
                 max_results,
                 min_weight,
-                visited,
             )
 
         results = []
@@ -340,7 +327,7 @@ class GraphTraverser:
         while heap and len(results) < max_results:
             neg_score, node_id, path, edges, total_weight, hops = heapq.heappop(heap)
 
-            if node_id in local_visited or hops >= max_hops:
+            if node_id in local_visited or hops > max_hops:
                 continue
 
             local_visited.add(node_id)

@@ -2,11 +2,30 @@ from __future__ import annotations
 
 from typing import Any, Dict
 from dataclasses import is_dataclass, asdict
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
     """Extract and flatten metadata using the provided metadata_extractor."""
-    components = metadata_extractor.extract_all_metadata(metadata)
+    # Validate extractor interface defensively (mirrors extract_project_info approach)
+    if not hasattr(metadata_extractor, "extract_all_metadata"):
+        logger.warning("Metadata extractor missing 'extract_all_metadata'; returning empty metadata")
+        return {}
+    extract_callable = getattr(metadata_extractor, "extract_all_metadata")
+    if not callable(extract_callable):
+        logger.warning("Metadata extractor 'extract_all_metadata' is not callable; returning empty metadata")
+        return {}
+    try:
+        components = extract_callable(metadata)
+    except Exception:
+        # Log full traceback and return safe default
+        logger.exception("Error calling extract_all_metadata; returning empty metadata")
+        return {}
+
+    if not isinstance(components, dict):
+        components = {}
     flattened: Dict[str, Any] = {}
 
     for _component_name, component in components.items():

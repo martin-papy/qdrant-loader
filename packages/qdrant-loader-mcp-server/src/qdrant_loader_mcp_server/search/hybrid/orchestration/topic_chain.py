@@ -65,10 +65,10 @@ async def execute_topic_chain_search(
                 project_ids=project_ids,
             )
             chain_results[link.query] = link_results
-        except Exception as e:
+        except Exception:
             # Log the exception with context; include traceback
             engine.logger.exception(
-                "Error running topic chain for query=%s", link.query, exc_info=e
+                "Error running topic chain for query=%s", link.query
             )
             chain_results[link.query] = []
 
