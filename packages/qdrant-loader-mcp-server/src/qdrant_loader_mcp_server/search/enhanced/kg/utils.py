@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import List, Tuple
 import logging
 
+# Module-level logger
+logger = logging.getLogger(__name__)
+
 from .models import GraphEdge, GraphNode
 
 
@@ -105,7 +108,6 @@ def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNod
         target_node = nodes_by_id.get(edge.target_id)
 
         if source_node is None or target_node is None:
-            logger = logging.getLogger(__name__)
             edge_id = getattr(edge, "id", "N/A")
             relationship = _get_relationship_value(edge)
             logger.warning(

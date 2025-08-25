@@ -114,9 +114,10 @@ async def cluster_documents(
                 "id": cluster.cluster_id,
                 "name": cluster.name,
                 "documents": cluster_documents,
-                "centroid_topics": getattr(cluster, "centroid_topics", None)
-                if hasattr(cluster, "centroid_topics")
-                else getattr(cluster, "shared_topics", []),
+                "centroid_topics": (
+                    getattr(cluster, "centroid_topics", None)
+                    or getattr(cluster, "shared_topics", [])
+                ),
                 "shared_entities": cluster.shared_entities,
                 "coherence_score": cluster.coherence_score,
                 "cluster_summary": cluster.cluster_description,
