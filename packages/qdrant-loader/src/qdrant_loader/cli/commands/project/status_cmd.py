@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from collections.abc import Mapping
 
 
 async def run_project_status(
@@ -44,10 +45,22 @@ async def run_project_status(
         sources = context.config.sources if context.config else None
         # Safely sum lengths of available source collections; treat missing/None as empty
         if sources:
-            source_count = sum(
-                len(getattr(sources, name, {}) or {})
-                for name in ("publicdocs", "git", "confluence", "jira", "localfile")
-            )
+            names = ("publicdocs", "git", "confluence", "jira", "localfile")
+            counts: list[int] = []
+            for name in names:
+                value = getattr(sources, name, None)
+                if value is None:
+                    counts.append(0)
+                    continue
+                if isinstance(value, Mapping):
+                    counts.append(len(value))
+                    continue
+                # Any sequence/collection or object with __len__
+                try:
+                    counts.append(len(value))
+                except Exception:
+                    counts.append(0)
+            source_count = sum(counts)
         else:
             source_count = 0
         document_count = await _get_document_count(context.project_id)

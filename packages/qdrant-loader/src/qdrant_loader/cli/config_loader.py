@@ -5,6 +5,7 @@ from typing import Any
 
 from click.exceptions import ClickException
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.config.state import DatabaseDirectoryError
 
 
 # Back-compat shim for tests that import _get_logger from cli.cli
@@ -95,22 +96,20 @@ def load_config(
             f"No config file found. Please specify a config file or create config.yaml in the current directory: {str(default_config)!s}"
         )
 
+    except DatabaseDirectoryError as e:
+        if skip_validation:
+            return
+        error_path = e.path
+        abs_path = error_path.resolve()
+        if not create_database_directory(abs_path):
+            raise ClickException("Database directory creation declined. Exiting.") from e
+        # After successful creation, initialize once using the original config_path if provided,
+        # otherwise fall back to default config.yaml
+        from qdrant_loader.config import initialize_config
+        target_config = config_path if config_path is not None else Path("config.yaml")
+        initialize_config(target_config, env_path, skip_validation=skip_validation)
+    except ClickException:
+        raise
     except Exception as e:
-        from qdrant_loader.config.state import DatabaseDirectoryError
-        if isinstance(e, DatabaseDirectoryError):
-            if skip_validation:
-                return
-            error_path = e.path
-            abs_path = error_path.resolve()
-            if not create_database_directory(abs_path):
-                raise ClickException("Database directory creation declined. Exiting.") from e
-            # After successful creation, initialize once using the original config_path if provided,
-            # otherwise fall back to default config.yaml
-            from qdrant_loader.config import initialize_config
-            target_config = config_path if config_path is not None else Path("config.yaml")
-            initialize_config(target_config, env_path, skip_validation=skip_validation)
-        elif isinstance(e, ClickException):
-            raise e from None
-        else:
-            LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
-            raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
+        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
