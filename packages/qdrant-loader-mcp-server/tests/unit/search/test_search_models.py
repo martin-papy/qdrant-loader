@@ -178,7 +178,7 @@ class TestSearchResult:
             text="Test content",
             source_type="localfile",
             source_title="README.md",
-            file_path="C:\\\\repo\\\\README.md",
+            file_path=r"C:\repo\README.md",
             repo_name="repo",
         )
         assert r1.is_root_document() is True
@@ -189,7 +189,7 @@ class TestSearchResult:
             text="Test content",
             source_type="localfile",
             source_title="config.yaml",
-            file_path="C:\\\\repo\\\\configs\\\\config.yaml",
+            file_path=r"C:\repo\configs\config.yaml",
             repo_name="repo",
         )
         assert r2.is_root_document() is False
@@ -200,7 +200,7 @@ class TestSearchResult:
             text="Test content",
             source_type="localfile",
             source_title="guide.md",
-            file_path="\\\\server\\share\\guide.md",
+            file_path=r"\\server\share\guide.md",
             repo_name=None,
         )
         assert r3.is_root_document() is True
@@ -211,7 +211,7 @@ class TestSearchResult:
             text="Test content",
             source_type="localfile",
             source_title="doc.md",
-            file_path="\\\\server\\share\\docs\\doc.md",
+            file_path=r"\\server\share\docs\doc.md",
             repo_name=None,
         )
         assert r4.is_root_document() is False

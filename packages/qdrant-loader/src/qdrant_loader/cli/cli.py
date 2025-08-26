@@ -128,26 +128,15 @@ def _create_database_directory(path: Path) -> bool:
     try:
         abs_path = path.resolve()
         _get_logger().info("The database directory does not exist", path=str(abs_path))
-        try:
-            created = _create_db_dir_helper(abs_path)
-            if created:
-                _get_logger().info(f"Created directory: {abs_path}")
-            return created
-        except click.ClickException as ce:  # type: ignore[name-defined]
-            # Backward-compatible behavior for tests: if helper refuses because the
-            # path exists but is not a directory, prompt and attempt creation anyway.
-            if "Path exists and is not a directory" in str(ce):
-                if click.confirm(f"Directory does not exist: {abs_path}. Create it?", default=True):
-                    try:
-                        abs_path.mkdir(parents=True, exist_ok=True)
-                        _get_logger().info(f"Created directory: {abs_path}")
-                        return True
-                    except OSError as e:
-                        raise ClickException(f"Failed to create directory: {e}") from e
-                return False
-            # Propagate other click exceptions as user-facing errors
-            raise
+        created = _create_db_dir_helper(abs_path)
+        if created:
+            _get_logger().info(f"Created directory: {abs_path}")
+        return created
+    except ClickException:
+        # Propagate ClickException from helper directly
+        raise
     except Exception as e:
+        # Wrap any other unexpected errors
         raise ClickException(f"Failed to create directory: {str(e)!s}") from e
 
 
