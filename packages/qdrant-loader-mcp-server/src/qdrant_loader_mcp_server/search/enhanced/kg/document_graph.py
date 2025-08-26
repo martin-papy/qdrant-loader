@@ -118,7 +118,7 @@ class DocumentKnowledgeGraph:
             try:
                 entity_text: str | None = None
                 # Accept tuple/list like (text, label, ...)
-                if isinstance(item, (list, tuple)) and len(item) > 0:
+                if isinstance(item, list | tuple) and len(item) > 0:
                     entity_text = item[0]
                 # Accept direct string entity
                 elif isinstance(item, str):
@@ -193,7 +193,7 @@ class DocumentKnowledgeGraph:
 
                 class EnhancedJSONEncoder(json.JSONEncoder):
                     def default(self, obj: Any) -> Any:  # type: ignore[override]
-                        if isinstance(obj, (datetime, date, dtime)):
+                        if isinstance(obj, datetime | date | dtime):
                             return obj.isoformat()
                         if isinstance(obj, Enum):
                             return getattr(obj, "value", str(obj))
@@ -231,9 +231,9 @@ class DocumentKnowledgeGraph:
                                 return {
                                     sanitize(k): sanitize(v) for k, v in value.items()
                                 }
-                            if isinstance(value, (list, tuple, set)):
+                            if isinstance(value, list | tuple | set):
                                 return [sanitize(v) for v in value]
-                            if isinstance(value, (datetime, date, dtime)):
+                            if isinstance(value, datetime | date | dtime):
                                 return value.isoformat()
                             if isinstance(value, Enum):
                                 return getattr(value, "value", str(value))

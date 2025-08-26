@@ -136,7 +136,8 @@ class WebsiteBuilder:
                     "version": project_section.get("version", project_info["version"]),
                     "description": project_section.get("description", project_info["description"]),
                 })
-        except:
+        except Exception:
+            # Ignore malformed project section entries
             pass
 
         # Try to get git information
@@ -253,7 +254,7 @@ class WebsiteBuilder:
 
         # Build docs structure and pages
         self.build_docs_nav()
-        docs_structure = self.build_docs_structure()
+        _docs_structure = self.build_docs_structure()
 
         # Create docs directory and index
         docs_output_dir = self.output_dir / "docs"
@@ -275,7 +276,7 @@ class WebsiteBuilder:
 
         # Build coverage reports if provided
         if coverage_artifacts_dir:
-            coverage_structure = self.build_coverage_structure(coverage_artifacts_dir)
+            _coverage_structure = self.build_coverage_structure(coverage_artifacts_dir)
 
             # Copy coverage artifacts
             coverage_path = Path(coverage_artifacts_dir)

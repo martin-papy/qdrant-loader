@@ -12,6 +12,7 @@ from typing import Any
 
 from ...config import SearchConfig
 from ...utils.logging import LoggingConfig
+from .api import HybridEngineAPI
 from .models import (
     DEFAULT_KEYWORD_WEIGHT,
     DEFAULT_METADATA_WEIGHT,
@@ -21,9 +22,6 @@ from .models import (
 )
 
 logger = LoggingConfig.get_logger(__name__)
-
-
-from .api import HybridEngineAPI
 
 
 class HybridSearchEngine(HybridEngineAPI):

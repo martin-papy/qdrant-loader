@@ -14,10 +14,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
-
-# Load test environment variables
-load_dotenv("tests/.env.test")
-
 from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.components.search_result_models import (
@@ -26,6 +22,9 @@ from qdrant_loader_mcp_server.search.components.search_result_models import (
 )
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.processor import QueryProcessor
+
+# Load test environment variables
+load_dotenv("tests/.env.test")
 
 
 # Generic test data (no confidential client information)

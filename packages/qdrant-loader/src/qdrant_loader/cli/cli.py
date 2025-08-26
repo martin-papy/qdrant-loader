@@ -211,6 +211,28 @@ def _check_settings():
     return settings
 
 
+def _load_config_with_workspace(
+    workspace_config,
+    config_path: Path | None = None,
+    env_path: Path | None = None,
+    skip_validation: bool = False,
+):
+    """Compatibility wrapper used by tests and project commands.
+
+    Delegates to qdrant_loader.cli.config_loader.load_config_with_workspace.
+    """
+    from qdrant_loader.cli.config_loader import (
+        load_config_with_workspace as _load_with_ws,
+    )
+
+    _load_with_ws(
+        workspace_config,
+        config_path=config_path,
+        env_path=env_path,
+        skip_validation=skip_validation,
+    )
+
+
 async def _run_init(settings, force: bool) -> None:
     """Run initialization process via command helper, keeping existing logging."""
     try:

@@ -160,6 +160,14 @@ exclude_lines = [
 [tool.ruff]
 target-version = "py312"
 line-length = 88
+extend-exclude = [
+    "venv",
+    "venv-*",
+    "**/venv/**",
+    "**/.venv/**",
+    "env",
+    "env-*",
+]
 
 [tool.ruff.lint]
 select = [

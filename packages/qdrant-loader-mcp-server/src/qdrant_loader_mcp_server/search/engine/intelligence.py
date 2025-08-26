@@ -244,7 +244,7 @@ class IntelligenceOperations:
                 call_overrides["conflict_use_llm"] = bool(use_llm)
             if isinstance(max_llm_pairs, int):
                 call_overrides["conflict_max_llm_pairs"] = max_llm_pairs
-            if isinstance(overall_timeout_s, (int, float)):
+            if isinstance(overall_timeout_s, int | float):
                 call_overrides["conflict_overall_timeout_s"] = float(overall_timeout_s)
             if isinstance(max_pairs_total, int):
                 call_overrides["conflict_max_pairs_total"] = max_pairs_total
@@ -306,7 +306,7 @@ class IntelligenceOperations:
                     # Filter to JSON-safe scalar values only
                     safe_stats = {}
                     for key, value in raw_stats.items():
-                        if isinstance(value, (str, int, float, bool)) and not str(
+                        if isinstance(value, str | int | float | bool) and not str(
                             key
                         ).startswith("partial_"):
                             safe_stats[key] = value

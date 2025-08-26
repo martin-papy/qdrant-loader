@@ -135,7 +135,7 @@ class TestConfluenceConnector:
             patch(
                 "qdrant_loader.connectors.shared.http.policy.make_request_with_retries_async",
                 new=AsyncMock(return_value=fake_response),
-            ) as mock_retry,
+            ) as _mock_retry,
             patch(
                 "qdrant_loader.connectors.shared.http.rate_limit.RateLimiter.acquire",
                 new=AsyncMock(),

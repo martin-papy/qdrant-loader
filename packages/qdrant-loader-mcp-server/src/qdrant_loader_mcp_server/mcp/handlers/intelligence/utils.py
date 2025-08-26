@@ -42,13 +42,13 @@ def get_or_create_document_id(doc: Any) -> str:
 
     def _to_stable_primitive(value: Any) -> Any:
         # None and basic primitives
-        if value is None or isinstance(value, (str, int, float, bool)):
+        if value is None or isinstance(value, str | int | float | bool):
             return value
         # datetime/date
-        if isinstance(value, (datetime, date)):
+        if isinstance(value, datetime | date):
             return value.isoformat()
         # bytes/bytearray
-        if isinstance(value, (bytes, bytearray)):
+        if isinstance(value, bytes | bytearray):
             try:
                 return value.decode("utf-8")
             except Exception:

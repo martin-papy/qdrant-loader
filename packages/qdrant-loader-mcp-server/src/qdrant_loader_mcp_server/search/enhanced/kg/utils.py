@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import logging
+from .models import GraphEdge, GraphNode
 
 # Module-level logger
 logger = logging.getLogger(__name__)
-
-from .models import GraphEdge, GraphNode
 
 # Default weights and thresholds used across KG computations
 ENTITY_SIM_WEIGHT: float = 0.4
