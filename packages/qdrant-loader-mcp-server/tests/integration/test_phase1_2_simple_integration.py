@@ -8,7 +8,6 @@ import logging
 import time
 
 import pytest
-
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     create_hybrid_search_result,
 )

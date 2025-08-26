@@ -54,7 +54,7 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
 
         explanation = parts[2].strip() if len(parts) > 2 else ""
         return conflict_detected, explanation or "", confidence
-    except asyncio.TimeoutError:
+    except TimeoutError:
         detector.logger.warning("LLM conflict validation timed out")
         return False, "LLM validation timeout", 0.0
     except Exception as e:  # pragma: no cover

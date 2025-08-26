@@ -8,7 +8,6 @@ conflict identification and analysis.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -25,29 +24,44 @@ else:
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
 from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from .legacy_adapters import LegacyConflictDetectorAdapter
-from .models import ConflictAnalysis
+from .conflict_pairing import (
+    calculate_vector_similarity as _calculate_vector_similarity_ext,
+)
+from .conflict_pairing import (
+    filter_by_vector_similarity as _filter_by_vector_similarity_ext,
+)
 from .conflict_pairing import (
     get_document_embeddings as _get_document_embeddings_ext,
-    calculate_vector_similarity as _calculate_vector_similarity_ext,
-    filter_by_vector_similarity as _filter_by_vector_similarity_ext,
-    should_analyze_for_conflicts as _should_analyze_for_conflicts_ext,
-)
-from .conflict_scoring import (
-    analyze_text_conflicts as _analyze_text_conflicts_ext,
-    analyze_metadata_conflicts as _analyze_metadata_conflicts_ext,
-    categorize_conflict as _categorize_conflict_ext,
-    calculate_conflict_confidence as _calculate_confidence_ext,
 )
 from .conflict_resolution import (
     describe_conflict as _describe_conflict_ext,
-    generate_resolution_suggestions as _generate_resolution_suggestions_ext,
+)
+from .conflict_resolution import (
     extract_context_snippet as _extract_context_snippet_ext,
+)
+from .conflict_resolution import (
+    generate_resolution_suggestions as _generate_resolution_suggestions_ext,
+)
+from .conflict_scoring import (
+    analyze_metadata_conflicts as _analyze_metadata_conflicts_ext,
+)
+from .conflict_scoring import (
+    analyze_text_conflicts as _analyze_text_conflicts_ext,
+)
+from .conflict_scoring import (
+    calculate_conflict_confidence as _calculate_confidence_ext,
+)
+from .conflict_scoring import (
+    categorize_conflict as _categorize_conflict_ext,
+)
+from .legacy_adapters import LegacyConflictDetectorAdapter
+from .llm_validation import (
+    llm_analyze_conflicts as _llm_analyze_conflicts_ext,
 )
 from .llm_validation import (
     validate_conflict_with_llm as _validate_conflict_with_llm_ext,
-    llm_analyze_conflicts as _llm_analyze_conflicts_ext,
 )
+from .models import ConflictAnalysis
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..components.models.hybrid import HybridSearchResult
-    from ..enhanced.topic_search_chain import TopicSearchChain, ChainStrategy
     from ..enhanced.cdi.models import SimilarityMetric
-    from ..enhanced.faceted_search import FacetFilter, FacetedSearchResults
+    from ..enhanced.faceted_search import FacetedSearchResults, FacetFilter
+    from ..enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 
 # Module-level logger with a NullHandler to avoid "No handler" warnings when
 # the application's logging configuration does not attach any handlers.
