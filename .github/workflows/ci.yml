@@ -32,6 +32,9 @@ jobs:
       - name: Install dev dependencies
         run: |
           . venv/bin/activate
+          # Workspace-level dev tools (ruff, mypy, black, isort, pytest, etc.)
+          pip install -e .[dev]
+          # Package installs
           pip install -e packages/qdrant-loader-core[openai]
           pip install -e packages/qdrant-loader[dev]
           pip install -e packages/qdrant-loader-mcp-server[dev]
