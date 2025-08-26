@@ -46,7 +46,44 @@ def run_show_config(
         if settings is None:
             raise ClickException("Settings not available")
 
-        return json.dumps(settings.model_dump(mode="json"), indent=2)
+        # Redact sensitive values before dumping to JSON
+        def _redact_secrets(value):
+            """Recursively redact sensitive keys within nested structures.
+
+            Keys are compared case-insensitively and redacted if their name contains
+            any common secret-like token.
+            """
+            sensitive_tokens = {
+                "password",
+                "secret",
+                "api_key",
+                "token",
+                "key",
+                "credentials",
+                "access_token",
+                "private_key",
+                "client_secret",
+            }
+
+            mask = "****"
+
+            if isinstance(value, dict):
+                redacted: dict = {}
+                for k, v in value.items():
+                    key_lc = str(k).lower()
+                    if any(token in key_lc for token in sensitive_tokens):
+                        redacted[k] = mask
+                    else:
+                        redacted[k] = _redact_secrets(v)
+                return redacted
+            if isinstance(value, list):
+                return [_redact_secrets(item) for item in value]
+            # Primitive or unknown types are returned as-is
+            return value
+
+        config_dict = settings.model_dump(mode="json")
+        safe_config = _redact_secrets(config_dict)
+        return json.dumps(safe_config, indent=2, ensure_ascii=False)
     except ClickException:
         raise
     except Exception as e:

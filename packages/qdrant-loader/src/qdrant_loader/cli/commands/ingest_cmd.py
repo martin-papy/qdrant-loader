@@ -134,6 +134,9 @@ async def run_ingest_command(
                             exc_info=True,
                         )
             await asyncio.sleep(0.1)
+        except asyncio.CancelledError:
+            # Preserve cancellation semantics so Ctrl+C results in a normal exit
+            raise
         except Exception as e:
             logger = LoggingConfig.get_logger(__name__)
             error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
@@ -153,6 +156,9 @@ async def run_ingest_command(
                 logger = LoggingConfig.get_logger(__name__)
                 logger.debug(" Cancellation already initiated by SIGINT; exiting gracefully.")
 
+    except asyncio.CancelledError:
+        # Bubble up cancellation to the caller/CLI, do not convert to ClickException
+        raise
     except ClickException:
         raise
     except Exception as e:
