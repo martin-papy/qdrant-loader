@@ -129,20 +129,7 @@ class VectorSearchService:
         Raises:
             Exception: If embedding generation fails
         """
-        # Prefer OpenAI client when explicitly provided
-        if self.openai_client is not None:
-            try:
-                response = await self.openai_client.embeddings.create(
-                    model="text-embedding-3-small",
-                    input=text,
-                )
-                return response.data[0].embedding
-            except Exception as e:
-                # Do not fall back silently; propagate error as tests expect
-                self.logger.error("Failed to get embedding", error=str(e))
-                raise
-
-        # Fallback to provider when OpenAI client is not configured
+        # Prefer provider when available
         if self.embeddings_provider is not None:
             try:
                 # Accept either a provider (with .embeddings()) or a direct embeddings client
@@ -155,6 +142,19 @@ class VectorSearchService:
                 return vectors[0]
             except Exception as e:
                 self.logger.error("Provider embeddings failed", error=str(e))
+                raise
+
+        # Fallback to OpenAI client when provider is not configured
+        if self.openai_client is not None:
+            try:
+                response = await self.openai_client.embeddings.create(
+                    model="text-embedding-3-small",
+                    input=text,
+                )
+                return response.data[0].embedding
+            except Exception as e:
+                # Do not fall back silently; propagate error as tests expect
+                self.logger.error("Failed to get embedding", error=str(e))
                 raise
 
         # Nothing configured
