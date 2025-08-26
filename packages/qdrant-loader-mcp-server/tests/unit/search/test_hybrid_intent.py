@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture
 def hybrid_search_with_intent(mock_qdrant_client, mock_openai_client):
-    from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
+    from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
 
     return HybridSearchEngine(
         qdrant_client=mock_qdrant_client,
@@ -126,7 +126,7 @@ def test_get_adaptive_search_stats(hybrid_search_with_intent):
 
 @pytest.fixture
 def hybrid_search_disabled_intent(mock_qdrant_client, mock_openai_client):
-    from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
+    from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
 
     return HybridSearchEngine(
         qdrant_client=mock_qdrant_client,

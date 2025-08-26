@@ -10,7 +10,7 @@ from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
 from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
     DocumentKnowledgeGraph,
 )
-from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
+from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import QueryAnalysis
 
 

@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.unit
 def test_processing_config_disables_hooks_by_default(mock_qdrant_client, mock_openai_client):
-    from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
+    from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
     from qdrant_loader_mcp_server.search.hybrid.models import HybridProcessingConfig
 
     engine = HybridSearchEngine(
@@ -22,7 +22,7 @@ def test_processing_config_disables_hooks_by_default(mock_qdrant_client, mock_op
 
 @pytest.mark.unit
 def test_processing_config_enables_selected_hooks(mock_qdrant_client, mock_openai_client):
-    from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
+    from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
     from qdrant_loader_mcp_server.search.hybrid.models import HybridProcessingConfig
 
     engine = HybridSearchEngine(

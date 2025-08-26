@@ -1,6 +1,6 @@
 import pytest
 
-from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
+from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
 
 
 @pytest.fixture
