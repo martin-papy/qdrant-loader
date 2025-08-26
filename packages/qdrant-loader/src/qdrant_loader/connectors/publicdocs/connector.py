@@ -249,15 +249,21 @@ class PublicDocsConnector(BaseConnector):
                         ):
                             # We need to get the HTML again to extract attachments
                             try:
-                                response = await _aiohttp_request(
-                                    self.client,
-                                    "GET",
-                                    page,
-                                    rate_limiter=self._rate_limiter,
-                                    retries=3,
-                                    backoff_factor=0.5,
-                                    overall_timeout=60.0,
-                                )
+                                try:
+                                    response = await _aiohttp_request(
+                                        self.client,
+                                        "GET",
+                                        page,
+                                        rate_limiter=self._rate_limiter,
+                                        retries=3,
+                                        backoff_factor=0.5,
+                                        overall_timeout=60.0,
+                                    )
+                                    # Ensure HTTP errors are surfaced consistently
+                                    response.raise_for_status()
+                                except aiohttp.ClientError as e:
+                                    raise HTTPRequestError(url=page, message=str(e)) from e
+
                                 html = await _read_text(response)
                                 attachment_metadata = self._extract_attachments(
                                     html, page, doc_id
