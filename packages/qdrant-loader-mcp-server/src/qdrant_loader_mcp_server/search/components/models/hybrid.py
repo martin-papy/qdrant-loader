@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 
-from .base import BaseSearchResult
-from .project import ProjectInfo
-from .hierarchy import HierarchyInfo
 from .attachment import AttachmentInfo
-from .section import SectionInfo
-from .content import ContentAnalysis
-from .semantic import SemanticAnalysis
-from .navigation import NavigationContext
+from .base import BaseSearchResult
 from .chunking import ChunkingContext
+from .content import ContentAnalysis
 from .conversion import ConversionInfo
 from .cross_reference import CrossReferenceInfo
+from .hierarchy import HierarchyInfo
+from .navigation import NavigationContext
+from .project import ProjectInfo
+from .section import SectionInfo
+from .semantic import SemanticAnalysis
 
 
 @dataclass
@@ -296,7 +296,9 @@ class HybridSearchResult:
 
     @property
     def content_type_context(self) -> str | None:
-        return self.cross_reference.content_type_context if self.cross_reference else None
+        return (
+            self.cross_reference.content_type_context if self.cross_reference else None
+        )
 
     # Helper methods for display/compatibility
     def get_display_title(self) -> str:
@@ -339,7 +341,9 @@ class HybridSearchResult:
         return " | ".join(parts) if parts else None
 
     def get_content_info(self) -> str | None:
-        if not any([self.has_code_blocks, self.has_tables, self.has_images, self.has_links]):
+        if not any(
+            [self.has_code_blocks, self.has_tables, self.has_images, self.has_links]
+        ):
             return None
         content_parts: list[str] = []
         if self.has_code_blocks:
@@ -413,7 +417,9 @@ class HybridSearchResult:
             if isinstance(fp, str) and fp.strip():
                 try:
                     # Choose Windows parsing if backslashes dominate; otherwise POSIX
-                    if "\\" in fp and ("/" not in fp or fp.count("\\") >= fp.count("/")):
+                    if "\\" in fp and (
+                        "/" not in fp or fp.count("\\") >= fp.count("/")
+                    ):
                         p = PureWindowsPath(fp)
                     else:
                         # Normalize any accidental backslashes for POSIX parsing
@@ -422,7 +428,11 @@ class HybridSearchResult:
                     parts = list(p.parts)
                     # Remove drive/root anchors (e.g., 'C:\\', '/' or '\\\\server\\share\\')
                     anchor = p.anchor
-                    meaningful_parts = [part for part in parts if part and part != anchor and part not in ("/", "\\")]
+                    meaningful_parts = [
+                        part
+                        for part in parts
+                        if part and part != anchor and part not in ("/", "\\")
+                    ]
 
                     # If repo name is present as leading part, ignore it for depth calculation
                     repo = self.repo_name or ""
@@ -438,7 +448,9 @@ class HybridSearchResult:
         return self.parent_id is None and self.parent_document_id is None
 
     def has_children(self) -> bool:
-        return (self.children_count is not None and self.children_count > 0) or bool(self.subsections)
+        return (self.children_count is not None and self.children_count > 0) or bool(
+            self.subsections
+        )
 
     def is_file_attachment(self) -> bool:
         return self.is_attachment
@@ -453,7 +465,9 @@ class HybridSearchResult:
         return self.has_code_blocks or self.section_type == "code"
 
     def is_documentation(self) -> bool:
-        return self.source_type in ["confluence", "localfile"] and not self.has_code_blocks
+        return (
+            self.source_type in ["confluence", "localfile"] and not self.has_code_blocks
+        )
 
     def is_structured_data(self) -> bool:
         return self.has_tables or self.is_excel_sheet
@@ -651,5 +665,3 @@ def create_hybrid_search_result(
         conversion=conversion,
         cross_reference=cross_reference,
     )
-
-

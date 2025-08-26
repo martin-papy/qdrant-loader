@@ -2,13 +2,13 @@ import asyncio
 import logging
 import time
 from collections.abc import Sequence
+from importlib import import_module
 
 import requests
 import tiktoken
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
-from importlib import import_module
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -27,10 +27,14 @@ class EmbeddingService:
         # Build LLM settings from global config and create provider
         llm_settings = settings.llm_settings
         factory_mod = import_module("qdrant_loader_core.llm.factory")
-        create_provider = getattr(factory_mod, "create_provider")
+        create_provider = factory_mod.create_provider
         self.provider = create_provider(llm_settings)
-        self.model = llm_settings.models.get("embeddings", settings.global_config.embedding.model)
-        self.tokenizer = llm_settings.tokenizer or settings.global_config.embedding.tokenizer
+        self.model = llm_settings.models.get(
+            "embeddings", settings.global_config.embedding.model
+        )
+        self.tokenizer = (
+            llm_settings.tokenizer or settings.global_config.embedding.tokenizer
+        )
         self.batch_size = settings.global_config.embedding.batch_size
 
         # Initialize tokenizer based on configuration

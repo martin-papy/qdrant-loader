@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import requests
 
@@ -11,8 +11,7 @@ from .client import (
 )
 from .rate_limit import RateLimiter
 
-
-DEFAULT_STATUS_FORCELIST: Tuple[int, ...] = (429, 500, 502, 503, 504)
+DEFAULT_STATUS_FORCELIST: tuple[int, ...] = (429, 500, 502, 503, 504)
 
 
 async def request_with_policy(
@@ -20,11 +19,11 @@ async def request_with_policy(
     method: str,
     url: str,
     *,
-    rate_limiter: Optional[RateLimiter] = None,
+    rate_limiter: RateLimiter | None = None,
     retries: int = 3,
     backoff_factor: float = 0.5,
-    status_forcelist: Tuple[int, ...] = DEFAULT_STATUS_FORCELIST,
-    overall_timeout: Optional[float] = None,
+    status_forcelist: tuple[int, ...] = DEFAULT_STATUS_FORCELIST,
+    overall_timeout: float | None = None,
     **kwargs: Any,
 ) -> requests.Response:
     """Perform a requests-based HTTP call with optional rate limiting and retries.
@@ -76,11 +75,11 @@ async def aiohttp_request_with_policy(
     method: str,
     url: str,
     *,
-    rate_limiter: Optional[RateLimiter] = None,
+    rate_limiter: RateLimiter | None = None,
     retries: int = 3,
     backoff_factor: float = 0.5,
-    status_forcelist: Tuple[int, ...] = DEFAULT_STATUS_FORCELIST,
-    overall_timeout: Optional[float] = None,
+    status_forcelist: tuple[int, ...] = DEFAULT_STATUS_FORCELIST,
+    overall_timeout: float | None = None,
     **kwargs: Any,
 ):
     """Perform an aiohttp-based HTTP call with optional rate limiting and retries.
@@ -108,5 +107,3 @@ async def aiohttp_request_with_policy(
     if overall_timeout is not None:
         return await asyncio.wait_for(_do_call(), timeout=overall_timeout)
     return await _do_call()
-
-

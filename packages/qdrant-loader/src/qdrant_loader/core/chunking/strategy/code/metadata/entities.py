@@ -21,5 +21,3 @@ def extract_entities(text: str) -> list[str]:
     entities.extend(re.findall(constant_pattern, text))
 
     return list(set(entities))
-
-

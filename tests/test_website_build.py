@@ -111,7 +111,7 @@ class TestWebsiteBuildSystem:
 
             if actual_build_script.exists():
                 shutil.copy2(actual_build_script, mock_build_script)
-            
+
             # Copy the build package directory if it exists
             if actual_build_dir.exists() and actual_build_dir.is_dir():
                 shutil.copytree(actual_build_dir, mock_build_dir)
@@ -228,7 +228,7 @@ class TestWebsiteBuildIntegration:
 
             if actual_build_script.exists():
                 shutil.copy2(actual_build_script, mock_build_script)
-            
+
             # Copy the build package directory if it exists
             if actual_build_dir.exists() and actual_build_dir.is_dir():
                 shutil.copytree(actual_build_dir, mock_build_dir)

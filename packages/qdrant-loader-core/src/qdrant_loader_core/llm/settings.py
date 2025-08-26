@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 
 @dataclass
@@ -37,7 +38,7 @@ class LLMSettings:
     embeddings: EmbeddingPolicy
 
     @staticmethod
-    def from_global_config(global_data: Mapping[str, Any]) -> "LLMSettings":
+    def from_global_config(global_data: Mapping[str, Any]) -> LLMSettings:
         """Construct settings from a parsed global configuration dict.
 
         Supports two schemas:
@@ -61,10 +62,16 @@ class LLMSettings:
         # Legacy mapping
         embedding = (global_data or {}).get("embedding") or {}
         file_conv = (global_data or {}).get("file_conversion") or {}
-        markit = (file_conv.get("markitdown") or {}) if isinstance(file_conv, dict) else {}
+        markit = (
+            (file_conv.get("markitdown") or {}) if isinstance(file_conv, dict) else {}
+        )
 
         endpoint = embedding.get("endpoint")
-        provider = "openai" if (isinstance(endpoint, str) and "openai" in endpoint.lower()) else "openai_compat"
+        provider = (
+            "openai"
+            if (isinstance(endpoint, str) and "openai" in endpoint.lower())
+            else "openai_compat"
+        )
         models = {
             "embeddings": embedding.get("model"),
         }
@@ -82,5 +89,3 @@ class LLMSettings:
             rate_limits=RateLimitPolicy(),
             embeddings=EmbeddingPolicy(vector_size=embedding.get("vector_size")),
         )
-
-

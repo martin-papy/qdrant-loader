@@ -7,7 +7,7 @@ a clean, modular architecture. The core components have been extracted to the
 
 Key Features:
 - Document similarity calculation using entity/topic/metadata overlap
-- Intelligent document clustering based on shared concepts  
+- Intelligent document clustering based on shared concepts
 - Citation network analysis from cross-references and hierarchical data
 - Complementary content recommendation using knowledge graph
 - Conflict detection between documents
@@ -42,24 +42,21 @@ except ImportError:
 __all__ = [
     # Main Engine
     "CrossDocumentIntelligenceEngine",
-    
     # Core Analysis Components
     "DocumentSimilarityCalculator",
-    "DocumentClusterAnalyzer", 
+    "DocumentClusterAnalyzer",
     "CitationNetworkAnalyzer",
     "ComplementaryContentFinder",
     "ConflictDetector",
-    
     # Data Models and Enums
     "SimilarityMetric",
     "ClusteringStrategy",
     "RelationshipType",
     "DocumentSimilarity",
-    "DocumentCluster", 
+    "DocumentCluster",
     "CitationNetwork",
     "ComplementaryContent",
     "ConflictAnalysis",
-    
     # External Dependencies (for test compatibility)
     "nx",
 ]

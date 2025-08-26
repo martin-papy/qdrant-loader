@@ -1,7 +1,9 @@
 import types
-import pytest
 
-from qdrant_loader_mcp_server.search.hybrid.components.deduplication import ResultDeduplicator
+import pytest
+from qdrant_loader_mcp_server.search.hybrid.components.deduplication import (
+    ResultDeduplicator,
+)
 
 
 def _mk(id_: str):
@@ -16,5 +18,3 @@ def test_deduplicator_by_id():
     d = ResultDeduplicator()
     out = d.deduplicate(items)
     assert [x.id for x in out] == ["a", "b", "c"]
-
-

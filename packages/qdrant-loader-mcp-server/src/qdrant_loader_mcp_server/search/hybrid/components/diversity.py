@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import List
-
 from ...components.search_result_models import HybridSearchResult
 
 
 def apply_diversity_filtering(
-    results: List[HybridSearchResult], diversity_factor: float, limit: int
-) -> List[HybridSearchResult]:
+    results: list[HybridSearchResult], diversity_factor: float, limit: int
+) -> list[HybridSearchResult]:
     """Promote variety in the top-N results based on a diversity factor.
 
     Penalizes repeated source types, section types, and identical source/title pairs
@@ -24,7 +22,7 @@ def apply_diversity_filtering(
     if diversity_factor == 0.0 or len(results) <= limit:
         return results[:limit]
 
-    diverse_results: List[HybridSearchResult] = []
+    diverse_results: list[HybridSearchResult] = []
     used_source_types: set[str] = set()
     used_section_types: set[str] = set()
     used_sources: set[str] = set()
@@ -77,11 +75,7 @@ def apply_diversity_filtering(
             )
 
         existing_keys = {_result_key(r) for r in diverse_results}
-        remaining_results = [
-            r for r in results if _result_key(r) not in existing_keys
-        ]
+        remaining_results = [r for r in results if _result_key(r) not in existing_keys]
         diverse_results.extend(remaining_results[:remaining_slots])
 
     return diverse_results[:limit]
-
-

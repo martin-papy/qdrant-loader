@@ -24,7 +24,11 @@ def extract_topics_from_result(result: Any) -> list[str]:
         stripped_breadcrumb = breadcrumb_text.strip()
         if stripped_breadcrumb:
             topics.extend(
-                [section.strip() for section in stripped_breadcrumb.split(" > ") if section.strip()]
+                [
+                    section.strip()
+                    for section in stripped_breadcrumb.split(" > ")
+                    if section.strip()
+                ]
             )
 
     # section_type and source_type may be missing
@@ -75,5 +79,3 @@ def extract_keywords_from_result(result: Any) -> list[str]:
     keywords_set.update(filtered_words(source_title, None))
 
     return list(keywords_set)
-
-

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from qdrant_loader.core.attachment_downloader import AttachmentMetadata
 
 
-def attachment_metadata_from_dict(data: Dict[str, Any], parent_document_id: str) -> AttachmentMetadata:
+def attachment_metadata_from_dict(
+    data: dict[str, Any], parent_document_id: str
+) -> AttachmentMetadata:
     """Create AttachmentMetadata from a simple dict structure with input validation.
 
     Required keys: id, download_url.
@@ -48,5 +50,3 @@ def attachment_metadata_from_dict(data: Dict[str, Any], parent_document_id: str)
         updated_at=data.get("updated_at"),
         author=data.get("author"),
     )
-
-

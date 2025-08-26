@@ -4,9 +4,10 @@ from __future__ import annotations
 def check_for_updates(version_str: str) -> None:
     """Non-raising check for updates; safe for CLI startup."""
     try:
-        from qdrant_loader.utils.version_check import check_version_async
         import asyncio
         import inspect
+
+        from qdrant_loader.utils.version_check import check_version_async
 
         result = check_version_async(version_str, silent=False)
         if inspect.isawaitable(result):
@@ -25,5 +26,3 @@ def check_for_updates(version_str: str) -> None:
     except Exception:
         # Never raise from update checks
         pass
-
-

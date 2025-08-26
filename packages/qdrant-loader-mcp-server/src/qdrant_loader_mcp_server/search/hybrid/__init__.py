@@ -6,4 +6,3 @@ from concrete submodules, e.g. ``from .engine import HybridSearchEngine``.
 """
 
 __all__: list[str] = []
-

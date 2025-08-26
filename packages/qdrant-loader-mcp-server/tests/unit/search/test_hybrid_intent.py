@@ -80,9 +80,9 @@ async def test_search_with_aggressive_expansion(hybrid_search_with_intent):
     )
 
     from qdrant_loader_mcp_server.search.enhanced.intent.models import (
+        AdaptiveSearchConfig,
         IntentType,
         SearchIntent,
-        AdaptiveSearchConfig,
     )
 
     mock_intent = SearchIntent(

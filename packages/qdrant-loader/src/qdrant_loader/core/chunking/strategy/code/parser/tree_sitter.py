@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Any
+from typing import Any
 
 from qdrant_loader.core.chunking.strategy.code.parser.common import (
     CodeElement,
@@ -15,7 +15,7 @@ def extract_tree_sitter_elements(
     language: str,
     max_recursion_depth: int,
     max_element_size: int,
-) -> List[CodeElement]:
+) -> list[CodeElement]:
     elements: list[CodeElement] = []
 
     def _walk(node, level: int = 0):
@@ -39,11 +39,13 @@ def extract_tree_sitter_elements(
                 continue
             elem_type = (
                 CodeElementType.FUNCTION
-                if getattr(child, "type", "") in ("function_declaration", "method_definition")
+                if getattr(child, "type", "")
+                in ("function_declaration", "method_definition")
                 else CodeElementType.MODULE
             )
             element = CodeElement(
-                name=getattr(child, "field_name", None) or getattr(child, "type", "node"),
+                name=getattr(child, "field_name", None)
+                or getattr(child, "type", "node"),
                 element_type=elem_type,
                 content=snippet,
                 start_line=start_line,
@@ -55,5 +57,3 @@ def extract_tree_sitter_elements(
 
     _walk(root_node, 0)
     return elements
-
-

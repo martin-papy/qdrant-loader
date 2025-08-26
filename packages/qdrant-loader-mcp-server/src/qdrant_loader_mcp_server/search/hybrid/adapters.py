@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from .interfaces import VectorSearcher, KeywordSearcher, ResultCombinerLike
-from ..components.vector_search_service import VectorSearchService
 from ..components.keyword_search_service import KeywordSearchService
 from ..components.result_combiner import ResultCombiner
+from ..components.vector_search_service import VectorSearchService
+from .interfaces import KeywordSearcher, ResultCombinerLike, VectorSearcher
 
 
 class VectorSearcherAdapter(VectorSearcher):
@@ -43,5 +43,3 @@ class ResultCombinerAdapter(ResultCombinerLike):
             source_types,
             project_ids,
         )
-
-

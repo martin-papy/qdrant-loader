@@ -9,5 +9,3 @@ class ProjectInfo:
     project_name: str | None = None
     project_description: str | None = None
     collection_name: str | None = None
-
-

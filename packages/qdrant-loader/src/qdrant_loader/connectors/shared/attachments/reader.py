@@ -23,7 +23,9 @@ class AttachmentReader:
     async def fetch_and_process(
         self, attachments: list[AttachmentMetadata], parent: Document
     ) -> list[Document]:
-        return await self.downloader.download_and_process_attachments(attachments, parent)
+        return await self.downloader.download_and_process_attachments(
+            attachments, parent
+        )
 
     # Optional cleanup hooks to allow connectors to close resources when reconfiguring
     async def aclose(self) -> None:  # noqa: D401 - simple cleanup hook
@@ -35,5 +37,3 @@ class AttachmentReader:
         """Synchronous cleanup for compatibility; currently no resources to close."""
         # requests.Session is owned by the connector, not by the reader
         return None
-
-

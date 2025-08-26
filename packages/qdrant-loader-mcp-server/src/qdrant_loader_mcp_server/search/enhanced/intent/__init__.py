@@ -11,13 +11,13 @@ Architecture:
 """
 
 # Re-export core components for easy access
-from .models import IntentType, SearchIntent, AdaptiveSearchConfig
 from .classifier import IntentClassifier
+from .models import AdaptiveSearchConfig, IntentType, SearchIntent
 from .strategy import AdaptiveSearchStrategy
 
 __all__ = [
     "IntentType",
-    "SearchIntent", 
+    "SearchIntent",
     "AdaptiveSearchConfig",
     "IntentClassifier",
     "AdaptiveSearchStrategy",

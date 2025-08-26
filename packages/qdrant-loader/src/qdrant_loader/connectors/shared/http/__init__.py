@@ -5,16 +5,16 @@ Prefer importing from this package instead of legacy
 """
 
 from .client import (
+    aiohttp_request_with_retries,
     make_request_async,
     make_request_with_retries_async,
-    aiohttp_request_with_retries,
 )
 from .errors import HTTPRequestError
-from .rate_limit import RateLimiter
 from .policy import (
-    request_with_policy,
     aiohttp_request_with_policy,
+    request_with_policy,
 )
+from .rate_limit import RateLimiter
 
 __all__ = [
     "make_request_async",
@@ -25,5 +25,3 @@ __all__ = [
     "request_with_policy",
     "aiohttp_request_with_policy",
 ]
-
-

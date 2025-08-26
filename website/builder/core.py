@@ -5,16 +5,13 @@ This module implements the main WebsiteBuilder class that orchestrates
 all build operations and manages the overall build lifecycle.
 """
 
-import argparse
 import json
-import os
-import re
 import subprocess
 from pathlib import Path
 
-from .templates import TemplateProcessor
-from .markdown import MarkdownProcessor
 from .assets import AssetManager
+from .markdown import MarkdownProcessor
+from .templates import TemplateProcessor
 
 
 class WebsiteBuilder:
@@ -29,7 +26,7 @@ class WebsiteBuilder:
         self.base_url = ""
         # Cached docs navigation data (built once per run)
         self.docs_nav_data: dict | None = None
-        
+
         # Initialize component processors
         self.template_processor = TemplateProcessor(templates_dir)
         self.markdown_processor = MarkdownProcessor()
@@ -99,7 +96,7 @@ class WebsiteBuilder:
         """Convert filename to human-readable title."""
         # Remove file extension and common prefixes
         title = name.replace('.md', '').replace('README', '').replace('_', ' ').replace('-', ' ')
-        
+
         # Handle common patterns
         title_mappings = {
             'cli reference': 'CLI Reference',
@@ -108,11 +105,11 @@ class WebsiteBuilder:
             'toc': 'Table of Contents',
             'readme': 'Overview',
         }
-        
+
         title_lower = title.lower().strip()
         if title_lower in title_mappings:
             return title_mappings[title_lower]
-        
+
         # Capitalize words
         return ' '.join(word.capitalize() for word in title.split())
 
@@ -124,10 +121,10 @@ class WebsiteBuilder:
             "description": "Enterprise-ready vector database toolkit",
             "github_url": "https://github.com/your-org/qdrant-loader",
         }
-        
+
         # Override with any provided kwargs
         project_info.update(kwargs)
-        
+
         # Try to load from pyproject.toml
         try:
             import tomli
@@ -141,39 +138,39 @@ class WebsiteBuilder:
                 })
         except:
             pass
-        
+
         # Try to get git information
         try:
             import subprocess
-            
+
             # Get git commit hash
             result = subprocess.run(
-                ["git", "rev-parse", "HEAD"], 
-                capture_output=True, 
-                text=True, 
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
                 check=True
             )
             project_info["commit_hash"] = result.stdout.strip()
-            
+
             # Get git commit date
             result = subprocess.run(
-                ["git", "log", "-1", "--format=%ci"], 
-                capture_output=True, 
-                text=True, 
+                ["git", "log", "-1", "--format=%ci"],
+                capture_output=True,
+                text=True,
                 check=True
             )
             project_info["commit_date"] = result.stdout.strip()
-            
+
         except (subprocess.CalledProcessError, FileNotFoundError):
             # Git not available or not a git repository
             pass
-        
+
         # Write project info JSON file
         project_info_path = self.output_dir / "project-info.json"
         project_info_path.parent.mkdir(parents=True, exist_ok=True)
         with open(project_info_path, 'w', encoding='utf-8') as f:
             json.dump(project_info, f, indent=2)
-        
+
         return project_info
 
     def build_page(
@@ -188,22 +185,22 @@ class WebsiteBuilder:
     ) -> None:
         """Build a single page from template."""
         template_content = self.load_template(template_name)
-        
+
         # If no explicit content is provided and the output filename differs from
         # the canonical path, interpret the output filename as a content template
         # to be loaded from the templates directory. This ensures missing content
         # templates raise FileNotFoundError as expected by edge-case tests.
         if not content and output_filename != canonical_path:
             content = self.load_template(output_filename)
-        
+
         project_info = self.generate_project_info()
-        
+
         # Calculate base URL for relative paths
         if canonical_path.count('/') > 0:
             base_url = '../' * canonical_path.count('/')
         else:
             base_url = self.base_url or './'
-            
+
         replacements = {
             'page_title': title,
             'page_description': description,
@@ -217,15 +214,15 @@ class WebsiteBuilder:
             'project_description': project_info['description'],
             **extra_replacements,
         }
-        
+
         final_content = self.replace_placeholders(template_content, replacements)
-        
+
         output_path = self.output_dir / output_filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(final_content)
-            
+
         print(f"📄 Built {output_filename}")
 
     def build_site(
@@ -257,15 +254,15 @@ class WebsiteBuilder:
         # Build docs structure and pages
         self.build_docs_nav()
         docs_structure = self.build_docs_structure()
-        
+
         # Create docs directory and index
         docs_output_dir = self.output_dir / "docs"
         docs_output_dir.mkdir(exist_ok=True)
-        
+
         # Build docs index page
         self.build_page(
             "base.html",
-            "docs/index.html", 
+            "docs/index.html",
             "Documentation",
             "QDrant Loader Documentation",
             "docs/index.html",
@@ -275,11 +272,11 @@ class WebsiteBuilder:
         # Always create coverage directory and ensure index.html exists
         coverage_output_dir = self.output_dir / "coverage"
         coverage_output_dir.mkdir(exist_ok=True)
-        
+
         # Build coverage reports if provided
         if coverage_artifacts_dir:
             coverage_structure = self.build_coverage_structure(coverage_artifacts_dir)
-            
+
             # Copy coverage artifacts
             coverage_path = Path(coverage_artifacts_dir)
             if coverage_path.exists():
@@ -322,9 +319,9 @@ class WebsiteBuilder:
         docs_dir = Path("docs")
         if not docs_dir.exists():
             return {}
-            
+
         nav_data = {"title": "Documentation", "children": []}
-        
+
         for item in sorted(docs_dir.iterdir()):
             if item.is_file() and item.suffix == '.md':
                 nav_data["children"].append({
@@ -336,17 +333,17 @@ class WebsiteBuilder:
                     "title": self._humanize_title(item.name),
                     "url": f"docs/{item.name}/",
                 })
-        
+
         self.docs_nav_data = nav_data
         return nav_data
 
     def generate_seo_files(self) -> None:
         """Generate SEO files like sitemap.xml and robots.txt."""
         from datetime import datetime
-        
+
         # Get current date for lastmod
         current_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # Generate simple sitemap.xml
         sitemap_content = '''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -370,7 +367,7 @@ class WebsiteBuilder:
         sitemap_path = self.output_dir / "sitemap.xml"
         with open(sitemap_path, 'w', encoding='utf-8') as f:
             f.write(sitemap_content)
-        print(f"📄 Generated sitemap.xml")
+        print("📄 Generated sitemap.xml")
 
         # Generate simple robots.txt
         robots_content = f'''User-agent: *
@@ -382,14 +379,14 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
         robots_path = self.output_dir / "robots.txt"
         with open(robots_path, 'w', encoding='utf-8') as f:
             f.write(robots_content)
-        print(f"📄 Generated robots.txt")
+        print("📄 Generated robots.txt")
 
     def generate_dynamic_sitemap(self, date: str = None, pages: list[str] = None) -> str:
         """Generate dynamic sitemap with custom pages."""
         from datetime import datetime
-        
+
         base_url = self.base_url.rstrip('/') if self.base_url else 'https://example.com'
-        
+
         # Auto-discover pages if not provided
         if pages is None:
             pages = []
@@ -398,38 +395,38 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                 for html_file in self.output_dir.rglob("*.html"):
                     rel_path = str(html_file.relative_to(self.output_dir))
                     pages.append(rel_path)
-        
+
         # Use provided date or current date
         if date is None:
             date = datetime.now().strftime('%Y-%m-%d')
-        
+
         sitemap_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
         sitemap_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        
+
         for page in pages:
-            sitemap_content += f'  <url>\n'
+            sitemap_content += '  <url>\n'
             sitemap_content += f'    <loc>{base_url}/{page}</loc>\n'
             sitemap_content += f'    <lastmod>{date}</lastmod>\n'
-            sitemap_content += f'    <changefreq>weekly</changefreq>\n'
-            sitemap_content += f'    <priority>0.8</priority>\n'
-            sitemap_content += f'  </url>\n'
-        
+            sitemap_content += '    <changefreq>weekly</changefreq>\n'
+            sitemap_content += '    <priority>0.8</priority>\n'
+            sitemap_content += '  </url>\n'
+
         sitemap_content += '</urlset>'
-        
+
         # Write sitemap to file
         sitemap_path = self.output_dir / "sitemap.xml"
         sitemap_path.parent.mkdir(parents=True, exist_ok=True)
         with open(sitemap_path, 'w', encoding='utf-8') as f:
             f.write(sitemap_content)
         print(f"📄 Generated dynamic sitemap.xml with {len(pages)} pages")
-        
+
         return sitemap_content
 
     def build_markdown_page(
-        self, 
-        markdown_file: str, 
-        output_path: str, 
-        title: str = "", 
+        self,
+        markdown_file: str,
+        output_path: str,
+        title: str = "",
         breadcrumb: str = "",
         **kwargs
     ) -> None:
@@ -438,21 +435,21 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
         if not markdown_path.exists():
             print(f"⚠️  Markdown file not found: {markdown_file}, skipping page generation")
             return
-        
+
         try:
-            with open(markdown_path, 'r', encoding='utf-8') as f:
+            with open(markdown_path, encoding='utf-8') as f:
                 markdown_content = f.read()
         except Exception as e:
             print(f"⚠️  Failed to read markdown file {markdown_file}: {e}")
             return
-        
+
         # Extract title if not provided
         if not title:
             title = self.extract_title_from_markdown(markdown_content)
-        
+
         # Convert markdown to HTML
         html_content = self.markdown_to_html(markdown_content)
-        
+
         # Build the page
         self.build_page(
             "base.html",
@@ -469,25 +466,25 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
         """Build documentation directory structure."""
         docs_dir = Path("docs")
         structure = {"title": "Documentation", "children": []}
-        
+
         # Create docs output directory
         docs_output_dir = self.output_dir / "docs"
         docs_output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         if not docs_dir.exists():
             return structure
-        
+
         # Process all markdown files in docs
         for item in sorted(docs_dir.rglob("*.md")):
             relative_path = str(item.relative_to(docs_dir))
             output_path = relative_path.replace('.md', '.html')
-            
+
             structure["children"].append({
                 "title": self._humanize_title(item.stem),
                 "path": relative_path,
                 "url": f"docs/{output_path}",
             })
-            
+
             # Build the page from markdown
             try:
                 self.build_markdown_page(
@@ -497,7 +494,7 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                 )
             except Exception as e:
                 print(f"⚠️  Failed to build docs page {item}: {e}")
-        
+
         return structure
 
     def build_coverage_structure(self, coverage_dir: str | None = None) -> dict:
@@ -505,14 +502,14 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
         # Always create coverage output directory
         coverage_output_dir = self.output_dir / "coverage"
         coverage_output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         if not coverage_dir:
             return {"coverage_reports": []}
-        
+
         coverage_path = Path(coverage_dir)
         if not coverage_path.exists():
             return {"coverage_reports": []}
-        
+
         # Copy all coverage files with proper naming
         import shutil
         for item in coverage_path.iterdir():
@@ -527,7 +524,7 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                     dest_name = "website"
                 elif "htmlcov" in item.name:
                     dest_name = item.name.replace("htmlcov-", "").replace("htmlcov_", "")
-            
+
             dest_path = coverage_output_dir / dest_name
             try:
                 if item.is_file():
@@ -539,8 +536,8 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                     print(f"📁 Copied coverage: {item.name} -> {dest_name}")
             except Exception as e:
                 print(f"⚠️  Failed to copy coverage file {item}: {e}")
-        
-        # Build reports list using the renamed directories  
+
+        # Build reports list using the renamed directories
         reports = []
         for subdir in coverage_output_dir.iterdir():
             if subdir.is_dir():
@@ -548,10 +545,10 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                 if index_file.exists():
                     reports.append({
                         "name": subdir.name,
-                        "path": f"{subdir.name}/index.html", 
+                        "path": f"{subdir.name}/index.html",
                         "url": f"coverage/{subdir.name}/index.html",
                     })
-        
+
         # Create main coverage index.html if it doesn't exist
         main_index = coverage_output_dir / "index.html"
         if not main_index.exists() and reports:
@@ -561,7 +558,7 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
     <div class="container">
         <h1>Coverage Reports</h1>
         <div class="row g-4">"""
-            
+
             for report in reports:
                 if report["name"] == "loader":
                     index_content += '''
@@ -605,7 +602,7 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                     </div>
                 </div>
             </div>'''
-            
+
             index_content += """
         </div>
     </div>
@@ -628,7 +625,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
 </body></html>"""
             main_index.write_text(index_content)
             print("📄 Generated coverage index.html")
-        
+
         return {"coverage_reports": reports}
 
     def generate_directory_indexes(self) -> None:
@@ -636,12 +633,12 @@ fetch('website/status.json').then(response => response.json()).then(data => {
         # Look in both source docs and output site docs directories
         source_docs_dir = Path("docs")
         site_docs_dir = self.output_dir / "docs"
-        
+
         # Process directories in both locations
         for docs_dir in [source_docs_dir, site_docs_dir]:
             if not docs_dir.exists():
                 continue
-            
+
             for directory in docs_dir.rglob("*"):
                 if directory.is_dir():
                     # Look for README or index files in various formats
@@ -649,7 +646,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
                     readme_html = directory / "README.html"
                     index_md = directory / "index.md"
                     index_html = directory / "index.html"
-                    
+
                     # Determine source file
                     source_file = None
                     if readme_md.exists():
@@ -660,7 +657,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
                         source_file = readme_html
                     elif index_html.exists():
                         source_file = index_html
-                    
+
                     if source_file:
                         try:
                             if docs_dir == site_docs_dir:
@@ -675,7 +672,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
                                 # For source files, process through normal build pipeline
                                 relative_dir = directory.relative_to(docs_dir)
                                 output_path = f"docs/{relative_dir}/index.html"
-                                
+
                                 if source_file.suffix == '.html':
                                     # Copy HTML file content directly
                                     content = source_file.read_text()
@@ -703,11 +700,11 @@ fetch('website/status.json').then(response => response.json()).then(data => {
         if not license_path.exists():
             print(f"⚠️  License file not found: {source_file}, skipping license page")
             return
-        
+
         try:
-            with open(license_path, 'r', encoding='utf-8') as f:
+            with open(license_path, encoding='utf-8') as f:
                 license_content = f.read()
-            
+
             # Create license page with heading
             html_content = f"""
             <h1>License Information</h1>
@@ -715,7 +712,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
                 <pre>{license_content}</pre>
             </div>
             """
-            
+
             self.build_page(
                 "base.html",
                 output_file,

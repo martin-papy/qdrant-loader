@@ -1,5 +1,4 @@
 import pytest
-
 from qdrant_loader_mcp_server.search.hybrid.components.reranking import HybridReranker
 
 
@@ -13,5 +12,3 @@ def test_reranker_identity():
     assert out == original
     # Optional: the identity implementation should return same reference
     assert out is data
-
-

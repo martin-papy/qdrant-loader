@@ -17,5 +17,3 @@ class BaseSearchResult:
     document_id: str | None = None
     created_at: str | None = None
     last_modified: str | None = None
-
-

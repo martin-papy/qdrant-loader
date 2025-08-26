@@ -24,5 +24,3 @@ async def test_expand_query_case_insensitive(hybrid_search):
     assert any(tok.startswith("product") for tok in expanded_lower.split())
     assert "PRODUCT REQUIREMENTS" in expanded
     assert len(expanded.split()) > len("PRODUCT REQUIREMENTS".split())
-
-

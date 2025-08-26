@@ -1,5 +1,4 @@
 import pytest
-
 from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
 
 
@@ -11,5 +10,3 @@ def hybrid_search(mock_qdrant_client, mock_openai_client):
         openai_client=mock_openai_client,
         collection_name="test_collection",
     )
-
-

@@ -1,4 +1,4 @@
-name: CI
+name: Quality Gates
 
 on:
   push:
@@ -48,18 +48,3 @@ jobs:
         run: |
           . venv/bin/activate
           make quality
-
-      - name: Tests (qdrant-loader-core)
-        run: |
-          . venv/bin/activate
-          make test-core
-
-      - name: Tests (mcp-server)
-        run: |
-          . venv/bin/activate
-          make test-mcp
-
-      - name: Tests
-        run: |
-          . venv/bin/activate
-          make test

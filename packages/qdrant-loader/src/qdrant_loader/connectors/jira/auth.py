@@ -41,5 +41,3 @@ def auto_detect_deployment_type(base_url: str) -> JiraDeploymentType:
         return JiraDeploymentType.DATACENTER
     except Exception:
         return JiraDeploymentType.DATACENTER
-
-

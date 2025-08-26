@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..settings import LLMSettings
-from ..types import EmbeddingsClient, ChatClient, TokenCounter, LLMProvider
+from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
 
 class OllamaEmbeddings(EmbeddingsClient):
@@ -31,5 +31,3 @@ class OllamaProvider(LLMProvider):
 
     def tokenizer(self) -> TokenCounter:
         return OllamaTokenizer()
-
-

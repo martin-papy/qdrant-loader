@@ -135,7 +135,7 @@ async def test_search_with_source_type_filter(hybrid_search):
     hybrid_search._get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3] * 512)
     hybrid_search._expand_query = AsyncMock(return_value="test query")
 
-    results = await hybrid_search.search("test query", source_types=["git"]) 
+    results = await hybrid_search.search("test query", source_types=["git"])
     assert results and all(r.source_type == "git" for r in results)
 
 
@@ -352,12 +352,32 @@ async def test_combine_results(hybrid_search):
     """Verify combination logic computes expected scores, sorts, and preserves fields."""
     # Deterministic mock results
     vec_results = [
-        {"score": 0.9, "text": "doc1", "metadata": {"title": "T1"}, "source_type": "git"},
-        {"score": 0.6, "text": "doc2", "metadata": {"title": "T2"}, "source_type": "confluence"},
+        {
+            "score": 0.9,
+            "text": "doc1",
+            "metadata": {"title": "T1"},
+            "source_type": "git",
+        },
+        {
+            "score": 0.6,
+            "text": "doc2",
+            "metadata": {"title": "T2"},
+            "source_type": "confluence",
+        },
     ]
     kw_results = [
-        {"score": 0.1, "text": "doc1", "metadata": {"title": "T1"}, "source_type": "git"},
-        {"score": 0.8, "text": "doc3", "metadata": {"title": "T3"}, "source_type": "jira"},
+        {
+            "score": 0.1,
+            "text": "doc1",
+            "metadata": {"title": "T1"},
+            "source_type": "git",
+        },
+        {
+            "score": 0.8,
+            "text": "doc3",
+            "metadata": {"title": "T3"},
+            "source_type": "jira",
+        },
     ]
     # Use engine defaults: vector 0.6, keyword 0.3 ->
     # doc1 combined ~ 0.9*0.6 + 0.1*0.3 = 0.54 + 0.03 = 0.57
@@ -407,7 +427,10 @@ async def test_combine_results_with_low_min_score(hybrid_search):
     hybrid_search.min_score = 0.1
     out = await hybrid_search._combine_results(
         [{"score": 0.8, "text": "t1", "metadata": {}, "source_type": "git"}],
-        [{"score": 0.6, "text": "t1", "metadata": {}, "source_type": "git"}, {"score": 0.4, "text": "t2", "metadata": {}, "source_type": "confluence"}],
+        [
+            {"score": 0.6, "text": "t1", "metadata": {}, "source_type": "git"},
+            {"score": 0.4, "text": "t2", "metadata": {}, "source_type": "confluence"},
+        ],
         {},
         5,
     )
@@ -428,7 +451,9 @@ def test_extract_metadata_info_attachment(hybrid_search):
 
 def test_extract_metadata_info_file_size_formatting(hybrid_search):
     """Covered in test_hybrid_metadata; minimal check only."""
-    info = hybrid_search._extract_metadata_info({"is_attachment": True, "file_size": 512})
+    info = hybrid_search._extract_metadata_info(
+        {"is_attachment": True, "file_size": 512}
+    )
     assert "attachment_context" in info
 
 
@@ -687,7 +712,15 @@ async def test_execute_topic_chain_search(hybrid_search):
         ChainStrategy,
         TopicSearchChain,
     )
-    mock_chain = TopicSearchChain(original_query="q", chain_links=[], strategy=ChainStrategy.MIXED_EXPLORATION, total_topics_covered=0, estimated_discovery_potential=0.0, generation_time_ms=0.0)
+
+    mock_chain = TopicSearchChain(
+        original_query="q",
+        chain_links=[],
+        strategy=ChainStrategy.MIXED_EXPLORATION,
+        total_topics_covered=0,
+        estimated_discovery_potential=0.0,
+        generation_time_ms=0.0,
+    )
     results = await hybrid_search.execute_topic_chain_search(mock_chain)
     assert isinstance(results, dict)
 

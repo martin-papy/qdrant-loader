@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy import select
 
@@ -57,7 +56,7 @@ def generate_sqlite_aiosqlite_url(database_path: str) -> str:
 def build_ingestion_history_select(
     source_type: str,
     source: str,
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     order_by_last_successful_desc: bool = False,
 ):
     """Create a select() for IngestionHistory with optional project filter and ordering."""
@@ -74,8 +73,8 @@ def build_ingestion_history_select(
 def build_document_state_select(
     source_type: str,
     source: str,
-    document_id: Optional[str] = None,
-    project_id: Optional[str] = None,
+    document_id: str | None = None,
+    project_id: str | None = None,
 ):
     """Create a select() for DocumentStateRecord with optional project/doc filters."""
     conditions = [
@@ -88,5 +87,3 @@ def build_document_state_select(
     if project_id is not None:
         query = query.filter(DocumentStateRecord.project_id == project_id)
     return query
-
-

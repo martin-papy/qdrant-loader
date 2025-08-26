@@ -8,5 +8,3 @@ class ChunkingContext:
     chunk_index: int | None = None
     total_chunks: int | None = None
     chunking_strategy: str | None = None
-
-

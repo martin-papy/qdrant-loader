@@ -109,5 +109,3 @@ def detect_python_version_features(content: str) -> list[str]:
     if "dataclass" in content:
         features.append("dataclasses_py37")
     return features
-
-

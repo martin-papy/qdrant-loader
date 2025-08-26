@@ -77,7 +77,10 @@ def get_detect_conflicts_tool_schema() -> dict[str, Any]:
                     "properties": {
                         "total_documents_analyzed": {"type": "integer"},
                         "conflicts_found": {"type": "integer"},
-                        "conflict_types": {"type": "array", "items": {"type": "string"}},
+                        "conflict_types": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                         "highest_conflict_score": {"type": "number"},
                     },
                 },
@@ -92,5 +95,3 @@ def get_detect_conflicts_tool_schema() -> dict[str, Any]:
             },
         },
     }
-
-

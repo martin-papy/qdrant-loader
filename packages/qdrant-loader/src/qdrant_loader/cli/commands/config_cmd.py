@@ -5,8 +5,8 @@ from pathlib import Path
 from click.exceptions import ClickException
 from click.utils import echo
 
-from qdrant_loader.cli.config_loader import setup_workspace as _setup_workspace_impl
 from qdrant_loader.cli.commands.config import run_show_config as _run_show_config
+from qdrant_loader.cli.config_loader import setup_workspace as _setup_workspace_impl
 from qdrant_loader.utils.logging import LoggingConfig
 
 
@@ -20,7 +20,11 @@ def run_config_command(
         LoggingConfig.setup(
             level=log_level,
             format="console",
-            file=(str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"),
+            file=(
+                str(workspace_config.logs_path)
+                if workspace_config
+                else "qdrant-loader.log"
+            ),
         )
 
         echo("Current Configuration:")
@@ -30,5 +34,3 @@ def run_config_command(
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_failed", error=str(e))
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
-
-

@@ -1,9 +1,6 @@
-import pytest
-
 from qdrant_loader_mcp_server.search.enhanced.cdi import (
-    SimilarityMetric,
-    DocumentSimilarity,
     DocumentCluster,
+    DocumentSimilarity,
 )
 
 
@@ -27,5 +24,3 @@ def test_document_cluster_summary_contains_key_fields():
     assert summary["cluster_id"] == "c1"
     assert summary["name"] == "Cluster"
     assert summary["document_count"] == 2
-
-

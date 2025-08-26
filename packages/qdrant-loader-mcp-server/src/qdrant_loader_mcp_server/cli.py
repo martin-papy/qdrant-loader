@@ -129,7 +129,9 @@ async def start_http_server(
 
                 # Graceful drain logic: wait for in-flight requests to finish before forcing exit
                 # Configurable timeouts via environment variables
-                drain_timeout = float(os.getenv("MCP_HTTP_DRAIN_TIMEOUT_SECONDS", "10.0"))
+                drain_timeout = float(
+                    os.getenv("MCP_HTTP_DRAIN_TIMEOUT_SECONDS", "10.0")
+                )
                 max_shutdown_timeout = float(
                     os.getenv("MCP_HTTP_SHUTDOWN_TIMEOUT_SECONDS", "30.0")
                 )
@@ -142,7 +144,9 @@ async def start_http_server(
                     while time.monotonic() - start_ts < drain_timeout:
                         if not http_handler.has_inflight_non_streaming():
                             drained_non_stream = True
-                            logger.info("Non-streaming requests drained; continuing shutdown")
+                            logger.info(
+                                "Non-streaming requests drained; continuing shutdown"
+                            )
                             break
                         await asyncio.sleep(0.1)
                 except asyncio.CancelledError:
@@ -163,7 +167,9 @@ async def start_http_server(
                     while time.monotonic() < total_deadline:
                         counts = http_handler.get_inflight_request_counts()
                         if counts.get("total", 0) == 0:
-                            logger.info("All in-flight requests drained; completing shutdown without force")
+                            logger.info(
+                                "All in-flight requests drained; completing shutdown without force"
+                            )
                             break
                         await asyncio.sleep(0.2)
                 except asyncio.CancelledError:
@@ -180,7 +186,9 @@ async def start_http_server(
                         )
                         server.force_exit = True
                     else:
-                        logger.debug("Server drained gracefully; force_exit not required")
+                        logger.debug(
+                            "Server drained gracefully; force_exit not required"
+                        )
             except asyncio.CancelledError:
                 logger.debug("Shutdown monitor task cancelled")
                 return
@@ -207,7 +215,7 @@ async def start_http_server(
                     await asyncio.wait_for(monitor_task, timeout=2.0)
                 except asyncio.CancelledError:
                     logger.debug("Shutdown monitor task cancelled successfully")
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("Shutdown monitor task cleanup timed out")
                 except Exception as e:
                     logger.debug(f"Shutdown monitor cleanup completed with: {e}")
@@ -522,13 +530,19 @@ def cli(
         if loop:
             try:
                 # First, wait for the shutdown task if it exists
-                if 'shutdown_task' in locals() and shutdown_task is not None and not shutdown_task.done():
+                if (
+                    "shutdown_task" in locals()
+                    and shutdown_task is not None
+                    and not shutdown_task.done()
+                ):
                     try:
                         logger = LoggingConfig.get_logger(__name__)
                         logger.debug("Waiting for shutdown task to complete...")
-                        loop.run_until_complete(asyncio.wait_for(shutdown_task, timeout=5.0))
+                        loop.run_until_complete(
+                            asyncio.wait_for(shutdown_task, timeout=5.0)
+                        )
                         logger.debug("Shutdown task completed successfully")
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger = LoggingConfig.get_logger(__name__)
                         logger.warning("Shutdown task timed out, cancelling...")
                         shutdown_task.cancel()
@@ -546,19 +560,21 @@ def cli(
                     all_tasks = list(asyncio.all_tasks(loop))
                     if not all_tasks:
                         return
-                    
+
                     # Cancel all tasks except the completed shutdown task
                     cancelled_tasks = []
                     for task in all_tasks:
                         if not task.done() and task is not shutdown_task:
                             task.cancel()
                             cancelled_tasks.append(task)
-                    
+
                     # Don't await gather to avoid recursion - just let them finish on their own
                     # The loop will handle the cleanup when it closes
                     if cancelled_tasks:
                         logger = LoggingConfig.get_logger(__name__)
-                        logger.info(f"Cancelled {len(cancelled_tasks)} remaining tasks for cleanup")
+                        logger.info(
+                            f"Cancelled {len(cancelled_tasks)} remaining tasks for cleanup"
+                        )
 
                 _cancel_all_pending_tasks()
             except Exception:

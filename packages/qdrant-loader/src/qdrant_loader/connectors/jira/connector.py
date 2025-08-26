@@ -10,20 +10,36 @@ from requests.auth import HTTPBasicAuth  # noqa: F401 - compatibility
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.jira.auth import (
+    auto_detect_deployment_type as _auto_detect_type,
+)
+from qdrant_loader.connectors.jira.auth import setup_authentication as _setup_auth
 from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
+from qdrant_loader.connectors.jira.mappers import (
+    parse_attachment as _parse_attachment_helper,
+)
+from qdrant_loader.connectors.jira.mappers import parse_comment as _parse_comment_helper
+from qdrant_loader.connectors.jira.mappers import parse_issue as _parse_issue_helper
+from qdrant_loader.connectors.jira.mappers import parse_user as _parse_user_helper
 from qdrant_loader.connectors.jira.models import (
     JiraAttachment,
     JiraComment,
     JiraIssue,
     JiraUser,
 )
-from qdrant_loader.core.attachment_downloader import (
-    AttachmentMetadata,
-    AttachmentDownloader,
-)
 from qdrant_loader.connectors.shared.attachments import AttachmentReader
 from qdrant_loader.connectors.shared.attachments.metadata import (
     jira_attachment_to_metadata,
+)
+from qdrant_loader.connectors.shared.http import (
+    RateLimiter,
+)
+from qdrant_loader.connectors.shared.http import (
+    request_with_policy as _http_request_with_policy,
+)
+from qdrant_loader.core.attachment_downloader import (
+    AttachmentDownloader,
+    AttachmentMetadata,
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
@@ -32,20 +48,6 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.connectors.jira.auth import (
-    setup_authentication as _setup_auth,
-    auto_detect_deployment_type as _auto_detect_type,
-)
-from qdrant_loader.connectors.jira.mappers import (
-    parse_issue as _parse_issue_helper,
-    parse_user as _parse_user_helper,
-    parse_attachment as _parse_attachment_helper,
-    parse_comment as _parse_comment_helper,
-)
-from qdrant_loader.connectors.shared.http import (
-    request_with_policy as _http_request_with_policy,
-    RateLimiter,
-)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -87,7 +89,8 @@ class JiraConnector(BaseConnector):
 
         if config.download_attachments:
             self.attachment_reader = AttachmentReader(
-                session=self.session, downloader=AttachmentDownloader(session=self.session)
+                session=self.session,
+                downloader=AttachmentDownloader(session=self.session),
             )
 
     def _setup_authentication(self):
@@ -117,11 +120,11 @@ class JiraConnector(BaseConnector):
                     try:
                         close_callable = None
                         if hasattr(old_reader, "aclose"):
-                            close_callable = getattr(old_reader, "aclose")
+                            close_callable = old_reader.aclose
                         elif hasattr(old_reader, "close"):
-                            close_callable = getattr(old_reader, "close")
+                            close_callable = old_reader.close
                         elif hasattr(old_reader, "cleanup"):
-                            close_callable = getattr(old_reader, "cleanup")
+                            close_callable = old_reader.cleanup
 
                         if close_callable is not None:
                             result = close_callable()
@@ -531,8 +534,10 @@ class JiraConnector(BaseConnector):
                         attachment_count=len(attachment_metadata),
                     )
 
-                    attachment_documents = await self.attachment_reader.fetch_and_process(
-                        attachment_metadata, document
+                    attachment_documents = (
+                        await self.attachment_reader.fetch_and_process(
+                            attachment_metadata, document
+                        )
                     )
                     documents.extend(attachment_documents)
 

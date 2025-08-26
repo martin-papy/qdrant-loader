@@ -3,20 +3,19 @@
 import inspect
 from typing import Any
 
-from ..search.components.search_result_models import HybridSearchResult
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
-from .protocol import MCPProtocol
 from .handlers.search import (
-    apply_hierarchy_filters,
     apply_attachment_filters,
+    apply_hierarchy_filters,
     apply_lightweight_attachment_filters,
-    organize_by_hierarchy,
     format_lightweight_attachment_text,
     format_lightweight_hierarchy_text,
+    organize_by_hierarchy,
 )
+from .protocol import MCPProtocol
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+
 from qdrant_loader.utils.logging import LoggingConfig
 
 
@@ -48,5 +49,3 @@ async def run_pipeline_ingestion(
         raise ingestion_error
     if cleanup_error is not None:
         raise cleanup_error
-
-

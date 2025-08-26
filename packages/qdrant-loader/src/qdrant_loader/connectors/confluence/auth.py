@@ -40,5 +40,3 @@ def auto_detect_deployment_type(base_url: str) -> ConfluenceDeploymentType:
         return ConfluenceDeploymentType.DATACENTER
     except Exception:
         return ConfluenceDeploymentType.DATACENTER
-
-

@@ -19,12 +19,3 @@ def test_determine_learning_level():
     assert utils.determine_learning_level(0) == "beginner"
     assert utils.determine_learning_level(3) == "intermediate"
     assert utils.determine_learning_level(10) == "advanced"
-
-
-
-
-
-
-
-
-

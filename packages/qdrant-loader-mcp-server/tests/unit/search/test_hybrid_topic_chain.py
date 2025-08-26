@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock
 
 import pytest
-
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     create_hybrid_search_result,
 )
@@ -79,5 +78,3 @@ async def test_topic_chain_execution_with_failures(hybrid_search):
     assert len(results["API documentation"]) == 1
     assert len(results["working query"]) == 1
     assert results["failing query"] == []
-
-

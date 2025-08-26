@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 
 class HybridReranker:
@@ -9,7 +9,5 @@ class HybridReranker:
     Current implementation is identity to keep behavior unchanged.
     """
 
-    def rerank(self, results: List[Any]) -> List[Any]:
+    def rerank(self, results: list[Any]) -> list[Any]:
         return results
-
-

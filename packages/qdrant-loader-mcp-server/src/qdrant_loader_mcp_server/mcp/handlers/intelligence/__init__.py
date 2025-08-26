@@ -5,5 +5,3 @@ __all__ = [
     "process_analysis_results",
     "get_or_create_document_id",
 ]
-
-

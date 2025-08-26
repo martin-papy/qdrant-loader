@@ -18,5 +18,3 @@ class AsyncRateLimiter:
 
     async def __aexit__(self, exc_type, exc, tb):
         self._semaphore.release()
-
-

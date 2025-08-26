@@ -7,7 +7,6 @@ complementary content discovery.
 """
 
 from typing import Any
-from ...search.components.search_result_models import HybridSearchResult
 
 
 class IntelligenceResultFormatters:
@@ -35,7 +34,12 @@ class IntelligenceResultFormatters:
 
         # Accept multiple shapes for clusters
         clusters_candidate = None
-        for key in ("document_clusters", "topic_clusters", "entity_clusters", "clusters"):
+        for key in (
+            "document_clusters",
+            "topic_clusters",
+            "entity_clusters",
+            "clusters",
+        ):
             value = analysis.get(key)
             if value:
                 clusters_candidate = value
@@ -94,9 +98,7 @@ class IntelligenceResultFormatters:
 
         total_conflicts = sum(len(lst) for lst in conflict_lists)
         if total_conflicts:
-            formatted += (
-                f"\n⚠️ **Conflicts Detected:** {total_conflicts} conflicting document pairs\n"
-            )
+            formatted += f"\n⚠️ **Conflicts Detected:** {total_conflicts} conflicting document pairs\n"
 
         return formatted
 
@@ -176,15 +178,19 @@ class IntelligenceResultFormatters:
         # Handle both new format ("conflicts") and old format ("conflicting_pairs")
         conflict_list = conflicts.get("conflicts", [])
         conflicting_pairs = conflicts.get("conflicting_pairs", [])
-        
+
         # Use whichever format is provided
         if conflicting_pairs:
             conflict_list = conflicting_pairs
-        
-        if not conflicts or not conflict_list:
-            return "✅ **Conflict Analysis**\n\nNo conflicts detected between documents."
 
-        formatted = f"⚠️ **Conflict Analysis** ({len(conflict_list)} conflicts found)\n\n"
+        if not conflicts or not conflict_list:
+            return (
+                "✅ **Conflict Analysis**\n\nNo conflicts detected between documents."
+            )
+
+        formatted = (
+            f"⚠️ **Conflict Analysis** ({len(conflict_list)} conflicts found)\n\n"
+        )
 
         for i, conflict in enumerate(conflict_list[:3], 1):  # Show top 3 conflicts
             # Handle tuple format (doc1, doc2, metadata) or dict format
@@ -198,8 +204,16 @@ class IntelligenceResultFormatters:
                 # Dict format
                 doc1 = conflict.get("document_1", {})
                 doc2 = conflict.get("document_2", {})
-                doc1_title = doc1.get('title', 'Unknown') if isinstance(doc1, dict) else str(doc1)
-                doc2_title = doc2.get('title', 'Unknown') if isinstance(doc2, dict) else str(doc2)
+                doc1_title = (
+                    doc1.get("title", "Unknown")
+                    if isinstance(doc1, dict)
+                    else str(doc1)
+                )
+                doc2_title = (
+                    doc2.get("title", "Unknown")
+                    if isinstance(doc2, dict)
+                    else str(doc2)
+                )
                 severity = conflict.get("severity", "unknown")
                 conflict_type = conflict.get("conflict_type", "unknown")
 
@@ -221,7 +235,9 @@ class IntelligenceResultFormatters:
             formatted += "💡 **Resolution Suggestions:**\n"
             if isinstance(suggestions, dict):
                 # Handle dict format
-                for key, suggestion in list(suggestions.items())[:2]:  # Show top 2 suggestions
+                for key, suggestion in list(suggestions.items())[
+                    :2
+                ]:  # Show top 2 suggestions
                     formatted += f"• {suggestion}\n"
             else:
                 # Handle list format
@@ -236,17 +252,16 @@ class IntelligenceResultFormatters:
         if not complementary:
             return "🔍 **Complementary Content**\n\nNo complementary content found."
 
-        formatted = f"🔗 **Complementary Content** ({len(complementary)} recommendations)\n\n"
+        formatted = (
+            f"🔗 **Complementary Content** ({len(complementary)} recommendations)\n\n"
+        )
 
         for i, content in enumerate(complementary[:5], 1):  # Show top 5
             document = content.get("document", {})
             relevance = content.get("relevance_score", 0)
 
             # Flattened or nested title
-            title_value = (
-                content.get("title")
-                or content.get("source_title")
-            )
+            title_value = content.get("title") or content.get("source_title")
             if not title_value:
                 if isinstance(document, dict):
                     title_value = document.get("source_title") or "Unknown"
@@ -256,13 +271,16 @@ class IntelligenceResultFormatters:
 
             # Reasons and strategy
             reason = (
-                content.get("reason")
-                or content.get("recommendation_reason")
+                content.get("reason") or content.get("recommendation_reason")
             ) or ""
             if not reason and isinstance(document, dict):
-                reason = document.get("recommendation_reason", "") or document.get("reason", "")
+                reason = document.get("recommendation_reason", "") or document.get(
+                    "reason", ""
+                )
             elif not reason and document is not None:
-                reason = getattr(document, "recommendation_reason", "") or getattr(document, "reason", "")
+                reason = getattr(document, "recommendation_reason", "") or getattr(
+                    document, "reason", ""
+                )
             strategy = content.get("strategy")
 
             formatted += f"**{i}. Complementary Score: {relevance:.3f}**\n"
@@ -288,23 +306,31 @@ class IntelligenceResultFormatters:
             message = metadata.get("message", "No clusters found.")
             return f"🗂️ **Document Clustering**\n\n{message}"
 
-        formatted = f"🗂️ **Document Clustering Results**\n\n"
+        formatted = "🗂️ **Document Clustering Results**\n\n"
 
         for i, cluster in enumerate(cluster_list[:5], 1):  # Show first 5 clusters
             documents = cluster.get("documents", [])
-            cluster_metadata = cluster.get("cluster_metadata", {}) if isinstance(cluster, dict) else {}
+            cluster_metadata = (
+                cluster.get("cluster_metadata", {}) if isinstance(cluster, dict) else {}
+            )
             coherence = (
-                cluster_metadata.get("coherence_score", cluster.get("coherence_score", 0))
+                cluster_metadata.get(
+                    "coherence_score", cluster.get("coherence_score", 0)
+                )
                 if isinstance(cluster, dict)
                 else 0
             )
             centroid_topics = (
-                cluster_metadata.get("centroid_topics", cluster.get("centroid_topics", []))
+                cluster_metadata.get(
+                    "centroid_topics", cluster.get("centroid_topics", [])
+                )
                 if isinstance(cluster, dict)
                 else []
             )
             shared_entities = (
-                cluster_metadata.get("shared_entities", cluster.get("shared_entities", []))
+                cluster_metadata.get(
+                    "shared_entities", cluster.get("shared_entities", [])
+                )
                 if isinstance(cluster, dict)
                 else []
             )
@@ -318,16 +344,16 @@ class IntelligenceResultFormatters:
             formatted += f"**Cluster {i} (ID: {cluster_id})**\n"
             formatted += f"• Documents: {len(documents)}\n"
             formatted += f"• Coherence Score: {coherence:.3f}\n"
-            
+
             if centroid_topics:
                 formatted += f"• Key Topics: {', '.join(centroid_topics[:3])}\n"  # Show top 3 topics
-                
+
             if shared_entities:
                 formatted += f"• Shared Entities: {', '.join(shared_entities[:3])}\n"  # Show top 3 entities
-                
+
             if cluster_summary:
                 formatted += f"• Summary: {cluster_summary}\n"
-                
+
             formatted += "\n"
 
         # Add summary statistics
@@ -364,16 +390,16 @@ class IntelligenceResultFormatters:
                 avg_coherence = float(metadata.get("overall_coherence", 0.0))
             except (TypeError, ValueError):
                 avg_coherence = 0.0
-        
-        formatted += f"📊 **Summary:**\n"
+
+        formatted += "📊 **Summary:**\n"
         formatted += f"• Total Clusters: {len(cluster_list)}\n"
         formatted += f"• Total Documents: {total_docs}\n"
         formatted += f"• Average Coherence Score: {avg_coherence:.3f}\n"
-        
+
         metadata = clusters.get("clustering_metadata", {})
         strategy = metadata.get("strategy", "unknown")
         formatted += f"• Strategy: {strategy}\n"
-        
+
         original_query = metadata.get("original_query")
         if original_query:
             formatted += f"• Original Query: {original_query}\n"

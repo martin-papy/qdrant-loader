@@ -216,7 +216,7 @@ class TestWebsiteBuilderMarkdown:
         # Test the fallback method directly to avoid mocking issues
         builder = WebsiteBuilder()
         result = builder.markdown_processor._basic_markdown_to_html_no_regex("# Test Header")
-        
+
         # Should convert basic markdown
         assert '<h1>Test Header</h1>' in result
 
@@ -291,7 +291,7 @@ class TestWebsiteBuilderPageBuilding:
         # Add breadcrumb placeholder to base template
         base_template = mock_project_structure / "website" / "templates" / "base.html"
         content = base_template.read_text()
-        content = content.replace("<main>{{ content }}</main>", 
+        content = content.replace("<main>{{ content }}</main>",
                                 "<div class=\"breadcrumb\">{{ breadcrumb }}</div><main>{{ content }}</main>")
         base_template.write_text(content)
 

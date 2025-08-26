@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
 
 
 class RateLimiter:
@@ -23,10 +22,10 @@ class RateLimiter:
 
         self._min_interval: float = interval_seconds / float(requests_per_interval)
         self._lock: asyncio.Lock = asyncio.Lock()
-        self._last_request_time: Optional[float] = None
+        self._last_request_time: float | None = None
 
     @classmethod
-    def per_minute(cls, requests_per_minute: int) -> "RateLimiter":
+    def per_minute(cls, requests_per_minute: int) -> RateLimiter:
         return cls(requests_per_interval=requests_per_minute, interval_seconds=60.0)
 
     def _get_delay(self, now: float) -> float:
@@ -46,19 +45,12 @@ class RateLimiter:
                 now = loop.time()
             self._last_request_time = now
 
-    async def __aenter__(self) -> "RateLimiter":
+    async def __aenter__(self) -> RateLimiter:
         await self.acquire()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:  # noqa: D401 (intentional no-op)
+    async def __aexit__(
+        self, exc_type, exc, tb
+    ) -> None:  # noqa: D401 (intentional no-op)
         # No cleanup required
         return None
-
-
-
-
-
-
-
-
-

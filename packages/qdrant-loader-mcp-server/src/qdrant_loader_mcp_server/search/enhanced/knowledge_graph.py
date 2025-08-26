@@ -8,7 +8,7 @@ maintainability and testability.
 Architecture:
 - kg.models: Core data types and enums
 - kg.graph: Core KnowledgeGraph implementation
-- kg.builder: Graph construction from search results  
+- kg.builder: Graph construction from search results
 - kg.traverser: Graph traversal algorithms
 - kg.document_graph: High-level document interface
 - kg.utils: Shared utilities and constants
@@ -16,27 +16,23 @@ Architecture:
 """
 
 # Re-export the complete knowledge graph API
-from .kg import (
-    # Core data types
+from .kg import (  # Main classes; Core data types
+    DocumentKnowledgeGraph,
+    GraphBuilder,
+    GraphEdge,
+    GraphNode,
+    GraphTraverser,
+    KnowledgeGraph,
     NodeType,
     RelationshipType,
-    GraphNode,
-    GraphEdge,
-    TraversalStrategy,
     TraversalResult,
-    # Main classes
-    KnowledgeGraph,
-    GraphBuilder,
-    GraphTraverser,
-    DocumentKnowledgeGraph,
+    TraversalStrategy,
 )
-
-
 
 # Provide convenient access to the main DocumentKnowledgeGraph class
 __all__ = [
     "DocumentKnowledgeGraph",
-    "KnowledgeGraph", 
+    "KnowledgeGraph",
     "GraphBuilder",
     "GraphTraverser",
     "NodeType",

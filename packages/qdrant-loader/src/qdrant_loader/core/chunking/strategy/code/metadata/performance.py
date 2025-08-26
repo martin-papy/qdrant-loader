@@ -36,7 +36,9 @@ def analyze_performance_patterns(content: str) -> dict[str, list[str]]:
         for j, other_line in enumerate(lines):
             if j == idx:
                 continue
-            if bare_call_regex.search(other_line) or method_call_regex.search(other_line):
+            if bare_call_regex.search(other_line) or method_call_regex.search(
+                other_line
+            ):
                 call_count += 1
         if call_count > 0:
             performance_indicators["potential_bottlenecks"].append("recursion")

@@ -12,16 +12,14 @@ Environment variables overlay values from file. CLI flags override env.
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any
 
 import yaml
 
 from .config import Config, OpenAIConfig, QdrantConfig, SearchConfig
 from .utils.logging import LoggingConfig
-
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -52,7 +50,9 @@ def resolve_config_path(cli_config: Path | None) -> Path | None:
 def _get_section(config_data: dict[str, Any], name: str) -> dict[str, Any]:
     # Support both "global" and legacy "global_config" naming
     if name == "global":
-        return config_data.get("global", {}) or config_data.get("global_config", {}) or {}
+        return (
+            config_data.get("global", {}) or config_data.get("global_config", {}) or {}
+        )
     return config_data.get(name, {}) or {}
 
 
@@ -112,12 +112,18 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     # Derive OpenAIConfig for now (Phase 0); will be replaced by core LLM provider later
     api_key = llm.get("api_key") or os.getenv("OPENAI_API_KEY")
     models = dict(llm.get("models") or {})
-    embedding_model = models.get("embeddings") or os.getenv("LLM_EMBEDDING_MODEL") or "text-embedding-3-small"
+    embedding_model = (
+        models.get("embeddings")
+        or os.getenv("LLM_EMBEDDING_MODEL")
+        or "text-embedding-3-small"
+    )
     chat_model = models.get("chat") or os.getenv("LLM_CHAT_MODEL") or "gpt-3.5-turbo"
 
     cfg = Config(
         qdrant=QdrantConfig(**qdrant) if qdrant else QdrantConfig(),
-        openai=OpenAIConfig(api_key=api_key, model=embedding_model, chat_model=chat_model),
+        openai=OpenAIConfig(
+            api_key=api_key, model=embedding_model, chat_model=chat_model
+        ),
         search=SearchConfig(**search) if search else SearchConfig(),
     )
     return cfg
@@ -140,7 +146,7 @@ def redact_effective_config(effective: dict[str, Any]) -> dict[str, Any]:
     return _redact(effective)
 
 
-def load_config(cli_config: Path | None) -> Tuple[Config, dict[str, Any], bool]:
+def load_config(cli_config: Path | None) -> tuple[Config, dict[str, Any], bool]:
     """Load effective configuration.
 
     Returns (config_obj, effective_dict, used_file: bool)
@@ -171,7 +177,9 @@ def load_config(cli_config: Path | None) -> Tuple[Config, dict[str, Any], bool]:
             }
             return cfg, effective, used_file
         except Exception as e:
-            logger.warning("Failed to load config file; falling back to env-only", error=str(e))
+            logger.warning(
+                "Failed to load config file; falling back to env-only", error=str(e)
+            )
 
     # Fallback to legacy env-only mode (deprecated)
     cfg = Config()
@@ -203,5 +211,3 @@ def load_config(cli_config: Path | None) -> Tuple[Config, dict[str, Any], bool]:
         "warning": "Using legacy env-only mode; providing a config file is recommended and will be required in a future release.",
     }
     return cfg, effective, used_file
-
-

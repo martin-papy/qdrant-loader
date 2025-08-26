@@ -1,21 +1,21 @@
 """Knowledge Graph package with complete modular architecture."""
 
+from .builder import GraphBuilder
+from .document_graph import DocumentKnowledgeGraph
+from .graph import KnowledgeGraph
 from .models import (
+    GraphEdge,
+    GraphNode,
     NodeType,
     RelationshipType,
-    GraphNode,
-    GraphEdge,
-    TraversalStrategy,
     TraversalResult,
+    TraversalStrategy,
 )
 from .traverser import GraphTraverser
-from .builder import GraphBuilder
-from .graph import KnowledgeGraph
-from .document_graph import DocumentKnowledgeGraph
 
 __all__ = [
     "NodeType",
-    "RelationshipType", 
+    "RelationshipType",
     "GraphNode",
     "GraphEdge",
     "TraversalStrategy",
@@ -25,5 +25,3 @@ __all__ = [
     "KnowledgeGraph",
     "DocumentKnowledgeGraph",
 ]
-
-

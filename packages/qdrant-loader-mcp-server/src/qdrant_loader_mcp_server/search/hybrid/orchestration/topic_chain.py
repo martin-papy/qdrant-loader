@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
 import inspect
+from typing import Any
 
-from ...enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 from ...components.search_result_models import HybridSearchResult
+from ...enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 
 
 async def generate_topic_search_chain(
@@ -45,8 +45,8 @@ async def execute_topic_chain_search(
     results_per_link: int = 3,
     source_types: list[str] | None = None,
     project_ids: list[str] | None = None,
-) -> Dict[str, List[HybridSearchResult]]:
-    chain_results: Dict[str, List[HybridSearchResult]] = {}
+) -> dict[str, list[HybridSearchResult]]:
+    chain_results: dict[str, list[HybridSearchResult]] = {}
 
     original_results = await engine.search(
         query=topic_chain.original_query,
@@ -86,5 +86,3 @@ async def _initialize_topic_relationships(engine: Any, sample_query: str) -> Non
             engine.set_topic_chains_initialized(True)
         else:
             engine.mark_topic_chains_initialized()
-
-

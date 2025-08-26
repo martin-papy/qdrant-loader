@@ -14,5 +14,3 @@ class HTTPRequestError(Exception):
     def __str__(self) -> str:  # pragma: no cover - trivial
         status_part = f" status={self.status}" if self.status is not None else ""
         return f"HTTPRequestError(url={self.url}{status_part}): {self.message}"
-
-

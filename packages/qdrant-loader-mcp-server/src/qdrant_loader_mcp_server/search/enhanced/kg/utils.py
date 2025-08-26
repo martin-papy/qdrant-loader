@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import List, Tuple
 import logging
 
 # Module-level logger
 logger = logging.getLogger(__name__)
 
 from .models import GraphEdge, GraphNode
-
 
 # Default weights and thresholds used across KG computations
 ENTITY_SIM_WEIGHT: float = 0.4
@@ -28,7 +26,7 @@ def jaccard_similarity(set1: set[str], set2: set[str]) -> float:
 
 
 def calculate_list_similarity(
-    list1: List[Tuple[str, str]], list2: List[Tuple[str, str]]
+    list1: list[tuple[str, str]], list2: list[tuple[str, str]]
 ) -> float:
     """Calculate similarity between two lists of (text, label) items."""
     if not list1 or not list2:
@@ -95,7 +93,9 @@ def _get_relationship_value(edge: GraphEdge | object) -> str:
         return "unknown"
 
 
-def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNode]) -> list[str]:
+def build_reasoning_path(
+    edges: list[GraphEdge], nodes_by_id: dict[str, GraphNode]
+) -> list[str]:
     """Build a human-readable reasoning path from a traversal.
 
     Parameters
@@ -120,8 +120,16 @@ def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNod
                 target_node is not None,
             )
 
-        source_title = source_node.title if source_node is not None else f"UNKNOWN NODE {getattr(edge, 'source_id', 'N/A')}"
-        target_title = target_node.title if target_node is not None else f"UNKNOWN NODE {getattr(edge, 'target_id', 'N/A')}"
+        source_title = (
+            source_node.title
+            if source_node is not None
+            else f"UNKNOWN NODE {getattr(edge, 'source_id', 'N/A')}"
+        )
+        target_title = (
+            target_node.title
+            if target_node is not None
+            else f"UNKNOWN NODE {getattr(edge, 'target_id', 'N/A')}"
+        )
 
         relationship_value = _get_relationship_value(edge)
 
@@ -130,5 +138,3 @@ def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNod
             f"(weight: {getattr(edge, 'weight', 0.0):.2f})"
         )
     return reasoning
-
-

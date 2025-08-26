@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable, Mapping
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Mapping, Iterable
+from typing import Any
 
 
 def get_field(obj: Any, key: str, default: Any = None) -> Any:
@@ -61,7 +62,9 @@ def get_or_create_document_id(doc: Any) -> str:
         # Mapping
         if isinstance(value, Mapping):
             # Convert keys to str and recurse on values; sort by key for determinism
-            converted_items = ((str(k), _to_stable_primitive(v)) for k, v in value.items())
+            converted_items = (
+                (str(k), _to_stable_primitive(v)) for k, v in value.items()
+            )
             sorted_items = sorted(converted_items, key=lambda kv: kv[0])
             return {k: v for k, v in sorted_items}
         # Iterables (list/tuple/set etc.), but not strings/bytes (already handled)
@@ -78,7 +81,9 @@ def get_or_create_document_id(doc: Any) -> str:
         # Fallback to string representation for anything else
         return str(value)
 
-    stable_fields = {k: _to_stable_primitive(v) for k, v in candidate_fields.items() if v is not None}
+    stable_fields = {
+        k: _to_stable_primitive(v) for k, v in candidate_fields.items() if v is not None
+    }
 
     payload = json.dumps(
         stable_fields,
@@ -87,5 +92,3 @@ def get_or_create_document_id(doc: Any) -> str:
     )
     short_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:10]
     return f"{source_type}:{source_title}:{short_hash}"
-
-

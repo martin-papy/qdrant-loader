@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
-
-from ....search.components.search_result_models import HybridSearchResult
 from ...formatters import MCPFormatters
 
 
 def format_lightweight_attachment_text(
-    organized_results: Dict[str, List], total_found: int
+    organized_results: dict[str, list], total_found: int
 ) -> str:
     if not organized_results:
         return (
@@ -34,7 +31,7 @@ def format_lightweight_attachment_text(
 
 
 def format_lightweight_hierarchy_text(
-    organized_results: Dict[str, List], total_found: int
+    organized_results: dict[str, list], total_found: int
 ) -> str:
     if not organized_results:
         return (
@@ -57,5 +54,3 @@ def format_lightweight_hierarchy_text(
     formatted += "• Get document IDs for specific content retrieval\n"
     formatted += "• Understand document relationships and organization\n"
     return formatted
-
-

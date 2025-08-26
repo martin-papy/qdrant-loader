@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List
+from typing import Any
 
 from .utils import get_or_create_document_id
 
@@ -9,9 +9,14 @@ from .utils import get_or_create_document_id
 def _safe_score(d: Any) -> float:
     try:
         if isinstance(d, dict):
-            return float(d.get("score") or d.get("similarity") or d.get("relevance") or 0.0)
+            return float(
+                d.get("score") or d.get("similarity") or d.get("relevance") or 0.0
+            )
         return float(
-            getattr(d, "score", None) or getattr(d, "similarity", None) or getattr(d, "relevance", None) or 0.0
+            getattr(d, "score", None)
+            or getattr(d, "similarity", None)
+            or getattr(d, "relevance", None)
+            or 0.0
         )
     except Exception:
         return 0.0
@@ -20,12 +25,16 @@ def _safe_score(d: Any) -> float:
 def _display_title(d: Any) -> str:
     if isinstance(d, dict):
         return (d.get("title") or d.get("source_title") or str(d))[:100]
-    return (getattr(d, "source_title", None) or getattr(d, "title", None) or str(d))[:100]
+    return (getattr(d, "source_title", None) or getattr(d, "title", None) or str(d))[
+        :100
+    ]
 
 
-def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
-    relationships: List[Dict[str, Any]] = []
-    summary_parts: List[str] = []
+def process_analysis_results(
+    analysis_results: dict[str, Any], params: dict[str, Any]
+) -> dict[str, Any]:
+    relationships: list[dict[str, Any]] = []
+    summary_parts: list[str] = []
     total_analyzed = analysis_results.get("query_metadata", {}).get("document_count", 0)
 
     # Document clusters → similarity relationships
@@ -107,7 +116,7 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
         complementary = analysis_results["complementary_content"]
         comp_count = 0
         # Build a lightweight documents lookup for title resolution
-        docs_lookup: Dict[str, Any] = {}
+        docs_lookup: dict[str, Any] = {}
         try:
             # From clusters if available
             for cluster in analysis_results.get("document_clusters", []) or []:
@@ -126,7 +135,11 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
             if hasattr(complementary_content, "get_top_recommendations"):
                 recommendations = complementary_content.get_top_recommendations()
             else:
-                recommendations = complementary_content if isinstance(complementary_content, list) else []
+                recommendations = (
+                    complementary_content
+                    if isinstance(complementary_content, list)
+                    else []
+                )
             for rec in recommendations:
                 if isinstance(rec, dict):
                     target_doc_id = rec.get("document_id", "Unknown")
@@ -135,12 +148,18 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
                     # Resolve titles consistently using _display_title with lookups
                     source_doc_obj = docs_lookup.get(str(doc_id))
                     document_1_title = (
-                        _display_title(source_doc_obj) if source_doc_obj is not None else str(doc_id)
+                        _display_title(source_doc_obj)
+                        if source_doc_obj is not None
+                        else str(doc_id)
                     )[:100]
-                    target_doc_obj = rec.get("document") or docs_lookup.get(str(target_doc_id))
+                    target_doc_obj = rec.get("document") or docs_lookup.get(
+                        str(target_doc_id)
+                    )
                     fallback_title = rec.get("title", str(target_doc_id))
                     document_2_title = (
-                        _display_title(target_doc_obj) if target_doc_obj is not None else fallback_title
+                        _display_title(target_doc_obj)
+                        if target_doc_obj is not None
+                        else fallback_title
                     )[:100]
                     relationships.append(
                         {
@@ -177,5 +196,3 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
         "total_analyzed": total_analyzed,
         "summary": summary_text,
     }
-
-

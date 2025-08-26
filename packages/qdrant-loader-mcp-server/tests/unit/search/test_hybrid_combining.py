@@ -1,5 +1,3 @@
-from unittest.mock import AsyncMock
-
 import pytest
 
 
@@ -115,5 +113,3 @@ async def test_combine_results_with_low_min_score(hybrid_search):
     assert results[1].vector_score == 0.0
     assert results[1].keyword_score == 0.4
     assert results[1].score == pytest.approx(0.12, abs=0.01)
-
-

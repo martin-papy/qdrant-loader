@@ -26,7 +26,7 @@ async def test_search_with_source_type_filter(hybrid_search):
     hybrid_search._get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3] * 512)
     hybrid_search._expand_query = AsyncMock(return_value="test query")
 
-    results = await hybrid_search.search("test query", source_types=["git"]) 
+    results = await hybrid_search.search("test query", source_types=["git"])
     assert results and all(r.source_type == "git" for r in results)
 
 
@@ -43,5 +43,3 @@ async def test_search_empty_results(hybrid_search, mock_qdrant_client):
 
     results = await hybrid_search.search("test query")
     assert results == []
-
-

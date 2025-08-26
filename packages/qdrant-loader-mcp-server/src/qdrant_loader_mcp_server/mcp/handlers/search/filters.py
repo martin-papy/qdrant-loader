@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
 import os
-from ....mcp.formatters.utils import FormatterUtils
+from typing import Any
 
+from ....mcp.formatters.utils import FormatterUtils
 from ....search.components.search_result_models import HybridSearchResult
 
 
@@ -58,17 +58,28 @@ def apply_attachment_filters(
         if "attachments_only" in attachment_filter and not result.is_attachment:
             continue
         if "parent_document_title" in attachment_filter:
-            if result.parent_document_title != attachment_filter["parent_document_title"]:
+            if (
+                result.parent_document_title
+                != attachment_filter["parent_document_title"]
+            ):
                 continue
         if "file_type" in attachment_filter:
             result_file_type = result.get_file_type()
             if result_file_type != attachment_filter["file_type"]:
                 continue
         _min_size = attachment_filter.get("file_size_min")
-        if _min_size is not None and result.file_size is not None and result.file_size < _min_size:
+        if (
+            _min_size is not None
+            and result.file_size is not None
+            and result.file_size < _min_size
+        ):
             continue
         _max_size = attachment_filter.get("file_size_max")
-        if _max_size is not None and result.file_size is not None and result.file_size > _max_size:
+        if (
+            _max_size is not None
+            and result.file_size is not None
+            and result.file_size > _max_size
+        ):
             continue
         if "author" in attachment_filter:
             if result.attachment_author != attachment_filter["author"]:
@@ -132,5 +143,3 @@ def apply_lightweight_attachment_filters(
                 continue
         filtered_results.append(result)
     return filtered_results
-
-

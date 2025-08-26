@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
-
 
 ALLOWED_ROOTS = [
     "qdrant_loader.core.chunking.strategy.code",
@@ -13,7 +11,7 @@ ALLOWED_ROOTS = [
 ]
 
 
-def _iter_python_files(base: Path) -> List[Path]:
+def _iter_python_files(base: Path) -> list[Path]:
     return [p for p in base.rglob("*.py") if "__pycache__" not in p.parts]
 
 
@@ -22,7 +20,9 @@ def _module_name_from_path(src_root: Path, file_path: Path) -> str:
     return ".".join((src_root.name, *rel.parts))
 
 
-def _resolve_relative_import(current_module: str, module: str | None, level: int) -> str | None:
+def _resolve_relative_import(
+    current_module: str, module: str | None, level: int
+) -> str | None:
     if level == 0:
         return module
     parts = current_module.split(".")
@@ -34,9 +34,11 @@ def _resolve_relative_import(current_module: str, module: str | None, level: int
     return ".".join(base) if base else None
 
 
-def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str, Set[str]], List[str]]:
-    graph: Dict[str, Set[str]] = {}
-    modules: List[str] = []
+def _collect_edges(
+    src_root: Path, scope_prefixes: list[str]
+) -> tuple[dict[str, set[str]], list[str]]:
+    graph: dict[str, set[str]] = {}
+    modules: list[str] = []
 
     for py_file in _iter_python_files(src_root):
         mod = _module_name_from_path(src_root.parent, py_file)
@@ -63,11 +65,13 @@ def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str,
     return graph, modules
 
 
-def _has_cycles(graph: Dict[str, Set[str]], scope_prefixes: List[str]) -> Tuple[bool, List[List[str]]]:
-    visited: Set[str] = set()
-    stack: Set[str] = set()
-    path: List[str] = []
-    cycles: List[List[str]] = []
+def _has_cycles(
+    graph: dict[str, set[str]], scope_prefixes: list[str]
+) -> tuple[bool, list[list[str]]]:
+    visited: set[str] = set()
+    stack: set[str] = set()
+    path: list[str] = []
+    cycles: list[list[str]] = []
 
     def dfs(node: str) -> None:
         if node in stack:
@@ -104,4 +108,3 @@ def test_no_import_cycles_in_selected_subpackages():
     has_cycles, cycles = _has_cycles(graph, ALLOWED_ROOTS)
 
     assert not has_cycles, f"Import cycles detected in guarded scopes: {cycles}"
-

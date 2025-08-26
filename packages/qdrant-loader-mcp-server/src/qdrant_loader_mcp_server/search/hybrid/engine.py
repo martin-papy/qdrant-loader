@@ -13,15 +13,11 @@ from typing import Any
 from ...config import SearchConfig
 from ...utils.logging import LoggingConfig
 from .models import (
-    DEFAULT_VECTOR_WEIGHT,
     DEFAULT_KEYWORD_WEIGHT,
     DEFAULT_METADATA_WEIGHT,
     DEFAULT_MIN_SCORE,
+    DEFAULT_VECTOR_WEIGHT,
     HybridProcessingConfig,
-)
-from .components.document_lookup import (
-    build_document_lookup as _component_build_document_lookup,
-    find_document_by_id as _component_find_document_by_id,
 )
 
 logger = LoggingConfig.get_logger(__name__)
@@ -96,7 +92,9 @@ class HybridSearchEngine(HybridEngineAPI):
         try:
             return await super().search(*args, **kwargs)
         except Exception as e:
-            self.logger.error("Error in hybrid search", error=str(e), query=kwargs.get("query"))
+            self.logger.error(
+                "Error in hybrid search", error=str(e), query=kwargs.get("query")
+            )
             raise
 
     # All other public and internal methods are provided by HybridEngineAPI

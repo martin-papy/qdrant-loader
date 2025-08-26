@@ -103,5 +103,3 @@ def get_attachment_search_tool_schema() -> dict[str, Any]:
             },
         },
     }
-
-

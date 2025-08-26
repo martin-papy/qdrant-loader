@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ..interfaces import Recommender
 from ....components.models import HybridSearchResult
+from ..interfaces import Recommender
 from ..models import ComplementaryContent
 
 
@@ -21,5 +21,3 @@ class DefaultRecommender(Recommender):
         pool: list[HybridSearchResult],
     ) -> ComplementaryContent:  # type: ignore[override]
         return self._legacy.find_complementary_content(target, pool)
-
-

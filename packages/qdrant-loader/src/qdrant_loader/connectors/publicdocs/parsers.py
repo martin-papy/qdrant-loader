@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import fnmatch
-from typing import List, Any
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
-from bs4 import BeautifulSoup
-from bs4 import NavigableString
+from bs4 import BeautifulSoup, NavigableString
 
 
-def extract_links(html: str, current_url: str, base_url: str) -> List[str]:
+def extract_links(html: str, current_url: str, base_url: str) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
-    links: List[str] = []
+    links: list[str] = []
     for link in soup.find_all("a", href=True):
         href = str(link["href"])  # type: ignore[index]
         absolute_url = urljoin(current_url, href)
@@ -36,7 +35,9 @@ def extract_title(html: str, content_selector: str) -> str:
     return "Untitled Document"
 
 
-def extract_content(html: str, content_selector: str, remove: list[str], code_blocks_selector: str) -> str:
+def extract_content(
+    html: str, content_selector: str, remove: list[str], code_blocks_selector: str
+) -> str:
     soup = BeautifulSoup(html, "html.parser")
     for selector in remove:
         for element in soup.select(selector):
@@ -54,7 +55,9 @@ def extract_content(html: str, content_selector: str, remove: list[str], code_bl
     return content.get_text(separator="\n", strip=True)
 
 
-def should_process_url(url: str, base_url: str, exclude_paths: list[str], path_pattern: str | None) -> bool:
+def should_process_url(
+    url: str, base_url: str, exclude_paths: list[str], path_pattern: str | None
+) -> bool:
     if not url.startswith(base_url):
         return False
     path = url[len(base_url) :]
@@ -68,9 +71,9 @@ def should_process_url(url: str, base_url: str, exclude_paths: list[str], path_p
 
 def extract_attachments(
     html: str, page_url: str, document_id: str, selectors: list[str]
-) -> List[dict[str, Any]]:
+) -> list[dict[str, Any]]:
     soup = BeautifulSoup(html, "html.parser")
-    attachments: List[dict[str, Any]] = []
+    attachments: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
 
     for selector in selectors:
@@ -146,5 +149,3 @@ def get_mime_type_from_extension(extension: str) -> str:
         "zip": "application/zip",
     }
     return mime_types.get(extension, "application/octet-stream")
-
-

@@ -74,5 +74,3 @@ def get_expand_document_tool_schema() -> dict[str, Any]:
             },
         },
     }
-
-

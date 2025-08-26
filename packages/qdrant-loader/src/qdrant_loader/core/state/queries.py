@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import select
 
 from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
 
 
 def select_ingestion_history(
-    source_type: str, source: str, project_id: Optional[str] = None
+    source_type: str, source: str, project_id: str | None = None
 ):
     q = select(IngestionHistory).filter_by(source_type=source_type, source=source)
     if project_id is not None:
@@ -16,9 +14,7 @@ def select_ingestion_history(
     return q
 
 
-def select_last_ingestion(
-    source_type: str, source: str, project_id: Optional[str] = None
-):
+def select_last_ingestion(source_type: str, source: str, project_id: str | None = None):
     q = select(IngestionHistory).filter(
         IngestionHistory.source_type == source_type,
         IngestionHistory.source == source,
@@ -31,8 +27,8 @@ def select_last_ingestion(
 def select_document_state(
     source_type: str,
     source: str,
-    document_id: Optional[str] = None,
-    project_id: Optional[str] = None,
+    document_id: str | None = None,
+    project_id: str | None = None,
 ):
     conditions = [
         DocumentStateRecord.source_type == source_type,
@@ -44,5 +40,3 @@ def select_document_state(
     if project_id is not None:
         q = q.filter(DocumentStateRecord.project_id == project_id)
     return q
-
-

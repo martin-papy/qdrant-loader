@@ -45,15 +45,15 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         metadata = chunk_metadata.copy()
 
         from qdrant_loader.core.chunking.strategy.code.metadata import (
+            analyze_performance_patterns,
+            analyze_security_patterns,
             build_dependency_graph,
             calculate_complexity_metrics,
-            identify_code_patterns,
             calculate_doc_coverage,
-            identify_test_code,
-            analyze_security_patterns,
-            analyze_performance_patterns,
             calculate_maintainability_metrics,
             extract_language_specific_metadata,
+            identify_code_patterns,
+            identify_test_code,
         )
 
         metadata.update(

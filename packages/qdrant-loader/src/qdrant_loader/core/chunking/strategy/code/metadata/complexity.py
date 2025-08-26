@@ -59,7 +59,16 @@ def calculate_maintainability_index(content: str) -> float:
     loc = len(non_empty_lines)
 
     complexity = 1
-    for indicator in ["if ", "elif ", "else:", "while ", "for ", "try:", "except:", "case "]:
+    for indicator in [
+        "if ",
+        "elif ",
+        "else:",
+        "while ",
+        "for ",
+        "try:",
+        "except:",
+        "case ",
+    ]:
         complexity += content.lower().count(indicator.lower())
 
     operators = len(__import__("re").findall(r"[+\-*/=<>!&|%^~]", content))
@@ -73,9 +82,12 @@ def calculate_maintainability_index(content: str) -> float:
         halstead_volume = length * math.log2(vocabulary) if vocabulary > 1 else 0
 
     if loc > 0 and halstead_volume > 0:
-        mi = 171 - 5.2 * math.log(halstead_volume) - 0.23 * complexity - 16.2 * math.log(loc)
+        mi = (
+            171
+            - 5.2 * math.log(halstead_volume)
+            - 0.23 * complexity
+            - 16.2 * math.log(loc)
+        )
         return max(0, min(100, mi))
 
     return 50
-
-

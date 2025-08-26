@@ -36,5 +36,3 @@ class TiktokenTokenCounter(TokenCounter):
             except Exception:
                 pass
         return len(text)
-
-

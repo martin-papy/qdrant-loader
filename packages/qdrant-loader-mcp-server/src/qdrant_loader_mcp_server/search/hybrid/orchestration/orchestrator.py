@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
 
 class HybridOrchestrator:
@@ -16,10 +16,10 @@ class HybridOrchestrator:
         query: str,
         limit: int,
         query_context: dict[str, Any],
-        source_types: Optional[list[str]] = None,
-        project_ids: Optional[list[str]] = None,
-        vector_query: Optional[str] = None,
-        keyword_query: Optional[str] = None,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None,
+        vector_query: str | None = None,
+        keyword_query: str | None = None,
     ) -> Any:
         return await pipeline.run(
             query=query,
@@ -30,5 +30,3 @@ class HybridOrchestrator:
             vector_query=vector_query if vector_query is not None else query,
             keyword_query=keyword_query if keyword_query is not None else query,
         )
-
-

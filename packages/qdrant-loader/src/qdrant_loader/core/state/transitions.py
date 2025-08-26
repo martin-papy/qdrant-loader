@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import Any, Callable, Awaitable
+from typing import Any
 
 from sqlalchemy import select
 
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
-
 
 AsyncSessionFactory = Callable[[], Awaitable[Any]]
 
@@ -199,8 +199,10 @@ async def update_document_state(
             if attachment_created_str:
                 try:
                     if isinstance(attachment_created_str, str):
-                        document_state_record.attachment_created_at = datetime.fromisoformat(
-                            attachment_created_str.replace("Z", "+00:00")
+                        document_state_record.attachment_created_at = (
+                            datetime.fromisoformat(
+                                attachment_created_str.replace("Z", "+00:00")
+                            )
                         )  # type: ignore
                     elif isinstance(attachment_created_str, datetime):
                         document_state_record.attachment_created_at = attachment_created_str  # type: ignore
@@ -271,17 +273,17 @@ async def update_conversion_metrics(
         ingestion = result.scalar_one_or_none()
         if ingestion:
             ingestion.converted_files_count = (
-                (ingestion.converted_files_count or 0) + converted_files_count
-            )  # type: ignore
+                ingestion.converted_files_count or 0
+            ) + converted_files_count  # type: ignore
             ingestion.conversion_failures_count = (
-                (ingestion.conversion_failures_count or 0) + conversion_failures_count
-            )  # type: ignore
+                ingestion.conversion_failures_count or 0
+            ) + conversion_failures_count  # type: ignore
             ingestion.attachments_processed_count = (
-                (ingestion.attachments_processed_count or 0) + attachments_processed_count
-            )  # type: ignore
+                ingestion.attachments_processed_count or 0
+            ) + attachments_processed_count  # type: ignore
             ingestion.total_conversion_time = (
-                (ingestion.total_conversion_time or 0.0) + total_conversion_time
-            )  # type: ignore
+                ingestion.total_conversion_time or 0.0
+            ) + total_conversion_time  # type: ignore
             ingestion.updated_at = datetime.now(UTC)  # type: ignore
         else:
             now = datetime.now(UTC)
@@ -319,9 +321,15 @@ async def get_conversion_metrics(
             attachments_processed: int | None = ingestion.attachments_processed_count  # type: ignore
             total_time: float | None = ingestion.total_conversion_time  # type: ignore
             return {
-                "converted_files_count": converted_files if converted_files is not None else 0,
-                "conversion_failures_count": conversion_failures if conversion_failures is not None else 0,
-                "attachments_processed_count": attachments_processed if attachments_processed is not None else 0,
+                "converted_files_count": (
+                    converted_files if converted_files is not None else 0
+                ),
+                "conversion_failures_count": (
+                    conversion_failures if conversion_failures is not None else 0
+                ),
+                "attachments_processed_count": (
+                    attachments_processed if attachments_processed is not None else 0
+                ),
                 "total_conversion_time": total_time if total_time is not None else 0.0,
             }
         return {
@@ -368,5 +376,3 @@ async def get_converted_documents(
             )
         result = await session.execute(query)
         return list(result.scalars().all())
-
-

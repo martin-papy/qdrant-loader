@@ -5,26 +5,34 @@ import requests
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.confluence.auth import (
+    auto_detect_deployment_type as _auto_detect_type,
+)
+from qdrant_loader.connectors.confluence.auth import setup_authentication as _setup_auth
 from qdrant_loader.connectors.confluence.config import (
     ConfluenceDeploymentType,
     ConfluenceSpaceConfig,
 )
-from qdrant_loader.connectors.confluence.auth import (
-    setup_authentication as _setup_auth,
-    auto_detect_deployment_type as _auto_detect_type,
-)
-from qdrant_loader.connectors.confluence.pagination import (
-    build_cloud_search_params as _build_cloud_params,
-    build_dc_search_params as _build_dc_params,
-)
 from qdrant_loader.connectors.confluence.mappers import (
     extract_hierarchy_info as _extract_hierarchy_info_helper,
 )
-from qdrant_loader.core.attachment_downloader import AttachmentMetadata
+from qdrant_loader.connectors.confluence.pagination import (
+    build_cloud_search_params as _build_cloud_params,
+)
+from qdrant_loader.connectors.confluence.pagination import (
+    build_dc_search_params as _build_dc_params,
+)
 from qdrant_loader.connectors.shared.attachments import AttachmentReader
 from qdrant_loader.connectors.shared.attachments.metadata import (
     confluence_attachment_to_metadata,
 )
+from qdrant_loader.connectors.shared.http import (
+    RateLimiter,
+)
+from qdrant_loader.connectors.shared.http import (
+    request_with_policy as _http_request_with_policy,
+)
+from qdrant_loader.core.attachment_downloader import AttachmentMetadata
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
     FileConversionConfig,
@@ -32,10 +40,6 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.connectors.shared.http import (
-    request_with_policy as _http_request_with_policy,
-    RateLimiter,
-)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -87,7 +91,9 @@ class ConfluenceConnector(BaseConnector):
 
             # Initialize attachment downloader if download_attachments is enabled
             if self.config.download_attachments:
-                from qdrant_loader.core.attachment_downloader import AttachmentDownloader
+                from qdrant_loader.core.attachment_downloader import (
+                    AttachmentDownloader,
+                )
 
                 downloader = AttachmentDownloader(
                     session=self.session,
@@ -191,7 +197,9 @@ class ConfluenceConnector(BaseConnector):
             dict: Response containing space content
         """
         # Build params via helper
-        params = _build_cloud_params(self.config.space_key, self.config.content_types, cursor)
+        params = _build_cloud_params(
+            self.config.space_key, self.config.content_types, cursor
+        )
 
         logger.debug(
             "Making Confluence Cloud API request",
@@ -218,7 +226,9 @@ class ConfluenceConnector(BaseConnector):
         Returns:
             dict: Response containing space content
         """
-        params = _build_dc_params(self.config.space_key, self.config.content_types, start)
+        params = _build_dc_params(
+            self.config.space_key, self.config.content_types, start
+        )
 
         logger.debug(
             "Making Confluence Data Center API request",
@@ -282,7 +292,9 @@ class ConfluenceConnector(BaseConnector):
             for attachment_data in response.get("results", []):
                 try:
                     translated = confluence_attachment_to_metadata(
-                        attachment_data, base_url=str(self.base_url), parent_id=content_id
+                        attachment_data,
+                        base_url=str(self.base_url),
+                        parent_id=content_id,
                     )
                     if translated is None:
                         logger.warning(
@@ -789,8 +801,10 @@ class ConfluenceConnector(BaseConnector):
                                 if document:
                                     documents.append(document)
 
-                                    attachment_docs = await self._process_attachments_for_document(
-                                        content, document
+                                    attachment_docs = (
+                                        await self._process_attachments_for_document(
+                                            content, document
+                                        )
                                     )
                                     documents.extend(attachment_docs)
 
@@ -865,8 +879,10 @@ class ConfluenceConnector(BaseConnector):
                                 if document:
                                     documents.append(document)
 
-                                    attachment_docs = await self._process_attachments_for_document(
-                                        content, document
+                                    attachment_docs = (
+                                        await self._process_attachments_for_document(
+                                            content, document
+                                        )
                                     )
                                     documents.extend(attachment_docs)
 

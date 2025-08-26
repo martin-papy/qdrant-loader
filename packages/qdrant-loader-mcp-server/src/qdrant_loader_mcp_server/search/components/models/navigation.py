@@ -10,5 +10,3 @@ class NavigationContext:
     sibling_sections: list[str] = field(default_factory=list)
     subsections: list[str] = field(default_factory=list)
     document_hierarchy: list[str] = field(default_factory=list)
-
-

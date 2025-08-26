@@ -1,7 +1,5 @@
 """CLI module for QDrant Loader."""
 
-import asyncio
-import signal
 from pathlib import Path
 
 import click
@@ -11,29 +9,19 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
+from qdrant_loader.cli.async_utils import cancel_all_tasks as _cancel_all_tasks_helper
 from qdrant_loader.cli.asyncio import async_command
-from qdrant_loader.cli.logging_utils import (
-    get_logger as _get_logger_impl,  # noqa: F401
-    setup_logging as _setup_logging_impl,  # noqa: F401
-)
-from qdrant_loader.cli.version import get_version_str as _get_version_str
-from qdrant_loader.cli.update_check import (
-    check_for_updates as _check_updates_helper,
+from qdrant_loader.cli.commands import run_init as _commands_run_init
+from qdrant_loader.cli.config_loader import setup_workspace as _setup_workspace_impl
+from qdrant_loader.cli.logging_utils import get_logger as _get_logger_impl  # noqa: F401
+from qdrant_loader.cli.logging_utils import (  # noqa: F401
+    setup_logging as _setup_logging_impl,
 )
 from qdrant_loader.cli.path_utils import (
     create_database_directory as _create_db_dir_helper,
 )
-from qdrant_loader.cli.async_utils import (
-    cancel_all_tasks as _cancel_all_tasks_helper,
-)
-from qdrant_loader.cli.config_loader import (
-    setup_workspace as _setup_workspace_impl,
-    load_config_with_workspace as _load_config_with_workspace,
-)
-from qdrant_loader.cli.commands import (
-    run_init as _commands_run_init,
-    run_pipeline_ingestion as _run_ingest_pipeline,
-)
+from qdrant_loader.cli.update_check import check_for_updates as _check_updates_helper
+from qdrant_loader.cli.version import get_version_str as _get_version_str
 
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
@@ -49,6 +37,7 @@ def _get_version() -> str:
 
 
 # Back-compat helpers for tests: implement wrappers that operate on this module's global logger
+
 
 def _get_logger():
     global logger
@@ -91,7 +80,6 @@ def _setup_workspace(workspace_path: Path):
     if getattr(workspace_config, "config_path", None):
         lg.info("Config file found", config_path=str(workspace_config.config_path))
     return workspace_config
-
 
 
 @group(name="qdrant-loader")
@@ -398,7 +386,9 @@ def config(
         _setup_logging(log_level, workspace_config)
 
         echo("Current Configuration:")
-        from qdrant_loader.cli.commands.config import run_show_config as _run_show_config
+        from qdrant_loader.cli.commands.config import (
+            run_show_config as _run_show_config,
+        )
 
         output = _run_show_config(workspace, config, env, log_level)
         echo(output)

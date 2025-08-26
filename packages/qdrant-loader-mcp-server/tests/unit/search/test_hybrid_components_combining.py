@@ -1,5 +1,4 @@
 import pytest
-
 from qdrant_loader_mcp_server.search.hybrid.components.combining import HybridCombiner
 
 
@@ -58,4 +57,3 @@ def test_combiner_non_iterable_inputs_raise_type_error():
         combiner.combine(123, [1, 2])  # type: ignore[arg-type]
     with pytest.raises(TypeError):
         combiner.combine([1, 2], 123)  # type: ignore[arg-type]
-

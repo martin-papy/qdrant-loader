@@ -7,6 +7,7 @@ group generation, and data processing.
 """
 
 from typing import Any
+
 from ...search.components.search_result_models import HybridSearchResult
 
 
@@ -27,7 +28,9 @@ class FormatterUtils:
 
         if include_content:
             content = getattr(result, "text", "")
-            minimal["snippet"] = content[:200] + "..." if len(content) > 200 else content
+            minimal["snippet"] = (
+                content[:200] + "..." if len(content) > 200 else content
+            )
 
         # Add optional fields if available
         optional_fields = ["source_url", "file_path", "breadcrumb_text"]
@@ -46,20 +49,28 @@ class FormatterUtils:
         # Extract from structured indicators
         structured_indicators = conflict_info.get("structured_indicators", [])
         for indicator in structured_indicators:
-            if isinstance(indicator, dict) and "doc1_snippet" in indicator and "doc2_snippet" in indicator:
-                statements.append({
-                    "document_1_statement": indicator["doc1_snippet"],
-                    "document_2_statement": indicator["doc2_snippet"],
-                    "context": indicator.get("context", ""),
-                })
+            if (
+                isinstance(indicator, dict)
+                and "doc1_snippet" in indicator
+                and "doc2_snippet" in indicator
+            ):
+                statements.append(
+                    {
+                        "document_1_statement": indicator["doc1_snippet"],
+                        "document_2_statement": indicator["doc2_snippet"],
+                        "context": indicator.get("context", ""),
+                    }
+                )
 
         # Fallback to basic conflict description if no structured indicators
         if not statements and "description" in conflict_info:
-            statements.append({
-                "document_1_statement": conflict_info.get("description", ""),
-                "document_2_statement": "",
-                "context": "General conflict detected",
-            })
+            statements.append(
+                {
+                    "document_1_statement": conflict_info.get("description", ""),
+                    "document_2_statement": "",
+                    "context": "General conflict detected",
+                }
+            )
 
         return statements
 
@@ -80,7 +91,9 @@ class FormatterUtils:
 
         # Truncate long names and add context
         if len(group_key) > 50:
-            source_type = getattr(results[0], "source_type", "unknown") if results else "unknown"
+            source_type = (
+                getattr(results[0], "source_type", "unknown") if results else "unknown"
+            )
             return f"{group_key[:47]}... ({source_type.title()})"
 
         return group_key
@@ -102,7 +115,9 @@ class FormatterUtils:
                 )
 
         # Fallback to file path for localfiles
-        if getattr(result, "source_type", None) == "localfile" and getattr(result, "file_path", None):
+        if getattr(result, "source_type", None) == "localfile" and getattr(
+            result, "file_path", None
+        ):
             path_parts = [p for p in result.file_path.split("/") if p and p != "."]
             return path_parts[0] if path_parts else "Root"
 
@@ -119,13 +134,19 @@ class FormatterUtils:
         parent_id = FormatterUtils.extract_synthetic_parent_id(result)
         if not parent_id:
             # If no parent, count documents at root level
-            siblings = [r for r in all_results 
-                       if not FormatterUtils.extract_synthetic_parent_id(r)]
+            siblings = [
+                r
+                for r in all_results
+                if not FormatterUtils.extract_synthetic_parent_id(r)
+            ]
             return len(siblings)
 
         # Count documents with the same parent
-        siblings = [r for r in all_results 
-                   if FormatterUtils.extract_synthetic_parent_id(r) == parent_id]
+        siblings = [
+            r
+            for r in all_results
+            if FormatterUtils.extract_synthetic_parent_id(r) == parent_id
+        ]
         return len(siblings)
 
     @staticmethod
@@ -137,7 +158,9 @@ class FormatterUtils:
             return len(breadcrumb.split(" > "))
 
         # Try file path for local files
-        if getattr(result, "source_type", None) == "localfile" and getattr(result, "file_path", None):
+        if getattr(result, "source_type", None) == "localfile" and getattr(
+            result, "file_path", None
+        ):
             # Remove leading ./ and count path segments
             clean_path = result.file_path.lstrip("./")
             path_parts = [p for p in clean_path.split("/") if p]
@@ -156,7 +179,9 @@ class FormatterUtils:
                 return parts[-2]  # Second to last is the parent
 
         # For file paths, parent is the directory
-        if getattr(result, "source_type", None) == "localfile" and getattr(result, "file_path", None):
+        if getattr(result, "source_type", None) == "localfile" and getattr(
+            result, "file_path", None
+        ):
             path_parts = [p for p in result.file_path.split("/") if p and p != "."]
             if len(path_parts) > 1:
                 return path_parts[-2]  # Parent directory
@@ -177,7 +202,9 @@ class FormatterUtils:
             return result.breadcrumb_text
 
         # Try to construct from file path
-        if getattr(result, "source_type", None) == "localfile" and getattr(result, "file_path", None):
+        if getattr(result, "source_type", None) == "localfile" and getattr(
+            result, "file_path", None
+        ):
             path_parts = [p for p in result.file_path.split("/") if p and p != "."]
             if path_parts:
                 # Include filename without extension for local files
@@ -213,9 +240,14 @@ class FormatterUtils:
 
         # Calculate based on hierarchy if all_results provided
         if all_results:
-            result_id = getattr(result, "document_id", None) or getattr(result, "source_title", "")
-            children = [r for r in all_results 
-                       if FormatterUtils.extract_synthetic_parent_id(r) == result_id]
+            result_id = getattr(result, "document_id", None) or getattr(
+                result, "source_title", ""
+            )
+            children = [
+                r
+                for r in all_results
+                if FormatterUtils.extract_synthetic_parent_id(r) == result_id
+            ]
             return len(children)
 
         return 0
@@ -255,13 +287,13 @@ class FormatterUtils:
                 return mime_type.replace("application/", "")
             elif "/" in mime_type:
                 return mime_type.split("/")[-1]
-        
+
         # Fallback to filename extension
         filename = FormatterUtils.extract_safe_filename(result)
         if "." in filename:
             extension = filename.split(".")[-1].lower()
             return extension
-        
+
         # Final fallback based on source_type
         source_type = getattr(result, "source_type", "")
         if source_type == "confluence":
@@ -279,9 +311,9 @@ class FormatterUtils:
         for result in results:
             file_type = FormatterUtils.extract_file_type_minimal(result)
             source_type = getattr(result, "source_type", "unknown")
-            
+
             group_key = FormatterUtils.get_attachment_group_key(file_type, source_type)
-            
+
             if group_key not in type_groups:
                 type_groups[group_key] = []
             type_groups[group_key].append(result)
@@ -289,12 +321,21 @@ class FormatterUtils:
         # Convert to list format with friendly names
         organized_groups = []
         for group_key, group_results in type_groups.items():
-            organized_groups.append({
-                "group_name": FormatterUtils.generate_friendly_group_name(group_key),
-                "results": group_results,
-                "count": len(group_results),
-                "file_types": list(set(FormatterUtils.extract_file_type_minimal(r) for r in group_results))
-            })
+            organized_groups.append(
+                {
+                    "group_name": FormatterUtils.generate_friendly_group_name(
+                        group_key
+                    ),
+                    "results": group_results,
+                    "count": len(group_results),
+                    "file_types": list(
+                        set(
+                            FormatterUtils.extract_file_type_minimal(r)
+                            for r in group_results
+                        )
+                    ),
+                }
+            )
 
         # Sort by count (descending)
         organized_groups.sort(key=lambda x: x["count"], reverse=True)

@@ -7,29 +7,28 @@ extracted to the 'formatters' sub-package for better maintainability and testabi
 
 Architecture:
 - formatters.basic: Basic search result and attachment formatting
-- formatters.intelligence: Analysis and intelligence result formatting  
+- formatters.intelligence: Analysis and intelligence result formatting
 - formatters.lightweight: Efficient lightweight result construction
 - formatters.structured: Complex structured data formatting
 - formatters.utils: Shared utilities and helper functions
 """
 
 # Re-export the main MCPFormatters class for backward compatibility
-from .formatters import MCPFormatters
-
 # Also re-export specialized formatters for direct access
 from .formatters import (
     BasicResultFormatters,
+    FormatterUtils,
     IntelligenceResultFormatters,
     LightweightResultFormatters,
+    MCPFormatters,
     StructuredResultFormatters,
-    FormatterUtils,
 )
 
 __all__ = [
     "MCPFormatters",
     "BasicResultFormatters",
     "IntelligenceResultFormatters",
-    "LightweightResultFormatters", 
+    "LightweightResultFormatters",
     "StructuredResultFormatters",
     "FormatterUtils",
 ]

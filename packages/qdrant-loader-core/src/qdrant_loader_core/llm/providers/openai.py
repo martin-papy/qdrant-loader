@@ -8,7 +8,7 @@ except Exception:  # pragma: no cover - optional dependency at this phase
     OpenAI = None  # type: ignore
 
 from ..settings import LLMSettings
-from ..types import EmbeddingsClient, ChatClient, TokenCounter, LLMProvider
+from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
 
 class _OpenAITokenCounter(TokenCounter):
@@ -42,7 +42,9 @@ class OpenAIChat(ChatClient):
         self._client = client
         self._model = model
 
-    async def chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
+    async def chat(
+        self, messages: list[dict[str, Any]], **kwargs: Any
+    ) -> dict[str, Any]:
         raise NotImplementedError
 
 
@@ -69,5 +71,3 @@ class OpenAIProvider(LLMProvider):
 
     def tokenizer(self) -> TokenCounter:
         return _OpenAITokenCounter(self._settings.tokenizer)
-
-

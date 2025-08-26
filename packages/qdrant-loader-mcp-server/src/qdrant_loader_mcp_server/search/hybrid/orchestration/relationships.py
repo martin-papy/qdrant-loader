@@ -1,31 +1,35 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
 from ...components.search_result_models import HybridSearchResult
-from ...enhanced.cross_document_intelligence import DocumentCluster
-from ...enhanced.cross_document_intelligence import ClusteringStrategy  # noqa: F401 - type hint usage
+from ...enhanced.cross_document_intelligence import (  # noqa: F401 - type hint usage
+    ClusteringStrategy,
+    DocumentCluster,
+)
 from ...hybrid.components.relationships import (
-    analyze_entity_overlap,
-    analyze_topic_overlap,
-    analyze_source_similarity,
-    analyze_hierarchy_relationship,
     analyze_content_similarity,
+    analyze_entity_overlap,
+    analyze_hierarchy_relationship,
+    analyze_source_similarity,
+    analyze_topic_overlap,
 )
 
 
 def analyze_cluster_relationships(
-    engine: Any, clusters: List[DocumentCluster], documents: List[HybridSearchResult]
-) -> List[dict[str, Any]]:
+    engine: Any, clusters: list[DocumentCluster], documents: list[HybridSearchResult]
+) -> list[dict[str, Any]]:
     if len(clusters) < 2:
         return []
 
-    relationships: List[dict[str, Any]] = []
+    relationships: list[dict[str, Any]] = []
     doc_lookup = engine._build_document_lookup(documents, robust=True)
 
     for i, cluster_a in enumerate(clusters):
         for _, cluster_b in enumerate(clusters[i + 1 :], i + 1):
-            relationship = analyze_cluster_pair(engine, cluster_a, cluster_b, doc_lookup)
+            relationship = analyze_cluster_pair(
+                engine, cluster_a, cluster_b, doc_lookup
+            )
             if relationship and relationship["strength"] > 0.1:
                 relationships.append(
                     {
@@ -45,15 +49,18 @@ def analyze_cluster_relationships(
 
 
 def analyze_cluster_pair(
-    engine: Any, cluster_a: DocumentCluster, cluster_b: DocumentCluster, doc_lookup: dict
-) -> Optional[dict[str, Any]]:
-    docs_a: List[HybridSearchResult] = []
+    engine: Any,
+    cluster_a: DocumentCluster,
+    cluster_b: DocumentCluster,
+    doc_lookup: dict,
+) -> dict[str, Any] | None:
+    docs_a: list[HybridSearchResult] = []
     for doc_id in cluster_a.documents:
         doc = engine._find_document_by_id(doc_id, doc_lookup)
         if doc:
             docs_a.append(doc)
 
-    docs_b: List[HybridSearchResult] = []
+    docs_b: list[HybridSearchResult] = []
     for doc_id in cluster_b.documents:
         doc = engine._find_document_by_id(doc_id, doc_lookup)
         if doc:
@@ -62,7 +69,7 @@ def analyze_cluster_pair(
     if not docs_a or not docs_b:
         return None
 
-    candidates: List[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
 
     rel = analyze_entity_overlap(cluster_a, cluster_b)
     if rel:
@@ -87,5 +94,3 @@ def analyze_cluster_pair(
     if candidates:
         return max(candidates, key=lambda x: x["strength"])
     return None
-
-

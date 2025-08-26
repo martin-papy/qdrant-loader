@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from qdrant_loader_mcp_server.search.components.vector_search_service import (
     VectorSearchService,
 )
@@ -85,5 +84,3 @@ async def test_get_embedding_raises_when_no_provider_and_no_openai(mock_qdrant_c
 
     with pytest.raises(RuntimeError):
         await svc.get_embedding("hello")
-
-

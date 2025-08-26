@@ -26,5 +26,7 @@ def calculate_maintainability_metrics(content: str) -> dict[str, float | int]:
         "long_lines_count": long_lines,
         "code_density": code_density,
         "readability_score": max(0, readability_score),
-        "estimated_read_time_minutes": len(non_empty_lines) / 50 if non_empty_lines else 0,
+        "estimated_read_time_minutes": (
+            len(non_empty_lines) / 50 if non_empty_lines else 0
+        ),
     }

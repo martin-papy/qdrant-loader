@@ -6,12 +6,12 @@ parts of the hybrid search pipeline such as scoring, reranking,
 combining, normalization, deduplication and boosting.
 """
 
-from .scoring import HybridScorer
-from .reranking import HybridReranker
-from .combining import HybridCombiner
-from .normalization import ScoreNormalizer
-from .deduplication import ResultDeduplicator
 from .boosting import ResultBooster
+from .combining import HybridCombiner
+from .deduplication import ResultDeduplicator
+from .normalization import ScoreNormalizer
+from .reranking import HybridReranker
+from .scoring import HybridScorer
 
 __all__ = [
     "HybridScorer",
@@ -21,5 +21,3 @@ __all__ = [
     "ResultDeduplicator",
     "ResultBooster",
 ]
-
-

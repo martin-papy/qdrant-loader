@@ -35,9 +35,7 @@ from .extractors.similarity_helpers import (
 from .extractors.similarity_helpers import (
     get_shared_entities as cdi_get_shared_entities,
 )
-from .extractors.similarity_helpers import (
-    get_shared_topics as cdi_get_shared_topics,
-)
+from .extractors.similarity_helpers import get_shared_topics as cdi_get_shared_topics
 from .models import DocumentSimilarity, RelationshipType, SimilarityMetric
 from .utils import extract_texts_from_mixed, hierarchical_distance_from_breadcrumbs
 

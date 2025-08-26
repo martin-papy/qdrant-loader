@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from ..interfaces import Clusterer
 from ....models import SearchResult
-from ..models import DocumentCluster, ClusteringStrategy
+from ..interfaces import Clusterer
+from ..models import ClusteringStrategy, DocumentCluster
 
 
 class DefaultClusterer(Clusterer):
@@ -48,5 +48,3 @@ class DefaultClusterer(Clusterer):
             max_clusters=max_clusters or 10,
             min_cluster_size=min_cluster_size or 2,
         )
-
-

@@ -85,5 +85,3 @@ def get_expand_cluster_tool_schema() -> dict[str, Any]:
             "required": ["cluster_id", "documents", "pagination"],
         },
     }
-
-

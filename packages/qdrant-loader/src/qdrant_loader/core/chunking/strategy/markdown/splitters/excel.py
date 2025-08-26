@@ -1,6 +1,7 @@
 """Excel splitter implementation extracted from `section_splitter`."""
 
 import re
+
 from qdrant_loader.core.chunking.strategy.markdown.splitters.base import BaseSplitter
 
 
@@ -112,7 +113,9 @@ class ExcelSplitter(BaseSplitter):
                 i += 1
 
         if i < len(logical_units) and len(chunks) >= max_chunks_per_section:
-            from qdrant_loader.core.chunking.strategy.markdown import section_splitter as _section_module
+            from qdrant_loader.core.chunking.strategy.markdown import (
+                section_splitter as _section_module,
+            )
 
             _section_module.logger.warning(
                 f"Excel sheet reached maximum chunks limit ({max_chunks_per_section}), truncating remaining content",
@@ -124,6 +127,5 @@ class ExcelSplitter(BaseSplitter):
 
         return chunks
 
+
 __all__ = ["ExcelSplitter"]
-
-

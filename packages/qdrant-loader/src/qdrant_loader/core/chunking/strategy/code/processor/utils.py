@@ -25,7 +25,9 @@ def is_mostly_comments(content: str) -> bool:
     lines = content.split("\n")
     if not lines:
         return False
-    comment_lines = [line for line in lines if line.strip().startswith(("#", "//", "/*", "--"))]
+    comment_lines = [
+        line for line in lines if line.strip().startswith(("#", "//", "/*", "--"))
+    ]
     return len(comment_lines) / len(lines) > 0.6
 
 

@@ -2,18 +2,18 @@
 
 from typing import Any
 
+from .schemas import get_all_tool_schemas as _get_all_tool_schemas
 from .schemas import (
-    get_search_tool_schema,
-    get_hierarchy_search_tool_schema,
-    get_attachment_search_tool_schema,
     get_analyze_relationships_tool_schema,
-    get_find_similar_tool_schema,
-    get_detect_conflicts_tool_schema,
-    get_find_complementary_tool_schema,
+    get_attachment_search_tool_schema,
     get_cluster_documents_tool_schema,
-    get_expand_document_tool_schema,
+    get_detect_conflicts_tool_schema,
     get_expand_cluster_tool_schema,
-    get_all_tool_schemas as _get_all_tool_schemas,
+    get_expand_document_tool_schema,
+    get_find_complementary_tool_schema,
+    get_find_similar_tool_schema,
+    get_hierarchy_search_tool_schema,
+    get_search_tool_schema,
 )
 
 
@@ -262,23 +262,23 @@ class MCPSchemas:
                     },
                     "use_llm": {
                         "type": "boolean",
-                        "description": "Enable LLM validation for top pairs (budgeted)"
+                        "description": "Enable LLM validation for top pairs (budgeted)",
                     },
                     "max_llm_pairs": {
                         "type": "integer",
-                        "description": "Maximum number of pairs to analyze with LLM"
+                        "description": "Maximum number of pairs to analyze with LLM",
                     },
                     "overall_timeout_s": {
                         "type": "number",
-                        "description": "Overall analysis budget in seconds"
+                        "description": "Overall analysis budget in seconds",
                     },
                     "max_pairs_total": {
                         "type": "integer",
-                        "description": "Maximum candidate pairs to analyze after tiering"
+                        "description": "Maximum candidate pairs to analyze after tiering",
                     },
                     "text_window_chars": {
                         "type": "integer",
-                        "description": "Per-document text window size for lexical analysis"
+                        "description": "Per-document text window size for lexical analysis",
                     },
                 },
                 "required": ["query"],

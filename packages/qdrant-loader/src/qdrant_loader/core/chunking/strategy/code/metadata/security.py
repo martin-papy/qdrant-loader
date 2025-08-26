@@ -14,7 +14,9 @@ def analyze_security_patterns(content: str) -> dict[str, list[str]]:
         security_indicators["potential_vulnerabilities"].append("eval_usage")
     if "exec(" in content_lower:
         security_indicators["potential_vulnerabilities"].append("exec_usage")
-    if "sql" in content_lower and any(k in content_lower for k in ["select", "insert", "update"]):
+    if "sql" in content_lower and any(
+        k in content_lower for k in ["select", "insert", "update"]
+    ):
         security_indicators["potential_vulnerabilities"].append("sql_queries")
     if "password" in content_lower and "plain" in content_lower:
         security_indicators["potential_vulnerabilities"].append("plaintext_password")

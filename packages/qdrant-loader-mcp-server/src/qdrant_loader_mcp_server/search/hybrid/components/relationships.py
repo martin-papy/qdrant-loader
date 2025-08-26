@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
 
-def analyze_entity_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
+def analyze_entity_overlap(cluster_a, cluster_b) -> dict[str, Any] | None:
     # Defensive input validation
     if cluster_a is None or cluster_b is None:
         return None
@@ -24,7 +24,7 @@ def analyze_entity_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
     }
 
 
-def analyze_topic_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
+def analyze_topic_overlap(cluster_a, cluster_b) -> dict[str, Any] | None:
     # Defensive input validation similar to analyze_entity_overlap
     if cluster_a is None or cluster_b is None:
         return None
@@ -52,7 +52,9 @@ def analyze_topic_overlap(cluster_a, cluster_b) -> Optional[dict[str, Any]]:
     }
 
 
-def analyze_source_similarity(docs_a: List[Any], docs_b: List[Any]) -> Optional[dict[str, Any]]:
+def analyze_source_similarity(
+    docs_a: list[Any], docs_b: list[Any]
+) -> dict[str, Any] | None:
     sources_a = {getattr(doc, "source_type", None) for doc in docs_a if doc}
     sources_b = {getattr(doc, "source_type", None) for doc in docs_b if doc}
     sources_a.discard(None)
@@ -74,7 +76,9 @@ def analyze_source_similarity(docs_a: List[Any], docs_b: List[Any]) -> Optional[
     }
 
 
-def analyze_hierarchy_relationship(docs_a: List[Any], docs_b: List[Any]) -> Optional[dict[str, Any]]:
+def analyze_hierarchy_relationship(
+    docs_a: list[Any], docs_b: list[Any]
+) -> dict[str, Any] | None:
     breadcrumbs_a = [getattr(doc, "breadcrumb_text", "") for doc in docs_a if doc]
     breadcrumbs_b = [getattr(doc, "breadcrumb_text", "") for doc in docs_b if doc]
     if not breadcrumbs_a or not breadcrumbs_b:
@@ -97,7 +101,9 @@ def analyze_hierarchy_relationship(docs_a: List[Any], docs_b: List[Any]) -> Opti
     }
 
 
-def analyze_content_similarity(docs_a: List[Any], docs_b: List[Any]) -> Optional[dict[str, Any]]:
+def analyze_content_similarity(
+    docs_a: list[Any], docs_b: list[Any]
+) -> dict[str, Any] | None:
     has_code_a = any(getattr(doc, "has_code_blocks", False) for doc in docs_a if doc)
     has_code_b = any(getattr(doc, "has_code_blocks", False) for doc in docs_b if doc)
     word_counts_a = [getattr(doc, "word_count", 0) or 0 for doc in docs_a if doc]
@@ -105,7 +111,7 @@ def analyze_content_similarity(docs_a: List[Any], docs_b: List[Any]) -> Optional
     avg_size_a = sum(word_counts_a) / len(word_counts_a) if word_counts_a else 0
     avg_size_b = sum(word_counts_b) / len(word_counts_b) if word_counts_b else 0
 
-    similarity_factors: List[float] = []
+    similarity_factors: list[float] = []
     if has_code_a and has_code_b:
         similarity_factors.append(0.4)
     elif not has_code_a and not has_code_b:
@@ -123,7 +129,7 @@ def analyze_content_similarity(docs_a: List[Any], docs_b: List[Any]) -> Optional
     if strength < 0.1:
         return None
 
-    description_parts: List[str] = []
+    description_parts: list[str] = []
     if has_code_a and has_code_b:
         description_parts.append("both contain code")
     if (
@@ -145,5 +151,3 @@ def analyze_content_similarity(docs_a: List[Any], docs_b: List[Any]) -> Optional
         "description": description,
         "shared_elements": [],
     }
-
-

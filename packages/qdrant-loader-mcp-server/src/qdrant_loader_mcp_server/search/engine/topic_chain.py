@@ -64,7 +64,7 @@ class TopicChainResult(dict):
 class TopicChainOperations:
     """Handles topic chain search operations."""
 
-    def __init__(self, engine: "SearchEngine"):
+    def __init__(self, engine: SearchEngine):
         """Initialize with search engine reference."""
         self.engine = engine
         self.logger = LoggingConfig.get_logger(__name__)
@@ -257,7 +257,7 @@ class TopicChainOperations:
         for link in topic_chain.chain_links:
             depth = link.chain_position
             query = link.query
-            
+
             if depth not in organized:
                 organized[depth] = {
                     "queries": [],
@@ -267,12 +267,14 @@ class TopicChainOperations:
 
             results = chain_results.get(query)
             if results is not None:
-                organized[depth]["queries"].append({
-                    "query": query,
-                    "topics": [link.topic_focus] + link.related_topics,
-                    "relevance_score": link.relevance_score,
-                    "result_count": len(results),
-                })
+                organized[depth]["queries"].append(
+                    {
+                        "query": query,
+                        "topics": [link.topic_focus] + link.related_topics,
+                        "relevance_score": link.relevance_score,
+                        "result_count": len(results),
+                    }
+                )
                 organized[depth]["results"].extend(results)
                 organized[depth]["total_results"] += len(results)
 
@@ -284,7 +286,7 @@ class TopicChainOperations:
         """Calculate exploration statistics."""
         total_results = sum(len(results) for results in chain_results.values())
         unique_topics = set()
-        
+
         for link in topic_chain.chain_links:
             unique_topics.update([link.topic_focus] + link.related_topics)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 
 
 def run_project_validate(
@@ -11,6 +11,7 @@ def run_project_validate(
     project_id: str | None,
 ) -> tuple[list[dict[str, object]], bool]:
     """Validate projects and return (results, all_valid)."""
+
     def _get_all_sources_from_config(sources_config):
         all_sources = {}
         if not sources_config:
@@ -33,7 +34,11 @@ def run_project_validate(
         if not context or not getattr(context, "config", None):
             validation_results.append(
                 {
-                    "project_id": (context.project_id if context and hasattr(context, "project_id") else key),
+                    "project_id": (
+                        context.project_id
+                        if context and hasattr(context, "project_id")
+                        else key
+                    ),
                     "valid": False,
                     "errors": ["Missing project configuration"],
                     "source_count": 0,
@@ -63,7 +68,11 @@ def run_project_validate(
 
         validation_results.append(
             {
-                "project_id": (context.project_id if context and hasattr(context, "project_id") else key),
+                "project_id": (
+                    context.project_id
+                    if context and hasattr(context, "project_id")
+                    else key
+                ),
                 "valid": len(source_errors) == 0,
                 "errors": source_errors,
                 "source_count": len(all_sources),
@@ -73,5 +82,3 @@ def run_project_validate(
             all_valid = False
 
     return validation_results, all_valid
-
-

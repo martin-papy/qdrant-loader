@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, List
 import logging
+from typing import Any
 
-from ...components.search_result_models import HybridSearchResult
 from ...components.result_combiner import ResultCombiner
+from ...components.search_result_models import HybridSearchResult
 from ..components.helpers import combine_results as _combine_results_helper
 from ..pipeline import HybridPipeline
 
@@ -45,7 +45,9 @@ async def run_search(
             search_intent = engine.intent_classifier.classify_intent(
                 query, session_context, behavioral_context
             )
-            adaptive_config = engine.adaptive_strategy.adapt_search(search_intent, query)
+            adaptive_config = engine.adaptive_strategy.adapt_search(
+                search_intent, query
+            )
             if adaptive_config:
                 local_combiner.vector_weight = adaptive_config.vector_weight
                 local_combiner.keyword_weight = adaptive_config.keyword_weight
@@ -64,7 +66,8 @@ async def run_search(
             query_context["adaptive_config"] = adaptive_config
 
         plan = engine._planner.make_plan(
-            has_pipeline=engine.hybrid_pipeline is not None, expanded_query=expanded_query
+            has_pipeline=engine.hybrid_pipeline is not None,
+            expanded_query=expanded_query,
         )
 
         # Ensure combiner threshold honors engine-level minimum when applicable
@@ -115,7 +118,9 @@ async def run_search(
             vector_results = await engine._vector_search(
                 expanded_query, limit * 3, project_ids
             )
-            keyword_results = await engine._keyword_search(query, limit * 3, project_ids)
+            keyword_results = await engine._keyword_search(
+                query, limit * 3, project_ids
+            )
             combined_results = await _combine_results_helper(
                 local_combiner,
                 getattr(engine, "min_score", 0.0),
@@ -158,12 +163,10 @@ async def run_search(
             try:
                 logger.error(
                     "Unexpected error during result_combiner restoration on %s",
-                    type(getattr(engine, 'result_combiner', object())).__name__,
+                    type(getattr(engine, "result_combiner", object())).__name__,
                     exc_info=True,
                 )
             except Exception:
                 pass
 
     return combined_results
-
-

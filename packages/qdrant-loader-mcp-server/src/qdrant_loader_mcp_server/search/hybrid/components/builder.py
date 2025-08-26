@@ -1,29 +1,30 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 
-def create_embeddings_provider_from_env(logger: Optional[Any] = None) -> Any | None:
+def create_embeddings_provider_from_env(logger: Any | None = None) -> Any | None:
     """Create an embeddings provider from qdrant-loader-core settings if available.
 
     This mirrors the legacy dynamic import behavior and falls back to None when
     unavailable. No exceptions propagate to callers.
     """
     try:
-        from importlib import import_module
         import os
+        from importlib import import_module
 
         core_settings_mod = import_module("qdrant_loader_core.llm.settings")
         core_factory_mod = import_module("qdrant_loader_core.llm.factory")
-        LLMSettings = getattr(core_settings_mod, "LLMSettings")
-        create_provider = getattr(core_factory_mod, "create_provider")
+        LLMSettings = core_settings_mod.LLMSettings
+        create_provider = core_factory_mod.create_provider
 
         llm_cfg = {
             "provider": (os.getenv("LLM_PROVIDER") or "openai"),
             "base_url": os.getenv("LLM_BASE_URL"),
             "api_key": os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY"),
             "models": {
-                "embeddings": os.getenv("LLM_EMBEDDING_MODEL") or "text-embedding-3-small",
+                "embeddings": os.getenv("LLM_EMBEDDING_MODEL")
+                or "text-embedding-3-small",
             },
             "tokenizer": os.getenv("LLM_TOKENIZER") or "none",
             "request": {},
@@ -33,10 +34,13 @@ def create_embeddings_provider_from_env(logger: Optional[Any] = None) -> Any | N
         llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
         embeddings_provider = create_provider(llm_settings)
         return embeddings_provider
-    except ImportError as e:
+    except ImportError:
         if logger is not None:
             try:
-                logger.debug("Embeddings provider import failed; falling back to None", exc_info=True)
+                logger.debug(
+                    "Embeddings provider import failed; falling back to None",
+                    exc_info=True,
+                )
             except Exception:
                 pass
         return None
@@ -45,9 +49,15 @@ def create_embeddings_provider_from_env(logger: Optional[Any] = None) -> Any | N
             try:
                 # Log full stack for unexpected provider errors
                 try:
-                    logger.exception("Error creating embeddings provider; falling back to None")
+                    logger.exception(
+                        "Error creating embeddings provider; falling back to None"
+                    )
                 except Exception:
-                    logger.debug("Error creating embeddings provider; falling back to None: %s", e, exc_info=True)
+                    logger.debug(
+                        "Error creating embeddings provider; falling back to None: %s",
+                        e,
+                        exc_info=True,
+                    )
             except Exception:
                 pass
         return None
@@ -105,7 +115,9 @@ def create_keyword_search_service(*, qdrant_client: Any, collection_name: str) -
     """Create KeywordSearchService."""
     from ...components import KeywordSearchService
 
-    return KeywordSearchService(qdrant_client=qdrant_client, collection_name=collection_name)
+    return KeywordSearchService(
+        qdrant_client=qdrant_client, collection_name=collection_name
+    )
 
 
 def create_result_combiner(
@@ -175,26 +187,39 @@ def create_cdi_engine(
     )
 
 
-
 def build_conflict_settings(search_config: Any | None) -> dict | None:
     """Construct conflict detection settings from ``search_config`` safely."""
     if search_config is None:
         return None
     try:
         return {
-            "conflict_limit_default": getattr(search_config, "conflict_limit_default", 10),
-            "conflict_max_pairs_total": getattr(search_config, "conflict_max_pairs_total", 24),
+            "conflict_limit_default": getattr(
+                search_config, "conflict_limit_default", 10
+            ),
+            "conflict_max_pairs_total": getattr(
+                search_config, "conflict_max_pairs_total", 24
+            ),
             "conflict_tier_caps": getattr(
                 search_config,
                 "conflict_tier_caps",
                 {"primary": 12, "secondary": 8, "tertiary": 4, "fallback": 0},
             ),
             "conflict_use_llm": getattr(search_config, "conflict_use_llm", True),
-            "conflict_max_llm_pairs": getattr(search_config, "conflict_max_llm_pairs", 2),
-            "conflict_llm_model": getattr(search_config, "conflict_llm_model", "gpt-4o-mini"),
-            "conflict_llm_timeout_s": getattr(search_config, "conflict_llm_timeout_s", 12.0),
-            "conflict_overall_timeout_s": getattr(search_config, "conflict_overall_timeout_s", 9.0),
-            "conflict_text_window_chars": getattr(search_config, "conflict_text_window_chars", 2000),
+            "conflict_max_llm_pairs": getattr(
+                search_config, "conflict_max_llm_pairs", 2
+            ),
+            "conflict_llm_model": getattr(
+                search_config, "conflict_llm_model", "gpt-4o-mini"
+            ),
+            "conflict_llm_timeout_s": getattr(
+                search_config, "conflict_llm_timeout_s", 12.0
+            ),
+            "conflict_overall_timeout_s": getattr(
+                search_config, "conflict_overall_timeout_s", 9.0
+            ),
+            "conflict_text_window_chars": getattr(
+                search_config, "conflict_text_window_chars", 2000
+            ),
             "conflict_embeddings_timeout_s": getattr(
                 search_config, "conflict_embeddings_timeout_s", 2.0
             ),
@@ -228,6 +253,10 @@ def initialize_engine_components(
 
     # Embeddings provider and search services
     embeddings_provider = create_embeddings_provider_from_env(logger=engine_self.logger)
+    # If an explicit OpenAI client is provided, prefer it over any auto-created provider
+    # so tests and engines that mock the client behave deterministically.
+    if openai_client is not None:
+        embeddings_provider = None
     vector_search_service = create_vector_search_service(
         qdrant_client=qdrant_client,
         collection_name=collection_name,
@@ -260,7 +289,11 @@ def initialize_engine_components(
     engine_self.metadata_extractor = MetadataExtractor()
 
     # Pipeline and adapters
-    from ..adapters import VectorSearcherAdapter, KeywordSearcherAdapter, ResultCombinerAdapter
+    from ..adapters import (
+        KeywordSearcherAdapter,
+        ResultCombinerAdapter,
+        VectorSearcherAdapter,
+    )
     from ..pipeline import HybridPipeline
 
     engine_self.hybrid_pipeline = HybridPipeline(
@@ -274,7 +307,7 @@ def initialize_engine_components(
     )
 
     # Orchestration utilities
-    from ..orchestration import QueryPlanner, HybridOrchestrator
+    from ..orchestration import HybridOrchestrator, QueryPlanner
 
     engine_self._planner = QueryPlanner()
     engine_self._orchestrator = HybridOrchestrator()
@@ -311,8 +344,10 @@ def initialize_engine_components(
     # Enhanced search components
     engine_self.enable_intent_adaptation = enable_intent_adaptation
     engine_self.knowledge_graph = knowledge_graph
-    engine_self.intent_classifier, engine_self.adaptive_strategy = create_intent_components(
-        spacy_analyzer, knowledge_graph, enable_intent_adaptation
+    engine_self.intent_classifier, engine_self.adaptive_strategy = (
+        create_intent_components(
+            spacy_analyzer, knowledge_graph, enable_intent_adaptation
+        )
     )
     if engine_self.enable_intent_adaptation:
         try:
@@ -326,7 +361,9 @@ def initialize_engine_components(
             pass
 
     # Topic chain generator
-    engine_self.topic_chain_generator = create_topic_chain_generator(spacy_analyzer, knowledge_graph)
+    engine_self.topic_chain_generator = create_topic_chain_generator(
+        spacy_analyzer, knowledge_graph
+    )
     engine_self._topic_chains_initialized = False
     try:
         engine_self.logger.info("Topic-driven search chaining ENABLED")
@@ -354,4 +391,3 @@ def initialize_engine_components(
         engine_self.logger.info("Cross-document intelligence ENABLED")
     except Exception:
         pass
-

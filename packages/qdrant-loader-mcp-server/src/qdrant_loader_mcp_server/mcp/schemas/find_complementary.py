@@ -75,11 +75,12 @@ def get_find_complementary_tool_schema() -> dict[str, Any]:
                         "total_analyzed": {"type": "integer"},
                         "complementary_found": {"type": "integer"},
                         "highest_score": {"type": "number"},
-                        "relationship_types": {"type": "array", "items": {"type": "string"}},
+                        "relationship_types": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                     },
                 },
             },
         },
     }
-
-

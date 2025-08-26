@@ -13,5 +13,3 @@ class ContentAnalysis:
     char_count: int | None = None
     estimated_read_time: int | None = None
     paragraph_count: int | None = None
-
-

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
 from collections.abc import Mapping
-from dataclasses import is_dataclass, asdict
+from dataclasses import asdict, is_dataclass
+from typing import Any
 
 
 def flatten_metadata_components(metadata_components: dict[str, Any]) -> dict[str, Any]:
@@ -29,6 +29,7 @@ def flatten_metadata_components(metadata_components: dict[str, Any]) -> dict[str
             if pattern in lower_key:
                 return "[REDACTED]"
         return value
+
     for _component_name, component in metadata_components.items():
         if component is None:
             continue
@@ -68,7 +69,7 @@ def flatten_metadata_components(metadata_components: dict[str, Any]) -> dict[str
             has_slots = False
         if has_slots:
             try:
-                slots = getattr(component, "__slots__")
+                slots = component.__slots__
             except Exception:
                 slots = []
             # __slots__ can be a string or an iterable of strings
@@ -90,5 +91,3 @@ def flatten_metadata_components(metadata_components: dict[str, Any]) -> dict[str
                 if _should_include(key, value):
                     flattened[key] = _maybe_redact(key, value)
     return flattened
-
-
