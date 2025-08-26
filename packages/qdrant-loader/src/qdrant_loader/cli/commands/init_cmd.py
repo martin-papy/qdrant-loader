@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 
 from click.exceptions import ClickException
 
-from qdrant_loader.cli.path_utils import create_database_directory as _create_db_dir_helper
+from qdrant_loader.cli.config_loader import (
+    load_config_with_workspace as _load_config_with_workspace,
+)
+from qdrant_loader.cli.config_loader import setup_workspace as _setup_workspace_impl
+from qdrant_loader.cli.path_utils import (
+    create_database_directory as _create_db_dir_helper,
+)
 from qdrant_loader.cli.update_check import check_for_updates as _check_updates_helper
 from qdrant_loader.cli.version import get_version_str as _get_version_str
-from qdrant_loader.config import get_settings, initialize_config
+from qdrant_loader.config import get_settings
 from qdrant_loader.config.state import DatabaseDirectoryError
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.cli.config_loader import (
-    setup_workspace as _setup_workspace_impl,
-    load_config_with_workspace as _load_config_with_workspace,
-)
 
 from . import run_init as _commands_run_init
 
@@ -39,7 +40,9 @@ async def run_init_command(
             validate_workspace_flags(workspace, config, env)
 
             # Setup logging first (workspace-aware later)
-            LoggingConfig.setup(level=log_level, format="console", file="qdrant-loader.log")
+            LoggingConfig.setup(
+                level=log_level, format="console", file="qdrant-loader.log"
+            )
             logger = LoggingConfig.get_logger(__name__)
 
             # Check for updates (non-blocking semantics preserved by immediate return)
@@ -53,15 +56,25 @@ async def run_init_command(
             workspace_config = None
             if workspace:
                 workspace_config = _setup_workspace_impl(workspace)
-                logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
+                logger.info(
+                    "Using workspace", workspace=str(workspace_config.workspace_path)
+                )
                 if getattr(workspace_config, "env_path", None):
-                    logger.info("Environment file found", env_path=str(workspace_config.env_path))
+                    logger.info(
+                        "Environment file found",
+                        env_path=str(workspace_config.env_path),
+                    )
                 if getattr(workspace_config, "config_path", None):
-                    logger.info("Config file found", config_path=str(workspace_config.config_path))
+                    logger.info(
+                        "Config file found",
+                        config_path=str(workspace_config.config_path),
+                    )
 
             # Setup logging again with workspace-aware file path
             log_file = (
-                str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+                str(workspace_config.logs_path)
+                if workspace_config
+                else "qdrant-loader.log"
             )
             LoggingConfig.setup(level=log_level, format="console", file=log_file)
 
@@ -81,12 +94,16 @@ async def run_init_command(
                 db_dir = db_path.parent
                 if not db_dir.exists():
                     if not _create_database_directory(db_dir):
-                        raise ClickException("Database directory creation declined. Exiting.")
+                        raise ClickException(
+                            "Database directory creation declined. Exiting."
+                        )
 
                 if db_path.exists() and force:
                     logger.info("Resetting state database", database_path=str(db_path))
                     db_path.unlink()
-                    logger.info("State database reset completed", database_path=str(db_path))
+                    logger.info(
+                        "State database reset completed", database_path=str(db_path)
+                    )
                 elif force:
                     logger.info(
                         "State database reset skipped (no existing database)",
@@ -117,7 +134,9 @@ async def run_init_command(
             else:
                 target = e.path.resolve()
             if not _create_database_directory(target):
-                raise ClickException("Database directory creation declined. Exiting.") from e
+                raise ClickException(
+                    "Database directory creation declined. Exiting."
+                ) from e
 
             if attempts >= max_retries:
                 raise ClickException(
@@ -147,5 +166,3 @@ def _create_database_directory(path: Path) -> bool:
         return created
     except Exception as e:  # pragma: no cover - error path
         raise ClickException(f"Failed to create directory: {str(e)!s}") from e
-
-

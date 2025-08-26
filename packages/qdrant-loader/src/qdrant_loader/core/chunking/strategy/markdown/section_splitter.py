@@ -87,9 +87,9 @@ class SectionMetadata:
 
 
 from .splitters.base import BaseSplitter  # re-export base class  # noqa: F401
-from .splitters.standard import StandardSplitter  # re-export  # noqa: F401
 from .splitters.excel import ExcelSplitter  # re-export  # noqa: F401
 from .splitters.fallback import FallbackSplitter  # re-export  # noqa: F401
+from .splitters.standard import StandardSplitter  # re-export  # noqa: F401
 
 
 class SectionSplitter:

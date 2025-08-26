@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict
-from dataclasses import is_dataclass, asdict
 import logging
+from dataclasses import asdict, is_dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,11 +11,15 @@ def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
     """Extract and flatten metadata using the provided metadata_extractor."""
     # Validate extractor interface defensively (mirrors extract_project_info approach)
     if not hasattr(metadata_extractor, "extract_all_metadata"):
-        logger.warning("Metadata extractor missing 'extract_all_metadata'; returning empty metadata")
+        logger.warning(
+            "Metadata extractor missing 'extract_all_metadata'; returning empty metadata"
+        )
         return {}
-    extract_callable = getattr(metadata_extractor, "extract_all_metadata")
+    extract_callable = metadata_extractor.extract_all_metadata
     if not callable(extract_callable):
-        logger.warning("Metadata extractor 'extract_all_metadata' is not callable; returning empty metadata")
+        logger.warning(
+            "Metadata extractor 'extract_all_metadata' is not callable; returning empty metadata"
+        )
         return {}
     try:
         components = extract_callable(metadata)
@@ -26,7 +30,7 @@ def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
 
     if not isinstance(components, dict):
         components = {}
-    flattened: Dict[str, Any] = {}
+    flattened: dict[str, Any] = {}
 
     for _component_name, component in components.items():
         if component is None:
@@ -155,7 +159,7 @@ def extract_project_info(metadata_extractor: Any, metadata: dict) -> dict:
     exceptions thrown by the extractor. Always returns a mapping with expected keys.
     """
     # Default safe shape
-    safe_empty: Dict[str, Any] = {
+    safe_empty: dict[str, Any] = {
         "project_id": None,
         "project_name": None,
         "project_description": None,
@@ -165,7 +169,7 @@ def extract_project_info(metadata_extractor: Any, metadata: dict) -> dict:
     # Validate extractor interface
     if not hasattr(metadata_extractor, "extract_project_info"):
         return safe_empty
-    extract_callable = getattr(metadata_extractor, "extract_project_info")
+    extract_callable = metadata_extractor.extract_project_info
     if not callable(extract_callable):
         return safe_empty
 
@@ -175,7 +179,7 @@ def extract_project_info(metadata_extractor: Any, metadata: dict) -> dict:
         # Fail closed to safe shape if extractor raises
         return safe_empty
 
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     if project_info:
         if isinstance(project_info, dict):
             data = project_info
@@ -191,5 +195,3 @@ def extract_project_info(metadata_extractor: Any, metadata: dict) -> dict:
         "project_description": data.get("project_description"),
         "collection_name": data.get("collection_name"),
     }
-
-

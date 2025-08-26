@@ -76,7 +76,11 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
                             "cluster_name": {"type": "string"},
                             "cluster_theme": {"type": "string"},
                             "document_count": {"type": "integer"},
-                            "cohesion_score": {"type": "number", "minimum": 0, "maximum": 1},
+                            "cohesion_score": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                            },
                             "documents": {
                                 "type": "array",
                                 "items": {
@@ -86,7 +90,11 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
                                         "title": {"type": "string"},
                                         "content_preview": {"type": "string"},
                                         "source_type": {"type": "string"},
-                                        "cluster_relevance": {"type": "number", "minimum": 0, "maximum": 1},
+                                        "cluster_relevance": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                        },
                                     },
                                     "required": [
                                         "document_id",
@@ -96,7 +104,10 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
                                     "additionalProperties": False,
                                 },
                             },
-                            "cluster_keywords": {"type": "array", "items": {"type": "string"}},
+                            "cluster_keywords": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
                             "cluster_summary": {"type": "string"},
                         },
                         "required": [
@@ -116,7 +127,11 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
                         "clusters_created": {"type": "integer"},
                         "strategy": {"type": "string"},
                         "unclustered_documents": {"type": "integer"},
-                        "clustering_quality": {"type": "number", "minimum": 0, "maximum": 1},
+                        "clustering_quality": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                        },
                         "processing_time_ms": {"type": "integer"},
                     },
                     "required": [
@@ -134,7 +149,11 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
                             "cluster_1": {"type": "string"},
                             "cluster_2": {"type": "string"},
                             "relationship_type": {"type": "string"},
-                            "relationship_strength": {"type": "number", "minimum": 0, "maximum": 1},
+                            "relationship_strength": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                            },
                         },
                         "required": [
                             "cluster_1",
@@ -149,5 +168,3 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
             "additionalProperties": False,
         },
     }
-
-

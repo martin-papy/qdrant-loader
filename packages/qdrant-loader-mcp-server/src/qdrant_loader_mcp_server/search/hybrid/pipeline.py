@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import asyncio
+from dataclasses import dataclass
 
-from .interfaces import VectorSearcher, KeywordSearcher, ResultCombinerLike, Reranker
-from .components.boosting import ResultBooster
-from .components.normalization import ScoreNormalizer
-from .components.deduplication import ResultDeduplicator
 from ..components.search_result_models import HybridSearchResult
+from .components.boosting import ResultBooster
+from .components.deduplication import ResultDeduplicator
+from .components.normalization import ScoreNormalizer
+from .interfaces import KeywordSearcher, Reranker, ResultCombinerLike, VectorSearcher
 
 
 @dataclass
@@ -35,10 +35,17 @@ class HybridPipeline:
         effective_keyword_query = keyword_query if keyword_query is not None else query
         vector_results, keyword_results = await asyncio.gather(
             self.vector_searcher.search(effective_vector_query, limit * 3, project_ids),
-            self.keyword_searcher.search(effective_keyword_query, limit * 3, project_ids),
+            self.keyword_searcher.search(
+                effective_keyword_query, limit * 3, project_ids
+            ),
         )
         results = await self.result_combiner.combine_results(
-            vector_results, keyword_results, query_context, limit, source_types, project_ids
+            vector_results,
+            keyword_results,
+            query_context,
+            limit,
+            source_types,
+            project_ids,
         )
         # Optional post-processing hooks (disabled by default; no behavior change)
         if self.booster is not None:
@@ -50,12 +57,10 @@ class HybridPipeline:
                 raise ValueError(
                     f"Normalizer returned {len(normalized)} values for {len(results)} results"
                 )
-            for r, v in zip(results, normalized):
+            for r, v in zip(results, normalized, strict=False):
                 r.score = v
         if self.deduplicator is not None:
             results = self.deduplicator.deduplicate(results)
         if self.reranker is not None:
             return self.reranker.rerank(results)
         return results
-
-

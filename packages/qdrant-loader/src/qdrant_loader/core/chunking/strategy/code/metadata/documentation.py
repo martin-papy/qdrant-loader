@@ -11,7 +11,13 @@ def calculate_doc_coverage(content: str) -> dict[str, float | int | bool]:
 
     docstring_count = content.count('"""') // 2 + content.count("'''") // 2
 
-    comment_lines = len([line for line in content.split("\n") if line.strip().startswith(("#", "//", "/*"))])
+    comment_lines = len(
+        [
+            line
+            for line in content.split("\n")
+            if line.strip().startswith(("#", "//", "/*"))
+        ]
+    )
 
     total_elements = function_count + class_count
     doc_coverage = (docstring_count / total_elements * 100) if total_elements > 0 else 0
@@ -22,8 +28,9 @@ def calculate_doc_coverage(content: str) -> dict[str, float | int | bool]:
         "documented_elements": docstring_count,
         "comment_lines": comment_lines,
         "documentation_coverage_percent": doc_coverage,
-        "has_module_docstring": content.strip().startswith('"""') or content.strip().startswith("'''") ,
-        "avg_comment_density": comment_lines / len(content.split("\n")) if content else 0,
+        "has_module_docstring": content.strip().startswith('"""')
+        or content.strip().startswith("'''"),
+        "avg_comment_density": (
+            comment_lines / len(content.split("\n")) if content else 0
+        ),
     }
-
-

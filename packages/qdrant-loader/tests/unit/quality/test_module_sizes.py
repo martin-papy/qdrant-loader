@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Thresholds
 DEFAULT_LIMIT = 400  # global default for strategy modules
-STRICT_LIMIT = 300   # preferred for refactored areas
+STRICT_LIMIT = 300  # preferred for refactored areas
 
 # Scopes to enforce
 STRICT_SCOPES = [
@@ -56,8 +56,6 @@ def test_module_sizes_within_thresholds():
         if line_count > limit:
             offenders.append((rel_str, line_count, limit))
 
-    assert not offenders, (
-        "Modules exceeding size limits:\n" +
-        "\n".join(f" - {p} : {n} > {lim}" for p, n, lim in offenders)
+    assert not offenders, "Modules exceeding size limits:\n" + "\n".join(
+        f" - {p} : {n} > {lim}" for p, n, lim in offenders
     )
-

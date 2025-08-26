@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
-
 
 SCOPE_PREFIXES = [
     "qdrant_loader_mcp_server.mcp",
@@ -11,7 +9,7 @@ SCOPE_PREFIXES = [
 ]
 
 
-def _iter_python_files(base: Path) -> List[Path]:
+def _iter_python_files(base: Path) -> list[Path]:
     return [p for p in base.rglob("*.py") if "__pycache__" not in p.parts]
 
 
@@ -20,7 +18,9 @@ def _module_name_from_path(src_root: Path, file_path: Path) -> str:
     return ".".join((src_root.name, *rel.parts))
 
 
-def _resolve_relative_import(current_module: str, module: str | None, level: int) -> str | None:
+def _resolve_relative_import(
+    current_module: str, module: str | None, level: int
+) -> str | None:
     if level == 0:
         return module
     parts = current_module.split(".")
@@ -32,10 +32,12 @@ def _resolve_relative_import(current_module: str, module: str | None, level: int
     return ".".join(base) if base else None
 
 
-def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str, Set[str]], List[str]]:
+def _collect_edges(
+    src_root: Path, scope_prefixes: list[str]
+) -> tuple[dict[str, set[str]], list[str]]:
     """Collect import edges, ignoring TYPE_CHECKING-only and self-import edges."""
-    graph: Dict[str, Set[str]] = {}
-    modules: List[str] = []
+    graph: dict[str, set[str]] = {}
+    modules: list[str] = []
 
     class ImportCollector(ast.NodeVisitor):
         def __init__(self, current_module: str):
@@ -44,7 +46,9 @@ def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str,
 
         def visit_If(self, node: ast.If) -> None:  # type: ignore[override]
             # Detect `if TYPE_CHECKING:` blocks
-            is_type_checking = isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING"
+            is_type_checking = (
+                isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING"
+            )
             if is_type_checking:
                 self.in_type_checking_block += 1
                 for n in node.body:
@@ -69,7 +73,9 @@ def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str,
         def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # type: ignore[override]
             if self.in_type_checking_block:
                 return
-            target = _resolve_relative_import(self.current_module, node.module, node.level)
+            target = _resolve_relative_import(
+                self.current_module, node.module, node.level
+            )
             if target and any(target.startswith(p) for p in scope_prefixes):
                 if target != self.current_module:  # ignore self-import edges
                     graph[self.current_module].add(target)
@@ -88,11 +94,13 @@ def _collect_edges(src_root: Path, scope_prefixes: List[str]) -> Tuple[Dict[str,
     return graph, modules
 
 
-def _has_cycles(graph: Dict[str, Set[str]], scope_prefixes: List[str]) -> Tuple[bool, List[List[str]]]:
-    visited: Set[str] = set()
-    stack: Set[str] = set()
-    path: List[str] = []
-    cycles: List[List[str]] = []
+def _has_cycles(
+    graph: dict[str, set[str]], scope_prefixes: list[str]
+) -> tuple[bool, list[list[str]]]:
+    visited: set[str] = set()
+    stack: set[str] = set()
+    path: list[str] = []
+    cycles: list[list[str]] = []
 
     def dfs(node: str) -> None:
         if node in stack:
@@ -124,9 +132,3 @@ def test_no_import_cycles_in_mcp():
     graph, _ = _collect_edges(src_root, SCOPE_PREFIXES)
     has_cycles, cycles = _has_cycles(graph, SCOPE_PREFIXES)
     assert not has_cycles, f"Import cycles detected in MCP modules: {cycles}"
-
-
-
-
-
-

@@ -13,7 +13,8 @@ def identify_test_code(content: str) -> dict[str, int | bool | str]:
 
     content_lower = content.lower()
     indicators["is_test_file"] = any(
-        keyword in content_lower for keyword in ["test_", "test", "spec", "unittest", "pytest"]
+        keyword in content_lower
+        for keyword in ["test_", "test", "spec", "unittest", "pytest"]
     )
 
     if "pytest" in content_lower or "@pytest" in content:
@@ -41,9 +42,11 @@ def identify_test_code(content: str) -> dict[str, int | bool | str]:
     ]
     indicators["assertion_count"] = sum(content.count(p) for p in assertion_patterns)
 
-    indicators["mock_usage"] = any(k in content_lower for k in ["mock", "stub", "spy", "patch"])
-    indicators["fixture_usage"] = any(k in content_lower for k in ["fixture", "setup", "teardown"])
+    indicators["mock_usage"] = any(
+        k in content_lower for k in ["mock", "stub", "spy", "patch"]
+    )
+    indicators["fixture_usage"] = any(
+        k in content_lower for k in ["fixture", "setup", "teardown"]
+    )
 
     return indicators
-
-

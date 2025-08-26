@@ -11,5 +11,3 @@ class SectionInfo:
     section_anchor: str | None = None
     section_breadcrumb: str | None = None
     section_depth: int | None = None
-
-

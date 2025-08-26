@@ -13,19 +13,19 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
-    from .models import TraversalStrategy, TraversalResult
+    from .models import TraversalResult, TraversalStrategy
 else:
     QueryAnalysis = Any
     SpaCyQueryAnalyzer = Any
 
 from ....utils.logging import LoggingConfig
-from .models import TraversalStrategy, TraversalResult
+from .models import TraversalResult, TraversalStrategy
 from .utils import (
-    build_reasoning_path,
-    calculate_list_similarity,
     ENTITY_SIM_WEIGHT,
     KEYWORD_SIM_WEIGHT,
     TOPIC_SIM_WEIGHT,
+    build_reasoning_path,
+    calculate_list_similarity,
 )
 
 logger = LoggingConfig.get_logger(__name__)
@@ -134,9 +134,7 @@ class GraphTraverser:
 
         results = []
         queue = deque(
-            [
-                (start_node_id, [], [], 0.0, 0)
-            ]
+            [(start_node_id, [], [], 0.0, 0)]
         )  # (node_id, path, edges, weight, hops)
         local_visited = set()
 

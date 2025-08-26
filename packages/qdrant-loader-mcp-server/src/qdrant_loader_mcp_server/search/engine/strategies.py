@@ -81,7 +81,9 @@ class StrategySelector:
 
         self.logger.info(f"Strategy analysis: {analysis}")
         self.logger.info(f"Strategy scores: {strategy_scores}")
-        self.logger.info(f"Selected strategy: {getattr(best_strategy, 'value', str(best_strategy))}")
+        self.logger.info(
+            f"Selected strategy: {getattr(best_strategy, 'value', str(best_strategy))}"
+        )
         # best_strategy is already a ClusteringStrategy from the mapping above
         return best_strategy
 

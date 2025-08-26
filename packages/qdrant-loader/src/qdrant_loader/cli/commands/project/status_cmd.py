@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 
 
 async def run_project_status(
@@ -92,5 +92,3 @@ async def run_project_status(
         )
         console.print(Panel(project_info, title=f"Project: {item['project_id']}"))
     return console.export_text()
-
-

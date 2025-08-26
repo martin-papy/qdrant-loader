@@ -1,6 +1,7 @@
 """Fallback splitter implementation extracted from `section_splitter`."""
 
 import re
+
 from qdrant_loader.core.chunking.strategy.markdown.splitters.base import BaseSplitter
 
 
@@ -35,6 +36,5 @@ class FallbackSplitter(BaseSplitter):
 
         return chunks
 
+
 __all__ = ["FallbackSplitter"]
-
-

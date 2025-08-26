@@ -1,8 +1,6 @@
-import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from qdrant_loader.connectors.shared.http.policy import (
     aiohttp_request_with_policy,
     request_with_policy,
@@ -24,10 +22,13 @@ async def test_request_with_policy_invokes_retries_and_rate_limiter():
 
     limiter = RateLimiter.per_minute(600)  # ~100ms min interval, fast for tests
 
-    with patch(
-        "qdrant_loader.connectors.shared.http.policy.make_request_with_retries_async",
-        new=AsyncMock(side_effect=fake_make_request_with_retries_async),
-    ) as mock_retry_call, patch.object(limiter, "acquire", new=AsyncMock()) as mock_acquire:
+    with (
+        patch(
+            "qdrant_loader.connectors.shared.http.policy.make_request_with_retries_async",
+            new=AsyncMock(side_effect=fake_make_request_with_retries_async),
+        ) as mock_retry_call,
+        patch.object(limiter, "acquire", new=AsyncMock()) as mock_acquire,
+    ):
         # Use a minimal fake requests.Session
         class DummySession:
             def request(self, *args, **kwargs):
@@ -63,10 +64,14 @@ async def test_aiohttp_request_with_policy_invokes_retries_and_rate_limiter():
 
     limiter = RateLimiter.per_minute(600)
 
-    with patch(
-        "qdrant_loader.connectors.shared.http.policy.aiohttp_request_with_retries",
-        new=AsyncMock(side_effect=fake_aiohttp_request_with_retries),
-    ) as mock_retry_call, patch.object(limiter, "acquire", new=AsyncMock()) as mock_acquire:
+    with (
+        patch(
+            "qdrant_loader.connectors.shared.http.policy.aiohttp_request_with_retries",
+            new=AsyncMock(side_effect=fake_aiohttp_request_with_retries),
+        ) as mock_retry_call,
+        patch.object(limiter, "acquire", new=AsyncMock()) as mock_acquire,
+    ):
+
         class DummyAiohttpSession:
             async def get(self, *args, **kwargs):
                 return DummyAiohttpResponse(200)
@@ -85,5 +90,3 @@ async def test_aiohttp_request_with_policy_invokes_retries_and_rate_limiter():
         assert isinstance(resp, DummyAiohttpResponse)
         mock_retry_call.assert_awaited()
         mock_acquire.assert_awaited()
-
-

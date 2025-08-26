@@ -9,5 +9,3 @@ class SemanticAnalysis:
     topics: list[dict | str] = field(default_factory=list)
     key_phrases: list[dict | str] = field(default_factory=list)
     pos_tags: list[dict] = field(default_factory=list)
-
-

@@ -12,22 +12,33 @@ import time
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...knowledge_graph import DocumentKnowledgeGraph
-    from ....components.search_result_models import HybridSearchResult
+    pass
 
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
-from .models import ComplementaryContent
 from .extractors.similarity_helpers import (
-    has_transferable_domain_knowledge as cdi_has_transferable_domain_knowledge,
-    has_reusable_architecture_patterns as cdi_has_reusable_architecture_patterns,
-    has_shared_technologies as cdi_has_shared_technologies,
-    get_shared_technologies_count as cdi_get_shared_technologies_count,
-    has_shared_entities as cdi_has_shared_entities,
-    has_shared_topics as cdi_has_shared_topics,
     get_shared_entities_count as cdi_get_shared_entities_count,
+)
+from .extractors.similarity_helpers import (
+    get_shared_technologies_count as cdi_get_shared_technologies_count,
+)
+from .extractors.similarity_helpers import (
     get_shared_topics_count as cdi_get_shared_topics_count,
 )
+from .extractors.similarity_helpers import (
+    has_reusable_architecture_patterns as cdi_has_reusable_architecture_patterns,
+)
+from .extractors.similarity_helpers import (
+    has_shared_entities as cdi_has_shared_entities,
+)
+from .extractors.similarity_helpers import (
+    has_shared_technologies as cdi_has_shared_technologies,
+)
+from .extractors.similarity_helpers import has_shared_topics as cdi_has_shared_topics
+from .extractors.similarity_helpers import (
+    has_transferable_domain_knowledge as cdi_has_transferable_domain_knowledge,
+)
+from .models import ComplementaryContent
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -38,7 +49,7 @@ class ComplementaryContentFinder:
     def __init__(
         self,
         similarity_calculator,
-        knowledge_graph = None,
+        knowledge_graph=None,
     ):
         """Initialize the complementary content finder."""
         self.similarity_calculator = similarity_calculator
@@ -239,8 +250,8 @@ class ComplementaryContentFinder:
     def _calculate_weighted_score(
         self,
         factors: list[tuple[float, str]],
-        target_doc = None,
-        candidate_doc = None,
+        target_doc=None,
+        candidate_doc=None,
     ) -> tuple[float, str]:
         """Calculate weighted score from multiple factors."""
         if not factors:
@@ -278,9 +289,7 @@ class ComplementaryContentFinder:
 
         return final_score, primary_reason
 
-    def _is_requirements_implementation_pair(
-        self, doc1, doc2
-    ) -> bool:
+    def _is_requirements_implementation_pair(self, doc1, doc2) -> bool:
         """Detect if documents form a requirements -> implementation chain."""
         req_keywords = [
             "requirements",
@@ -450,9 +459,7 @@ class ComplementaryContentFinder:
 
         return False
 
-    def _has_different_document_types(
-        self, doc1, doc2
-    ) -> bool:
+    def _has_different_document_types(self, doc1, doc2) -> bool:
         """Check if documents are of different types based on content and title."""
         type1 = self._classify_document_type(doc1)
         type2 = self._classify_document_type(doc2)

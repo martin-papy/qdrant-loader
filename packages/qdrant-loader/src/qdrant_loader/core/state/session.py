@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from qdrant_loader.config.state import StateManagementConfig
@@ -35,5 +35,3 @@ async def create_tables(engine: AsyncEngine) -> None:
 async def dispose_engine(engine: AsyncEngine) -> None:
     """Dispose the async engine and free resources."""
     await engine.dispose()
-
-

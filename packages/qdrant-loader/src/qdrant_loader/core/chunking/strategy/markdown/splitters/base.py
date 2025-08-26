@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 class BaseSplitter(ABC):
     """Base class for section splitting strategies."""
 
-    def __init__(self, settings: "Settings"):
+    def __init__(self, settings: Settings):
         """Initialize the splitter.
 
         Args:
@@ -28,5 +28,3 @@ class BaseSplitter(ABC):
             List of content chunks
         """
         raise NotImplementedError
-
-

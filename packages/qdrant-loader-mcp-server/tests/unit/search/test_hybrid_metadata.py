@@ -55,5 +55,3 @@ def test_extract_metadata_info_minimal(hybrid_search):
     assert info["hierarchy_context"] is None
     assert info["is_attachment"] is False
     assert info["attachment_context"] is None
-
-

@@ -2,7 +2,9 @@ import pytest
 
 
 @pytest.mark.unit
-def test_processing_config_disables_hooks_by_default(mock_qdrant_client, mock_openai_client):
+def test_processing_config_disables_hooks_by_default(
+    mock_qdrant_client, mock_openai_client
+):
     from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
     from qdrant_loader_mcp_server.search.hybrid.models import HybridProcessingConfig
 
@@ -21,7 +23,9 @@ def test_processing_config_disables_hooks_by_default(mock_qdrant_client, mock_op
 
 
 @pytest.mark.unit
-def test_processing_config_enables_selected_hooks(mock_qdrant_client, mock_openai_client):
+def test_processing_config_enables_selected_hooks(
+    mock_qdrant_client, mock_openai_client
+):
     from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
     from qdrant_loader_mcp_server.search.hybrid.models import HybridProcessingConfig
 
@@ -30,7 +34,10 @@ def test_processing_config_enables_selected_hooks(mock_qdrant_client, mock_opena
         openai_client=mock_openai_client,
         collection_name="test",
         processing_config=HybridProcessingConfig(
-            enable_reranker=True, enable_booster=True, enable_normalizer=True, enable_deduplicator=True
+            enable_reranker=True,
+            enable_booster=True,
+            enable_normalizer=True,
+            enable_deduplicator=True,
         ),
     )
 
@@ -39,5 +46,3 @@ def test_processing_config_enables_selected_hooks(mock_qdrant_client, mock_opena
     assert engine.hybrid_pipeline.booster is not None
     assert engine.hybrid_pipeline.normalizer is not None
     assert engine.hybrid_pipeline.deduplicator is not None
-
-

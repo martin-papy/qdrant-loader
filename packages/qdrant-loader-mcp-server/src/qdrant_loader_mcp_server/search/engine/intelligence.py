@@ -6,14 +6,13 @@ document relationship analysis, similarity detection, conflict detection,
 complementary content discovery, and document clustering.
 """
 
-from typing import Any, TYPE_CHECKING
 from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .core import SearchEngine
 
 from ...utils.logging import LoggingConfig
-from ..components.search_result_models import HybridSearchResult
 from ..enhanced.cross_document_intelligence import ClusteringStrategy, SimilarityMetric
 
 logger = LoggingConfig.get_logger(__name__)
@@ -176,7 +175,9 @@ class IntelligenceOperations:
                     "source_type": target_doc.source_type,
                 },
                 "similar_documents": similar,
-                "similarity_metrics_used": [m.value for m in metric_enums] if metric_enums else "default",
+                "similarity_metrics_used": (
+                    [m.value for m in metric_enums] if metric_enums else "default"
+                ),
                 "comparison_documents_analyzed": len(comparison_results),
             }
 
@@ -277,7 +278,9 @@ class IntelligenceOperations:
                         pass
 
             with temporary_detector_settings(detector, call_overrides):
-                conflicts = await self.engine.hybrid_search.detect_document_conflicts(documents)
+                conflicts = await self.engine.hybrid_search.detect_document_conflicts(
+                    documents
+                )
 
             # Add query metadata and original documents for formatting
             conflicts["query_metadata"] = {
@@ -289,8 +292,12 @@ class IntelligenceOperations:
 
             # Inject detector runtime stats via public accessor for structured output
             try:
-                detector = self.engine.hybrid_search.cross_document_engine.conflict_detector
-                get_stats = getattr(detector, "get_stats", None) or getattr(detector, "get_last_stats", None)
+                detector = (
+                    self.engine.hybrid_search.cross_document_engine.conflict_detector
+                )
+                get_stats = getattr(detector, "get_stats", None) or getattr(
+                    detector, "get_last_stats", None
+                )
                 raw_stats = {}
                 if callable(get_stats):
                     raw_stats = get_stats() or {}
@@ -299,7 +306,9 @@ class IntelligenceOperations:
                     # Filter to JSON-safe scalar values only
                     safe_stats = {}
                     for key, value in raw_stats.items():
-                        if isinstance(value, (str, int, float, bool)) and not str(key).startswith('partial_'):
+                        if isinstance(value, (str, int, float, bool)) and not str(
+                            key
+                        ).startswith("partial_"):
                             safe_stats[key] = value
                     if safe_stats:
                         conflicts["query_metadata"]["detector_stats"] = safe_stats
@@ -318,7 +327,7 @@ class IntelligenceOperations:
 
                     title = None
                     if hasattr(doc, "get_display_title") and callable(
-                        getattr(doc, "get_display_title")
+                        doc.get_display_title
                     ):
                         try:
                             title = doc.get_display_title()
@@ -443,11 +452,27 @@ class IntelligenceOperations:
                     doc = rec.get("document")
                     if doc:
                         transformed_rec = {
-                            "document_id": doc.document_id if hasattr(doc, 'document_id') else rec.get("document_id", "unknown"),
-                            "title": doc.get_display_title() if hasattr(doc, 'get_display_title') else doc.source_title if hasattr(doc, 'source_title') else rec.get("title", "Untitled"),
-                            "relevance_score": rec.get("complementary_score", rec.get("relevance_score", 0.0)),
+                            "document_id": (
+                                doc.document_id
+                                if hasattr(doc, "document_id")
+                                else rec.get("document_id", "unknown")
+                            ),
+                            "title": (
+                                doc.get_display_title()
+                                if hasattr(doc, "get_display_title")
+                                else (
+                                    doc.source_title
+                                    if hasattr(doc, "source_title")
+                                    else rec.get("title", "Untitled")
+                                )
+                            ),
+                            "relevance_score": rec.get(
+                                "complementary_score", rec.get("relevance_score", 0.0)
+                            ),
                             "reason": rec.get("explanation", rec.get("reason", "")),
-                            "strategy": rec.get("relationship_type", rec.get("strategy", "related")),
+                            "strategy": rec.get(
+                                "relationship_type", rec.get("strategy", "related")
+                            ),
                         }
                         transformed_recommendations.append(transformed_rec)
                 else:
@@ -517,15 +542,15 @@ class IntelligenceOperations:
                         "strategy": strategy.value,
                         "max_clusters": max_clusters,
                         "min_cluster_size": min_cluster_size,
-                    }
+                    },
                 }
 
             # Perform clustering
             clusters = await self.engine.hybrid_search.cluster_documents(
-                documents=documents, 
-                strategy=strategy, 
-                max_clusters=max_clusters, 
-                min_cluster_size=min_cluster_size
+                documents=documents,
+                strategy=strategy,
+                max_clusters=max_clusters,
+                min_cluster_size=min_cluster_size,
             )
 
             # Add query metadata - merge into clustering_metadata if it exists
@@ -545,7 +570,7 @@ class IntelligenceOperations:
                     "max_clusters": max_clusters,
                     "min_cluster_size": min_cluster_size,
                 }
-            
+
             return result
 
         except Exception as e:

@@ -7,19 +7,19 @@ parameters based on classified intents to optimize search results.
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ....utils.logging import LoggingConfig
-from .models import IntentType, SearchIntent, AdaptiveSearchConfig
+from .models import AdaptiveSearchConfig, IntentType, SearchIntent
 
 if TYPE_CHECKING:
-    from ..knowledge_graph import DocumentKnowledgeGraph, TraversalStrategy
     from ...models import SearchResult
+    from ..knowledge_graph import DocumentKnowledgeGraph, TraversalStrategy
 else:
     # Runtime imports to avoid circular dependencies
     try:
-        from ..knowledge_graph import DocumentKnowledgeGraph, TraversalStrategy
         from ...models import SearchResult
+        from ..knowledge_graph import DocumentKnowledgeGraph, TraversalStrategy
     except ImportError:
         DocumentKnowledgeGraph = None
         TraversalStrategy = None
@@ -220,10 +220,12 @@ class AdaptiveSearchStrategy:
                 IntentType.TROUBLESHOOTING: TraversalStrategy.WEIGHTED,
                 IntentType.EXPLORATORY: TraversalStrategy.BREADTH_FIRST,
             }
-            
+
             for intent_type, traversal_strategy in traversal_map.items():
                 if intent_type in self.intent_configs:
-                    self.intent_configs[intent_type].kg_traversal_strategy = traversal_strategy
+                    self.intent_configs[intent_type].kg_traversal_strategy = (
+                        traversal_strategy
+                    )
 
     def adapt_search(
         self,

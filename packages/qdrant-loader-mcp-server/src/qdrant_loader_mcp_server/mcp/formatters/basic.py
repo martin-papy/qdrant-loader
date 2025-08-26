@@ -5,7 +5,6 @@ This module handles basic formatting of search results, attachments,
 and hierarchical results for display in the MCP interface.
 """
 
-from typing import Any
 from ...search.components.search_result_models import HybridSearchResult
 
 
@@ -13,7 +12,9 @@ class BasicResultFormatters:
     """Handles basic result formatting operations."""
 
     @staticmethod
-    def _format_common_fields(result: HybridSearchResult, is_attachment_view: bool = False) -> str:
+    def _format_common_fields(
+        result: HybridSearchResult, is_attachment_view: bool = False
+    ) -> str:
         """Build the base formatted string for a search result.
 
         This consolidates shared formatting between standard search results and
@@ -75,12 +76,16 @@ class BasicResultFormatters:
     @staticmethod
     def format_search_result(result: HybridSearchResult) -> str:
         """Format a search result for display."""
-        return BasicResultFormatters._format_common_fields(result, is_attachment_view=False)
+        return BasicResultFormatters._format_common_fields(
+            result, is_attachment_view=False
+        )
 
     @staticmethod
     def format_attachment_search_result(result: HybridSearchResult) -> str:
         """Format an attachment search result for display."""
-        return BasicResultFormatters._format_common_fields(result, is_attachment_view=True)
+        return BasicResultFormatters._format_common_fields(
+            result, is_attachment_view=True
+        )
 
     @staticmethod
     def format_hierarchical_results(
@@ -93,9 +98,9 @@ class BasicResultFormatters:
             section = f"📁 **{root_title}** ({len(results)} results)\n"
 
             for result in results:
-                indent = "  " * (getattr(result, 'depth', 0) or 0)
+                indent = "  " * (getattr(result, "depth", 0) or 0)
                 section += f"{indent}📄 {result.source_title}"
-                if hasattr(result, 'hierarchy_context') and result.hierarchy_context:
+                if hasattr(result, "hierarchy_context") and result.hierarchy_context:
                     section += f" | {result.hierarchy_context}"
                 section += f" (Score: {result.score:.3f})\n"
 

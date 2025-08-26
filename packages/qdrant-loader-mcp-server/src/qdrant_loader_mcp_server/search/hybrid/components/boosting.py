@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List
 import logging
+from collections.abc import Iterable
+from typing import Any
 
 
 class ResultBooster:
@@ -14,14 +15,14 @@ class ResultBooster:
     def __init__(self, boost_fn: callable | None = None):
         self.boost_fn = boost_fn or (lambda _r: 1.0)
 
-    def apply(self, results: Iterable[Any]) -> List[Any]:
+    def apply(self, results: Iterable[Any]) -> list[Any]:
         """Apply boost multipliers to result scores in-place.
 
         - Mutates: updates each item's `score` attribute in-place when present and numeric.
         - Errors: invalid multipliers or score operations are logged and skipped.
         """
         logger = logging.getLogger(__name__)
-        boosted: List[Any] = []
+        boosted: list[Any] = []
         for r in results:
             try:
                 multiplier = float(self.boost_fn(r))
@@ -29,12 +30,12 @@ class ResultBooster:
                 logger.warning("ResultBooster: invalid multiplier for %r: %s", r, exc)
                 multiplier = 1.0
 
-            if hasattr(r, "score") and isinstance(getattr(r, "score"), (int, float)):
+            if hasattr(r, "score") and isinstance(r.score, (int, float)):
                 try:
                     r.score = float(r.score) * multiplier
                 except (TypeError, ValueError) as exc:
-                    logger.warning("ResultBooster: failed to apply boost for %r: %s", r, exc)
+                    logger.warning(
+                        "ResultBooster: failed to apply boost for %r: %s", r, exc
+                    )
             boosted.append(r)
         return boosted
-
-

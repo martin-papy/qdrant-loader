@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..knowledge_graph import TraversalStrategy
@@ -77,7 +77,7 @@ class AdaptiveSearchConfig:
     # Knowledge graph integration
     use_knowledge_graph: bool = False
     # Use Optional[TraversalStrategy] while leveraging a sentinel default to detect omission
-    kg_traversal_strategy: Optional["TraversalStrategy"] = field(default=_UNSET)
+    kg_traversal_strategy: TraversalStrategy | None = field(default=_UNSET)
     max_graph_hops: int = 2
     kg_expansion_weight: float = 0.2
 

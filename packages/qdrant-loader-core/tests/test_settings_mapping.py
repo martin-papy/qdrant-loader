@@ -2,7 +2,7 @@ from importlib import import_module
 
 
 def test_from_global_config_new_schema_minimal():
-    LLMSettings = getattr(import_module("qdrant_loader_core.llm.settings"), "LLMSettings")
+    LLMSettings = import_module("qdrant_loader_core.llm.settings").LLMSettings
     cfg = {
         "llm": {
             "provider": "openai",
@@ -27,7 +27,7 @@ def test_from_global_config_new_schema_minimal():
 
 
 def test_from_global_config_legacy_mapping_embedding_only():
-    LLMSettings = getattr(import_module("qdrant_loader_core.llm.settings"), "LLMSettings")
+    LLMSettings = import_module("qdrant_loader_core.llm.settings").LLMSettings
     cfg = {
         "embedding": {
             "endpoint": "http://localhost:11434/v1",
@@ -46,7 +46,7 @@ def test_from_global_config_legacy_mapping_embedding_only():
 
 
 def test_from_global_config_legacy_with_markitdown_chat():
-    LLMSettings = getattr(import_module("qdrant_loader_core.llm.settings"), "LLMSettings")
+    LLMSettings = import_module("qdrant_loader_core.llm.settings").LLMSettings
     cfg = {
         "embedding": {
             "endpoint": "https://api.openai.com/v1",
@@ -68,4 +68,3 @@ def test_from_global_config_legacy_with_markitdown_chat():
     assert s.provider == "openai"
     assert s.models["chat"] == "gpt-4o-mini"
     assert s.models["embeddings"] == "text-embedding-3-small"
-

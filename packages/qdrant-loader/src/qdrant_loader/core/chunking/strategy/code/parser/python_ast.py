@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-from typing import List
 
 from qdrant_loader.core.chunking.strategy.code.parser.common import (
     CodeElement,
@@ -13,7 +12,7 @@ def parse_python_ast(
     content: str,
     *,
     max_elements_to_process: int,
-) -> List[CodeElement]:
+) -> list[CodeElement]:
     try:
         tree = ast.parse(content)
     except Exception:
@@ -63,5 +62,3 @@ def parse_python_ast(
 
     Visitor().visit(tree)
     return elements
-
-

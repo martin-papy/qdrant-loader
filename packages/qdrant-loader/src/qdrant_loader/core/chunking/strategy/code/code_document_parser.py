@@ -15,8 +15,7 @@ except ImportError:
 
 from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser
 from qdrant_loader.core.chunking.strategy.code.parser.common import (
-    CodeElement,
-    CodeElementType,  # re-export for backward compatibility
+    CodeElement,  # re-export for backward compatibility
 )
 from qdrant_loader.core.chunking.strategy.code.parser.python_ast import parse_python_ast
 from qdrant_loader.core.chunking.strategy.code.parser.tree_sitter import (

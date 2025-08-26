@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
 import re
+from typing import Any
 
 from ...components.search_result_models import HybridSearchResult
 
@@ -10,16 +10,16 @@ def build_document_lookup(
     documents: list[HybridSearchResult],
     robust: bool = False,
     logger: Any | None = None,
-) -> Dict[str, HybridSearchResult]:
+) -> dict[str, HybridSearchResult]:
     """Build a multi-key lookup for `HybridSearchResult` documents.
 
     Keys include composite `source_type:source_title`, `document_id` when present,
     and `source_title`. When `robust` is True, missing values are tolerated and a
     sanitized composite key is also added.
     """
-    lookup: Dict[str, HybridSearchResult] = {}
+    lookup: dict[str, HybridSearchResult] = {}
 
-    def _normalize_key(value: Any) -> Optional[str]:
+    def _normalize_key(value: Any) -> str | None:
         if value is None:
             return None
         try:
@@ -29,7 +29,7 @@ def build_document_lookup(
         text = text.strip()
         return text if text else None
 
-    def _set_key(key: Optional[str], new_doc: HybridSearchResult) -> None:
+    def _set_key(key: str | None, new_doc: HybridSearchResult) -> None:
         if key is None:
             return
         existing = lookup.get(key)
@@ -43,7 +43,9 @@ def build_document_lookup(
                     "Duplicate key detected in document lookup; keeping existing",
                     extra={
                         "key": key,
-                        "existing_document_id": str(getattr(existing, "document_id", "")),
+                        "existing_document_id": str(
+                            getattr(existing, "document_id", "")
+                        ),
                         "new_document_id": str(getattr(new_doc, "document_id", "")),
                     },
                 )
@@ -55,7 +57,9 @@ def build_document_lookup(
         if not isinstance(doc, HybridSearchResult):
             if logger is not None:
                 try:
-                    logger.warning("Skipping non-HybridSearchResult in build_document_lookup")
+                    logger.warning(
+                        "Skipping non-HybridSearchResult in build_document_lookup"
+                    )
                 except Exception:
                     pass
             continue
@@ -71,7 +75,7 @@ def build_document_lookup(
 
         # Secondary lookup by document_id if available
         if getattr(doc, "document_id", None):
-            _set_key(_normalize_key(getattr(doc, "document_id")), doc)
+            _set_key(_normalize_key(doc.document_id), doc)
 
         # Tertiary lookup by source_title only (fallback)
         if source_title:
@@ -97,9 +101,9 @@ def build_document_lookup(
 
 def find_document_by_id(
     doc_id: str,
-    doc_lookup: Dict[str, HybridSearchResult],
+    doc_lookup: dict[str, HybridSearchResult],
     logger: Any | None = None,
-) -> Optional[HybridSearchResult]:
+) -> HybridSearchResult | None:
     """Find a document by ID using multiple lookup strategies.
 
     Attempts direct, sanitized, partial, and title-based matches.
@@ -133,7 +137,9 @@ def find_document_by_id(
     # Delimiter/word-boundary aware partial matching
     # Build a regex that matches the normalized query as a whole token
     if normalized_query:
-        token_pattern = re.compile(rf"(^|\b|[\s:_\-]){re.escape(normalized_query)}($|\b|[\s:_\-])")
+        token_pattern = re.compile(
+            rf"(^|\b|[\s:_\-]){re.escape(normalized_query)}($|\b|[\s:_\-])"
+        )
         for lookup_key, doc in doc_lookup.items():
             normalized_key = _normalize_for_match(lookup_key)
             if token_pattern.search(normalized_key):
@@ -153,5 +159,3 @@ def find_document_by_id(
             return doc_lookup[title_part]
 
     return None
-
-

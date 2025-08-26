@@ -183,7 +183,7 @@ class FacetedSearchOperations:
             from ..enhanced.faceted_search import DynamicFacetGenerator
 
             facet_generator = DynamicFacetGenerator()
-            
+
             suggestions = await facet_generator.generate_facets_from_documents(
                 documents=documents,
                 max_facets_per_type=max_facets_per_type,
@@ -216,7 +216,9 @@ class FacetedSearchOperations:
                 "facet_coverage": coverage_stats,
                 "generation_metadata": {
                     "total_documents_analyzed": len(documents),
-                    "facet_types_generated": len(set(f.facet_type for f in suggestions.facets)),
+                    "facet_types_generated": len(
+                        set(f.facet_type for f in suggestions.facets)
+                    ),
                     "total_facets_generated": len(suggestions.facets),
                     "generation_time_ms": suggestions.generation_time_ms,
                     "ai_generation_enabled": enable_dynamic_generation,

@@ -127,5 +127,3 @@ def is_third_party_import(import_name: str) -> bool:
     ):
         return True
     return False
-
-

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, List
 
 
 @dataclass
@@ -18,7 +18,9 @@ class HybridScorer:
     to own the weights; this class only applies them deterministically.
     """
 
-    def __init__(self, vector_weight: float, keyword_weight: float, metadata_weight: float):
+    def __init__(
+        self, vector_weight: float, keyword_weight: float, metadata_weight: float
+    ):
         self.vector_weight = float(vector_weight)
         self.keyword_weight = float(keyword_weight)
         self.metadata_weight = float(metadata_weight)
@@ -30,7 +32,7 @@ class HybridScorer:
             + components.metadata_score * self.metadata_weight
         )
 
-    def normalize_many(self, scores: Iterable[float]) -> List[float]:
+    def normalize_many(self, scores: Iterable[float]) -> list[float]:
         values = list(scores)
         if not values:
             return []
@@ -38,5 +40,3 @@ class HybridScorer:
         if max_value <= 0:
             return [0.0 for _ in values]
         return [v / max_value for v in values]
-
-

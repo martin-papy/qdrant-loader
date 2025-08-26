@@ -5,6 +5,7 @@ import time
 from asyncio import Lock
 from dataclasses import dataclass
 from typing import Any
+
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
 
@@ -352,7 +353,9 @@ class VectorSearchService:
 
     # Note: _build_filter method added back for backward compatibility - prefer FieldQueryParser.create_qdrant_filter()
 
-    def build_filter(self, project_ids: list[str] | None = None) -> models.Filter | None:
+    def build_filter(
+        self, project_ids: list[str] | None = None
+    ) -> models.Filter | None:
         """Public wrapper for building a Qdrant filter for project constraints.
 
         Prefer using `FieldQueryParser.create_qdrant_filter` for field queries. This

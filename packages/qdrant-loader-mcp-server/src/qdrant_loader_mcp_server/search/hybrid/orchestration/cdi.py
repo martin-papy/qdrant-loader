@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, List
 import inspect
+from typing import Any
 
-from ...enhanced.cdi import SimilarityMetric
 from ...components.search_result_models import HybridSearchResult
+from ...enhanced.cdi import SimilarityMetric
 
 
-async def analyze_document_relationships(engine: Any, documents: list[HybridSearchResult]) -> dict[str, Any]:
+async def analyze_document_relationships(
+    engine: Any, documents: list[HybridSearchResult]
+) -> dict[str, Any]:
     result = engine.cross_document_engine.analyze_document_relationships(documents)
     # Handle both async and sync implementations defensively
     if inspect.isawaitable(result):
@@ -19,7 +21,7 @@ async def find_similar_documents(
     engine: Any,
     target_document: HybridSearchResult,
     documents: list[HybridSearchResult],
-    similarity_metrics: List[SimilarityMetric] | None = None,
+    similarity_metrics: list[SimilarityMetric] | None = None,
     max_similar: int = 5,
 ) -> list[dict[str, Any]]:
     similarity_calculator = engine.cross_document_engine.similarity_calculator
@@ -27,7 +29,9 @@ async def find_similar_documents(
     for doc in documents:
         # Prefer ID-based comparison to avoid relying on object equality
         doc_id = getattr(doc, "document_id", getattr(doc, "id", None))
-        target_id = getattr(target_document, "document_id", getattr(target_document, "id", None))
+        target_id = getattr(
+            target_document, "document_id", getattr(target_document, "id", None)
+        )
         if doc_id is not None and target_id is not None:
             if doc_id == target_id:
                 continue
@@ -51,9 +55,11 @@ async def find_similar_documents(
     return similar_docs[:max_similar]
 
 
-async def detect_document_conflicts(engine: Any, documents: list[HybridSearchResult]) -> dict[str, Any]:
-    conflict_analysis = await engine.cross_document_engine.conflict_detector.detect_conflicts(
-        documents
+async def detect_document_conflicts(
+    engine: Any, documents: list[HybridSearchResult]
+) -> dict[str, Any]:
+    conflict_analysis = (
+        await engine.cross_document_engine.conflict_detector.detect_conflicts(documents)
     )
     return {
         "conflicting_pairs": conflict_analysis.conflicting_pairs,
@@ -68,8 +74,10 @@ async def find_complementary_content(
     documents: list[HybridSearchResult],
     max_recommendations: int = 5,
 ) -> list[dict[str, Any]]:
-    complementary_content = engine.cross_document_engine.complementary_finder.find_complementary_content(
-        target_document, documents
+    complementary_content = (
+        engine.cross_document_engine.complementary_finder.find_complementary_content(
+            target_document, documents
+        )
     )
     recommendations = complementary_content.get_top_recommendations(max_recommendations)
 
@@ -94,5 +102,3 @@ async def find_complementary_content(
         else:
             engine.logger.warning(f"Document not found in lookup for ID: {doc_id}")
     return enhanced_recommendations
-
-

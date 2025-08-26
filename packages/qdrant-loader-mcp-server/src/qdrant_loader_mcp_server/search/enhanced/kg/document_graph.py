@@ -8,23 +8,24 @@ integrating graph building, traversal, and content discovery.
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
-from datetime import date, datetime, time as dtime
+from datetime import date, datetime
+from datetime import time as dtime
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
     from ...models import SearchResult
+    from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
 else:
     QueryAnalysis = Any
     SpaCyQueryAnalyzer = Any
     SearchResult = Any
 
 from ....utils.logging import LoggingConfig
-from .models import NodeType, TraversalStrategy, TraversalResult
-from .graph import KnowledgeGraph
 from .builder import GraphBuilder
+from .graph import KnowledgeGraph
+from .models import NodeType, TraversalResult, TraversalStrategy
 from .traverser import GraphTraverser
 
 logger = LoggingConfig.get_logger(__name__)
@@ -38,10 +39,11 @@ class DocumentKnowledgeGraph:
         # Import SpaCyQueryAnalyzer at runtime to avoid circular import
         if spacy_analyzer is None:
             from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
+
             self.spacy_analyzer = SpaCyQueryAnalyzer()
         else:
             self.spacy_analyzer = spacy_analyzer
-        
+
         self.graph_builder = GraphBuilder(self.spacy_analyzer)
         self.knowledge_graph: KnowledgeGraph | None = None
         self.traverser: GraphTraverser | None = None
@@ -123,7 +125,9 @@ class DocumentKnowledgeGraph:
                     entity_text = item
                 # Skip dicts or None/empty safely
                 if entity_text:
-                    entity_nodes = self.knowledge_graph.find_nodes_by_entity(entity_text)
+                    entity_nodes = self.knowledge_graph.find_nodes_by_entity(
+                        entity_text
+                    )
                     start_nodes.extend([node.id for node in entity_nodes])
             except IndexError:
                 # Malformed entity entry; skip
@@ -161,7 +165,9 @@ class DocumentKnowledgeGraph:
                     "nodes": [
                         {
                             "id": node.id,
-                            "type": getattr(node.node_type, "value", str(node.node_type)),
+                            "type": getattr(
+                                node.node_type, "value", str(node.node_type)
+                            ),
                             "title": node.title,
                             "centrality": node.centrality_score,
                             "entities": node.entities,
@@ -173,14 +179,18 @@ class DocumentKnowledgeGraph:
                         {
                             "source": edge.source_id,
                             "target": edge.target_id,
-                            "relationship": getattr(edge.relationship_type, "value", str(edge.relationship_type)),
+                            "relationship": getattr(
+                                edge.relationship_type,
+                                "value",
+                                str(edge.relationship_type),
+                            ),
                             "weight": edge.weight,
                             "confidence": edge.confidence,
                         }
                         for edge in self.knowledge_graph.edges.values()
                     ],
                 }
-                
+
                 class EnhancedJSONEncoder(json.JSONEncoder):
                     def default(self, obj: Any) -> Any:  # type: ignore[override]
                         if isinstance(obj, (datetime, date, dtime)):
@@ -218,7 +228,9 @@ class DocumentKnowledgeGraph:
                             return value
                         except TypeError:
                             if isinstance(value, dict):
-                                return {sanitize(k): sanitize(v) for k, v in value.items()}
+                                return {
+                                    sanitize(k): sanitize(v) for k, v in value.items()
+                                }
                             if isinstance(value, (list, tuple, set)):
                                 return [sanitize(v) for v in value]
                             if isinstance(value, (datetime, date, dtime)):

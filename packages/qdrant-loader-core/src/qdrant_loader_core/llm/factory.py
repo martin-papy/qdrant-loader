@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
-
-from .settings import LLMSettings
-from .types import LLMProvider, EmbeddingsClient, ChatClient, TokenCounter
-
-from .providers.openai import OpenAIProvider
 from .providers.ollama import OllamaProvider
+from .providers.openai import OpenAIProvider
+from .settings import LLMSettings
+from .types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
 
 class _NoopEmbeddings(EmbeddingsClient):
@@ -54,5 +51,3 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
         return OllamaProvider(settings)
 
     return _NoopProvider()
-
-

@@ -6,14 +6,14 @@ value types and contracts only, with no behavioral changes.
 """
 
 from .models import (
-    SimilarityMetric,
-    ClusteringStrategy,
-    RelationshipType,
-    DocumentSimilarity,
-    DocumentCluster,
     CitationNetwork,
+    ClusteringStrategy,
     ComplementaryContent,
     ConflictAnalysis,
+    DocumentCluster,
+    DocumentSimilarity,
+    RelationshipType,
+    SimilarityMetric,
 )
 
 __all__ = [
@@ -26,5 +26,3 @@ __all__ = [
     "ComplementaryContent",
     "ConflictAnalysis",
 ]
-
-

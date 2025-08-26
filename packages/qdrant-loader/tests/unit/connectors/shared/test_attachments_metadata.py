@@ -57,12 +57,3 @@ def test_confluence_attachment_to_metadata_download_url_building():
     assert m is not None
     assert m.download_url == "http://conf/download/attachments/123/conf.txt"
     assert m.mime_type == "text/plain"
-
-
-
-
-
-
-
-
-

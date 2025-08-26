@@ -49,7 +49,9 @@ async def make_request_with_retries_async(
             response = await make_request_async(session, method, url, **kwargs)
             if response.status_code in status_forcelist and attempt < retries:
                 attempt += 1
-                sleep_s = backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                sleep_s = backoff_factor * (2 ** (attempt - 1)) + random.uniform(
+                    0, 0.25
+                )
                 await asyncio.sleep(sleep_s)
                 continue
             return response
@@ -62,7 +64,7 @@ async def make_request_with_retries_async(
 
 
 async def aiohttp_request_with_retries(
-    session: "aiohttp.ClientSession",
+    session: aiohttp.ClientSession,
     method: str,
     url: str,
     *,
@@ -81,11 +83,17 @@ async def aiohttp_request_with_retries(
             requester = getattr(session, method.lower(), None)
             if requester is None:
                 requester = session.request
-            response = await requester(method, url, **kwargs) if requester is session.request else await requester(url, **kwargs)
+            response = (
+                await requester(method, url, **kwargs)
+                if requester is session.request
+                else await requester(url, **kwargs)
+            )
             if response.status in status_forcelist and attempt < retries:
                 await response.release()
                 attempt += 1
-                sleep_s = backoff_factor * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                sleep_s = backoff_factor * (2 ** (attempt - 1)) + random.uniform(
+                    0, 0.25
+                )
                 await asyncio.sleep(sleep_s)
                 continue
             return response
@@ -98,5 +106,3 @@ async def aiohttp_request_with_retries(
             await asyncio.sleep(sleep_s)
     if last_exc:
         raise last_exc
-
-

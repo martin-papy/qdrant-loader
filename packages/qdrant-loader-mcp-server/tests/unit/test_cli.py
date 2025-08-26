@@ -186,7 +186,7 @@ class TestAsyncFunctions:
 
             # Verify shutdown event was set
             mock_shutdown_event.set.assert_called_once()
-            
+
             # Sleep should be called once with 0 (yield control)
             assert mock_sleep.await_count == 1
             mock_sleep.assert_awaited_with(0)
@@ -224,12 +224,12 @@ class TestAsyncFunctions:
 
             # Verify shutdown event was set
             mock_shutdown_event.set.assert_called_once()
-            
+
             # Verify logging calls were made
             mock_logger.info.assert_any_call("Shutting down...")
 
             # No explicit loop.stop() should be called in cooperative shutdown
-            assert not getattr(mock_loop, "stop").called
+            assert not mock_loop.stop.called
 
 
 class TestStdioHandler:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import fnmatch
 from typing import Any
 from urllib.parse import urljoin, urlparse
-import fnmatch
 
 from bs4 import BeautifulSoup
 
@@ -123,15 +123,14 @@ async def discover_pages(
             abs_path = parsed.path or "/"
             base_path_norm = base_path.rstrip("/")
             if base_path_norm:
-                if not (abs_path == base_path_norm or abs_path.startswith(base_path_norm + "/")):
+                if not (
+                    abs_path == base_path_norm
+                    or abs_path.startswith(base_path_norm + "/")
+                ):
                     continue
 
-            if (
-                not any(exclude in absolute_url for exclude in exclude_paths)
-                and (
-                    path_pattern is None
-                    or fnmatch.fnmatch(parsed.path, path_pattern)
-                )
+            if not any(exclude in absolute_url for exclude in exclude_paths) and (
+                path_pattern is None or fnmatch.fnmatch(parsed.path, path_pattern)
             ):
                 if absolute_url not in seen:
                     seen.add(absolute_url)
@@ -146,5 +145,3 @@ async def discover_pages(
             continue
     logger.debug("Page discovery completed", total_pages=len(pages), pages=pages)
     return pages
-
-

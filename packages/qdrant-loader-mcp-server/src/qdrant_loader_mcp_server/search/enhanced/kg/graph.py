@@ -13,7 +13,7 @@ from typing import Any
 import networkx as nx
 
 from ....utils.logging import LoggingConfig
-from .models import NodeType, RelationshipType, GraphNode, GraphEdge
+from .models import GraphEdge, GraphNode, NodeType, RelationshipType
 
 logger = LoggingConfig.get_logger(__name__)
 

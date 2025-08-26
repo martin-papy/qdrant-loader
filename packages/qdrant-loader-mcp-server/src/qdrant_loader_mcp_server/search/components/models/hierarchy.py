@@ -11,5 +11,3 @@ class HierarchyInfo:
     depth: int | None = None
     children_count: int | None = None
     hierarchy_context: str | None = None
-
-

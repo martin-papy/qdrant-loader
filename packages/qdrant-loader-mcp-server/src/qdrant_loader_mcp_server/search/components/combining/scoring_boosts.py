@@ -68,7 +68,9 @@ def apply_content_type_boosting(metadata: dict, query_context: dict) -> float:
         boost_factor += 0.12
     if query_context.get("prefers_images") and content_analysis.get("has_images"):
         boost_factor += 0.10
-    if query_context.get("prefers_docs") and not content_analysis.get("has_code_blocks"):
+    if query_context.get("prefers_docs") and not content_analysis.get(
+        "has_code_blocks"
+    ):
         boost_factor += 0.08
     return boost_factor
 
@@ -123,8 +125,12 @@ def apply_semantic_boosting(
     if entities and spacy_analysis.entities:
         max_entity_similarity = 0.0
         for entity in entities:
-            entity_text = entity if isinstance(entity, str) else entity.get("text", str(entity))
-            similarity = spacy_analyzer.semantic_similarity_matching(spacy_analysis, entity_text)
+            entity_text = (
+                entity if isinstance(entity, str) else entity.get("text", str(entity))
+            )
+            similarity = spacy_analyzer.semantic_similarity_matching(
+                spacy_analysis, entity_text
+            )
             max_entity_similarity = max(max_entity_similarity, similarity)
         if max_entity_similarity > 0.6:
             boost_factor += 0.15
@@ -137,7 +143,9 @@ def apply_semantic_boosting(
     if topics and spacy_analysis.main_concepts:
         max_topic_similarity = 0.0
         for topic in topics:
-            topic_text = topic if isinstance(topic, str) else topic.get("text", str(topic))
+            topic_text = (
+                topic if isinstance(topic, str) else topic.get("text", str(topic))
+            )
             for concept in spacy_analysis.main_concepts:
                 similarity = spacy_analyzer.semantic_similarity_matching(
                     spacy_analysis, f"{topic_text} {concept}"
@@ -186,5 +194,3 @@ def apply_fallback_semantic_boosting(metadata: dict, query_context: dict) -> flo
         if query_keywords.intersection(topic_texts):
             boost_factor += 0.08
     return boost_factor
-
-

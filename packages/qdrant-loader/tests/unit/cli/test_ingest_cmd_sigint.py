@@ -15,13 +15,17 @@ async def test_sigint_handler_schedules_cancellation_unix_path(mocker):
     mocker.patch.object(ingest_module, "_load_config_with_workspace", return_value=None)
     mocker.patch.object(ingest_module, "validate_workspace_flags", return_value=None)
     mocker.patch("qdrant_loader.config.get_settings", return_value=SimpleNamespace())
-    mocker.patch("qdrant_loader.core.qdrant_manager.QdrantManager", return_value=object())
+    mocker.patch(
+        "qdrant_loader.core.qdrant_manager.QdrantManager", return_value=object()
+    )
 
     # Make the pipeline run short and non-blocking
     async def _fake_run_pipeline(*_args, **_kwargs):
         await asyncio.sleep(0.05)
 
-    mocker.patch.object(ingest_module, "_run_ingest_pipeline", side_effect=_fake_run_pipeline)
+    mocker.patch.object(
+        ingest_module, "_run_ingest_pipeline", side_effect=_fake_run_pipeline
+    )
 
     # Track that the cancellation helper was scheduled and executed
     cancellation_called = asyncio.Event()
@@ -29,7 +33,9 @@ async def test_sigint_handler_schedules_cancellation_unix_path(mocker):
     async def _fake_cancel_all_tasks():
         cancellation_called.set()
 
-    mocker.patch.object(ingest_module, "_cancel_all_tasks_helper", side_effect=_fake_cancel_all_tasks)
+    mocker.patch.object(
+        ingest_module, "_cancel_all_tasks_helper", side_effect=_fake_cancel_all_tasks
+    )
 
     loop = asyncio.get_running_loop()
 
@@ -40,7 +46,9 @@ async def test_sigint_handler_schedules_cancellation_unix_path(mocker):
         captured["callback"] = callback
 
     # Intercept signal handler registration (Unix path)
-    mocker.patch.object(loop, "add_signal_handler", side_effect=_fake_add_signal_handler)
+    mocker.patch.object(
+        loop, "add_signal_handler", side_effect=_fake_add_signal_handler
+    )
 
     # Prevent awaiting unrelated framework tasks that can cause hangs in tests
     mocker.patch.object(ingest_module.asyncio, "all_tasks", return_value=[])
@@ -85,19 +93,25 @@ async def test_sigint_handler_schedules_cancellation_windows_fallback(mocker):
     mocker.patch.object(ingest_module, "_load_config_with_workspace", return_value=None)
     mocker.patch.object(ingest_module, "validate_workspace_flags", return_value=None)
     mocker.patch("qdrant_loader.config.get_settings", return_value=SimpleNamespace())
-    mocker.patch("qdrant_loader.core.qdrant_manager.QdrantManager", return_value=object())
+    mocker.patch(
+        "qdrant_loader.core.qdrant_manager.QdrantManager", return_value=object()
+    )
 
     async def _fake_run_pipeline(*_args, **_kwargs):
         await asyncio.sleep(0.05)
 
-    mocker.patch.object(ingest_module, "_run_ingest_pipeline", side_effect=_fake_run_pipeline)
+    mocker.patch.object(
+        ingest_module, "_run_ingest_pipeline", side_effect=_fake_run_pipeline
+    )
 
     cancellation_called = asyncio.Event()
 
     async def _fake_cancel_all_tasks():
         cancellation_called.set()
 
-    mocker.patch.object(ingest_module, "_cancel_all_tasks_helper", side_effect=_fake_cancel_all_tasks)
+    mocker.patch.object(
+        ingest_module, "_cancel_all_tasks_helper", side_effect=_fake_cancel_all_tasks
+    )
 
     loop = asyncio.get_running_loop()
 
@@ -144,5 +158,3 @@ async def test_sigint_handler_schedules_cancellation_windows_fallback(mocker):
 
     # Ensure command completes cleanly
     await asyncio.wait_for(task, timeout=2.0)
-
-

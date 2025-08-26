@@ -192,8 +192,12 @@ class CitationNetworkAnalyzer:
                         parent_ok = cur_parent_id == cand_parent_id
 
                     if parent_ok:
-                        cur_parent_doc_id = getattr(current_doc, "parent_document_id", None)
-                        cand_parent_doc_id = getattr(candidate, "parent_document_id", None)
+                        cur_parent_doc_id = getattr(
+                            current_doc, "parent_document_id", None
+                        )
+                        cand_parent_doc_id = getattr(
+                            candidate, "parent_document_id", None
+                        )
                         if (
                             cur_parent_doc_id is not None
                             and cand_parent_doc_id is not None

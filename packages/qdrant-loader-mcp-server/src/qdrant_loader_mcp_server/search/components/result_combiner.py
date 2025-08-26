@@ -5,12 +5,12 @@ from typing import Any
 from ...utils.logging import LoggingConfig
 from ..hybrid.components.scoring import HybridScorer, ScoreComponents
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from .metadata_extractor import MetadataExtractor
 from .combining import (
     boost_score_with_metadata,
-    should_skip_result,
     flatten_metadata_components,
+    should_skip_result,
 )
+from .metadata_extractor import MetadataExtractor
 from .search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
@@ -150,7 +150,10 @@ class ResultCombiner:
 
                 # Boost score with metadata
                 boosted_score = boost_score_with_metadata(
-                    combined_score, metadata, query_context, spacy_analyzer=self.spacy_analyzer
+                    combined_score,
+                    metadata,
+                    query_context,
+                    spacy_analyzer=self.spacy_analyzer,
                 )
 
                 # Extract fields from both direct payload fields and nested metadata
@@ -301,11 +304,9 @@ class ResultCombiner:
         return should_skip_result(metadata, result_filters, query_context)
 
     def _count_business_indicators(self, metadata: dict) -> int:
-        return (
-            __import__(
-                f"{__package__}.combining.filters", fromlist=["count_business_indicators"]
-            ).count_business_indicators(metadata)
-        )
+        return __import__(
+            f"{__package__}.combining.filters", fromlist=["count_business_indicators"]
+        ).count_business_indicators(metadata)
 
     def _boost_score_with_metadata(
         self, base_score: float, metadata: dict, query_context: dict
@@ -314,7 +315,9 @@ class ResultCombiner:
             base_score, metadata, query_context, spacy_analyzer=self.spacy_analyzer
         )
 
-    def _apply_content_type_boosting(self, metadata: dict, query_context: dict) -> float:
+    def _apply_content_type_boosting(
+        self, metadata: dict, query_context: dict
+    ) -> float:
         from .combining import apply_content_type_boosting
 
         return apply_content_type_boosting(metadata, query_context)
@@ -339,7 +342,9 @@ class ResultCombiner:
 
         return apply_semantic_boosting(metadata, query_context, self.spacy_analyzer)
 
-    def _apply_fallback_semantic_boosting(self, metadata: dict, query_context: dict) -> float:
+    def _apply_fallback_semantic_boosting(
+        self, metadata: dict, query_context: dict
+    ) -> float:
         from .combining import apply_fallback_semantic_boosting
 
         return apply_fallback_semantic_boosting(metadata, query_context)
@@ -374,7 +379,10 @@ class ResultCombiner:
 
             adjusted_score = result.score * diversity_score
 
-            if len(diverse_results) < limit * 0.7 or adjusted_score >= result.score * 0.6:
+            if (
+                len(diverse_results) < limit * 0.7
+                or adjusted_score >= result.score * 0.6
+            ):
                 diverse_results.append(result)
                 used_source_types.add(source_type)
                 used_section_types.add(section_type)

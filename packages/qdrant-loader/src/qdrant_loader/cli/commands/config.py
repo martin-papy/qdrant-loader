@@ -18,13 +18,15 @@ def run_show_config(
     It performs validation, optional workspace setup, logging setup, and settings loading.
     """
     try:
-        from qdrant_loader.config.workspace import validate_workspace_flags
         from qdrant_loader.cli.config_loader import (
-            setup_workspace as _setup_workspace_impl,
             load_config_with_workspace as _load_config_with_workspace,
         )
-        from qdrant_loader.utils.logging import LoggingConfig
+        from qdrant_loader.cli.config_loader import (
+            setup_workspace as _setup_workspace_impl,
+        )
         from qdrant_loader.config import get_settings
+        from qdrant_loader.config.workspace import validate_workspace_flags
+        from qdrant_loader.utils.logging import LoggingConfig
 
         # Validate flag combinations
         validate_workspace_flags(workspace, config, env)
@@ -88,5 +90,3 @@ def run_show_config(
         raise
     except Exception as e:
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
-
-

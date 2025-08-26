@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 
 from ...enhanced.faceted_search import FacetedSearchResults, FacetFilter
-from ...components.search_result_models import HybridSearchResult
 
 
 async def search_with_facets(
@@ -16,7 +15,7 @@ async def search_with_facets(
     facet_filters: list[FacetFilter] | None = None,
     generate_facets: bool = True,
     session_context: dict[str, Any] | None = None,
-    behavioral_context: List[str] | None = None,
+    behavioral_context: list[str] | None = None,
 ) -> FacetedSearchResults:
     """Perform faceted search with dynamic facet generation using the provided engine."""
     start_time = datetime.now()
@@ -55,5 +54,3 @@ async def search_with_facets(
     )
 
     return faceted_results
-
-

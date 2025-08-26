@@ -78,7 +78,9 @@ class ConflictDetector:
             return {}
 
         # Check if we're in a test environment with mocked retrieve method
-        if hasattr(self.qdrant_client, 'retrieve') and hasattr(self.qdrant_client.retrieve, '_mock_name'):
+        if hasattr(self.qdrant_client, "retrieve") and hasattr(
+            self.qdrant_client.retrieve, "_mock_name"
+        ):
             # Test compatibility: use mocked retrieve method
             embeddings = {}
             for doc_id in document_ids:
@@ -86,20 +88,24 @@ class ConflictDetector:
                     points = await self.qdrant_client.retrieve(
                         collection_name=self.collection_name,
                         ids=[doc_id],
-                        with_vectors=True
+                        with_vectors=True,
                     )
                     if points:
                         point = points[0]
-                        if hasattr(point, 'vector') and point.vector:
+                        if hasattr(point, "vector") and point.vector:
                             embeddings[doc_id] = point.vector
                 except Exception as e:
-                    self.logger.warning(f"Failed to retrieve embedding for {doc_id}: {e}")
+                    self.logger.warning(
+                        f"Failed to retrieve embedding for {doc_id}: {e}"
+                    )
             return embeddings
 
         try:
             embeddings = {}
             # Use bounded concurrency and configurable timeouts
-            settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            settings = (
+                getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            )
             timeout_s = settings.get("conflict_embeddings_timeout_s", 5.0)
             max_cc = settings.get("conflict_embeddings_max_concurrency", 5)
 
@@ -114,12 +120,17 @@ class ConflictDetector:
                             self.qdrant_client.scroll(
                                 collection_name=self.collection_name,
                                 scroll_filter={
-                                    "must": [{"key": "document_id", "match": {"value": doc_id}}]
+                                    "must": [
+                                        {
+                                            "key": "document_id",
+                                            "match": {"value": doc_id},
+                                        }
+                                    ]
                                 },
                                 limit=1,
                                 with_vectors=True,
                             ),
-                            timeout=timeout_s
+                            timeout=timeout_s,
                         )
 
                         if search_result and search_result[0]:
@@ -129,9 +140,9 @@ class ConflictDetector:
                                 if isinstance(point.vector, dict):
                                     # Named vectors
                                     vector_data = (
-                                        point.vector.get(self.preferred_vector_name) or
-                                        point.vector.get("dense") or
-                                        next(iter(point.vector.values()), None)
+                                        point.vector.get(self.preferred_vector_name)
+                                        or point.vector.get("dense")
+                                        or next(iter(point.vector.values()), None)
                                     )
                                 else:
                                     # Single vector
@@ -139,23 +150,35 @@ class ConflictDetector:
 
                                 if vector_data:
                                     embeddings[doc_id] = vector_data
-                                    self.logger.debug(f"Retrieved embedding for document {doc_id}")
+                                    self.logger.debug(
+                                        f"Retrieved embedding for document {doc_id}"
+                                    )
                                 else:
-                                    self.logger.warning(f"No vector data found for document {doc_id}")
+                                    self.logger.warning(
+                                        f"No vector data found for document {doc_id}"
+                                    )
                             else:
-                                self.logger.warning(f"No vectors found for document {doc_id}")
+                                self.logger.warning(
+                                    f"No vectors found for document {doc_id}"
+                                )
                     except TimeoutError:
-                        self.logger.warning(f"Timeout retrieving embedding for document {doc_id}")
+                        self.logger.warning(
+                            f"Timeout retrieving embedding for document {doc_id}"
+                        )
                     except Exception as e:
-                        self.logger.error(f"Error retrieving embedding for document {doc_id}: {e}")
+                        self.logger.error(
+                            f"Error retrieving embedding for document {doc_id}: {e}"
+                        )
 
             # Execute fetches with concurrency control
             await asyncio.gather(
                 *[fetch_embedding(doc_id) for doc_id in document_ids],
-                return_exceptions=True
+                return_exceptions=True,
             )
 
-            self.logger.debug(f"Retrieved embeddings for {len(embeddings)}/{len(document_ids)} documents")
+            self.logger.debug(
+                f"Retrieved embeddings for {len(embeddings)}/{len(document_ids)} documents"
+            )
             return embeddings
 
         except Exception as e:
@@ -202,7 +225,9 @@ class ConflictDetector:
             )
 
             # Use settings-based configuration if available
-            settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            settings = (
+                getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            )
             timeout_s = settings.get("conflict_llm_timeout_s", 10.0)
 
             response = await asyncio.wait_for(
@@ -212,10 +237,13 @@ class ConflictDetector:
                     max_tokens=200,
                     temperature=0.1,
                 ),
-                timeout=timeout_s
+                timeout=timeout_s,
             )
 
-            content_raw = getattr(getattr(response.choices[0], "message", {}), "content", "") or ""
+            content_raw = (
+                getattr(getattr(response.choices[0], "message", {}), "content", "")
+                or ""
+            )
             content = content_raw.strip()
 
             try:
@@ -262,7 +290,9 @@ class ConflictDetector:
             self.logger.error(f"Error in LLM conflict validation: {e}")
             return False, f"LLM validation error: {str(e)}", 0.0
 
-    def _analyze_text_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> tuple[bool, str, float]:
+    def _analyze_text_conflicts(
+        self, doc1: SearchResult, doc2: SearchResult
+    ) -> tuple[bool, str, float]:
         """Analyze textual conflicts using spaCy-based analysis."""
         try:
             # Use spaCy to extract key statements and compare them
@@ -286,20 +316,35 @@ class ConflictDetector:
 
             # Detect potential conflicts based on similar topics but different recommendations
             conflict_indicators = [
-                "should not", "avoid", "deprecated", "recommended",
-                "best practice", "anti-pattern", "wrong", "correct", "instead", "better", "worse",
+                "should not",
+                "avoid",
+                "deprecated",
+                "recommended",
+                "best practice",
+                "anti-pattern",
+                "wrong",
+                "correct",
+                "instead",
+                "better",
+                "worse",
             ]
 
             doc1_indicators = sum(
-                1 for indicator in conflict_indicators if indicator in doc1.content.lower()
+                1
+                for indicator in conflict_indicators
+                if indicator in doc1.content.lower()
             )
             doc2_indicators = sum(
-                1 for indicator in conflict_indicators if indicator in doc2.content.lower()
+                1
+                for indicator in conflict_indicators
+                if indicator in doc2.content.lower()
             )
 
             # High overlap with conflicting language suggests potential conflict
             if entity_overlap > 0.3 and (doc1_indicators > 0 or doc2_indicators > 0):
-                confidence = min(entity_overlap * (doc1_indicators + doc2_indicators) / 10, 1.0)
+                confidence = min(
+                    entity_overlap * (doc1_indicators + doc2_indicators) / 10, 1.0
+                )
                 explanation = f"Similar topics with conflicting recommendations (overlap: {entity_overlap:.2f})"
                 return True, explanation, confidence
 
@@ -309,7 +354,9 @@ class ConflictDetector:
             self.logger.error(f"Error in text conflict analysis: {e}")
             return False, f"Text analysis error: {str(e)}", 0.0
 
-    def _analyze_metadata_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> tuple[bool, str, float]:
+    def _analyze_metadata_conflicts(
+        self, doc1: SearchResult, doc2: SearchResult
+    ) -> tuple[bool, str, float]:
         """Analyze metadata-based conflicts."""
         try:
             conflicts = []
@@ -322,7 +369,13 @@ class ConflictDetector:
             if doc1_date and doc2_date:
                 date_diff = abs((doc1_date - doc2_date).days)
                 if date_diff > 365:  # More than 1 year difference
-                    conflicts.append(("date_conflict", 0.3, f"Documents created {date_diff} days apart"))
+                    conflicts.append(
+                        (
+                            "date_conflict",
+                            0.3,
+                            f"Documents created {date_diff} days apart",
+                        )
+                    )
                     total_weight += 0.3
 
             # Check source types for potential conflicts
@@ -334,13 +387,25 @@ class ConflictDetector:
                 conflict_key = tuple(sorted([doc1.source_type, doc2.source_type]))
                 if conflict_key in source_conflicts:
                     weight = source_conflicts[conflict_key]
-                    conflicts.append(("source_type_conflict", weight, f"Different source types: {conflict_key}"))
+                    conflicts.append(
+                        (
+                            "source_type_conflict",
+                            weight,
+                            f"Different source types: {conflict_key}",
+                        )
+                    )
                     total_weight += weight
 
             # Check project conflicts
             if hasattr(doc1, "project_id") and hasattr(doc2, "project_id"):
                 if doc1.project_id != doc2.project_id:
-                    conflicts.append(("project_conflict", 0.1, f"Different projects: {doc1.project_id} vs {doc2.project_id}"))
+                    conflicts.append(
+                        (
+                            "project_conflict",
+                            0.1,
+                            f"Different projects: {doc1.project_id} vs {doc2.project_id}",
+                        )
+                    )
                     total_weight += 0.1
 
             if conflicts and total_weight > 0.2:
@@ -364,12 +429,15 @@ class ConflictDetector:
 
         try:
             # Get document embeddings for vector similarity analysis
-            document_ids = [getattr(doc, "document_id", f"{doc.source_type}:{doc.source_title}") for doc in documents]
+            document_ids = [
+                getattr(doc, "document_id", f"{doc.source_type}:{doc.source_title}")
+                for doc in documents
+            ]
             embeddings = await self._get_document_embeddings(document_ids)
 
             # Compare all pairs of documents
             for i, doc1 in enumerate(documents):
-                for j, doc2 in enumerate(documents[i + 1:], i + 1):
+                for j, doc2 in enumerate(documents[i + 1 :], i + 1):
                     doc1_id = document_ids[i]
                     doc2_id = document_ids[j]
 
@@ -388,25 +456,35 @@ class ConflictDetector:
                             continue
 
                     # Text-based conflict analysis
-                    text_conflict, text_explanation, text_confidence = self._analyze_text_conflicts(doc1, doc2)
+                    text_conflict, text_explanation, text_confidence = (
+                        self._analyze_text_conflicts(doc1, doc2)
+                    )
 
                     # Metadata-based conflict analysis
-                    metadata_conflict, metadata_explanation, metadata_confidence = self._analyze_metadata_conflicts(doc1, doc2)
+                    metadata_conflict, metadata_explanation, metadata_confidence = (
+                        self._analyze_metadata_conflicts(doc1, doc2)
+                    )
 
                     # LLM validation (if enabled and vector similarity suggests potential conflict)
                     llm_conflict = False
                     llm_explanation = ""
                     llm_confidence = 0.0
 
-                    if self.llm_enabled and (text_conflict or metadata_conflict or vector_similarity > 0.7):
-                        llm_conflict, llm_explanation, llm_confidence = await self._validate_conflict_with_llm(
-                            doc1, doc2, vector_similarity
+                    if self.llm_enabled and (
+                        text_conflict or metadata_conflict or vector_similarity > 0.7
+                    ):
+                        llm_conflict, llm_explanation, llm_confidence = (
+                            await self._validate_conflict_with_llm(
+                                doc1, doc2, vector_similarity
+                            )
                         )
 
                     # Determine overall conflict
                     if text_conflict or metadata_conflict or llm_conflict:
                         # Combine confidence scores
-                        combined_confidence = max(text_confidence, metadata_confidence, llm_confidence)
+                        combined_confidence = max(
+                            text_confidence, metadata_confidence, llm_confidence
+                        )
 
                         # Create conflict analysis
                         analysis = ConflictAnalysis(
@@ -435,7 +513,9 @@ class ConflictDetector:
 
             # Build merged ConflictAnalysis from collected results
             merged_conflicting_pairs: list[tuple[str, str, dict[str, Any]]] = []
-            merged_conflict_categories: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
+            merged_conflict_categories: defaultdict[str, list[tuple[str, str]]] = (
+                defaultdict(list)
+            )
             merged_resolution_suggestions: dict[str, str] = {}
 
             for conflict in conflicts:
@@ -447,17 +527,31 @@ class ConflictDetector:
                         for category, pairs in conflict.conflict_categories.items():
                             merged_conflict_categories[category].extend(pairs)
                     if getattr(conflict, "resolution_suggestions", None):
-                        merged_resolution_suggestions.update(conflict.resolution_suggestions)
+                        merged_resolution_suggestions.update(
+                            conflict.resolution_suggestions
+                        )
                     continue
 
                 # Backward-compat: tuples like (doc1_id, doc2_id, conflict_info)
                 try:
                     if isinstance(conflict, tuple) and len(conflict) >= 3:
-                        doc1_id, doc2_id, conflict_info = conflict[0], conflict[1], conflict[2]
-                        info_dict = conflict_info if isinstance(conflict_info, dict) else {"info": conflict_info}
-                        merged_conflicting_pairs.append((str(doc1_id), str(doc2_id), info_dict))
+                        doc1_id, doc2_id, conflict_info = (
+                            conflict[0],
+                            conflict[1],
+                            conflict[2],
+                        )
+                        info_dict = (
+                            conflict_info
+                            if isinstance(conflict_info, dict)
+                            else {"info": conflict_info}
+                        )
+                        merged_conflicting_pairs.append(
+                            (str(doc1_id), str(doc2_id), info_dict)
+                        )
                         conflict_type = info_dict.get("type", "unknown")
-                        merged_conflict_categories[conflict_type].append((str(doc1_id), str(doc2_id)))
+                        merged_conflict_categories[conflict_type].append(
+                            (str(doc1_id), str(doc2_id))
+                        )
                 except Exception:
                     # Ignore malformed entries
                     pass
@@ -470,7 +564,9 @@ class ConflictDetector:
 
         except Exception as e:
             processing_time = (time.time() - start_time) * 1000
-            self.logger.error(f"Error in conflict detection after {processing_time:.2f}ms: {e}")
+            self.logger.error(
+                f"Error in conflict detection after {processing_time:.2f}ms: {e}"
+            )
             return ConflictAnalysis()
 
     # Compatibility methods for tests - delegate via legacy adapter
@@ -482,7 +578,9 @@ class ConflictDetector:
                 self._legacy_adapter = adapter
             return adapter._find_contradiction_patterns(doc1, doc2)
         except Exception as e:
-            self.logger.warning(f"Error delegating to legacy adapter in _find_contradiction_patterns: {e}")
+            self.logger.warning(
+                f"Error delegating to legacy adapter in _find_contradiction_patterns: {e}"
+            )
             return []
 
     def _detect_version_conflicts(self, doc1, doc2):
@@ -493,7 +591,9 @@ class ConflictDetector:
                 self._legacy_adapter = adapter
             return adapter._detect_version_conflicts(doc1, doc2)
         except Exception as e:
-            self.logger.warning(f"Error delegating to legacy adapter in _detect_version_conflicts: {e}")
+            self.logger.warning(
+                f"Error delegating to legacy adapter in _detect_version_conflicts: {e}"
+            )
             return []
 
     def _detect_procedural_conflicts(self, doc1, doc2):
@@ -504,10 +604,14 @@ class ConflictDetector:
                 self._legacy_adapter = adapter
             return adapter._detect_procedural_conflicts(doc1, doc2)
         except Exception as e:
-            self.logger.warning(f"Error delegating to legacy adapter in _detect_procedural_conflicts: {e}")
+            self.logger.warning(
+                f"Error delegating to legacy adapter in _detect_procedural_conflicts: {e}"
+            )
             return []
 
-    def _extract_context_snippet(self, text, keyword, context_length=100, max_length=None):
+    def _extract_context_snippet(
+        self, text, keyword, context_length=100, max_length=None
+    ):
         """Extract context snippet around a keyword (compatibility method)."""
         if not keyword or not text:
             return ""
@@ -548,9 +652,29 @@ class ConflictDetector:
 
             if any(keyword in pattern_text for keyword in ["version", "deprecated"]):
                 return "version"
-            elif any(keyword in pattern_text for keyword in ["procedure", "process", "steps", "should", "must", "never", "always"]):
+            elif any(
+                keyword in pattern_text
+                for keyword in [
+                    "procedure",
+                    "process",
+                    "steps",
+                    "should",
+                    "must",
+                    "never",
+                    "always",
+                ]
+            ):
                 return "procedural"
-            elif any(keyword in pattern_text for keyword in ["data", "value", "number", "different values", "conflicting data"]):
+            elif any(
+                keyword in pattern_text
+                for keyword in [
+                    "data",
+                    "value",
+                    "number",
+                    "different values",
+                    "conflicting data",
+                ]
+            ):
                 return "data"
 
         return "general"
@@ -578,13 +702,27 @@ class ConflictDetector:
                 pattern_text = str(pattern).lower()
 
                 # High confidence indicators
-                if any(indicator in pattern_text for indicator in ["conflict", "incompatible", "contradicts", "different values"]):
+                if any(
+                    indicator in pattern_text
+                    for indicator in [
+                        "conflict",
+                        "incompatible",
+                        "contradicts",
+                        "different values",
+                    ]
+                ):
                     confidences.append(0.8)
                 # Medium confidence indicators
-                elif any(indicator in pattern_text for indicator in ["different approach", "alternative method"]):
+                elif any(
+                    indicator in pattern_text
+                    for indicator in ["different approach", "alternative method"]
+                ):
                     confidences.append(0.6)
                 # Low confidence indicators
-                elif any(indicator in pattern_text for indicator in ["unclear", "possibly different"]):
+                elif any(
+                    indicator in pattern_text
+                    for indicator in ["unclear", "possibly different"]
+                ):
                     confidences.append(0.3)
                 else:
                     confidences.append(0.5)  # Default confidence
@@ -646,8 +784,27 @@ class ConflictDetector:
             tokens2 = set(doc2.text.lower().split())
 
             # EXPLICIT checks for very different topics FIRST
-            food_words = {'coffee', 'brewing', 'recipe', 'cooking', 'food', 'drink', 'beverage', 'taste', 'techniques'}
-            tech_words = {'authentication', 'security', 'login', 'access', 'user', 'secure', 'auth', 'password'}
+            food_words = {
+                "coffee",
+                "brewing",
+                "recipe",
+                "cooking",
+                "food",
+                "drink",
+                "beverage",
+                "taste",
+                "techniques",
+            }
+            tech_words = {
+                "authentication",
+                "security",
+                "login",
+                "access",
+                "user",
+                "secure",
+                "auth",
+                "password",
+            }
 
             doc1_is_food = bool(tokens1 & food_words)
             doc1_is_tech = bool(tokens1 & tech_words)
@@ -659,8 +816,10 @@ class ConflictDetector:
                 return False
 
             # Try spaCy if available for similar topics
-            if self.spacy_analyzer and hasattr(self.spacy_analyzer, 'nlp'):
-                doc1_processed = self.spacy_analyzer.nlp(doc1.text[:500])  # Limit text length
+            if self.spacy_analyzer and hasattr(self.spacy_analyzer, "nlp"):
+                doc1_processed = self.spacy_analyzer.nlp(
+                    doc1.text[:500]
+                )  # Limit text length
                 doc2_processed = self.spacy_analyzer.nlp(doc2.text[:500])
 
                 similarity = doc1_processed.similarity(doc2_processed)
@@ -668,13 +827,24 @@ class ConflictDetector:
                     return True
 
             # Look for semantic concept overlap (common important words)
-            semantic_keywords = {'authentication', 'login', 'security', 'access', 'user', 'secure', 'auth', 'method'}
+            semantic_keywords = {
+                "authentication",
+                "login",
+                "security",
+                "access",
+                "user",
+                "secure",
+                "auth",
+                "method",
+            }
             concept1 = tokens1 & semantic_keywords
             concept2 = tokens2 & semantic_keywords
 
             # If both docs have semantic concepts and they overlap significantly
             if concept1 and concept2:
-                concept_overlap = len(concept1 & concept2) / max(len(concept1), len(concept2))
+                concept_overlap = len(concept1 & concept2) / max(
+                    len(concept1), len(concept2)
+                )
                 if concept_overlap > 0.5:  # 50% concept overlap
                     return True
 
@@ -707,7 +877,11 @@ class ConflictDetector:
             else:
                 descriptions.append("General conflict indicator")
 
-        return "; ".join(descriptions) if descriptions else "Multiple conflict indicators found."
+        return (
+            "; ".join(descriptions)
+            if descriptions
+            else "Multiple conflict indicators found."
+        )
 
     def _generate_resolution_suggestions(self, conflicts) -> dict[str, str]:
         """Generate resolution suggestions for conflicts (compatibility method)."""
@@ -717,14 +891,18 @@ class ConflictDetector:
         suggestions = {}
 
         # Handle ConflictAnalysis objects
-        if hasattr(conflicts, 'conflict_categories'):
+        if hasattr(conflicts, "conflict_categories"):
             for category, _conflict_pairs in conflicts.conflict_categories.items():
                 if category == "version":
-                    suggestions[category] = "Consider consolidating version information across documents."
+                    suggestions[category] = (
+                        "Consider consolidating version information across documents."
+                    )
                 elif category == "procedural":
                     suggestions[category] = "Review and standardize procedural steps."
                 elif category == "data":
-                    suggestions[category] = "Verify and update data consistency across sources."
+                    suggestions[category] = (
+                        "Verify and update data consistency across sources."
+                    )
                 else:
                     suggestions[category] = f"Review and resolve {category} conflicts."
         # Handle list of conflicts
@@ -734,21 +912,36 @@ class ConflictDetector:
                 if isinstance(conflict, dict):
                     conflict_type = conflict.get("type", "unknown")
                     if "version" in conflict_type.lower():
-                        suggestions[key] = "Consider consolidating version information across documents."
-                    elif "procedure" in conflict_type.lower() or "process" in conflict_type.lower():
+                        suggestions[key] = (
+                            "Consider consolidating version information across documents."
+                        )
+                    elif (
+                        "procedure" in conflict_type.lower()
+                        or "process" in conflict_type.lower()
+                    ):
                         suggestions[key] = "Review and standardize procedural steps."
                     elif "data" in conflict_type.lower():
-                        suggestions[key] = "Verify and update data consistency across sources."
+                        suggestions[key] = (
+                            "Verify and update data consistency across sources."
+                        )
                     else:
-                        suggestions[key] = "Review conflicting information and update as needed."
+                        suggestions[key] = (
+                            "Review conflicting information and update as needed."
+                        )
                 else:
                     suggestions[key] = "Review and resolve identified conflicts."
         else:
             suggestions["general"] = "Review and resolve detected conflicts."
 
-        return suggestions if suggestions else {"general": "Review conflicting documents and update accordingly."}
+        return (
+            suggestions
+            if suggestions
+            else {"general": "Review conflicting documents and update accordingly."}
+        )
 
-    async def _llm_analyze_conflicts(self, doc1: SearchResult, doc2: SearchResult, similarity_score: float) -> dict | None:
+    async def _llm_analyze_conflicts(
+        self, doc1: SearchResult, doc2: SearchResult, similarity_score: float
+    ) -> dict | None:
         """Analyze conflicts using LLM (compatibility method)."""
         if not self.openai_client:
             # Return None when no LLM client is available (as expected by tests)
@@ -761,19 +954,27 @@ class ConflictDetector:
             response = await self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a conflict detection assistant."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "You are a conflict detection assistant.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=500,
-                temperature=0.1
+                temperature=0.1,
             )
 
             # Parse LLM response with robust JSON extraction for malformed responses
             import json
 
-            content = getattr(getattr(response.choices[0], "message", {}), "content", "") or ""
+            content = (
+                getattr(getattr(response.choices[0], "message", {}), "content", "")
+                or ""
+            )
 
-            def extract_json_object(text: str, max_scan: int | None = None) -> str | None:
+            def extract_json_object(
+                text: str, max_scan: int | None = None
+            ) -> str | None:
                 """Extract the first complete JSON object from text using a string-aware state machine.
 
                 - Tracks in-string state and escape sequences so braces in strings are ignored.
@@ -783,10 +984,14 @@ class ConflictDetector:
                     return None
 
                 n = len(text)
-                limit = min(n, max_scan) if isinstance(max_scan, int) and max_scan > 0 else n
+                limit = (
+                    min(n, max_scan)
+                    if isinstance(max_scan, int) and max_scan > 0
+                    else n
+                )
 
                 # Find first opening brace
-                start = text.find('{', 0, limit)
+                start = text.find("{", 0, limit)
                 if start == -1:
                     return None
 
@@ -802,7 +1007,7 @@ class ConflictDetector:
                         if escape:
                             escape = False
                         else:
-                            if ch == '\\':
+                            if ch == "\\":
                                 escape = True
                             elif ch == '"':
                                 in_string = False
@@ -812,15 +1017,15 @@ class ConflictDetector:
                     # Not in string
                     if ch == '"':
                         in_string = True
-                    elif ch == '{':
+                    elif ch == "{":
                         depth += 1
                         if depth == 1 and start < 0:
                             start = i
-                    elif ch == '}':
+                    elif ch == "}":
                         depth -= 1
                         if depth == 0:
                             end = i
-                            return text[start:end+1]
+                            return text[start : end + 1]
                     i += 1
 
                 return None
@@ -837,7 +1042,9 @@ class ConflictDetector:
                         self.logger.warning(
                             "Failed to parse extracted JSON from LLM content",
                             error=str(json_err),
-                            snippet=(extracted[:200] if isinstance(extracted, str) else ""),
+                            snippet=(
+                                extracted[:200] if isinstance(extracted, str) else ""
+                            ),
                         )
                         llm_result = None
                 else:
@@ -856,7 +1063,11 @@ class ConflictDetector:
             elif isinstance(raw_has_conflicts, int | float):
                 has_conflicts = bool(raw_has_conflicts)
             else:
-                has_conflicts = str(raw_has_conflicts).strip().lower() in {"true", "yes", "1"}
+                has_conflicts = str(raw_has_conflicts).strip().lower() in {
+                    "true",
+                    "yes",
+                    "1",
+                }
 
             if not has_conflicts:
                 return None
@@ -902,7 +1113,9 @@ class ConflictDetector:
             )
             return None
 
-    async def _get_tiered_analysis_pairs(self, documents: list[SearchResult]) -> list[tuple]:
+    async def _get_tiered_analysis_pairs(
+        self, documents: list[SearchResult]
+    ) -> list[tuple]:
         """Generate tiered analysis pairs for conflict detection (compatibility method)."""
         pairs = []
 
@@ -911,12 +1124,12 @@ class ConflictDetector:
 
         # Generate pairs with different priority tiers
         for i, doc1 in enumerate(documents):
-            for _j, doc2 in enumerate(documents[i + 1:], i + 1):
+            for _j, doc2 in enumerate(documents[i + 1 :], i + 1):
                 # Calculate a simple priority score based on document attributes
                 score = 1.0  # Base score
 
                 # Adjust score based on document similarity and importance
-                if hasattr(doc1, 'score') and hasattr(doc2, 'score'):
+                if hasattr(doc1, "score") and hasattr(doc2, "score"):
                     avg_doc_score = (doc1.score + doc2.score) / 2
                     score = min(1.0, avg_doc_score)
 
@@ -934,7 +1147,9 @@ class ConflictDetector:
         pairs.sort(key=lambda x: x[3], reverse=True)
         return pairs
 
-    async def _filter_by_vector_similarity(self, documents: list[SearchResult]) -> list[tuple]:
+    async def _filter_by_vector_similarity(
+        self, documents: list[SearchResult]
+    ) -> list[tuple]:
         """Filter document pairs by vector similarity (compatibility method)."""
         similar_pairs = []
 
@@ -942,12 +1157,15 @@ class ConflictDetector:
             return similar_pairs
 
         # Get document embeddings
-        document_ids = [getattr(doc, "document_id", f"{doc.source_type}:{doc.source_title}") for doc in documents]
+        document_ids = [
+            getattr(doc, "document_id", f"{doc.source_type}:{doc.source_title}")
+            for doc in documents
+        ]
         embeddings = await self._get_document_embeddings(document_ids)
 
         # Compare all pairs and filter by similarity
         for i, doc1 in enumerate(documents):
-            for j, doc2 in enumerate(documents[i + 1:], i + 1):
+            for j, doc2 in enumerate(documents[i + 1 :], i + 1):
                 doc1_id = document_ids[i]
                 doc2_id = document_ids[j]
 
@@ -959,14 +1177,20 @@ class ConflictDetector:
                     )
 
                 # Only include pairs with meaningful similarity (not too high, not too low)
-                if self.MIN_VECTOR_SIMILARITY <= similarity_score <= self.MAX_VECTOR_SIMILARITY:
+                if (
+                    self.MIN_VECTOR_SIMILARITY
+                    <= similarity_score
+                    <= self.MAX_VECTOR_SIMILARITY
+                ):
                     similar_pairs.append((doc1, doc2, similarity_score))
 
         # Sort by similarity score (highest first)
         similar_pairs.sort(key=lambda x: x[2], reverse=True)
         return similar_pairs
 
-    def _should_analyze_for_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+    def _should_analyze_for_conflicts(
+        self, doc1: SearchResult, doc2: SearchResult
+    ) -> bool:
         """Determine if two documents should be analyzed for conflicts (compatibility method)."""
         # Basic checks for document validity
         if not doc1 or not doc2:
@@ -980,7 +1204,7 @@ class ConflictDetector:
             return False
 
         # Skip identical documents (same ID)
-        if hasattr(doc1, 'document_id') and hasattr(doc2, 'document_id'):
+        if hasattr(doc1, "document_id") and hasattr(doc2, "document_id"):
             if doc1.document_id == doc2.document_id:
                 return False
 

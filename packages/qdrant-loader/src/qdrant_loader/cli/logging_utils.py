@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
 from logging import Logger
-
+from typing import Any
 
 _logger = None
 
@@ -56,5 +55,3 @@ def _get_version() -> str:
         return "unknown"
     except Exception:
         return "unknown"
-
-

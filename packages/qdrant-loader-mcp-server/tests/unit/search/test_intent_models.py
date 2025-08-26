@@ -1,12 +1,10 @@
 """Unit tests for intent classification models."""
 
 import pytest
-from dataclasses import FrozenInstanceError
-
 from qdrant_loader_mcp_server.search.enhanced.intent.models import (
-    IntentType, 
+    AdaptiveSearchConfig,
+    IntentType,
     SearchIntent,
-    AdaptiveSearchConfig
 )
 
 
@@ -17,15 +15,15 @@ class TestIntentType:
         """Test that all expected intent types exist with correct values."""
         expected_values = {
             "TECHNICAL_LOOKUP": "technical_lookup",
-            "BUSINESS_CONTEXT": "business_context", 
+            "BUSINESS_CONTEXT": "business_context",
             "VENDOR_EVALUATION": "vendor_evaluation",
             "PROCEDURAL": "procedural",
             "INFORMATIONAL": "informational",
             "EXPLORATORY": "exploratory",
             "TROUBLESHOOTING": "troubleshooting",
-            "GENERAL": "general"
+            "GENERAL": "general",
         }
-        
+
         for name, value in expected_values.items():
             intent_type = getattr(IntentType, name)
             assert intent_type.value == value
@@ -46,11 +44,8 @@ class TestSearchIntent:
 
     def test_search_intent_creation(self):
         """Test creating a SearchIntent with required fields."""
-        intent = SearchIntent(
-            intent_type=IntentType.TECHNICAL_LOOKUP,
-            confidence=0.85
-        )
-        
+        intent = SearchIntent(intent_type=IntentType.TECHNICAL_LOOKUP, confidence=0.85)
+
         assert intent.intent_type == IntentType.TECHNICAL_LOOKUP
         assert intent.confidence == 0.85
         assert intent.secondary_intents == []
@@ -62,7 +57,7 @@ class TestSearchIntent:
         secondary_intents = [(IntentType.PROCEDURAL, 0.3)]
         evidence = {"keywords": ["api", "documentation"]}
         features = {"technical_indicators": 3}
-        
+
         intent = SearchIntent(
             intent_type=IntentType.TECHNICAL_LOOKUP,
             confidence=0.85,
@@ -72,9 +67,9 @@ class TestSearchIntent:
             query_complexity=0.7,
             is_question=True,
             is_technical=True,
-            classification_time_ms=45.2
+            classification_time_ms=45.2,
         )
-        
+
         assert intent.secondary_intents == secondary_intents
         assert intent.supporting_evidence == evidence
         assert intent.linguistic_features == features
@@ -85,18 +80,15 @@ class TestSearchIntent:
 
     def test_search_intent_defaults(self):
         """Test that default values are set correctly."""
-        intent = SearchIntent(
-            intent_type=IntentType.INFORMATIONAL,
-            confidence=0.6
-        )
-        
+        intent = SearchIntent(intent_type=IntentType.INFORMATIONAL, confidence=0.6)
+
         # Test default factory values
         assert isinstance(intent.secondary_intents, list)
         assert isinstance(intent.supporting_evidence, dict)
         assert isinstance(intent.linguistic_features, dict)
         assert isinstance(intent.session_context, dict)
         assert isinstance(intent.previous_intents, list)
-        
+
         # Test default primitive values
         assert intent.query_complexity == 0.0
         assert intent.is_question is False
@@ -110,33 +102,33 @@ class TestAdaptiveSearchConfig:
     def test_adaptive_search_config_defaults(self):
         """Test creating AdaptiveSearchConfig with default values."""
         config = AdaptiveSearchConfig()
-        
+
         # Core search parameters
         assert config.search_strategy == "hybrid"
         assert config.vector_weight == 0.7
         assert config.keyword_weight == 0.3
-        
+
         # Knowledge graph integration
         assert config.use_knowledge_graph is False
         assert config.max_graph_hops == 2
         assert config.kg_expansion_weight == 0.2
-        
+
         # Result filtering and ranking
         assert isinstance(config.result_filters, dict)
         assert isinstance(config.ranking_boosts, dict)
         assert isinstance(config.source_type_preferences, dict)
-        
+
         # Query expansion
         assert config.expand_query is True
         assert config.expansion_aggressiveness == 0.3
         assert config.semantic_expansion is True
         assert config.entity_expansion is True
-        
+
         # Performance tuning
         assert config.max_results == 20
         assert config.min_score_threshold == 0.1
         assert config.diversity_factor == 0.0
-        
+
         # Contextual parameters
         assert config.temporal_bias == 0.0
         assert config.authority_bias == 0.0
@@ -152,9 +144,9 @@ class TestAdaptiveSearchConfig:
             max_graph_hops=3,
             expand_query=False,
             max_results=50,
-            diversity_factor=0.5
+            diversity_factor=0.5,
         )
-        
+
         assert config.search_strategy == "vector"
         assert config.vector_weight == 0.9
         assert config.keyword_weight == 0.1
@@ -178,13 +170,13 @@ class TestAdaptiveSearchConfig:
         result_filters = {"content_type": ["technical", "code"]}
         ranking_boosts = {"source_type": {"git": 1.5}}
         source_prefs = {"documentation": 1.2}
-        
+
         config = AdaptiveSearchConfig(
             result_filters=result_filters,
             ranking_boosts=ranking_boosts,
-            source_type_preferences=source_prefs
+            source_type_preferences=source_prefs,
         )
-        
+
         assert config.result_filters == result_filters
         assert config.ranking_boosts == ranking_boosts
         assert config.source_type_preferences == source_prefs

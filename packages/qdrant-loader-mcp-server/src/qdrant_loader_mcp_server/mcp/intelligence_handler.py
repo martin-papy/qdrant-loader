@@ -1,17 +1,17 @@
 """Cross-document intelligence operations handler for MCP server."""
 
-import hashlib
-import json
 from typing import Any
 
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
-from .protocol import MCPProtocol
 from .handlers.intelligence import (
-    process_analysis_results,
     get_or_create_document_id as _get_or_create_document_id_fn,
 )
+from .handlers.intelligence import (
+    process_analysis_results,
+)
+from .protocol import MCPProtocol
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.intelligence_handler")
@@ -130,7 +130,11 @@ class IntelligenceHandler:
             if isinstance(similar_docs_raw, list):
                 similar_docs = similar_docs_raw
             elif isinstance(similar_docs_raw, dict):
-                similar_docs = similar_docs_raw.get("similar_documents", []) or similar_docs_raw.get("results", []) or []
+                similar_docs = (
+                    similar_docs_raw.get("similar_documents", [])
+                    or similar_docs_raw.get("results", [])
+                    or []
+                )
             else:
                 similar_docs = []
 

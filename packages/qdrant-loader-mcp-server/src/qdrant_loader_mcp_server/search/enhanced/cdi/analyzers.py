@@ -315,7 +315,9 @@ class DocumentClusterAnalyzer:
         # Mixed or unknown type naming - try to use provided entities/topics
         # Recognize known types first to avoid early-return blocking specialized handling
         if cluster_type not in ["entity", "topic", "project", "hierarchy", "mixed"]:
-            first_entity = cdi_utils.normalize_acronym(entities[0]) if entities else None
+            first_entity = (
+                cdi_utils.normalize_acronym(entities[0]) if entities else None
+            )
             clean_topics = [self._clean_topic_name(topic) for topic in topics if topic]
             first_topic = clean_topics[0] if clean_topics else None
             if first_entity and first_topic:
@@ -539,6 +541,7 @@ class DocumentClusterAnalyzer:
             and cluster.shared_entities
         ):
             from .utils import normalize_acronym
+
             entities = [normalize_acronym(e) for e in cluster.shared_entities[:2]]
             return f"Documents focused on {' and '.join(entities)}"
 
@@ -644,7 +647,9 @@ class DocumentClusterAnalyzer:
         """Categorize cluster size (delegates to CDI utils)."""
         return cdi_utils.categorize_cluster_size(size)
 
-    def _safe_extract_texts(self, items: list[dict | str] | None, kind: str = "") -> list[str]:
+    def _safe_extract_texts(
+        self, items: list[dict | str] | None, kind: str = ""
+    ) -> list[str]:
         """Extract texts from entity/topic lists robustly.
 
         - Uses calculator public API when available
@@ -655,9 +660,13 @@ class DocumentClusterAnalyzer:
             if items is None:
                 return []
             # Prefer calculator public methods if present
-            if kind == "entity" and hasattr(self.similarity_calculator, "extract_entity_texts"):
+            if kind == "entity" and hasattr(
+                self.similarity_calculator, "extract_entity_texts"
+            ):
                 result = self.similarity_calculator.extract_entity_texts(items)
-            elif kind == "topic" and hasattr(self.similarity_calculator, "extract_topic_texts"):
+            elif kind == "topic" and hasattr(
+                self.similarity_calculator, "extract_topic_texts"
+            ):
                 result = self.similarity_calculator.extract_topic_texts(items)
             else:
                 result = cdi_utils.extract_texts_from_mixed(items)

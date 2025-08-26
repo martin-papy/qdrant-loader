@@ -1,15 +1,15 @@
-from .base import BaseSearchResult
-from .project import ProjectInfo
-from .hierarchy import HierarchyInfo
 from .attachment import AttachmentInfo
-from .section import SectionInfo
-from .content import ContentAnalysis
-from .semantic import SemanticAnalysis
-from .navigation import NavigationContext
+from .base import BaseSearchResult
 from .chunking import ChunkingContext
+from .content import ContentAnalysis
 from .conversion import ConversionInfo
 from .cross_reference import CrossReferenceInfo
+from .hierarchy import HierarchyInfo
 from .hybrid import HybridSearchResult, create_hybrid_search_result
+from .navigation import NavigationContext
+from .project import ProjectInfo
+from .section import SectionInfo
+from .semantic import SemanticAnalysis
 
 __all__ = [
     "BaseSearchResult",
@@ -26,5 +26,3 @@ __all__ = [
     "HybridSearchResult",
     "create_hybrid_search_result",
 ]
-
-

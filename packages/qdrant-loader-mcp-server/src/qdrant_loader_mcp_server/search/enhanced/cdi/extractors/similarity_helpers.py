@@ -5,13 +5,13 @@ import logging
 from ....models import SearchResult
 from ..models import SimilarityMetric
 from ..utils import (
+    ARCHITECTURE_PATTERNS,
+    DOMAIN_KEYWORDS,
+    STOP_WORDS_BASIC,
+    TECH_KEYWORDS_COUNT,
+    TECH_KEYWORDS_SHARED,
     extract_texts_from_mixed,
     weighted_average,
-    STOP_WORDS_BASIC,
-    DOMAIN_KEYWORDS,
-    ARCHITECTURE_PATTERNS,
-    TECH_KEYWORDS_SHARED,
-    TECH_KEYWORDS_COUNT,
 )
 
 
@@ -53,7 +53,9 @@ def combine_metric_scores(metric_scores: dict[SimilarityMetric, float]) -> float
     return weighted_average(scores_as_named, {k.value: v for k, v in weights.items()})
 
 
-def calculate_semantic_similarity_spacy(spacy_analyzer, text1: str, text2: str) -> float:
+def calculate_semantic_similarity_spacy(
+    spacy_analyzer, text1: str, text2: str
+) -> float:
     """Compute spaCy vector similarity on truncated texts, mirroring legacy behavior.
 
     Only expected, recoverable errors are handled; unexpected exceptions propagate.
@@ -122,7 +124,9 @@ def extract_context_snippet(text: str, keyword: str, max_length: int = 150) -> s
             if keyword.lower() in sentence.lower():
                 start_idx = max(0, i - 1) if i > 0 else 0
                 end_idx = min(len(sentences), i + 2)
-                snippet = ".".join(s.strip() for s in sentences[start_idx:end_idx]).strip()
+                snippet = ".".join(
+                    s.strip() for s in sentences[start_idx:end_idx]
+                ).strip()
                 break
 
     return snippet
@@ -130,8 +134,8 @@ def extract_context_snippet(text: str, keyword: str, max_length: int = 150) -> s
 
 def have_semantic_similarity(doc1: SearchResult, doc2: SearchResult) -> bool:
     """Heuristic semantic similarity based on title overlap and key terms."""
-    title1 = ((doc1.source_title or "")).lower()
-    title2 = ((doc2.source_title or "")).lower()
+    title1 = (doc1.source_title or "").lower()
+    title2 = (doc2.source_title or "").lower()
     if title1 and title2:
         title_words1 = set(title1.split())
         title_words2 = set(title2.split())
@@ -208,7 +212,9 @@ def get_shared_technologies_count(doc1: SearchResult, doc2: SearchResult) -> int
     entities1 = set(extract_texts_from_mixed(getattr(doc1, "entities", []) or []))
     entities2 = set(extract_texts_from_mixed(getattr(doc2, "entities", []) or []))
 
-    shared_entities = {_normalize_runtime(e) for e in entities1} & {_normalize_runtime(e) for e in entities2}
+    shared_entities = {_normalize_runtime(e) for e in entities1} & {
+        _normalize_runtime(e) for e in entities2
+    }
     if shared_entities:
         return len(shared_entities)
 
@@ -269,7 +275,7 @@ def calculate_metadata_similarity(doc1: SearchResult, doc2: SearchResult) -> flo
         feature_similarity = 0.0
     else:
         feature_similarity = sum(
-            f1 == f2 for f1, f2 in zip(features1, features2)
+            f1 == f2 for f1, f2 in zip(features1, features2, strict=False)
         ) / float(min_len)
     similarity_factors.append(feature_similarity)
 
@@ -278,19 +284,30 @@ def calculate_metadata_similarity(doc1: SearchResult, doc2: SearchResult) -> flo
         max_words = max(doc1.word_count, doc2.word_count)
         similarity_factors.append(min_words / max_words if max_words > 0 else 0.0)
 
-    return (sum(similarity_factors) / len(similarity_factors)) if similarity_factors else 0.0
+    return (
+        (sum(similarity_factors) / len(similarity_factors))
+        if similarity_factors
+        else 0.0
+    )
 
 
-def calculate_content_features_similarity(doc1: SearchResult, doc2: SearchResult) -> float:
+def calculate_content_features_similarity(
+    doc1: SearchResult, doc2: SearchResult
+) -> float:
     """Calculate content features similarity (read time, depth, content flags)."""
     read_time_similarity = 0.0
-    if getattr(doc1, "estimated_read_time", None) and getattr(doc2, "estimated_read_time", None):
+    if getattr(doc1, "estimated_read_time", None) and getattr(
+        doc2, "estimated_read_time", None
+    ):
         min_time = min(doc1.estimated_read_time, doc2.estimated_read_time)
         max_time = max(doc1.estimated_read_time, doc2.estimated_read_time)
         read_time_similarity = min_time / max_time if max_time > 0 else 0.0
 
     depth_similarity = 0.0
-    if getattr(doc1, "depth", None) is not None and getattr(doc2, "depth", None) is not None:
+    if (
+        getattr(doc1, "depth", None) is not None
+        and getattr(doc2, "depth", None) is not None
+    ):
         depth_diff = abs(doc1.depth - doc2.depth)
         depth_similarity = max(0.0, 1.0 - depth_diff / 5.0)
 

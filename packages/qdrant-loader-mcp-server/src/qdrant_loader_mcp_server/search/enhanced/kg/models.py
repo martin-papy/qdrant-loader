@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
-import uuid
+from typing import Any
 
 
 class NodeType(Enum):
@@ -34,7 +34,7 @@ class RelationshipType(Enum):
 class GraphNode:
     node_type: NodeType
     title: str
-    id: Optional[str] = None
+    id: str | None = None
     content: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -90,5 +90,3 @@ class TraversalResult:
     semantic_score: float
     hop_count: int
     reasoning_path: list[str]
-
-

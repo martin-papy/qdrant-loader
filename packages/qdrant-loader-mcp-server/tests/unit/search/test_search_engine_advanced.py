@@ -709,6 +709,7 @@ async def test_find_similar_documents_no_target(
         # Method now returns an empty dict for no target found to match declared return type
         assert result == {}
 
+
 @pytest.mark.asyncio
 async def test_detect_document_conflicts_success(
     search_engine,
@@ -776,13 +777,15 @@ async def test_detect_document_conflicts_success(
 
         # Verify original documents are stored in lightweight form
         original_docs = result["original_documents"]
-        assert isinstance(original_docs, list) and len(original_docs) == len(sample_search_results)
+        assert isinstance(original_docs, list) and len(original_docs) == len(
+            sample_search_results
+        )
         # Compare by IDs and safe fields only
         expected = [
             {
                 "document_id": d.document_id,
                 "title": (
-                    getattr(d, "get_display_title")()
+                    d.get_display_title()
                     if hasattr(d, "get_display_title")
                     else getattr(d, "source_title", None) or "Untitled"
                 ),
@@ -900,10 +903,15 @@ async def test_find_complementary_content_success(
         recs = result["complementary_recommendations"]
         assert isinstance(recs, list) and len(recs) == len(mock_complementary)
         for r in recs:
-            assert set(["document_id", "title", "relevance_score", "reason", "strategy"]) <= set(r.keys())
+            assert set(
+                ["document_id", "title", "relevance_score", "reason", "strategy"]
+            ) <= set(r.keys())
         # target_document is now a lightweight dict
         assert isinstance(result["target_document"], dict)
-        assert result["target_document"].get("document_id") == sample_search_results[0].document_id
+        assert (
+            result["target_document"].get("document_id")
+            == sample_search_results[0].document_id
+        )
         assert result["context_documents_analyzed"] == 2
 
 

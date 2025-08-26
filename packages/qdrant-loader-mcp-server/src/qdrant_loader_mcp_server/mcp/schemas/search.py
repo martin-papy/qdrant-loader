@@ -77,8 +77,14 @@ def get_search_tool_schema() -> dict[str, Any]:
                                 "properties": {
                                     "file_path": {"type": "string"},
                                     "project_id": {"type": "string"},
-                                    "created_at": {"type": "string", "format": "date-time"},
-                                    "last_modified": {"type": "string", "format": "date-time"},
+                                    "created_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                    },
+                                    "last_modified": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                    },
                                 },
                                 "required": [
                                     "file_path",
@@ -117,5 +123,3 @@ def get_search_tool_schema() -> dict[str, Any]:
             "required": ["results", "total_found"],
         },
     }
-
-

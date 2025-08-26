@@ -3,7 +3,7 @@ from importlib import import_module
 
 def test_char_count_token_counter():
     module = import_module("qdrant_loader_core.llm.tokenization")
-    CharCountTokenCounter = getattr(module, "CharCountTokenCounter")
+    CharCountTokenCounter = module.CharCountTokenCounter
     counter = CharCountTokenCounter()
     assert counter.count("") == 0
     assert counter.count("abc") == 3
@@ -12,7 +12,7 @@ def test_char_count_token_counter():
 
 def test_tiktoken_counter_graceful_fallback(monkeypatch):
     module = import_module("qdrant_loader_core.llm.tokenization")
-    TiktokenTokenCounter = getattr(module, "TiktokenTokenCounter")
+    TiktokenTokenCounter = module.TiktokenTokenCounter
 
     # Simulate missing tiktoken encoding
     class _Enc:
@@ -27,4 +27,3 @@ def test_tiktoken_counter_graceful_fallback(monkeypatch):
     else:
         counter = TiktokenTokenCounter("cl100k_base")
         assert counter.count("abc") == 3  # falls back to char count
-

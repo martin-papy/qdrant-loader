@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 
 
 def run_project_list(settings: Any, project_manager: Any, *, output_format: str) -> str:
     """Return project list in the requested format (json or table as text)."""
-    from rich.table import Table
     from rich.console import Console
+    from rich.table import Table
 
     def _gather() -> list[dict[str, str | int]]:
         projects_data = []
@@ -19,13 +19,25 @@ def run_project_list(settings: Any, project_manager: Any, *, output_format: str)
             if sources:
                 if isinstance(sources, Mapping):
                     source_count = sum(
-                        len((sources.get(name, {}) or {}))
-                        for name in ("publicdocs", "git", "confluence", "jira", "localfile")
+                        len(sources.get(name, {}) or {})
+                        for name in (
+                            "publicdocs",
+                            "git",
+                            "confluence",
+                            "jira",
+                            "localfile",
+                        )
                     )
                 else:
                     source_count = sum(
-                        len((getattr(sources, name, {}) or {}))
-                        for name in ("publicdocs", "git", "confluence", "jira", "localfile")
+                        len(getattr(sources, name, {}) or {})
+                        for name in (
+                            "publicdocs",
+                            "git",
+                            "confluence",
+                            "jira",
+                            "localfile",
+                        )
                     )
             else:
                 source_count = 0
@@ -63,5 +75,3 @@ def run_project_list(settings: Any, project_manager: Any, *, output_format: str)
     console = Console(record=True)
     console.print(table)
     return console.export_text()
-
-

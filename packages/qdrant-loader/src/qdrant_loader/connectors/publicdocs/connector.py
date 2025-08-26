@@ -19,6 +19,18 @@ from qdrant_loader.connectors.exceptions import (
     HTTPRequestError,
 )
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
+from qdrant_loader.connectors.publicdocs.crawler import (
+    discover_pages as _discover_pages,
+)
+
+# Local HTTP helper for safe text reading
+from qdrant_loader.connectors.publicdocs.http import read_text_response as _read_text
+from qdrant_loader.connectors.shared.http import (
+    RateLimiter,
+)
+from qdrant_loader.connectors.shared.http import (
+    aiohttp_request_with_policy as _aiohttp_request,
+)
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
     AttachmentMetadata,
@@ -30,13 +42,6 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.connectors.shared.http import (
-    aiohttp_request_with_policy as _aiohttp_request,
-    RateLimiter,
-)
-# Local HTTP helper for safe text reading
-from qdrant_loader.connectors.publicdocs.http import read_text_response as _read_text
-from qdrant_loader.connectors.publicdocs.crawler import discover_pages as _discover_pages
 
 # Suppress XML parsing warning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
@@ -95,9 +100,7 @@ class PublicDocsConnector(BaseConnector):
                 self.attachment_downloader = AttachmentDownloader(session=session)
 
             # Initialize rate limiter for crawling (configurable)
-            self._rate_limiter = RateLimiter.per_minute(
-                self.config.requests_per_minute
-            )
+            self._rate_limiter = RateLimiter.per_minute(self.config.requests_per_minute)
 
         return self
 
@@ -262,7 +265,9 @@ class PublicDocsConnector(BaseConnector):
                                     # Ensure HTTP errors are surfaced consistently
                                     response.raise_for_status()
                                 except aiohttp.ClientError as e:
-                                    raise HTTPRequestError(url=page, message=str(e)) from e
+                                    raise HTTPRequestError(
+                                        url=page, message=str(e)
+                                    ) from e
 
                                 html = await _read_text(response)
                                 attachment_metadata = self._extract_attachments(

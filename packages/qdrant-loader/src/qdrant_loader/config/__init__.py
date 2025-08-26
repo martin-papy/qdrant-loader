@@ -312,7 +312,7 @@ class Settings(BaseSettings):
         from importlib import import_module
 
         settings_mod = import_module("qdrant_loader_core.llm.settings")
-        LLMSettings = getattr(settings_mod, "LLMSettings")
+        LLMSettings = settings_mod.LLMSettings
         return LLMSettings.from_global_config(self.global_config.to_dict())
 
     @staticmethod

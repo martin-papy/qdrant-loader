@@ -8,7 +8,7 @@ behavioral patterns to classify search intents with high accuracy.
 from __future__ import annotations
 
 import time
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ....utils.logging import LoggingConfig
 from .models import IntentType, SearchIntent
@@ -20,7 +20,10 @@ if TYPE_CHECKING:
 else:
     try:
         from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
-    except (ImportError, ModuleNotFoundError) as _exc:  # pragma: no cover - optional dep
+    except (
+        ImportError,
+        ModuleNotFoundError,
+    ) as _exc:  # pragma: no cover - optional dep
         # Provide safe sentinels for runtime to avoid NameErrors in annotations
         QueryAnalysis = Any  # type: ignore[assignment]
         SpaCyQueryAnalyzer = Any  # type: ignore[assignment]

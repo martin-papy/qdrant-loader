@@ -12,7 +12,9 @@ class DefaultGraphBuilder(GraphBuilder):
             from ..citations import CitationNetworkAnalyzer  # type: ignore[misc]
         except (ImportError, ModuleNotFoundError) as first_import_exc:
             try:
-                from ..cross_document_intelligence import CitationNetworkAnalyzer  # type: ignore[misc]
+                from ..cross_document_intelligence import (
+                    CitationNetworkAnalyzer,  # type: ignore[misc]
+                )
             except (ImportError, ModuleNotFoundError) as fallback_import_exc:
                 # Raise a clear error with both original exceptions chained for debugging context
                 message = (
@@ -26,5 +28,3 @@ class DefaultGraphBuilder(GraphBuilder):
 
         analyzer = CitationNetworkAnalyzer()
         return analyzer.build_citation_network(results)
-
-

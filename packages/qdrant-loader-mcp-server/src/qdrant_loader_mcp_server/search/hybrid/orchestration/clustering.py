@@ -3,8 +3,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from ...enhanced.cdi.models import ClusteringStrategy
 from ...components.search_result_models import HybridSearchResult
+from ...enhanced.cdi.models import ClusteringStrategy
 
 
 async def cluster_documents(
@@ -61,7 +61,9 @@ async def cluster_documents(
     total_documents = len(documents)
     # Allow max_clusters greater than total documents; downstream analyzer may cap it.
     if min_cluster_size > total_documents:
-        raise ValueError("'min_cluster_size' cannot exceed the total number of documents")
+        raise ValueError(
+            "'min_cluster_size' cannot exceed the total number of documents"
+        )
     if not isinstance(strategy, ClusteringStrategy):
         raise ValueError("'strategy' must be an instance of ClusteringStrategy")
     start_time = time.time()
@@ -153,5 +155,3 @@ async def cluster_documents(
         "clustering_metadata": clustering_metadata,
         "cluster_relationships": cluster_relationships,
     }
-
-

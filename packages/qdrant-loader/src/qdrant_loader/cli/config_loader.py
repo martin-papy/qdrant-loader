@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Any
 
 from click.exceptions import ClickException
-from qdrant_loader.utils.logging import LoggingConfig
+
 from qdrant_loader.config.state import DatabaseDirectoryError
+from qdrant_loader.utils.logging import LoggingConfig
 
 
 # Back-compat shim for tests that import _get_logger from cli.cli
@@ -17,17 +18,21 @@ def setup_workspace(workspace_path: Path):
     try:
         from qdrant_loader.config.workspace import (
             create_workspace_structure,
-            setup_workspace as _setup,
         )
+        from qdrant_loader.config.workspace import setup_workspace as _setup
 
         create_workspace_structure(workspace_path)
         workspace_config = _setup(workspace_path)
         logger = LoggingConfig.get_logger(__name__)
         logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
         if workspace_config.env_path:
-            logger.info("Environment file found", env_path=str(workspace_config.env_path))
+            logger.info(
+                "Environment file found", env_path=str(workspace_config.env_path)
+            )
         if workspace_config.config_path:
-            logger.info("Config file found", config_path=str(workspace_config.config_path))
+            logger.info(
+                "Config file found", config_path=str(workspace_config.config_path)
+            )
         return workspace_config
     except ValueError as e:
         raise ClickException(str(e)) from e
@@ -45,10 +50,16 @@ def load_config_with_workspace(
         from qdrant_loader.config import initialize_config_with_workspace
 
         if workspace_config:
-            LoggingConfig.get_logger(__name__).debug("Loading configuration in workspace mode")
-            initialize_config_with_workspace(workspace_config, skip_validation=skip_validation)
+            LoggingConfig.get_logger(__name__).debug(
+                "Loading configuration in workspace mode"
+            )
+            initialize_config_with_workspace(
+                workspace_config, skip_validation=skip_validation
+            )
         else:
-            LoggingConfig.get_logger(__name__).debug("Loading configuration in traditional mode")
+            LoggingConfig.get_logger(__name__).debug(
+                "Loading configuration in traditional mode"
+            )
             load_config(config_path, env_path, skip_validation)
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
@@ -82,7 +93,9 @@ def load_config(
 
         if config_path is not None:
             if not config_path.exists():
-                LoggingConfig.get_logger(__name__).error("config_not_found", path=str(config_path))
+                LoggingConfig.get_logger(__name__).error(
+                    "config_not_found", path=str(config_path)
+                )
                 raise ClickException(f"Config file not found: {str(config_path)!s}")
             initialize_config(config_path, env_path, skip_validation=skip_validation)
             return
@@ -102,10 +115,13 @@ def load_config(
         error_path = e.path
         abs_path = error_path.resolve()
         if not create_database_directory(abs_path):
-            raise ClickException("Database directory creation declined. Exiting.") from e
+            raise ClickException(
+                "Database directory creation declined. Exiting."
+            ) from e
         # After successful creation, initialize once using the original config_path if provided,
         # otherwise fall back to default config.yaml
         from qdrant_loader.config import initialize_config
+
         target_config = config_path if config_path is not None else Path("config.yaml")
         initialize_config(target_config, env_path, skip_validation=skip_validation)
     except ClickException:

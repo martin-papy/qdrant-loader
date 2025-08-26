@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 
 def should_skip_result(
-    metadata: Dict[str, Any],
-    result_filters: Dict[str, Any],
-    query_context: Dict[str, Any],
+    metadata: dict[str, Any],
+    result_filters: dict[str, Any],
+    query_context: dict[str, Any],
 ) -> bool:
     # Content type filtering
     if "content_type" in result_filters:
@@ -58,5 +58,3 @@ def count_business_indicators(metadata: dict) -> int:
     content = metadata.get("content", "").lower()
 
     return sum(1 for term in business_terms if term in title or term in content)
-
-

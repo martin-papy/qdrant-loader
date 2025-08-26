@@ -3,8 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from qdrant_loader.core.chunking.strategy.code.processor.utils import (
-    has_meaningful_names as _has_meaningful_names,
     determine_learning_level as _determine_learning_level,
+)
+from qdrant_loader.core.chunking.strategy.code.processor.utils import (
+    has_meaningful_names as _has_meaningful_names,
+)
+from qdrant_loader.core.chunking.strategy.code.processor.utils import (
     identify_programming_concepts as _identify_programming_concepts,
 )
 
@@ -27,16 +31,22 @@ def assess_code_quality(content: str, chunk_metadata: dict[str, Any]) -> dict[st
     quality_score += 5 if meaningful else -10
     return {
         "quality_score": max(0, quality_score),
-        "complexity_level": ("low" if complexity < 3 else "medium" if complexity < 8 else "high"),
+        "complexity_level": (
+            "low" if complexity < 3 else "medium" if complexity < 8 else "high"
+        ),
         "readability_indicators": {
             "has_documentation": has_docs,
-            "reasonable_line_length": (len(long_lines) / len(lines) < 0.1 if lines else True),
+            "reasonable_line_length": (
+                len(long_lines) / len(lines) < 0.1 if lines else True
+            ),
             "meaningful_names": meaningful,
         },
     }
 
 
-def assess_educational_value(content: str, chunk_metadata: dict[str, Any]) -> dict[str, Any]:
+def assess_educational_value(
+    content: str, chunk_metadata: dict[str, Any]
+) -> dict[str, Any]:
     educational_indicators: list[str] = []
     if "example" in content.lower() or "demo" in content.lower():
         educational_indicators.append("example_code")

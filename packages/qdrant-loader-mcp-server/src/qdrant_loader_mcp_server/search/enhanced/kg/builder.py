@@ -7,32 +7,32 @@ from document metadata and search results with intelligent relationship extracti
 
 from __future__ import annotations
 
-import time
-from collections import Counter, defaultdict
 import hashlib
 import json
+import time
+from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
     from ...models import SearchResult
+    from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
 
 from ....utils.logging import LoggingConfig
+from .extractors import (
+    extract_concepts_from_result,
+    extract_entities_from_result,
+    extract_keywords_from_result,
+    extract_topics_from_result,
+)
 from .models import (
+    GraphEdge,
+    GraphNode,
     NodeType,
     RelationshipType,
-    GraphNode,
-    GraphEdge,
-)
-from .extractors import (
-    extract_entities_from_result,
-    extract_topics_from_result,
-    extract_concepts_from_result,
-    extract_keywords_from_result,
 )
 from .utils import (
-    calculate_node_similarity,
     SIMILARITY_EDGE_THRESHOLD,
+    calculate_node_similarity,
 )
 
 logger = LoggingConfig.get_logger(__name__)
@@ -45,18 +45,19 @@ class RecoverableBuildError(Exception):
 class GraphBuilder:
     """Build knowledge graph from document metadata and search results."""
 
-    def __init__(self, spacy_analyzer: "SpaCyQueryAnalyzer" | None = None):
+    def __init__(self, spacy_analyzer: SpaCyQueryAnalyzer | None = None):
         """Initialize the graph builder."""
         # Import SpaCyQueryAnalyzer at runtime to avoid circular import
         if spacy_analyzer is None:
             from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
+
             self.spacy_analyzer = SpaCyQueryAnalyzer()
         else:
             self.spacy_analyzer = spacy_analyzer
         logger.info("Initialized graph builder")
 
     def build_from_search_results(
-        self, search_results: list["SearchResult"]
+        self, search_results: list[SearchResult]
     ) -> Any:  # KnowledgeGraph - avoiding circular import
         """Build knowledge graph from search results metadata."""
         # Import KnowledgeGraph at runtime to avoid circular import
@@ -96,17 +97,27 @@ class GraphBuilder:
 
             return graph
 
-        except (ValueError, KeyError, json.JSONDecodeError, IndexError, RecoverableBuildError) as exc:
+        except (
+            ValueError,
+            KeyError,
+            json.JSONDecodeError,
+            IndexError,
+            RecoverableBuildError,
+        ) as exc:
             # Known/parsing/validation issues: log and return a clear recoverable indicator
-            logger.exception("Recoverable error while building knowledge graph", error=str(exc))
+            logger.exception(
+                "Recoverable error while building knowledge graph", error=str(exc)
+            )
             return None
         except Exception as exc:
             # Unexpected/critical exceptions should propagate after logging for caller visibility
-            logger.exception("Unexpected error while building knowledge graph", error=str(exc))
+            logger.exception(
+                "Unexpected error while building knowledge graph", error=str(exc)
+            )
             raise
 
     def _create_document_nodes(
-        self, search_results: list["SearchResult"]
+        self, search_results: list[SearchResult]
     ) -> list[GraphNode]:
         """Create document and section nodes from search results."""
 
@@ -143,7 +154,9 @@ class GraphBuilder:
             section_id = _section_id_from_result(result)
             # Build a safe title string for slicing
             _raw_title = result.section_title or result.breadcrumb_text or "Section"
-            _safe_title = _raw_title if isinstance(_raw_title, str) else str(_raw_title or "")
+            _safe_title = (
+                _raw_title if isinstance(_raw_title, str) else str(_raw_title or "")
+            )
             section_node = GraphNode(
                 id=section_id,
                 node_type=NodeType.SECTION,
@@ -166,7 +179,7 @@ class GraphBuilder:
         return nodes
 
     def _create_concept_nodes(
-        self, search_results: list["SearchResult"]
+        self, search_results: list[SearchResult]
     ) -> tuple[list[GraphNode], list[GraphNode]]:
         """Create entity and topic nodes from extracted metadata."""
 
@@ -212,7 +225,9 @@ class GraphBuilder:
         return entity_nodes, topic_nodes
 
     def _create_relationships(
-        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
+        self,
+        search_results: list[SearchResult],
+        graph: Any,  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create relationships between graph nodes."""
 
@@ -249,7 +264,9 @@ class GraphBuilder:
         return edges
 
     def _create_entity_relationships(
-        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
+        self,
+        search_results: list[SearchResult],
+        graph: Any,  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create entity-related relationships."""
 
@@ -281,7 +298,9 @@ class GraphBuilder:
         return edges
 
     def _create_topic_relationships(
-        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
+        self,
+        search_results: list[SearchResult],
+        graph: Any,  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create topic-related relationships."""
 
@@ -309,7 +328,9 @@ class GraphBuilder:
         return edges
 
     def _create_entity_cooccurrence(
-        self, search_results: list["SearchResult"], graph: Any  # KnowledgeGraph - avoiding circular import
+        self,
+        search_results: list[SearchResult],
+        graph: Any,  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create entity co-occurrence relationships."""
 
@@ -359,7 +380,9 @@ class GraphBuilder:
             for node2 in section_nodes[i + 1 :]:
                 similarity = self._calculate_node_similarity(node1, node2)
 
-                if similarity > SIMILARITY_EDGE_THRESHOLD:  # Threshold for meaningful similarity
+                if (
+                    similarity > SIMILARITY_EDGE_THRESHOLD
+                ):  # Threshold for meaningful similarity
                     edge = GraphEdge(
                         source_id=node1.id,
                         target_id=node2.id,
@@ -376,23 +399,25 @@ class GraphBuilder:
         """Calculate similarity between two nodes."""
         return calculate_node_similarity(node1, node2)
 
-    def _extract_entities(self, result: "SearchResult") -> list[str]:
+    def _extract_entities(self, result: SearchResult) -> list[str]:
         return extract_entities_from_result(result)
 
-    def _extract_topics(self, result: "SearchResult") -> list[str]:
+    def _extract_topics(self, result: SearchResult) -> list[str]:
         return extract_topics_from_result(result)
 
-    def _extract_concepts(self, result: "SearchResult") -> list[str]:
+    def _extract_concepts(self, result: SearchResult) -> list[str]:
         return extract_concepts_from_result(result)
 
-    def _extract_keywords(self, result: "SearchResult") -> list[str]:
+    def _extract_keywords(self, result: SearchResult) -> list[str]:
         return extract_keywords_from_result(result)
 
 
 def _stable_hash(value: Any) -> str:
     """Compute a deterministic SHA-256 hex digest for a value using stable serialization."""
     try:
-        canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        canonical = json.dumps(
+            value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
     except Exception:
         canonical = str(value)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

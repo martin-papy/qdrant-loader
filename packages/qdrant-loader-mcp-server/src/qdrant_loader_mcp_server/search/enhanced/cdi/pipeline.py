@@ -1,26 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from ...components.search_result_models import HybridSearchResult
 from ...models import SearchResult
 from .interfaces import (
+    Clusterer,
+    ConflictDetector,
     EntityExtractor,
-    RelationExtractor,
     GraphBuilder,
     Ranker,
-    Clusterer,
-    SimilarityComputer,
     Recommender,
-    ConflictDetector,
+    RelationExtractor,
+    SimilarityComputer,
 )
 from .models import (
-    DocumentCluster,
-    DocumentSimilarity,
+    ClusteringStrategy,
     ComplementaryContent,
     ConflictAnalysis,
-    ClusteringStrategy,
+    DocumentCluster,
+    DocumentSimilarity,
 )
 
 
@@ -31,17 +30,19 @@ class CrossDocumentPipeline:
     This is a non-functional scaffold to define typed extension points.
     """
 
-    entity_extractor: Optional[EntityExtractor] = None
-    relation_extractor: Optional[RelationExtractor] = None
-    graph_builder: Optional[GraphBuilder] = None
-    ranker: Optional[Ranker] = None
-    clusterer: Optional[Clusterer] = None
-    similarity_computer: Optional[SimilarityComputer] = None
-    recommender: Optional[Recommender] = None
-    conflict_detector: Optional[ConflictDetector] = None
+    entity_extractor: EntityExtractor | None = None
+    relation_extractor: RelationExtractor | None = None
+    graph_builder: GraphBuilder | None = None
+    ranker: Ranker | None = None
+    clusterer: Clusterer | None = None
+    similarity_computer: SimilarityComputer | None = None
+    recommender: Recommender | None = None
+    conflict_detector: ConflictDetector | None = None
 
     # Methods below intentionally do not implement logic yet.
-    def compute_similarity(self, a: SearchResult, b: SearchResult) -> DocumentSimilarity:
+    def compute_similarity(
+        self, a: SearchResult, b: SearchResult
+    ) -> DocumentSimilarity:
         if self.similarity_computer is None:
             raise RuntimeError("similarity_computer not configured")
         return self.similarity_computer.compute(a, b)
@@ -49,9 +50,13 @@ class CrossDocumentPipeline:
     def cluster(self, results: list[SearchResult]) -> list[DocumentCluster]:
         if self.clusterer is None:
             raise RuntimeError("clusterer not configured")
-        return self.clusterer.cluster(results, strategy=ClusteringStrategy.MIXED_FEATURES)
+        return self.clusterer.cluster(
+            results, strategy=ClusteringStrategy.MIXED_FEATURES
+        )
 
-    def recommend(self, target: SearchResult, pool: list[SearchResult]) -> ComplementaryContent:
+    def recommend(
+        self, target: SearchResult, pool: list[SearchResult]
+    ) -> ComplementaryContent:
         if self.recommender is None:
             raise RuntimeError("recommender not configured")
         return self.recommender.recommend(target, pool)
@@ -70,12 +75,15 @@ class CrossDocumentPipeline:
         # If the detector returns an awaitable (legacy async implementation), run it to completion
         try:
             import inspect
+
             if inspect.isawaitable(result):
                 import asyncio
+
                 return asyncio.run(result)  # type: ignore[no-any-return]
         except RuntimeError:
             # If we're already in an event loop, create a new loop to run the task
             import asyncio
+
             loop = asyncio.new_event_loop()
             try:
                 return loop.run_until_complete(result)  # type: ignore[no-any-return]
@@ -87,5 +95,3 @@ class CrossDocumentPipeline:
         if self.ranker is None:
             raise RuntimeError("ranker not configured")
         return self.ranker.rank(results)
-
-

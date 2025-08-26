@@ -13,10 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 # Soft-import async clients to avoid hard dependency at import time
 if TYPE_CHECKING:
-    from openai import AsyncOpenAI
-    from qdrant_client import AsyncQdrantClient
-    from ...knowledge_graph import DocumentKnowledgeGraph
-    from ....components.search_result_models import HybridSearchResult
+    pass
 
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
@@ -42,9 +39,9 @@ class CrossDocumentIntelligenceEngine:
     def __init__(
         self,
         spacy_analyzer: SpaCyQueryAnalyzer,
-        knowledge_graph = None,
-        qdrant_client = None,
-        openai_client = None,
+        knowledge_graph=None,
+        qdrant_client=None,
+        openai_client=None,
         collection_name: str = "documents",
         conflict_settings: dict | None = None,
     ):
@@ -59,7 +56,9 @@ class CrossDocumentIntelligenceEngine:
         # Initialize pipeline-based composition (behavior preserved via adapters)
         self._pipeline = CrossDocumentPipeline(
             similarity_computer=DefaultSimilarityComputer(spacy_analyzer),
-            clusterer=DefaultClusterer(similarity_calculator=DocumentSimilarityCalculator(spacy_analyzer)),
+            clusterer=DefaultClusterer(
+                similarity_calculator=DocumentSimilarityCalculator(spacy_analyzer)
+            ),
             graph_builder=DefaultGraphBuilder(),
             ranker=DefaultRanker(),
         )
@@ -75,7 +74,9 @@ class CrossDocumentIntelligenceEngine:
             spacy_analyzer, qdrant_client, openai_client, collection_name
         )
         if conflict_settings is not None:
-            validated = self._validate_and_normalize_conflict_settings(conflict_settings)
+            validated = self._validate_and_normalize_conflict_settings(
+                conflict_settings
+            )
             if validated is not None:
                 # Apply configuration knobs where supported (respect OpenAI client availability)
                 self.conflict_detector.llm_enabled = bool(
@@ -87,7 +88,9 @@ class CrossDocumentIntelligenceEngine:
                 # Validation already logged a clear warning; keep detector defaults
                 pass
 
-    def _validate_and_normalize_conflict_settings(self, settings: object) -> dict[str, Any] | None:
+    def _validate_and_normalize_conflict_settings(
+        self, settings: object
+    ) -> dict[str, Any] | None:
         """Validate and normalize conflict detection settings.
 
         Returns a sanitized settings dict or None when invalid. On any validation
@@ -164,7 +167,12 @@ class CrossDocumentIntelligenceEngine:
             "conflict_embeddings_max_concurrency": 5,
             # Optional/unused in detector but supported upstream
             "conflict_limit_default": 10,
-            "conflict_tier_caps": {"primary": 50, "secondary": 30, "tertiary": 20, "fallback": 10},
+            "conflict_tier_caps": {
+                "primary": 50,
+                "secondary": 30,
+                "tertiary": 20,
+                "fallback": 10,
+            },
         }
 
         # Start with defaults and override with sanitized values
@@ -184,12 +192,16 @@ class CrossDocumentIntelligenceEngine:
             "conflict_max_llm_pairs",
         )
         normalized["conflict_max_pairs_total"] = coerce_int_non_negative(
-            settings.get("conflict_max_pairs_total", defaults["conflict_max_pairs_total"]),
+            settings.get(
+                "conflict_max_pairs_total", defaults["conflict_max_pairs_total"]
+            ),
             defaults["conflict_max_pairs_total"],
             "conflict_max_pairs_total",
         )
         normalized["conflict_text_window_chars"] = coerce_int_non_negative(
-            settings.get("conflict_text_window_chars", defaults["conflict_text_window_chars"]),
+            settings.get(
+                "conflict_text_window_chars", defaults["conflict_text_window_chars"]
+            ),
             defaults["conflict_text_window_chars"],
             "conflict_text_window_chars",
         )
@@ -263,9 +275,7 @@ class CrossDocumentIntelligenceEngine:
 
         return normalized
 
-    def analyze_document_relationships(
-        self, documents
-    ) -> dict[str, Any]:
+    def analyze_document_relationships(self, documents) -> dict[str, Any]:
         """Lightweight relationship analysis focusing on essential relationships."""
         start_time = time.time()
 

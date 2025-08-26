@@ -5,6 +5,7 @@ import signal
 from pathlib import Path
 
 from click.exceptions import ClickException
+
 from qdrant_loader.cli.async_utils import cancel_all_tasks
 from qdrant_loader.cli.config_loader import (
     load_config_with_workspace,
@@ -85,11 +86,14 @@ async def run_ingest_command(
             logger.debug(" SIGINT received, cancelling all tasks...")
             stop_event.set()
             # Schedule cancellation of all running tasks safely on the event loop thread
-            loop.call_soon_threadsafe(lambda: loop.create_task(_cancel_all_tasks_helper()))
+            loop.call_soon_threadsafe(
+                lambda: loop.create_task(_cancel_all_tasks_helper())
+            )
 
         try:
             loop.add_signal_handler(signal.SIGINT, _handle_sigint)
         except NotImplementedError:
+
             def _signal_handler(_signum, _frame):
                 logger = LoggingConfig.get_logger(__name__)
                 logger.debug(" SIGINT received on Windows, cancelling all tasks...")
@@ -119,7 +123,9 @@ async def run_ingest_command(
             logger = LoggingConfig.get_logger(__name__)
             logger.info("Pipeline finished, awaiting cleanup.")
             pending = [
-                t for t in asyncio.all_tasks() if t is not asyncio.current_task() and not t.done()
+                t
+                for t in asyncio.all_tasks()
+                if t is not asyncio.current_task() and not t.done()
             ]
             if pending:
                 logger.debug(f" Awaiting {len(pending)} pending tasks before exit...")
@@ -139,7 +145,9 @@ async def run_ingest_command(
             raise
         except Exception as e:
             logger = LoggingConfig.get_logger(__name__)
-            error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+            error_msg = (
+                str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+            )
             logger.error(
                 "Document ingestion process failed during execution",
                 error=error_msg,
@@ -154,7 +162,9 @@ async def run_ingest_command(
         finally:
             if stop_event.is_set():
                 logger = LoggingConfig.get_logger(__name__)
-                logger.debug(" Cancellation already initiated by SIGINT; exiting gracefully.")
+                logger.debug(
+                    " Cancellation already initiated by SIGINT; exiting gracefully."
+                )
 
     except asyncio.CancelledError:
         # Bubble up cancellation to the caller/CLI, do not convert to ClickException
@@ -172,5 +182,3 @@ async def run_ingest_command(
             exc_info=True,
         )
         raise ClickException(f"Failed to run ingestion: {error_msg}") from e
-
-

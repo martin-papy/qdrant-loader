@@ -20,11 +20,11 @@ class AssetManager:
         """Copy all website assets to output directory."""
         assets_source = Path("website/assets")
         assets_dest = self.output_dir / "assets"
-        
+
         if assets_source.exists():
             if assets_dest.exists():
                 shutil.rmtree(assets_dest)
-            
+
             # Define ignore patterns for files we don't want to copy
             def ignore_patterns(dir, files):
                 ignored = []
@@ -33,7 +33,7 @@ class AssetManager:
                     if file.endswith(('.py', '.pyc', '__pycache__')):
                         ignored.append(file)
                 return ignored
-            
+
             shutil.copytree(assets_source, assets_dest, ignore=ignore_patterns)
             print(f"📁 Assets copied to {assets_dest}")
         else:
@@ -43,7 +43,7 @@ class AssetManager:
         """Copy a single static file."""
         source = Path(source_path)
         dest = self.output_dir / dest_path
-        
+
         if source.exists():
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, dest)
@@ -59,7 +59,7 @@ class AssetManager:
         """Copy multiple static files."""
         for file_path in static_files:
             source_path = Path(file_path)
-            
+
             if ":" in file_path:
                 source, dest = file_path.split(":", 1)
                 source_path = Path(source)
@@ -67,7 +67,7 @@ class AssetManager:
             else:
                 # Copy to same relative path
                 dest_path = self.output_dir / source_path.name
-            
+
             # Handle directories and files differently
             if source_path.exists():
                 if source_path.is_dir():

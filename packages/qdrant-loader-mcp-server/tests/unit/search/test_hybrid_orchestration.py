@@ -1,11 +1,9 @@
-import asyncio
 from types import SimpleNamespace
 
 import pytest
-
 from qdrant_loader_mcp_server.search.hybrid.orchestration import (
-    QueryPlanner,
     HybridOrchestrator,
+    QueryPlanner,
 )
 
 
@@ -49,7 +47,6 @@ async def test_orchestrator_calls_pipeline_run():
     assert called["project_ids"] == ["p1"]
     assert called["vector_query"] == "vq"
     assert called["keyword_query"] == "kq"
-
 
 
 @pytest.mark.unit

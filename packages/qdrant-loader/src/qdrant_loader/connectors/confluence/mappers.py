@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 
-def extract_hierarchy_info(content: Dict[str, Any]) -> Dict[str, Any]:
+def extract_hierarchy_info(content: dict[str, Any]) -> dict[str, Any]:
     hierarchy_info = {
         "ancestors": [],
         "parent_id": None,
@@ -48,5 +48,3 @@ def extract_hierarchy_info(content: Dict[str, Any]) -> Dict[str, Any]:
         hierarchy_info["children"] = children_info
 
     return hierarchy_info
-
-

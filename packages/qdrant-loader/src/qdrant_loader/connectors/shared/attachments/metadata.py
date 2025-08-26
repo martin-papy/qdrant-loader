@@ -45,11 +45,11 @@ def jira_attachment_to_metadata(att: Any, *, parent_id: str) -> AttachmentMetada
     created = getattr(att, "created", None)
     author = getattr(att, "author", None)
     return AttachmentMetadata(
-        id=str(getattr(att, "id")),
-        filename=str(getattr(att, "filename")),
-        size=int(getattr(att, "size")),
-        mime_type=str(getattr(att, "mime_type")),
-        download_url=str(getattr(att, "content_url")),
+        id=str(att.id),
+        filename=str(att.filename),
+        size=int(att.size),
+        mime_type=str(att.mime_type),
+        download_url=str(att.content_url),
         parent_document_id=parent_id,
         created_at=created.isoformat() if created is not None else None,
         updated_at=None,
@@ -138,5 +138,3 @@ def confluence_attachment_to_metadata(
         )
     except Exception:
         return None
-
-

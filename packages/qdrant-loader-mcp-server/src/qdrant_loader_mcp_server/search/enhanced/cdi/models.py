@@ -69,7 +69,9 @@ class DocumentSimilarity:
 
         explanations: list[str] = []
         if self.shared_entities:
-            explanations.append(f"Shared entities: {', '.join(self.shared_entities[:3])}")
+            explanations.append(
+                f"Shared entities: {', '.join(self.shared_entities[:3])}"
+            )
         if self.shared_topics:
             explanations.append(f"Shared topics: {', '.join(self.shared_topics[:3])}")
         if self.metric_scores:
@@ -112,7 +114,9 @@ class CitationNetwork:
     """Represents a citation/reference network between documents."""
 
     nodes: dict[str, dict[str, Any]] = field(default_factory=dict)  # doc_id -> metadata
-    edges: list[tuple[str, str, dict[str, Any]]] = field(default_factory=list)  # (from, to, metadata)
+    edges: list[tuple[str, str, dict[str, Any]]] = field(
+        default_factory=list
+    )  # (from, to, metadata)
     graph: nx.DiGraph | None = None
     authority_scores: dict[str, float] = field(default_factory=dict)
     hub_scores: dict[str, float] = field(default_factory=dict)
@@ -151,7 +155,7 @@ class CitationNetwork:
 
             self.pagerank_scores = nx.pagerank(self.graph, max_iter=100)
 
-        except (NetworkXError, PowerIterationFailedConvergence, ValueError) as exc:
+        except (NetworkXError, PowerIterationFailedConvergence, ValueError):
             logger.exception(
                 "Centrality computation failed; falling back to degree centrality"
             )
@@ -167,7 +171,9 @@ class ComplementaryContent:
     """Represents complementary content recommendations."""
 
     target_doc_id: str
-    recommendations: list[tuple[str, float, str]] = field(default_factory=list)  # (doc_id, score, reason)
+    recommendations: list[tuple[str, float, str]] = field(
+        default_factory=list
+    )  # (doc_id, score, reason)
     recommendation_strategy: str = "mixed"
     generated_at: datetime = field(default_factory=datetime.now)
 
@@ -177,7 +183,9 @@ class ComplementaryContent:
         if not isinstance(limit, int) or limit <= 0:
             raise ValueError("limit must be an int greater than 0")
 
-        top_recs = sorted(self.recommendations, key=lambda x: x[1], reverse=True)[:limit]
+        top_recs = sorted(self.recommendations, key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
         return [
             {
                 "document_id": doc_id,
@@ -193,7 +201,9 @@ class ComplementaryContent:
 class ConflictAnalysis:
     """Represents analysis of conflicting information between documents."""
 
-    conflicting_pairs: list[tuple[str, str, dict[str, Any]]] = field(default_factory=list)  # (doc1, doc2, conflict_info)
+    conflicting_pairs: list[tuple[str, str, dict[str, Any]]] = field(
+        default_factory=list
+    )  # (doc1, doc2, conflict_info)
     conflict_categories: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
     resolution_suggestions: dict[str, str] = field(default_factory=dict)
 
@@ -201,13 +211,17 @@ class ConflictAnalysis:
         """Get summary of detected conflicts."""
         return {
             "total_conflicts": len(self.conflicting_pairs),
-            "conflict_categories": {cat: len(pairs) for cat, pairs in self.conflict_categories.items()},
+            "conflict_categories": {
+                cat: len(pairs) for cat, pairs in self.conflict_categories.items()
+            },
             "most_common_conflicts": self._get_most_common_conflicts(),
             "resolution_suggestions": list(self.resolution_suggestions.values())[:3],
         }
 
     def _get_most_common_conflicts(self) -> list[str]:
         """Get the most common types of conflicts."""
-        return sorted(self.conflict_categories.keys(), key=lambda x: len(self.conflict_categories[x]), reverse=True)[:3]
-
-
+        return sorted(
+            self.conflict_categories.keys(),
+            key=lambda x: len(self.conflict_categories[x]),
+            reverse=True,
+        )[:3]

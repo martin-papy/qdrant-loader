@@ -50,11 +50,6 @@ def test_module_sizes_within_thresholds_core():
         if line_count > limit:
             offenders.append((rel_str, line_count, limit))
 
-    assert not offenders, (
-        "Core modules exceeding size limits:\n" +
-        "\n".join(f" - {p} : {n} > {lim}" for p, n, lim in offenders)
+    assert not offenders, "Core modules exceeding size limits:\n" + "\n".join(
+        f" - {p} : {n} > {lim}" for p, n, lim in offenders
     )
-
-
-
-

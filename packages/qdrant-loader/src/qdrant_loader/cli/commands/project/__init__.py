@@ -7,5 +7,3 @@ __all__ = [
     "run_project_status",
     "run_project_validate",
 ]
-
-

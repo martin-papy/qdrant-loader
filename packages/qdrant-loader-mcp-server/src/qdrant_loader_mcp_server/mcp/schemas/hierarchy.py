@@ -78,11 +78,12 @@ def get_hierarchy_search_tool_schema() -> dict[str, Any]:
                     "type": "object",
                     "properties": {
                         "organized_by_hierarchy": {"type": "boolean"},
-                        "hierarchy_groups": {"type": "array", "items": {"type": "object"}},
+                        "hierarchy_groups": {
+                            "type": "array",
+                            "items": {"type": "object"},
+                        },
                     },
                 },
             },
         },
     }
-
-

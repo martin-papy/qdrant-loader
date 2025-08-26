@@ -9,5 +9,3 @@ class ConversionInfo:
     conversion_method: str | None = None
     is_excel_sheet: bool = False
     is_converted: bool = False
-
-

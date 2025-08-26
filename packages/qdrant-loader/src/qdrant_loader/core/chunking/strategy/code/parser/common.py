@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 
 class CodeElementType(Enum):
@@ -32,8 +31,8 @@ class CodeElement:
     start_line: int
     end_line: int
     level: int = 0
-    parent: Optional["CodeElement"] = None
-    children: list["CodeElement"] = field(default_factory=list)
+    parent: CodeElement | None = None
+    children: list[CodeElement] = field(default_factory=list)
     docstring: str = None
     decorators: list[str] = field(default_factory=list)
     parameters: list[str] = field(default_factory=list)
@@ -45,6 +44,6 @@ class CodeElement:
     complexity: int = 0
     dependencies: list[str] = field(default_factory=list)
 
-    def add_child(self, child: "CodeElement") -> None:
+    def add_child(self, child: CodeElement) -> None:
         self.children.append(child)
         child.parent = self

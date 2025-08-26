@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from ....nlp.spacy_analyzer import SpaCyQueryAnalyzer
+from .....utils.logging import LoggingConfig
 from ....models import SearchResult
+from ....nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from ..interfaces import SimilarityComputer
 from ..models import (
     DocumentSimilarity,
     SimilarityMetric,
-    RelationshipType,
 )
-from .....utils.logging import LoggingConfig
-import time
 
 
 class DefaultSimilarityComputer(SimilarityComputer):
@@ -42,5 +40,3 @@ class DefaultSimilarityComputer(SimilarityComputer):
                 SimilarityMetric.CONTENT_FEATURES,
             ],
         )
-
-

@@ -1,14 +1,8 @@
-import json
-import os
-from pathlib import Path
-
-import pytest
-
 from qdrant_loader_mcp_server.config_loader import (
-    resolve_config_path,
     build_config_from_dict,
-    redact_effective_config,
     load_config,
+    redact_effective_config,
+    resolve_config_path,
 )
 
 
@@ -58,5 +52,3 @@ def test_load_config_env_only(monkeypatch):
     assert not used_file
     assert cfg.openai.api_key == "secret"
     assert "derived" in effective
-
-

@@ -1,7 +1,6 @@
 from types import SimpleNamespace
 
 import pytest
-
 from qdrant_loader_mcp_server.search.hybrid.pipeline import HybridPipeline
 
 
@@ -12,11 +11,21 @@ class _Vector:
 
 class _Keyword:
     async def search(self, query, limit, project_ids):
-        return [{"score": 0.5, "text": "b", "metadata": {}, "source_type": "confluence"}]
+        return [
+            {"score": 0.5, "text": "b", "metadata": {}, "source_type": "confluence"}
+        ]
 
 
 class _Combiner:
-    async def combine_results(self, vector_results, keyword_results, query_context, limit, source_types, project_ids):
+    async def combine_results(
+        self,
+        vector_results,
+        keyword_results,
+        query_context,
+        limit,
+        source_types,
+        project_ids,
+    ):
         # Return simple objects with a score attribute for hook processing
         return [SimpleNamespace(score=0.5), SimpleNamespace(score=0.25)]
 
@@ -59,5 +68,3 @@ async def test_pipeline_optional_hooks_applied_in_order():
     out = await pipe.run("q", 5, {}, None, None)
     assert len(out) == 1
     assert out[0].score == pytest.approx(1.0)
-
-

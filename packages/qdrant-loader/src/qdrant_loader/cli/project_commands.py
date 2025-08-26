@@ -13,17 +13,17 @@ from rich.table import Table  # noqa: F401 - kept for potential rich layouts
 from sqlalchemy import func, select
 
 from qdrant_loader.cli.asyncio import async_command
+from qdrant_loader.cli.commands.project import run_project_list as _run_project_list
+from qdrant_loader.cli.commands.project import run_project_status as _run_project_status
+from qdrant_loader.cli.commands.project import (
+    run_project_validate as _run_project_validate,
+)
 from qdrant_loader.config import Settings
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.cli.commands.project import (
-    run_project_list as _run_project_list,
-    run_project_status as _run_project_status,
-    run_project_validate as _run_project_validate,
-)
 
 # Initialize Rich console for enhanced output formatting.
 console = Console()
@@ -121,7 +121,9 @@ async def list(
     """List all configured projects."""
     try:
         validate_workspace_flags(workspace, config, env)
-        settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, _ = await _setup_project_manager(
+            workspace, config, env
+        )
 
         project_contexts = project_manager.get_all_project_contexts()
         if not project_contexts and format != "json":
@@ -177,7 +179,9 @@ async def status(
     """Show project status including document counts and ingestion history."""
     try:
         validate_workspace_flags(workspace, config, env)
-        settings, project_manager, state_manager = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, state_manager = await _setup_project_manager(
+            workspace, config, env
+        )
         if project_id:
             context = project_manager.get_project_context(project_id)
             if not context:
@@ -230,15 +234,21 @@ async def validate(
     """Validate project configurations."""
     try:
         validate_workspace_flags(workspace, config, env)
-        settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
-        results, all_valid = _run_project_validate(settings, project_manager, project_id=project_id)
+        settings, project_manager, _ = await _setup_project_manager(
+            workspace, config, env
+        )
+        results, all_valid = _run_project_validate(
+            settings, project_manager, project_id=project_id
+        )
         for result in results:
             if result["valid"]:
                 console.print(
                     f"[green]✓[/green] Project '{result['project_id']}' is valid ({result['source_count']} sources)"
                 )
             else:
-                console.print(f"[red]✗[/red] Project '{result['project_id']}' has errors:")
+                console.print(
+                    f"[red]✗[/red] Project '{result['project_id']}' has errors:"
+                )
                 for error in result["errors"]:
                     console.print(f"  [red]•[/red] {error}")
         if not all_valid:

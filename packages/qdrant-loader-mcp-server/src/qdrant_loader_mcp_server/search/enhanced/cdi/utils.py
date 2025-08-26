@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Iterable, TypeVar, Dict
 from collections import Counter
+from collections.abc import Iterable
+from typing import TypeVar
+
 import numpy as np
 
 T = TypeVar("T")
@@ -23,7 +25,9 @@ def jaccard_similarity(a: Iterable[T], b: Iterable[T]) -> float:
     return intersection / union if union > 0 else 0.0
 
 
-def extract_texts_from_mixed(items: Iterable[dict | str], key: str = "text") -> list[str]:
+def extract_texts_from_mixed(
+    items: Iterable[dict | str], key: str = "text"
+) -> list[str]:
     """Extract lowercase texts from a mixed list of dicts or strings.
 
     Mirrors legacy behavior used in CDI but provides a shared, tested helper.
@@ -43,7 +47,7 @@ def extract_texts_from_mixed(items: Iterable[dict | str], key: str = "text") -> 
     return texts
 
 
-def weighted_average(scores: Dict[str, float], weights: Dict[str, float]) -> float:
+def weighted_average(scores: dict[str, float], weights: dict[str, float]) -> float:
     """Compute a weighted average for named scores with default weights.
 
     Any missing weights default to 0.1 to mirror lenient legacy combining rules.
@@ -174,7 +178,9 @@ def compute_common_title_words(titles: list[str], top_k: int = 10) -> list[str]:
     return common
 
 
-def cosine_similarity(vec1: list[float] | Iterable[float], vec2: list[float] | Iterable[float]) -> float:
+def cosine_similarity(
+    vec1: list[float] | Iterable[float], vec2: list[float] | Iterable[float]
+) -> float:
     """Compute cosine similarity with numpy, guarding zero vectors.
 
     Mirrors legacy behavior in CDI.
@@ -191,7 +197,9 @@ def cosine_similarity(vec1: list[float] | Iterable[float], vec2: list[float] | I
         return 0.0
 
 
-def hierarchical_distance_from_breadcrumbs(breadcrumb1: str | None, breadcrumb2: str | None) -> float:
+def hierarchical_distance_from_breadcrumbs(
+    breadcrumb1: str | None, breadcrumb2: str | None
+) -> float:
     """Compute hierarchical relatedness score using breadcrumb overlap.
 
     Returns 0.7 for sibling docs (same parent, different leaf), otherwise Jaccard

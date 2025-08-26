@@ -6,5 +6,3 @@ module initialization. Import concrete splitters from their modules, e.g.:
 """
 
 __all__: list[str] = []
-
-

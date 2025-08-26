@@ -14,5 +14,3 @@ class AttachmentInfo:
     mime_type: str | None = None
     attachment_author: str | None = None
     attachment_context: str | None = None
-
-

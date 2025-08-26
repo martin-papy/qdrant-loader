@@ -64,16 +64,44 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                         "properties": {
                             "document_id": {"type": "string"},
                             "title": {"type": "string"},
-                            "similarity_score": {"type": "number", "minimum": 0, "maximum": 1},
+                            "similarity_score": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                            },
                             "similarity_metrics": {
                                 "type": "object",
                                 "properties": {
-                                    "entity_overlap": {"type": "number", "minimum": 0, "maximum": 1},
-                                    "topic_overlap": {"type": "number", "minimum": 0, "maximum": 1},
-                                    "semantic_similarity": {"type": "number", "minimum": 0, "maximum": 1},
-                                    "metadata_similarity": {"type": "number", "minimum": 0, "maximum": 1},
-                                    "hierarchical_distance": {"type": "number", "minimum": 0, "maximum": 1},
-                                    "content_features": {"type": "number", "minimum": 0, "maximum": 1},
+                                    "entity_overlap": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1,
+                                    },
+                                    "topic_overlap": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1,
+                                    },
+                                    "semantic_similarity": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1,
+                                    },
+                                    "metadata_similarity": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1,
+                                    },
+                                    "hierarchical_distance": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1,
+                                    },
+                                    "content_features": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 1,
+                                    },
                                 },
                                 "additionalProperties": False,
                             },
@@ -101,7 +129,11 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                     "properties": {
                         "total_compared": {"type": "integer"},
                         "similar_found": {"type": "integer"},
-                        "highest_similarity": {"type": "number", "minimum": 0, "maximum": 1},
+                        "highest_similarity": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                        },
                         "metrics_used": {
                             "type": "array",
                             "items": {"type": "string"},
@@ -120,5 +152,3 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
             },
         },
     }
-
-

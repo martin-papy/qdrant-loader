@@ -6,13 +6,15 @@ from ..components.search_result_models import HybridSearchResult
 
 
 class VectorSearcher(Protocol):
-    async def search(self, query: str, limit: int, project_ids: list[str] | None) -> list[dict]:
-        ...
+    async def search(
+        self, query: str, limit: int, project_ids: list[str] | None
+    ) -> list[dict]: ...
 
 
 class KeywordSearcher(Protocol):
-    async def search(self, query: str, limit: int, project_ids: list[str] | None) -> list[dict]:
-        ...
+    async def search(
+        self, query: str, limit: int, project_ids: list[str] | None
+    ) -> list[dict]: ...
 
 
 class ResultCombinerLike(Protocol):
@@ -24,12 +26,8 @@ class ResultCombinerLike(Protocol):
         limit: int,
         source_types: list[str] | None,
         project_ids: list[str] | None,
-    ) -> list[HybridSearchResult]:
-        ...
+    ) -> list[HybridSearchResult]: ...
 
 
 class Reranker(Protocol):
-    def rerank(self, results: list[HybridSearchResult]) -> list[HybridSearchResult]:
-        ...
-
-
+    def rerank(self, results: list[HybridSearchResult]) -> list[HybridSearchResult]: ...

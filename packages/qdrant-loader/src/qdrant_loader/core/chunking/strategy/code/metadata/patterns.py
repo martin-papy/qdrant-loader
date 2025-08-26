@@ -13,7 +13,9 @@ def identify_code_patterns(content: str) -> dict[str, list[str]]:
 
     if "singleton" in content_lower or "__new__" in content:
         patterns["design_patterns"].append("singleton")
-    if "factory" in content_lower and ("create" in content_lower or "build" in content_lower):
+    if "factory" in content_lower and (
+        "create" in content_lower or "build" in content_lower
+    ):
         patterns["design_patterns"].append("factory")
     if "observer" in content_lower or "notify" in content_lower:
         patterns["design_patterns"].append("observer")
@@ -37,5 +39,3 @@ def identify_code_patterns(content: str) -> dict[str, list[str]]:
         patterns["best_practices"].append("type_hints")
 
     return patterns
-
-

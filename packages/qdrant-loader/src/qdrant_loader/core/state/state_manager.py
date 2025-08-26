@@ -5,21 +5,20 @@ State management service for tracking document ingestion state.
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from sqlalchemy import func, select
+
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.state import transitions as _transitions
 from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
-from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.core.state.utils import (
-    generate_sqlite_aiosqlite_url as _gen_url,
-)
+from qdrant_loader.core.state.session import create_tables as _create_tables
+from qdrant_loader.core.state.session import dispose_engine as _dispose_engine
 from qdrant_loader.core.state.session import (
     initialize_engine_and_session as _init_engine_session,
-    create_tables as _create_tables,
-    dispose_engine as _dispose_engine,
 )
-from qdrant_loader.core.state import transitions as _transitions
-from sqlalchemy import func, select
+from qdrant_loader.core.state.utils import generate_sqlite_aiosqlite_url as _gen_url
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -34,8 +33,8 @@ class StateManager:
         """Initialize the state manager with configuration."""
         self.config = config
         self._initialized = False
-        self._engine: "AsyncEngine | None" = None
-        self._session_factory: "async_sessionmaker[AsyncSession] | None" = None
+        self._engine: AsyncEngine | None = None
+        self._session_factory: async_sessionmaker[AsyncSession] | None = None
         self.logger = LoggingConfig.get_logger(__name__)
 
     @property
@@ -192,7 +191,9 @@ class StateManager:
             if session_factory is None:
                 ctx = await self.get_session()
             else:
-                ctx = session_factory() if callable(session_factory) else session_factory
+                ctx = (
+                    session_factory() if callable(session_factory) else session_factory
+                )
             async with ctx as session:  # type: ignore
                 result = await session.execute(
                     select(func.count(DocumentStateRecord.id))
@@ -218,7 +219,9 @@ class StateManager:
             if session_factory is None:
                 ctx = await self.get_session()
             else:
-                ctx = session_factory() if callable(session_factory) else session_factory
+                ctx = (
+                    session_factory() if callable(session_factory) else session_factory
+                )
             async with ctx as session:  # type: ignore
                 result = await session.execute(
                     select(IngestionHistory.last_successful_ingestion)

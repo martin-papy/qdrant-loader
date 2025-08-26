@@ -31,5 +31,3 @@ class HybridProcessingConfig:
     enable_normalizer: bool = False
     enable_deduplicator: bool = False
     enable_reranker: bool = False
-
-

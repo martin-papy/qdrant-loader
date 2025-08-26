@@ -17,5 +17,3 @@ def get_version_str() -> str:
         return _metadata.version("qdrant-loader")
     except _metadata.PackageNotFoundError:
         return "unknown"
-
-

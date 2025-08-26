@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Hashable, Iterable, List, Set, Mapping
 import json
+from collections.abc import Hashable, Iterable, Mapping
+from typing import Any
 
 
 class ResultDeduplicator:
@@ -10,9 +11,9 @@ class ResultDeduplicator:
     def __init__(self, key_attr: str = "id"):
         self.key_attr = key_attr
 
-    def deduplicate(self, results: Iterable[Any]) -> List[Any]:
-        seen: Set[Hashable] = set()
-        unique: List[Any] = []
+    def deduplicate(self, results: Iterable[Any]) -> list[Any]:
+        seen: set[Hashable] = set()
+        unique: list[Any] = []
         for item in results:
             # Support both Mapping (dict-like) and object attributes
             if isinstance(item, Mapping):
@@ -38,5 +39,3 @@ class ResultDeduplicator:
                 seen.add(key)
                 unique.append(item)
         return unique
-
-

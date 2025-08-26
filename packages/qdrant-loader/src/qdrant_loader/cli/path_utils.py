@@ -43,5 +43,3 @@ def create_database_directory(path: Path) -> bool:
                 f"Failed to create directory '{abs_path}': {e}"
             ) from e
     return False
-
-

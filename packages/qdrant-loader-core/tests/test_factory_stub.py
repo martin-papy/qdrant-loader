@@ -1,12 +1,13 @@
-import pytest
 from importlib import import_module
+
+import pytest
 
 
 def _minimal_settings():
-    LLMSettings = getattr(import_module("qdrant_loader_core.llm.settings"), "LLMSettings")
-    RequestPolicy = getattr(import_module("qdrant_loader_core.llm.settings"), "RequestPolicy")
-    RateLimitPolicy = getattr(import_module("qdrant_loader_core.llm.settings"), "RateLimitPolicy")
-    EmbeddingPolicy = getattr(import_module("qdrant_loader_core.llm.settings"), "EmbeddingPolicy")
+    LLMSettings = import_module("qdrant_loader_core.llm.settings").LLMSettings
+    RequestPolicy = import_module("qdrant_loader_core.llm.settings").RequestPolicy
+    RateLimitPolicy = import_module("qdrant_loader_core.llm.settings").RateLimitPolicy
+    EmbeddingPolicy = import_module("qdrant_loader_core.llm.settings").EmbeddingPolicy
     return LLMSettings(
         provider="openai_compat",
         base_url="http://localhost:11434/v1",
@@ -22,7 +23,7 @@ def _minimal_settings():
 
 @pytest.mark.asyncio
 async def test_factory_returns_provider_with_expected_interfaces():
-    create_provider = getattr(import_module("qdrant_loader_core.llm.factory"), "create_provider")
+    create_provider = import_module("qdrant_loader_core.llm.factory").create_provider
     provider = create_provider(_minimal_settings())
     emb = provider.embeddings()
     chat = provider.chat()
@@ -36,4 +37,3 @@ async def test_factory_returns_provider_with_expected_interfaces():
         await emb.embed(["hello"])
     with pytest.raises(NotImplementedError):
         await chat.chat([{"role": "user", "content": "hi"}])
-

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 
-def calculate_std(values: List[float]) -> float:
+def calculate_std(values: list[float]) -> float:
     if len(values) < 2:
         return 0.0
     mean = sum(values) / len(values)
     variance = sum((x - mean) ** 2 for x in values) / len(values)
-    return variance ** 0.5
+    return variance**0.5
 
 
 def assess_overall_quality(clusters, matched_docs: int, requested_docs: int) -> float:
@@ -17,7 +17,9 @@ def assess_overall_quality(clusters, matched_docs: int, requested_docs: int) -> 
 
     retrieval_score = matched_docs / requested_docs if requested_docs > 0 else 0
     coherence_scores = [c.coherence_score for c in clusters if c.coherence_score > 0]
-    coherence_score = sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0
+    coherence_score = (
+        sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0
+    )
 
     cluster_sizes = [len(c.documents) for c in clusters]
     size_distribution_score = 1.0
@@ -26,13 +28,19 @@ def assess_overall_quality(clusters, matched_docs: int, requested_docs: int) -> 
     elif len([s for s in cluster_sizes if s < 3]) > len(clusters) * 0.7:
         size_distribution_score = 0.8
 
-    overall_quality = retrieval_score * 0.4 + coherence_score * 0.4 + size_distribution_score * 0.2
+    overall_quality = (
+        retrieval_score * 0.4 + coherence_score * 0.4 + size_distribution_score * 0.2
+    )
     return min(1.0, max(0.0, overall_quality))
 
 
-def generate_clustering_recommendations(clusters, strategy, matched_docs: int, requested_docs: int) -> dict[str, Any]:
+def generate_clustering_recommendations(
+    clusters, strategy, matched_docs: int, requested_docs: int
+) -> dict[str, Any]:
     recommendations = {
-        "quality_threshold_met": (matched_docs / requested_docs >= 0.9 if requested_docs > 0 else False),
+        "quality_threshold_met": (
+            matched_docs / requested_docs >= 0.9 if requested_docs > 0 else False
+        ),
         "suggestions": [],
     }
 
@@ -66,23 +74,37 @@ def build_enhanced_metadata(
     clusters, documents, strategy, processing_time, matched_docs, requested_docs
 ) -> dict[str, Any]:
     cluster_sizes = [len(cluster.documents) for cluster in clusters]
-    coherence_scores = [cluster.coherence_score for cluster in clusters if cluster.coherence_score > 0]
+    coherence_scores = [
+        cluster.coherence_score for cluster in clusters if cluster.coherence_score > 0
+    ]
 
     metadata = {
         "strategy": strategy.value,
         "total_documents": len(documents),
         "clusters_created": len(clusters),
         "unclustered_documents": len(documents) - sum(cluster_sizes),
-        "document_retrieval_rate": (matched_docs / requested_docs if requested_docs > 0 else 0),
+        "document_retrieval_rate": (
+            matched_docs / requested_docs if requested_docs > 0 else 0
+        ),
         "processing_time_ms": round(processing_time, 2),
         "strategy_performance": {
-            "coherence_avg": (sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0),
-            "coherence_std": (calculate_std(coherence_scores) if len(coherence_scores) > 1 else 0),
+            "coherence_avg": (
+                sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0
+            ),
+            "coherence_std": (
+                calculate_std(coherence_scores) if len(coherence_scores) > 1 else 0
+            ),
             "size_distribution": cluster_sizes,
-            "size_avg": (sum(cluster_sizes) / len(cluster_sizes) if cluster_sizes else 0),
+            "size_avg": (
+                sum(cluster_sizes) / len(cluster_sizes) if cluster_sizes else 0
+            ),
         },
-        "clustering_quality": assess_overall_quality(clusters, matched_docs, requested_docs),
-        "recommendations": generate_clustering_recommendations(clusters, strategy, matched_docs, requested_docs),
+        "clustering_quality": assess_overall_quality(
+            clusters, matched_docs, requested_docs
+        ),
+        "recommendations": generate_clustering_recommendations(
+            clusters, strategy, matched_docs, requested_docs
+        ),
     }
     return metadata
 
@@ -98,11 +120,11 @@ def categorize_cluster_size(size: int) -> str:
         return "very_large"
 
 
-def estimate_content_similarity(documents: List[Any]) -> float:
+def estimate_content_similarity(documents: list[Any]) -> float:
     if len(documents) < 2:
         return 1.0
-    all_words: List[str] = []
-    doc_word_sets: List[set[str]] = []
+    all_words: list[str] = []
+    doc_word_sets: list[set[str]] = []
     for doc in documents[:5]:
         words: set[str] = set()
         title = getattr(doc, "source_title", None)
@@ -127,7 +149,9 @@ def estimate_content_similarity(documents: List[Any]) -> float:
     return total_overlap / comparisons if comparisons > 0 else 0.0
 
 
-def calculate_cluster_quality(cluster: Any, cluster_documents: List[Any]) -> dict[str, Any]:
+def calculate_cluster_quality(
+    cluster: Any, cluster_documents: list[Any]
+) -> dict[str, Any]:
     quality_metrics = {
         "document_retrieval_rate": (
             len(cluster_documents) / len(cluster.documents) if cluster.documents else 0
@@ -139,6 +163,7 @@ def calculate_cluster_quality(cluster: Any, cluster_documents: List[Any]) -> dic
         "cluster_size_category": categorize_cluster_size(len(cluster_documents)),
     }
     if len(cluster_documents) > 1:
-        quality_metrics["content_similarity"] = estimate_content_similarity(cluster_documents)
+        quality_metrics["content_similarity"] = estimate_content_similarity(
+            cluster_documents
+        )
     return quality_metrics
-

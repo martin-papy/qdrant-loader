@@ -207,8 +207,24 @@ async def test_get_embeddings_batch_provider(mock_settings):
     ):
         service = EmbeddingService(mock_settings)
         documents = [
-            Document(title="T1", content="A", content_type="text/plain", source_type="t", source="s", url="u1", metadata={}),
-            Document(title="T2", content="B", content_type="text/plain", source_type="t", source="s", url="u2", metadata={}),
+            Document(
+                title="T1",
+                content="A",
+                content_type="text/plain",
+                source_type="t",
+                source="s",
+                url="u1",
+                metadata={},
+            ),
+            Document(
+                title="T2",
+                content="B",
+                content_type="text/plain",
+                source_type="t",
+                source="s",
+                url="u2",
+                metadata={},
+            ),
         ]
         res = await service.get_embeddings(documents)
         assert len(res) == 2
@@ -239,9 +255,12 @@ async def test_rate_limiting():
 
 def test_count_tokens_with_tokenizer(mock_settings):
     """Test token counting with tiktoken."""
-    with patch("tiktoken.get_encoding") as mock_get_encoding, patch(
-        "qdrant_loader.core.embedding.embedding_service.import_module",
-        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+    with (
+        patch("tiktoken.get_encoding") as mock_get_encoding,
+        patch(
+            "qdrant_loader.core.embedding.embedding_service.import_module",
+            return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+        ),
     ):
         mock_encoding = MagicMock()
         mock_encoding.encode.return_value = [1, 2, 3]  # 3 tokens
@@ -284,9 +303,12 @@ def test_count_tokens_fallback():
 
 def test_count_tokens_batch(mock_settings):
     """Test batch token counting."""
-    with patch("tiktoken.get_encoding") as mock_get_encoding, patch(
-        "qdrant_loader.core.embedding.embedding_service.import_module",
-        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+    with (
+        patch("tiktoken.get_encoding") as mock_get_encoding,
+        patch(
+            "qdrant_loader.core.embedding.embedding_service.import_module",
+            return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+        ),
     ):
         mock_encoding = MagicMock()
         mock_encoding.encode.side_effect = lambda x: [1] * len(x)
@@ -314,6 +336,7 @@ def test_get_embedding_dimension(mock_settings):
 @pytest.mark.asyncio
 async def test_provider_error_propagates(mock_settings):
     """Provider exceptions bubble up through retry logic."""
+
     class _BadEmb:
         async def embed(self, inputs):  # type: ignore[no-untyped-def]
             raise RuntimeError("provider failure")
