@@ -154,7 +154,9 @@ class StructuredResultFormatters:
             # Attach children to parents using an explicit stack and depth cap
             # to avoid unbounded recursion in deep hierarchies
             def attach_children_iterative(
-                root_docs: list[dict[str, Any]], depth_limit: int
+                root_docs: list[dict[str, Any]],
+                depth_limit: int,
+                child_lookup: dict[str, list[dict[str, Any]]],
             ) -> None:
                 if depth_limit <= 0:
                     return
@@ -172,13 +174,13 @@ class StructuredResultFormatters:
                     # Only attach children if within depth limit
                     if current_depth >= depth_limit:
                         continue
-                    children = child_map.get(doc_id)
+                    children = child_lookup.get(doc_id)
                     if children:
                         current_doc["children"] = children
                         for child in children:
                             stack.append((child, current_depth + 1))
 
-            attach_children_iterative(root_documents, max_depth)
+            attach_children_iterative(root_documents, max_depth, child_map)
 
             hierarchy_data.append(
                 {
@@ -282,10 +284,10 @@ class StructuredResultFormatters:
                                 else 0
                             ),
                             "source_types": list(
-                                set(
+                                {
                                     getattr(r, "source_type", "unknown")
                                     for r in results
-                                )
+                                }
                             ),
                         }
                         if include_metadata

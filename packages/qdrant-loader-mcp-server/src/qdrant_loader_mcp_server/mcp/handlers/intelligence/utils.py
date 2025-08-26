@@ -66,7 +66,7 @@ def get_or_create_document_id(doc: Any) -> str:
                 (str(k), _to_stable_primitive(v)) for k, v in value.items()
             )
             sorted_items = sorted(converted_items, key=lambda kv: kv[0])
-            return {k: v for k, v in sorted_items}
+            return dict(sorted_items)
         # Iterables (list/tuple/set etc.), but not strings/bytes (already handled)
         if isinstance(value, Iterable):
             converted_list = [_to_stable_primitive(v) for v in value]

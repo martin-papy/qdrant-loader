@@ -234,7 +234,7 @@ class IntelligenceResultFormatters:
             formatted += "💡 **Resolution Suggestions:**\n"
             if isinstance(suggestions, dict):
                 # Handle dict format
-                for key, suggestion in list(suggestions.items())[
+                for _key, suggestion in list(suggestions.items())[
                     :2
                 ]:  # Show top 2 suggestions
                     formatted += f"• {suggestion}\n"

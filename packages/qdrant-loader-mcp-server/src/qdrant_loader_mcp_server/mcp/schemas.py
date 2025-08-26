@@ -2,42 +2,14 @@
 
 from typing import Any
 
-from .schemas import get_all_tool_schemas as _get_all_tool_schemas
-from .schemas import (
-    get_analyze_relationships_tool_schema,
-    get_attachment_search_tool_schema,
-    get_cluster_documents_tool_schema,
-    get_detect_conflicts_tool_schema,
-    get_expand_cluster_tool_schema,
-    get_expand_document_tool_schema,
-    get_find_complementary_tool_schema,
-    get_find_similar_tool_schema,
-    get_hierarchy_search_tool_schema,
-    get_search_tool_schema,
-)
+# Note: This module defines the MCP tool schemas directly. Duplicate
+# import-based aliases have been removed to avoid redefinitions.
 
 
 class MCPSchemas:
     """Backward-compatible wrapper exposing static methods."""
 
-    get_search_tool_schema = staticmethod(get_search_tool_schema)
-    get_hierarchy_search_tool_schema = staticmethod(get_hierarchy_search_tool_schema)
-    get_attachment_search_tool_schema = staticmethod(get_attachment_search_tool_schema)
-    get_analyze_relationships_tool_schema = staticmethod(
-        get_analyze_relationships_tool_schema
-    )
-    get_find_similar_tool_schema = staticmethod(get_find_similar_tool_schema)
-    get_detect_conflicts_tool_schema = staticmethod(get_detect_conflicts_tool_schema)
-    get_find_complementary_tool_schema = staticmethod(
-        get_find_complementary_tool_schema
-    )
-    get_cluster_documents_tool_schema = staticmethod(get_cluster_documents_tool_schema)
-    get_expand_document_tool_schema = staticmethod(get_expand_document_tool_schema)
-    get_expand_cluster_tool_schema = staticmethod(get_expand_cluster_tool_schema)
-
-    @classmethod
-    def get_all_tool_schemas(cls) -> list[dict[str, Any]]:
-        return _get_all_tool_schemas()
+    # Static methods implemented below
 
     @staticmethod
     def get_hierarchy_search_tool_schema() -> dict[str, Any]:

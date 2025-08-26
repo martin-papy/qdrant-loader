@@ -136,7 +136,7 @@ class LightweightResultFormatters:
                     else 0
                 ),
                 "conflict_types": list(
-                    set(c.get("conflict_type", "unknown") for c in processed_conflicts)
+                    {c.get("conflict_type", "unknown") for c in processed_conflicts}
                 ),
             },
             "analysis_metadata": {
@@ -320,10 +320,7 @@ class LightweightResultFormatters:
                 "total_groups": len(organized_results),
                 "analysis_type": "hierarchy",
                 "source_types_found": list(
-                    set(
-                        getattr(result, "source_type", "unknown")
-                        for result in filtered_results
-                    )
+                    {getattr(result, "source_type", "unknown") for result in filtered_results}
                 ),
             },
             # Keep legacy fields for backward compatibility
@@ -404,10 +401,7 @@ class LightweightResultFormatters:
                     else 0
                 ),
                 "strategies_used": list(
-                    set(
-                        rec.get("strategy", "unknown")
-                        for rec in complementary_recommendations
-                    )
+                    {rec.get("strategy", "unknown") for rec in complementary_recommendations}
                 ),
             },
             "lazy_loading_enabled": False,
