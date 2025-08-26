@@ -120,6 +120,32 @@ class TestConfluenceConnector:
                 await connector._make_request("GET", "content/search")
 
     @pytest.mark.asyncio
+    async def test_rate_limiting_configurable(self, config):
+        """Ensure requests_per_minute config is respected by creating connector with custom RPM."""
+        cfg = config
+        cfg.requests_per_minute = 30
+        connector = ConfluenceConnector(cfg)
+
+        # Patch the policy call and rate limiter acquire to observe behavior
+        fake_response = MagicMock()
+        fake_response.raise_for_status.return_value = None
+        fake_response.json.return_value = {}
+
+        with (
+            patch(
+                "qdrant_loader.connectors.shared.http.policy.make_request_with_retries_async",
+                new=AsyncMock(return_value=fake_response),
+            ) as _mock_retry,
+            patch(
+                "qdrant_loader.connectors.shared.http.rate_limit.RateLimiter.acquire",
+                new=AsyncMock(),
+            ) as mock_acquire,
+        ):
+            await connector._make_request("GET", "content/search")
+            # Acquire should be awaited given RPM usage
+            assert mock_acquire.await_count >= 1
+
+    @pytest.mark.asyncio
     async def test_get_space_content(self, connector):
         """Test fetching space content."""
         mock_response = {

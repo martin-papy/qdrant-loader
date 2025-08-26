@@ -1,0 +1,41 @@
+# qdrant-loader-core package: shared LLM layer
+
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qdrant-loader-core"
+version = "0.6.1"
+description = "Shared core for provider-agnostic LLM support and configuration mapping for qdrant-loader ecosystem"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "GPL-3.0"
+authors = [
+  { name = "Martin Papy", email = "martin.papy@cbtw.tech" },
+]
+dependencies = [
+  "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+openai = [
+  "openai>=1.0.0",
+  "tiktoken>=0.5.0",
+]
+ollama = [
+  "httpx>=0.24.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = [
+  "packages/qdrant-loader-core/tests",
+]
+
+

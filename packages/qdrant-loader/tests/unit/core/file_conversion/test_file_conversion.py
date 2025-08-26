@@ -193,7 +193,9 @@ class TestFileConversionConfig:
             FileConversionConfig(max_file_size=-1)
 
         # Test maximum bound (must be <= 100MB)
-        with pytest.raises(ValueError, match="Input should be less than or equal to 104857600"):
+        with pytest.raises(
+            ValueError, match="Input should be less than or equal to 104857600"
+        ):
             FileConversionConfig(max_file_size=104857601)  # 100MB + 1 byte
 
     def test_conversion_timeout_validation_bounds(self):
@@ -210,7 +212,9 @@ class TestFileConversionConfig:
             FileConversionConfig(conversion_timeout=-1)
 
         # Test maximum bound (must be <= 3600 seconds)
-        with pytest.raises(ValueError, match="Input should be less than or equal to 3600"):
+        with pytest.raises(
+            ValueError, match="Input should be less than or equal to 3600"
+        ):
             FileConversionConfig(conversion_timeout=3601)  # 1 hour + 1 second
 
 
