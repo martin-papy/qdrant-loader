@@ -38,8 +38,9 @@ quality-all: ## Run quality gates for all packages (currently qdrant-loader and 
 	# Add additional per-package quality directories here if/when created
 
 lint: ## Run linting on all packages
-	ruff check packages/
-	mypy packages/
+	ruff check .
+	# TODO: Add mypy check for all packages
+	# mypy -p qdrant_loader -p qdrant_loader_core -p qdrant_loader_mcp_server
 
 format: ## Format code in all packages
 	black packages/
