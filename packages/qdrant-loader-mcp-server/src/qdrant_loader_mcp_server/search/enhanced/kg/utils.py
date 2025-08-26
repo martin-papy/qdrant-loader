@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+
 from .models import GraphEdge, GraphNode
 
 # Module-level logger

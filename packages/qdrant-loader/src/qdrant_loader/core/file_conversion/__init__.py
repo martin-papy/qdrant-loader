@@ -5,6 +5,8 @@ This module provides file conversion capabilities using MarkItDown,
 supporting various file formats including PDF, Office documents, images, and more.
 """
 
+import warnings
+
 from .conversion_config import (
     ConnectorFileConversionConfig,
     FileConversionConfig,
@@ -20,8 +22,6 @@ from .exceptions import (
 )
 from .file_converter import FileConverter
 from .file_detector import FileDetector
-
-import warnings
 
 # Suppress pydub ffmpeg warning since audio processing is optional for file conversion
 warnings.filterwarnings(

@@ -4,7 +4,6 @@ import logging
 from unittest.mock import Mock
 
 import pytest
-
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     HybridSearchResult,
     create_hybrid_search_result,
