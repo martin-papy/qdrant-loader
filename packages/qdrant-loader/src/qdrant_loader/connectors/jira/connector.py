@@ -111,6 +111,41 @@ class JiraConnector(BaseConnector):
         if self.config.enable_file_conversion and self.file_detector:
             self.file_converter = FileConverter(config)
             if self.config.download_attachments:
+                # Clean up any existing attachment reader to avoid resource leaks
+                old_reader = self.attachment_reader
+                if old_reader is not None:
+                    try:
+                        close_callable = None
+                        if hasattr(old_reader, "aclose"):
+                            close_callable = getattr(old_reader, "aclose")
+                        elif hasattr(old_reader, "close"):
+                            close_callable = getattr(old_reader, "close")
+                        elif hasattr(old_reader, "cleanup"):
+                            close_callable = getattr(old_reader, "cleanup")
+
+                        if close_callable is not None:
+                            result = close_callable()
+                            if asyncio.iscoroutine(result):
+                                try:
+                                    # Try to schedule/await coroutine cleanup safely
+                                    try:
+                                        loop = asyncio.get_running_loop()
+                                    except RuntimeError:
+                                        loop = None
+                                    if loop and not loop.is_closed():
+                                        loop.create_task(result)
+                                    else:
+                                        asyncio.run(result)
+                                except Exception:
+                                    # Ignore cleanup errors to not block reconfiguration
+                                    pass
+                    except Exception:
+                        # Ignore cleanup errors to avoid masking the config update
+                        pass
+
+                # Drop reference before creating a new reader
+                self.attachment_reader = None
+
                 # Reinitialize reader with new downloader config
                 self.attachment_reader = AttachmentReader(
                     session=self.session,

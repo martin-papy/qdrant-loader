@@ -20,46 +20,68 @@ async def discover_pages(
     """Fetch the base URL and discover matching pages under it."""
     # Support both aiohttp-style context manager and direct-await mocks
     status_code = None
+    response = None
+    html = ""
+    context_managed = False
     try:
         get_result = session.get(base_url)
-        # If the returned object implements the async context manager protocol, use it
+
+        # Prefer async context manager usage if supported (aiohttp-style)
         if hasattr(get_result, "__aenter__") and hasattr(get_result, "__aexit__"):
-            async with get_result as response:  # type: ignore[func-returns-value]
+            context_managed = True
+            async with get_result as resp:  # type: ignore[func-returns-value]
+                response = resp
                 status = getattr(response, "status", None)
                 status_code = status
                 if status is None or not (200 <= int(status) < 300):
-                    logger.warning("Non-2xx HTTP status when fetching base URL", url=base_url, status_code=status)
+                    logger.warning(
+                        "Non-2xx HTTP status when fetching base URL",
+                        url=base_url,
+                        status_code=status,
+                    )
                     return []
                 try:
                     html = await _read_text(response)
                 except Exception as e:
-                    logger.warning("Failed to read HTTP response body", url=base_url, error=str(e))
+                    logger.warning(
+                        "Failed to read HTTP response body", url=base_url, error=str(e)
+                    )
                     return []
         else:
-            # Fallback: await the response directly
-            response = await get_result  # type: ignore[assignment]
+            # Otherwise await if it's awaitable, or use it directly
+            if hasattr(get_result, "__await__"):
+                response = await get_result  # type: ignore[assignment]
+            else:
+                response = get_result
+
+            status = getattr(response, "status", None)
+            status_code = status
+            if status is None or not (200 <= int(status) < 300):
+                logger.warning(
+                    "Non-2xx HTTP status when fetching base URL",
+                    url=base_url,
+                    status_code=status,
+                )
+                return []
             try:
-                status = getattr(response, "status", None)
-                status_code = status
-                if status is None or not (200 <= int(status) < 300):
-                    logger.warning("Non-2xx HTTP status when fetching base URL", url=base_url, status_code=status)
-                    return []
-                try:
-                    html = await _read_text(response)
-                finally:
-                    # Best effort close if available
-                    close = getattr(response, "close", None)
-                    if callable(close):
-                        try:
-                            close()
-                        except Exception:
-                            pass
+                html = await _read_text(response)
             except Exception as e:
-                logger.warning("Failed to process HTTP response", url=base_url, error=str(e))
+                logger.warning(
+                    "Failed to read HTTP response body", url=base_url, error=str(e)
+                )
                 return []
     except Exception as e:
         logger.warning("HTTP request failed", url=base_url, error=str(e))
         return []
+    finally:
+        # Best-effort close for non-context-managed responses
+        if response is not None and not context_managed:
+            close = getattr(response, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    pass
 
     if status_code is not None:
         logger.debug("HTTP request successful", status_code=status_code)
