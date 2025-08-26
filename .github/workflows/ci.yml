@@ -32,9 +32,9 @@ jobs:
       - name: Install dev dependencies
         run: |
           . venv/bin/activate
+          pip install -e packages/qdrant-loader-core[openai]
           pip install -e packages/qdrant-loader[dev]
           pip install -e packages/qdrant-loader-mcp-server[dev]
-          pip install -e packages/qdrant-loader-core[openai]
 
       - name: Lint
         run: |
