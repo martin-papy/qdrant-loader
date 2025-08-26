@@ -118,7 +118,7 @@ class VectorSearchService:
                 del self._search_cache[key]
 
     async def get_embedding(self, text: str) -> list[float]:
-        """Get embedding for text using provider or OpenAI fallback.
+        """Get embedding for text using OpenAI client when available, else provider.
 
         Args:
             text: Text to get embedding for
@@ -129,7 +129,20 @@ class VectorSearchService:
         Raises:
             Exception: If embedding generation fails
         """
-        # Prefer provider when available
+        # Prefer OpenAI client when explicitly provided
+        if self.openai_client is not None:
+            try:
+                response = await self.openai_client.embeddings.create(
+                    model="text-embedding-3-small",
+                    input=text,
+                )
+                return response.data[0].embedding
+            except Exception as e:
+                # Do not fall back silently; propagate error as tests expect
+                self.logger.error("Failed to get embedding", error=str(e))
+                raise
+
+        # Fallback to provider when OpenAI client is not configured
         if self.embeddings_provider is not None:
             try:
                 # Accept either a provider (with .embeddings()) or a direct embeddings client
@@ -141,21 +154,11 @@ class VectorSearchService:
                 vectors = await client.embed([text])
                 return vectors[0]
             except Exception as e:
-                self.logger.error("Provider embeddings failed; no fallback", error=str(e))
+                self.logger.error("Provider embeddings failed", error=str(e))
                 raise
 
-        # Fallback: OpenAI client (legacy path)
-        if self.openai_client is None:
-            raise RuntimeError("No embeddings provider or OpenAI client configured")
-        try:
-            response = await self.openai_client.embeddings.create(
-                model="text-embedding-3-small",
-                input=text,
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            self.logger.error("Failed to get embedding", error=str(e))
-            raise
+        # Nothing configured
+        raise RuntimeError("No embeddings provider or OpenAI client configured")
 
     async def vector_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
