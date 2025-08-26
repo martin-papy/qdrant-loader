@@ -19,6 +19,18 @@ from qdrant_loader.connectors.exceptions import (
     HTTPRequestError,
 )
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
+from qdrant_loader.connectors.publicdocs.crawler import (
+    discover_pages as _discover_pages,
+)
+
+# Local HTTP helper for safe text reading
+from qdrant_loader.connectors.publicdocs.http import read_text_response as _read_text
+from qdrant_loader.connectors.shared.http import (
+    RateLimiter,
+)
+from qdrant_loader.connectors.shared.http import (
+    aiohttp_request_with_policy as _aiohttp_request,
+)
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
     AttachmentMetadata,
@@ -86,6 +98,9 @@ class PublicDocsConnector(BaseConnector):
 
                 session = requests.Session()
                 self.attachment_downloader = AttachmentDownloader(session=session)
+
+            # Initialize rate limiter for crawling (configurable)
+            self._rate_limiter = RateLimiter.per_minute(self.config.requests_per_minute)
 
         return self
 
@@ -237,8 +252,24 @@ class PublicDocsConnector(BaseConnector):
                         ):
                             # We need to get the HTML again to extract attachments
                             try:
-                                response = await self.client.get(page)
-                                html = await response.text()
+                                try:
+                                    response = await _aiohttp_request(
+                                        self.client,
+                                        "GET",
+                                        page,
+                                        rate_limiter=self._rate_limiter,
+                                        retries=3,
+                                        backoff_factor=0.5,
+                                        overall_timeout=60.0,
+                                    )
+                                    # Ensure HTTP errors are surfaced consistently
+                                    response.raise_for_status()
+                                except aiohttp.ClientError as e:
+                                    raise HTTPRequestError(
+                                        url=page, message=str(e)
+                                    ) from e
+
+                                html = await _read_text(response)
                                 attachment_metadata = self._extract_attachments(
                                     html, page, doc_id
                                 )
@@ -305,7 +336,15 @@ class PublicDocsConnector(BaseConnector):
 
             self.logger.debug("Making HTTP request", url=url)
             try:
-                response = await self.client.get(url)
+                response = await _aiohttp_request(
+                    self.client,
+                    "GET",
+                    url,
+                    rate_limiter=self._rate_limiter,
+                    retries=3,
+                    backoff_factor=0.5,
+                    overall_timeout=60.0,
+                )
                 response.raise_for_status()  # This is a synchronous method, no need to await
             except aiohttp.ClientError as e:
                 raise HTTPRequestError(url=url, message=str(e)) from e
@@ -613,83 +652,43 @@ class PublicDocsConnector(BaseConnector):
                 path_pattern=self.config.path_pattern,
             )
 
-            async with aiohttp.ClientSession() as client:
+            # Reuse existing client if available; otherwise, create a temporary session
+            if getattr(self, "_client", None):
+                client = self.client
                 try:
-                    response = await client.get(str(self.config.base_url))
-                    response.raise_for_status()
+                    return await _discover_pages(
+                        client,
+                        str(self.config.base_url),
+                        path_pattern=self.config.path_pattern,
+                        exclude_paths=self.config.exclude_paths,
+                        logger=self.logger,
+                    )
                 except aiohttp.ClientError as e:
                     raise HTTPRequestError(
                         url=str(self.config.base_url), message=str(e)
                     ) from e
-
-                self.logger.debug(
-                    "HTTP request successful", status_code=response.status
-                )
-
-                try:
-                    html = await response.text()
-                    self.logger.debug(
-                        "Received HTML response",
-                        status_code=response.status,
-                        content_length=len(html),
-                    )
-
-                    soup = BeautifulSoup(html, "html.parser")
-                    pages = [str(self.config.base_url)]  # Start with the base URL
-
-                    for link in soup.find_all("a"):
-                        try:
-                            href = str(cast(BeautifulSoup, link)["href"])  # type: ignore
-                            if not href or not isinstance(href, str):
-                                continue
-
-                            # Skip anchor links
-                            if href.startswith("#"):
-                                continue
-
-                            # Convert relative URLs to absolute
-                            absolute_url = urljoin(str(self.config.base_url), href)
-
-                            # Remove any fragment identifiers
-                            absolute_url = absolute_url.split("#")[0]
-
-                            # Check if URL matches our criteria
-                            if (
-                                absolute_url.startswith(str(self.config.base_url))
-                                and absolute_url not in pages
-                                and not any(
-                                    exclude in absolute_url
-                                    for exclude in self.config.exclude_paths
-                                )
-                                and (
-                                    not self.config.path_pattern
-                                    or fnmatch.fnmatch(
-                                        absolute_url, self.config.path_pattern
-                                    )
-                                )
-                            ):
-                                self.logger.debug(
-                                    "Found valid page URL", url=absolute_url
-                                )
-                                pages.append(absolute_url)
-                        except Exception as e:
-                            self.logger.warning(
-                                "Failed to process link",
-                                href=str(link.get("href", "")),  # type: ignore
-                                error=str(e),
-                            )
-                            continue
-
-                    self.logger.debug(
-                        "Page discovery completed",
-                        total_pages=len(pages),
-                        pages=pages,
-                    )
-                    return pages
                 except Exception as e:
                     raise ConnectorError(
                         f"Failed to process page content: {e!s}"
                     ) from e
+            else:
+                async with aiohttp.ClientSession() as client:
+                    try:
+                        return await _discover_pages(
+                            client,
+                            str(self.config.base_url),
+                            path_pattern=self.config.path_pattern,
+                            exclude_paths=self.config.exclude_paths,
+                            logger=self.logger,
+                        )
+                    except aiohttp.ClientError as e:
+                        raise HTTPRequestError(
+                            url=str(self.config.base_url), message=str(e)
+                        ) from e
+                    except Exception as e:
+                        raise ConnectorError(
+                            f"Failed to process page content: {e!s}"
+                        ) from e
 
         except (ConnectorNotInitializedError, HTTPRequestError, ConnectorError):
             raise
