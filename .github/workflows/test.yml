@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Install monorepo packages locally in dependency order to avoid PyPI resolution
-          pip install -e packages/qdrant-loader-core
+          pip install -e packages/qdrant-loader-core[openai]
           pip install -e packages/qdrant-loader[dev]
 
       - name: Create .env.test file for loader
