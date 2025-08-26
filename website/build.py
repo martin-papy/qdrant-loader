@@ -9,7 +9,7 @@ extracted to the 'builder' sub-package for better maintainability and testabilit
 Architecture:
 - builder.core: Main WebsiteBuilder class with lifecycle management
 - builder.templates: Template loading and placeholder processing
-- builder.markdown: Markdown-to-HTML conversion with extensions  
+- builder.markdown: Markdown-to-HTML conversion with extensions
 - builder.assets: Asset management and static file handling
 """
 

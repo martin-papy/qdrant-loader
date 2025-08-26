@@ -329,10 +329,10 @@ class FormatterUtils:
                     "results": group_results,
                     "count": len(group_results),
                     "file_types": list(
-                        set(
+                        {
                             FormatterUtils.extract_file_type_minimal(r)
                             for r in group_results
-                        )
+                        }
                     ),
                 }
             )
