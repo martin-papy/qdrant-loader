@@ -10,14 +10,12 @@ from pathlib import Path
 
 import pytest
 from dotenv import load_dotenv
-
-# Add the src directory to Python path for imports
-
-src_path = Path(__file__).parent.parent / "src"
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
 from qdrant_loader.config import get_settings, initialize_config
+
+# Add src to sys.path for package imports in tests
+src_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src")
+if src_path not in sys.path:
+    sys.path.insert(0, str(src_path))
 
 # Ensure core package is importable for tests without installation
 core_src = Path(__file__).resolve().parents[2] / "qdrant-loader-core" / "src"

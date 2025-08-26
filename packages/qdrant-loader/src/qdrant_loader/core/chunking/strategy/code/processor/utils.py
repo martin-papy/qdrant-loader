@@ -6,11 +6,11 @@ from typing import Any
 
 def is_minified_code(content: str, *, threshold: float = 0.1) -> bool:
     lines = content.split("\n")
-    non_empty = [l for l in lines if l.strip()]
+    non_empty = [line for line in lines if line.strip()]
     if not non_empty:
         return False
-    avg_len = sum(len(l) for l in non_empty) / len(non_empty)
-    specials = sum(1 for l in non_empty if any(ch in l for ch in ["{", "}", ";"]))
+    avg_len = sum(len(line) for line in non_empty) / len(non_empty)
+    specials = sum(1 for line in non_empty if any(ch in line for ch in ["{", "}", ";"]))
     ratio = specials / len(non_empty)
     return avg_len > 200 and ratio > threshold
 

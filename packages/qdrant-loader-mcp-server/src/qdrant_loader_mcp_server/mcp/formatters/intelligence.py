@@ -124,12 +124,12 @@ class IntelligenceResultFormatters:
                         score_value = similarity_scores.get("overall")
                     else:
                         for v in similarity_scores.values():
-                            if isinstance(v, (int, float)):
+                            if isinstance(v, int | float):
                                 score_value = v
                                 break
                 elif isinstance(similarity_scores, list):
                     for v in similarity_scores:
-                        if isinstance(v, (int, float)):
+                        if isinstance(v, int | float):
                             score_value = v
                             break
             try:
@@ -197,7 +197,6 @@ class IntelligenceResultFormatters:
             if isinstance(conflict, tuple) and len(conflict) == 3:
                 doc1_name, doc2_name, metadata = conflict
                 conflict_type = metadata.get("type", "unknown")
-                severity = metadata.get("severity", "unknown")
                 doc1_title = doc1_name
                 doc2_title = doc2_name
             else:
@@ -214,7 +213,7 @@ class IntelligenceResultFormatters:
                     if isinstance(doc2, dict)
                     else str(doc2)
                 )
-                severity = conflict.get("severity", "unknown")
+                # severity currently unused in formatted output
                 conflict_type = conflict.get("conflict_type", "unknown")
 
             formatted += f"**{i}. Conflict Type: {conflict_type}**\n"

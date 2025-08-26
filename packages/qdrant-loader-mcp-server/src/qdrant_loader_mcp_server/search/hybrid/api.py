@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..components.models.hybrid import HybridSearchResult
+    from ..enhanced.topic_search_chain import TopicSearchChain, ChainStrategy
+    from ..enhanced.cdi.models import SimilarityMetric
+    from ..enhanced.faceted_search import FacetFilter, FacetedSearchResults
 
 # Module-level logger with a NullHandler to avoid "No handler" warnings when
 # the application's logging configuration does not attach any handlers.
@@ -257,7 +263,7 @@ class HybridEngineAPI:
     async def cluster_documents(
         self,
         documents: list[HybridSearchResult],
-        strategy: ClusteringStrategy | None = None,
+        strategy: Any | None = None,
         max_clusters: int = 10,
         min_cluster_size: int = 2,
     ) -> dict[str, Any]:

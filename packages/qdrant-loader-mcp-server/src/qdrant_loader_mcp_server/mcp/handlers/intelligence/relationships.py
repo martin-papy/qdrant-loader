@@ -96,7 +96,7 @@ def process_analysis_results(
         if conflicts:
             summary_parts.append(f"{len(conflicts)} conflicts detected")
             for conflict in conflicts:
-                if isinstance(conflict, (list, tuple)) and len(conflict) >= 2:
+                if isinstance(conflict, list | tuple) and len(conflict) >= 2:
                     doc1, doc2 = conflict[0], conflict[1]
                     conflict_info = conflict[2] if len(conflict) > 2 else {}
                     relationships.append(

@@ -30,7 +30,7 @@ class ResultBooster:
                 logger.warning("ResultBooster: invalid multiplier for %r: %s", r, exc)
                 multiplier = 1.0
 
-            if hasattr(r, "score") and isinstance(r.score, (int, float)):
+            if hasattr(r, "score") and isinstance(r.score, int | float):
                 try:
                     r.score = float(r.score) * multiplier
                 except (TypeError, ValueError) as exc:

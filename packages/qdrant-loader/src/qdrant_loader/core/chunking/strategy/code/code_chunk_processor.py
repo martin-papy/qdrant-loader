@@ -133,11 +133,11 @@ class CodeChunkProcessor(BaseChunkProcessor):
     # Local helpers (unchanged logic)
     def _is_minified_code(self, content: str) -> bool:
         lines = content.split("\n")
-        non_empty = [l for l in lines if l.strip()]
+        non_empty = [line for line in lines if line.strip()]
         if not non_empty:
             return False
-        avg_len = sum(len(l) for l in non_empty) / len(non_empty)
-        specials = sum(1 for l in non_empty if any(ch in l for ch in ["{", "}", ";"]))
+        avg_len = sum(len(line) for line in non_empty) / len(non_empty)
+        specials = sum(1 for line in non_empty if any(ch in line for ch in ["{", "}", ";"]))
         ratio = specials / len(non_empty)
         return avg_len > 200 and ratio > self.skip_conditions["minified_code_threshold"]
 

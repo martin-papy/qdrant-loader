@@ -2,7 +2,7 @@
 
 import time
 from unittest.mock import Mock
-
+import pytest
 import pytest
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     create_hybrid_search_result,
@@ -798,11 +798,6 @@ class TestConflictDetectorAlgorithms:
         assert 0.0 <= high_confidence <= 1.0
         assert 0.0 <= medium_confidence <= 1.0
         assert 0.0 <= low_confidence <= 1.0
-
-
-import pytest
-
-
 class TestConflictDetectorStatsAccessor:
     @pytest.fixture
     def mock_spacy_analyzer(self):

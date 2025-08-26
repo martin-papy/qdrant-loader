@@ -110,7 +110,7 @@ class CrossDocumentIntelligenceEngine:
             try:
                 if isinstance(value, bool):
                     return value
-                if isinstance(value, (int, float)):
+                if isinstance(value, int | float):
                     return value != 0
                 if isinstance(value, str):
                     v = value.strip().lower()
@@ -128,7 +128,7 @@ class CrossDocumentIntelligenceEngine:
                 if isinstance(value, bool):
                     # Avoid treating booleans as ints
                     raise ValueError("boolean not allowed for integer field")
-                if isinstance(value, (int, float)):
+                if isinstance(value, int | float):
                     v = int(value)
                 elif isinstance(value, str):
                     v = int(value.strip())
@@ -143,7 +143,7 @@ class CrossDocumentIntelligenceEngine:
             try:
                 if isinstance(value, bool):
                     raise ValueError("boolean not allowed for float field")
-                if isinstance(value, (int, float)):
+                if isinstance(value, int | float):
                     v = float(value)
                 elif isinstance(value, str):
                     v = float(value.strip())

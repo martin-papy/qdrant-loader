@@ -166,8 +166,8 @@ async def test_get_embedding_provider(mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_get_embeddings_batch_provider(mock_settings):
-    """Test batch embedding generation via provider."""
+async def test_get_embeddings_batch_provider_shapes(mock_settings):
+    """Test batch embedding generation via provider returns correct shapes."""
     with patch(
         "qdrant_loader.core.embedding.embedding_service.import_module",
         return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),

@@ -28,7 +28,7 @@ def parse_python_ast(
             if len(elements) >= max_elements_to_process:
                 return
             node_type = type(node).__name__
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                 elem_type = CodeElementType.FUNCTION
             elif isinstance(node, ast.ClassDef):
                 elem_type = CodeElementType.CLASS

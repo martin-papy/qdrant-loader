@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # Imported only for type checking to avoid runtime deps
+    from qdrant_loader.config import Settings
 
 
 class BaseSplitter(ABC):

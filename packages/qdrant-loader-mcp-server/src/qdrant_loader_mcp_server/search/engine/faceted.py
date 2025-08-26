@@ -81,7 +81,7 @@ class FacetedSearchOperations:
                             facet_type=facet_type.value,
                         )
                         continue
-                    if isinstance(values_raw, (set, tuple)):
+                    if isinstance(values_raw, set | tuple):
                         values = list(values_raw)
                     elif isinstance(values_raw, list):
                         values = values_raw
@@ -281,7 +281,7 @@ class FacetedSearchOperations:
                         if value is None and isinstance(doc, dict):
                             value = doc.get(attr)
                         # Treat iterables specially: non-empty list/tuple/set/etc counts
-                        if isinstance(value, (list, tuple, set)):
+                        if isinstance(value, list | tuple | set):
                             if len(value) > 0:
                                 has_value = True
                                 break
@@ -305,7 +305,7 @@ class FacetedSearchOperations:
                                 value = metadata.get(facet_key[:-1])
                             else:
                                 value = metadata.get(f"{facet_key}s")
-                        if isinstance(value, (list, tuple, set)):
+                        if isinstance(value, list | tuple | set):
                             has_value = len(value) > 0
                         else:
                             has_value = bool(value)
