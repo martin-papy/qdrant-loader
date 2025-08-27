@@ -48,11 +48,7 @@ def resolve_config_path(cli_config: Path | None) -> Path | None:
 
 
 def _get_section(config_data: dict[str, Any], name: str) -> dict[str, Any]:
-    # Support both "global" and legacy "global_config" naming
-    if name == "global":
-        return (
-            config_data.get("global", {}) or config_data.get("global_config", {}) or {}
-        )
+    # Only support "global" root going forward
     return config_data.get(name, {}) or {}
 
 
@@ -161,10 +157,8 @@ def load_config(cli_config: Path | None) -> tuple[Config, dict[str, Any], bool]:
             # Effective dict for printing (merge file data with derived)
             effective = {
                 "global": {
-                    "llm": data.get("global", {}).get("llm")
-                    or data.get("global_config", {}).get("llm"),
-                    "qdrant": data.get("global", {}).get("qdrant")
-                    or data.get("global_config", {}).get("qdrant"),
+                    "llm": data.get("global", {}).get("llm"),
+                    "qdrant": data.get("global", {}).get("qdrant"),
                 },
                 "search": data.get("search"),
                 "derived": {

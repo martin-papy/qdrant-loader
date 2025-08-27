@@ -31,7 +31,7 @@
 #    - Move global settings to global_config section
 
 # Global configuration shared across all projects
-global_config:
+global:
   # Qdrant vector database configuration
   qdrant:
     url: "http://localhost:6333"

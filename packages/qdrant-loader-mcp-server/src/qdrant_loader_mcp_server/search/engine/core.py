@@ -140,11 +140,7 @@ class SearchEngine:
                     if cfg_path and Path(cfg_path).exists():
                         with open(cfg_path, encoding="utf-8") as f:
                             data = yaml.safe_load(f) or {}
-                        llm = (
-                            data.get("global", {}).get("llm")
-                            or data.get("global_config", {}).get("llm")
-                            or {}
-                        )
+                        llm = data.get("global", {}).get("llm") or {}
                         emb = llm.get("embeddings") or {}
                         if isinstance(emb.get("vector_size"), int):
                             vector_size = int(emb["vector_size"])
