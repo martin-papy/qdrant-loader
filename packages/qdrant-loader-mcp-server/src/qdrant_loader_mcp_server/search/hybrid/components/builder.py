@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-def create_embeddings_provider_from_env(logger: Any | None = None) -> Any | None:
+def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
     """Create an embeddings provider from qdrant-loader-core settings if available.
 
     This mirrors the legacy dynamic import behavior and falls back to None when
@@ -32,13 +32,12 @@ def create_embeddings_provider_from_env(logger: Any | None = None) -> Any | None
             "embeddings": {},
         }
         llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
-        embeddings_provider = create_provider(llm_settings)
-        return embeddings_provider
+        return create_provider(llm_settings)
     except ImportError:
         if logger is not None:
             try:
                 logger.debug(
-                    "Embeddings provider import failed; falling back to None",
+                    "LLM provider import failed; falling back to None",
                     exc_info=True,
                 )
             except Exception:
@@ -50,11 +49,11 @@ def create_embeddings_provider_from_env(logger: Any | None = None) -> Any | None
                 # Log full stack for unexpected provider errors
                 try:
                     logger.exception(
-                        "Error creating embeddings provider; falling back to None"
+                        "Error creating LLM provider; falling back to None"
                     )
                 except Exception:
                     logger.debug(
-                        "Error creating embeddings provider; falling back to None: %s",
+                        "Error creating LLM provider; falling back to None: %s",
                         e,
                         exc_info=True,
                     )
@@ -252,7 +251,9 @@ def initialize_engine_components(
     query_processor = create_query_processor(spacy_analyzer)
 
     # Embeddings provider and search services
-    embeddings_provider = create_embeddings_provider_from_env(logger=engine_self.logger)
+    # Create shared LLM provider if available from core settings
+    llm_provider = _create_llm_provider_from_env(logger=engine_self.logger)
+    embeddings_provider = llm_provider
     # If an explicit OpenAI client is provided, prefer it over any auto-created provider
     # so tests and engines that mock the client behave deterministically.
     if openai_client is not None:
@@ -387,6 +388,17 @@ def initialize_engine_components(
         collection_name=collection_name,
         conflict_settings=conflict_settings,
     )
+    # Attach provider for chat operations when available
+    try:
+        engine_self.cross_document_engine.llm_provider = llm_provider
+        # Also link detector back to engine to let llm_validation access provider
+        try:
+            detector = engine_self.cross_document_engine.conflict_detector
+            detector.engine = engine_self
+        except Exception:
+            pass
+    except Exception:
+        pass
     try:
         engine_self.logger.info("Cross-document intelligence ENABLED")
     except Exception:

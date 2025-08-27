@@ -103,6 +103,9 @@ class ConflictDetector:
         # LLM validation settings
         self.llm_enabled = qdrant_client is not None and openai_client is not None
 
+        # Link back to engine for provider access if set upstream
+        self.engine: Any | None = None
+
     async def _get_document_embeddings(self, document_ids: list[str]) -> dict[str, list[float]]:
         return await _get_document_embeddings_ext(self, document_ids)
 

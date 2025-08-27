@@ -5,7 +5,10 @@ from typing import Any
 
 
 async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, similarity_score: float) -> tuple[bool, str, float]:
-    if not getattr(detector, "openai_client", None):
+    # Prefer core provider when available; fallback to AsyncOpenAI client if present
+    provider = getattr(getattr(detector, "engine", None), "llm_provider", None)
+    openai_client = getattr(detector, "openai_client", None)
+    if provider is None and openai_client is None:
         return False, "LLM validation not available", 0.0
 
     try:
@@ -20,18 +23,37 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
             "Respond: CONFLICT_DETECTED|CONFIDENCE|EXPLANATION (concise)."
         )
 
-        response = await asyncio.wait_for(
-            detector.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-                temperature=0.1,
-            ),
-            timeout=timeout_s,
-        )
+        if provider is not None:
+            chat_client = provider.chat()
+            response = await asyncio.wait_for(
+                chat_client.chat(
+                    messages=[{"role": "user", "content": prompt}],
+                    model=(
+                        getattr(getattr(detector, "_settings", {}), "get", lambda *_: None)(
+                            "conflict_llm_model", None
+                        )
+                        or "gpt-3.5-turbo"
+                    ),
+                    max_tokens=200,
+                    temperature=0.1,
+                ),
+                timeout=timeout_s,
+            )
+            # Normalize text extraction
+            content = (response or {}).get("text", "")
+        else:
+            raw = await asyncio.wait_for(
+                openai_client.chat.completions.create(  # type: ignore[union-attr]
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=200,
+                    temperature=0.1,
+                ),
+                timeout=timeout_s,
+            )
+            content = getattr(getattr(raw.choices[0], "message", {}), "content", "") or ""
 
-        content_raw = getattr(getattr(response.choices[0], "message", {}), "content", "") or ""
-        content = content_raw.strip()
+        content = (content or "").strip()
         parts = content.split("|", 2)
         if len(parts) < 2:
             return False, "Invalid LLM response format", 0.0
@@ -63,23 +85,44 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
 
 
 async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_score: float) -> dict | None:
-    if not getattr(detector, "openai_client", None):
+    provider = getattr(getattr(detector, "engine", None), "llm_provider", None)
+    openai_client = getattr(detector, "openai_client", None)
+    if provider is None and openai_client is None:
         return None
 
     try:
-        response = await detector.openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a conflict detection assistant."},
-                {"role": "user", "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}"},
-            ],
-            max_tokens=500,
-            temperature=0.1,
-        )
+        if provider is not None:
+            chat_client = provider.chat()
+            response = await chat_client.chat(
+                messages=[
+                    {"role": "system", "content": "You are a conflict detection assistant."},
+                    {"role": "user", "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}"},
+                ],
+                model=(
+                    getattr(getattr(detector, "_settings", {}), "get", lambda *_: None)(
+                        "conflict_llm_model", None
+                    )
+                    or "gpt-3.5-turbo"
+                ),
+                max_tokens=500,
+                temperature=0.1,
+            )
+            content = (response or {}).get("text", "")
+        else:
+            raw = await openai_client.chat.completions.create(  # type: ignore[union-attr]
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a conflict detection assistant."},
+                    {"role": "user", "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}"},
+                ],
+                max_tokens=500,
+                temperature=0.1,
+            )
+            content = getattr(getattr(raw.choices[0], "message", {}), "content", "") or ""
 
         import json
 
-        content = getattr(getattr(response.choices[0], "message", {}), "content", "") or ""
+        # 'content' computed above for either provider path
 
         def extract_json_object(text: str, max_scan: int | None = None) -> str | None:
             if not text:
