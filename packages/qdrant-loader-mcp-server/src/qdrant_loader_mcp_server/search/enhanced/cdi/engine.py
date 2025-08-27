@@ -73,6 +73,8 @@ class CrossDocumentIntelligenceEngine:
         self.conflict_detector = ConflictDetector(
             spacy_analyzer, qdrant_client, openai_client, collection_name
         )
+        # Optional: LLM provider from core (set by builder)
+        self.llm_provider = None
         if conflict_settings is not None:
             validated = self._validate_and_normalize_conflict_settings(
                 conflict_settings

@@ -45,7 +45,51 @@ class OpenAIChat(ChatClient):
     async def chat(
         self, messages: list[dict[str, Any]], **kwargs: Any
     ) -> dict[str, Any]:
-        raise NotImplementedError
+        if not self._client:
+            raise NotImplementedError("OpenAI client not available")
+
+        # Normalize kwargs to OpenAI python client parameters
+        create_kwargs: dict[str, Any] = {}
+        for key in ("temperature", "max_tokens", "top_p", "frequency_penalty", "presence_penalty", "stop", "seed", "response_format"):
+            if key in kwargs and kwargs[key] is not None:
+                create_kwargs[key] = kwargs[key]
+
+        # Allow model override per-call
+        model_name = kwargs.pop("model", self._model)
+
+        import asyncio
+
+        # The OpenAI python client call is sync for chat.completions
+        response = await asyncio.to_thread(
+            self._client.chat.completions.create,
+            model=model_name,
+            messages=messages,
+            **create_kwargs,
+        )
+
+        # Normalize to provider-agnostic dict
+        choice0 = response.choices[0] if getattr(response, "choices", None) else None
+        text = ""
+        if choice0 is not None:
+            message = getattr(choice0, "message", None)
+            if message is not None:
+                text = getattr(message, "content", "") or ""
+
+        usage = getattr(response, "usage", None)
+        normalized_usage = None
+        if usage is not None:
+            normalized_usage = {
+                "prompt_tokens": getattr(usage, "prompt_tokens", None),
+                "completion_tokens": getattr(usage, "completion_tokens", None),
+                "total_tokens": getattr(usage, "total_tokens", None),
+            }
+
+        return {
+            "text": text,
+            "raw": response,
+            "usage": normalized_usage,
+            "model": getattr(response, "model", model_name),
+        }
 
 
 class OpenAIProvider(LLMProvider):

@@ -3,7 +3,10 @@
 import re
 from typing import Any
 
-from openai import AsyncOpenAI
+try:  # pragma: no cover - optional import; tests patch symbol
+    from openai import AsyncOpenAI as _AsyncOpenAI  # type: ignore
+except Exception:
+    _AsyncOpenAI = None  # type: ignore[assignment]
 
 from ..config import OpenAIConfig
 from ..utils.logging import LoggingConfig
@@ -23,8 +26,10 @@ class QueryProcessor:
             spacy_model: Preferred spaCy model to load (defaults to 'en_core_web_md').
                          If loading fails, will attempt fallback to 'en_core_web_sm'.
         """
-        self.openai_client: AsyncOpenAI | None = AsyncOpenAI(
-            api_key=openai_config.api_key
+        # Expose patchable AsyncOpenAI alias to align with engine pattern
+        AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
+        self.openai_client: Any | None = (
+            AsyncOpenAI(api_key=openai_config.api_key) if AsyncOpenAI else None
         )
         self.logger = LoggingConfig.get_logger(__name__)
 
