@@ -8,6 +8,9 @@ try:  # pragma: no cover - optional import; tests patch symbol
 except Exception:
     _AsyncOpenAI = None  # type: ignore[assignment]
 
+# Public alias so tests can patch qdrant_loader_mcp_server.search.processor.AsyncOpenAI
+AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
+
 from ..config import OpenAIConfig
 from ..utils.logging import LoggingConfig
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
