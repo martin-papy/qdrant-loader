@@ -499,12 +499,6 @@ cd packages/qdrant-loader && pytest --cov=src
 cd packages/qdrant-loader-mcp-server && pytest --cov=src
 ```
 
-### Package-specific quality gates
-
-- Import cycle and module size guards are under `packages/qdrant-loader/tests/unit/quality/` or `packages/qdrant-loader-mcp-server/tests/unit/quality/`.
-- Keep refactored modules within target sizes (<300–400 lines) unless explicitly exempted in tests.
-- Prefer thin entrypoints and shared helpers to avoid duplication.
-
 ### Continuous Integration
 
 The project uses GitHub Actions for CI/CD:

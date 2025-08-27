@@ -37,14 +37,6 @@ class ConfluenceSpaceConfig(SourceConfig):
         description="Email associated with the Confluence account (Cloud only)",
     )
 
-    # Rate limiting
-    requests_per_minute: int = Field(
-        default=60,
-        description="Maximum number of requests per minute for Confluence API",
-        ge=1,
-        le=1000,
-    )
-
     include_labels: list[str] = Field(
         default=[],
         description="List of labels to include (empty list means include all)",

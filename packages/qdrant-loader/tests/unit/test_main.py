@@ -36,6 +36,7 @@ def test_main_module_execution_via_runpy():
 
     # Use python -m to run the module as __main__
     # This should trigger the if __name__ == "__main__": block and cover line 8
+
     # Get the package root directory (where pyproject.toml is located)
     test_dir = Path(__file__).parent  # tests/unit/
     package_root = test_dir.parent.parent  # packages/qdrant-loader/

@@ -103,18 +103,12 @@ class TestWebsiteBuildSystem:
         os.chdir(mock_project_structure)
 
         try:
-            # Copy the actual build script and build directory to the mock structure
+            # Copy the actual build script to the mock structure
             actual_build_script = Path(original_cwd) / "website" / "build.py"
-            actual_build_dir = Path(original_cwd) / "website" / "build"
             mock_build_script = mock_project_structure / "website" / "build.py"
-            mock_build_dir = mock_project_structure / "website" / "build"
 
             if actual_build_script.exists():
                 shutil.copy2(actual_build_script, mock_build_script)
-
-            # Copy the build package directory if it exists
-            if actual_build_dir.exists() and actual_build_dir.is_dir():
-                shutil.copytree(actual_build_dir, mock_build_dir)
 
                 # Try to run the build script
                 result = subprocess.run(
@@ -220,18 +214,12 @@ class TestWebsiteBuildIntegration:
         os.chdir(mock_project_structure)
 
         try:
-            # Copy the actual build script and build directory
+            # Copy the actual build script
             actual_build_script = Path(original_cwd) / "website" / "build.py"
-            actual_build_dir = Path(original_cwd) / "website" / "build"
             mock_build_script = mock_project_structure / "website" / "build.py"
-            mock_build_dir = mock_project_structure / "website" / "build"
 
             if actual_build_script.exists():
                 shutil.copy2(actual_build_script, mock_build_script)
-
-            # Copy the build package directory if it exists
-            if actual_build_dir.exists() and actual_build_dir.is_dir():
-                shutil.copytree(actual_build_dir, mock_build_dir)
 
                 # Run the build with all components
                 result = subprocess.run(

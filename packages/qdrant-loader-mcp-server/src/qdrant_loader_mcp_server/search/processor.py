@@ -13,9 +13,7 @@ from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 class QueryProcessor:
     """Query processor for handling search queries with spaCy-powered intelligence."""
 
-    def __init__(
-        self, openai_config: OpenAIConfig, spacy_model: str = "en_core_web_md"
-    ):
+    def __init__(self, openai_config: OpenAIConfig, spacy_model: str = "en_core_web_md"):
         """Initialize the query processor.
 
         Args:
@@ -38,13 +36,13 @@ class QueryProcessor:
             )
             try:
                 if spacy_model != "en_core_web_sm":
-                    self.spacy_analyzer = SpaCyQueryAnalyzer(
-                        spacy_model="en_core_web_sm"
-                    )
+                    self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_sm")
                 else:
                     raise primary_error
             except Exception as fallback_error:
-                message = f"Failed to load spaCy models '{spacy_model}' and 'en_core_web_sm': {fallback_error}"
+                message = (
+                    f"Failed to load spaCy models '{spacy_model}' and 'en_core_web_sm': {fallback_error}"
+                )
                 self.logger.error(message)
                 raise RuntimeError(message)
 
@@ -238,9 +236,7 @@ class QueryProcessor:
             "incident",
             "defect",
         ]
-        issue_pattern = (
-            r"\b(?:" + "|".join(re.escape(k) for k in issue_synonyms) + r")\b"
-        )
+        issue_pattern = r"\b(?:" + "|".join(re.escape(k) for k in issue_synonyms) + r")\b"
         if re.search(issue_pattern, query_lower):
             return "jira"
 
@@ -264,7 +260,7 @@ class QueryProcessor:
         return self._extract_source_type(cleaned, intent="general")
 
     def get_analyzer_stats(self) -> dict[str, Any]:
-        """Get spaCy analyzer statistics for monitoring."""
+        """ Get spaCy analyzer statistics for monitoring."""
         try:
             return {
                 "spacy_model": self.spacy_analyzer.spacy_model,
