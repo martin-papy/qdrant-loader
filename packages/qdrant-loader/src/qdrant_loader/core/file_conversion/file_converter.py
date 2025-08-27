@@ -36,7 +36,7 @@ def capture_openpyxl_warnings(logger_instance, file_path: str):
     def warning_handler(message, category, filename, lineno, file=None, line=None):
         # Check if this is an openpyxl warning we want to capture
         if (
-            category is UserWarning
+            category == UserWarning
             and filename
             and "openpyxl" in filename
             and (

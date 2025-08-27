@@ -1,15 +1,96 @@
-"""MCP Tool Schema Definitions - refactored into modular files."""
+"""MCP Tool Schema Definitions."""
 
 from typing import Any
 
-# Note: This module defines the MCP tool schemas directly. Duplicate
-# import-based aliases have been removed to avoid redefinitions.
-
 
 class MCPSchemas:
-    """Backward-compatible wrapper exposing static methods."""
+    """Tool schema definitions for MCP server."""
 
-    # Static methods implemented below
+    @staticmethod
+    def get_search_tool_schema() -> dict[str, Any]:
+        """Get the basic search tool schema."""
+        return {
+            "name": "search",
+            "description": "Perform semantic search across multiple data sources",
+            "annotations": {"read-only": True},
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query in natural language",
+                    },
+                    "source_types": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "git",
+                                "confluence",
+                                "jira",
+                                "documentation",
+                                "localfile",
+                            ],
+                        },
+                        "description": "Optional list of source types to filter results",
+                    },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                        },
+                        "description": "Optional list of project IDs to filter results",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 5,
+                    },
+                },
+                "required": ["query"],
+            },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "score": {"type": "number"},
+                                "title": {"type": "string"},
+                                "content": {"type": "string"},
+                                "source_type": {"type": "string"},
+                                "metadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "file_path": {"type": "string"},
+                                        "project_id": {"type": "string"},
+                                        "created_at": {"type": "string"},
+                                        "last_modified": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    "total_found": {"type": "integer"},
+                    "query_context": {
+                        "type": "object",
+                        "properties": {
+                            "original_query": {"type": "string"},
+                            "source_types_filtered": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "project_ids_filtered": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
+        }
 
     @staticmethod
     def get_hierarchy_search_tool_schema() -> dict[str, Any]:
@@ -234,23 +315,23 @@ class MCPSchemas:
                     },
                     "use_llm": {
                         "type": "boolean",
-                        "description": "Enable LLM validation for top pairs (budgeted)",
+                        "description": "Enable LLM validation for top pairs (budgeted)"
                     },
                     "max_llm_pairs": {
                         "type": "integer",
-                        "description": "Maximum number of pairs to analyze with LLM",
+                        "description": "Maximum number of pairs to analyze with LLM"
                     },
                     "overall_timeout_s": {
                         "type": "number",
-                        "description": "Overall analysis budget in seconds",
+                        "description": "Overall analysis budget in seconds"
                     },
                     "max_pairs_total": {
                         "type": "integer",
-                        "description": "Maximum candidate pairs to analyze after tiering",
+                        "description": "Maximum candidate pairs to analyze after tiering"
                     },
                     "text_window_chars": {
                         "type": "integer",
-                        "description": "Per-document text window size for lexical analysis",
+                        "description": "Per-document text window size for lexical analysis"
                     },
                 },
                 "required": ["query"],

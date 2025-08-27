@@ -56,14 +56,6 @@ class PublicDocsSourceConfig(SourceConfig):
         description="CSS selectors for finding downloadable attachments",
     )
 
-    # Rate limiting
-    requests_per_minute: int = Field(
-        default=120,
-        description="Maximum number of requests per minute for crawling",
-        ge=1,
-        le=2000,
-    )
-
     @field_validator("content_type")
     @classmethod
     def validate_content_type(cls, v: str) -> str:
