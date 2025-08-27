@@ -8,6 +8,11 @@ import logging
 import time
 
 import pytest
+
+# Set up test logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     create_hybrid_search_result,
 )
@@ -18,10 +23,6 @@ from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     TopicSearchChainGenerator,
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-
-# Set up test logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 class TestPhase12SimpleIntegration:

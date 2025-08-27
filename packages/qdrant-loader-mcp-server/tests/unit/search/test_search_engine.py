@@ -39,15 +39,15 @@ async def test_search_engine_initialization(
     """Test search engine initialization."""
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncOpenAI",
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine"
+            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine"
         ) as mock_hybrid,
     ):
 
@@ -65,7 +65,7 @@ async def test_search_engine_initialization_failure(
 ):
     """Test search engine initialization failure."""
     with patch(
-        "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+        "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
         side_effect=Exception("Connection failed"),
     ):
         with pytest.raises(RuntimeError, match="Failed to connect to Qdrant server"):
@@ -92,15 +92,15 @@ async def test_search_engine_search(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncOpenAI",
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -130,14 +130,14 @@ async def test_search_engine_cleanup(
     """Test search engine cleanup."""
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncOpenAI",
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
             return_value=mock_openai_client,
         ),
-        patch("qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine"),
+        patch("qdrant_loader_mcp_server.search.engine.HybridSearchEngine"),
     ):
 
         await search_engine.initialize(qdrant_config, openai_config)
@@ -159,14 +159,14 @@ async def test_search_engine_collection_creation(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncOpenAI",
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
             return_value=mock_openai_client,
         ),
-        patch("qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine"),
+        patch("qdrant_loader_mcp_server.search.engine.HybridSearchEngine"),
     ):
 
         await search_engine.initialize(qdrant_config, openai_config)
@@ -188,14 +188,14 @@ async def test_search_engine_collection_exists(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncOpenAI",
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
             return_value=mock_openai_client,
         ),
-        patch("qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine"),
+        patch("qdrant_loader_mcp_server.search.engine.HybridSearchEngine"),
     ):
 
         await search_engine.initialize(qdrant_config, openai_config)
@@ -443,15 +443,15 @@ async def test_search_engine_initialization_with_search_config(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.AsyncOpenAI",
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine"
+            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine"
         ) as mock_hybrid,
     ):
         await search_engine.initialize(qdrant_config, openai_config, search_config)

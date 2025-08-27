@@ -367,7 +367,6 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 - **Markdown Editor**: Use VS Code with Markdown extensions
 - **Spell Checker**: Use built-in spell checkers
 - **Diagram Tools**: Mermaid for architecture diagrams
-- **Site Builder**: Run `make docs` to generate the static site into `website/site`
 
 ### Templates and Examples
 

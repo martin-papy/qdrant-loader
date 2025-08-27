@@ -14,6 +14,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
+
+# Load test environment variables
+load_dotenv("tests/.env.test")
+
 from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.components.search_result_models import (
@@ -22,9 +26,6 @@ from qdrant_loader_mcp_server.search.components.search_result_models import (
 )
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.processor import QueryProcessor
-
-# Load test environment variables
-load_dotenv("tests/.env.test")
 
 
 # Generic test data (no confidential client information)
@@ -250,12 +251,9 @@ class TestRealEndToEndPhase2_3:
         )
 
         # Validate the result structure (this would catch attribute errors)
-        # Accept a list on success, or an empty dict when no target is found.
-        assert isinstance(similar_docs, list) or (
-            isinstance(similar_docs, dict) and not similar_docs
-        )
+        assert isinstance(similar_docs, list)
 
-        if isinstance(similar_docs, list) and similar_docs:
+        if similar_docs:
             for doc_info in similar_docs:
                 # These assertions would have caught our attribute errors
                 assert "document" in doc_info
@@ -480,10 +478,10 @@ class TestRealEndToEndPhase2_3:
         )
         clustering_time = (time.time() - start_time) * 1000
 
-        # Should complete in reasonable time (allow headroom for cloud/network variability)
+        # Should complete in reasonable time
         assert (
-            clustering_time < 15000
-        ), f"cluster_documents took {clustering_time:.2f}ms (target < 15000ms)"
+            clustering_time < 3000
+        ), f"cluster_documents took {clustering_time:.2f}ms (target < 3000ms)"
 
 
 if __name__ == "__main__":
