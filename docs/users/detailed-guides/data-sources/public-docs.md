@@ -87,9 +87,6 @@ projects:
           
           # File conversion
           enable_file_conversion: true
-
-          # Rate limiting
-          requests_per_minute: 120
 ```
 
 ### Multiple Documentation Sites
@@ -190,12 +187,6 @@ projects:
 | `download_attachments` | bool | Download and process linked files | `false` |
 | `attachment_selectors` | list | CSS selectors for finding attachments | PDF, DOC, XLS, PPT selectors |
 | `enable_file_conversion` | bool | Enable file conversion for attachments | `false` |
-
-### Rate limiting
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `requests_per_minute` | int | Crawl rate limit (RPM) | `120` |
 
 ## 🚀 Usage Examples
 

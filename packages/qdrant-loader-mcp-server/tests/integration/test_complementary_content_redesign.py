@@ -4,6 +4,10 @@ import logging
 from unittest.mock import Mock
 
 import pytest
+
+# Set up test logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     HybridSearchResult,
     create_hybrid_search_result,
@@ -11,10 +15,6 @@ from qdrant_loader_mcp_server.search.components.search_result_models import (
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     ComplementaryContentFinder,
 )
-
-# Set up test logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 class TestComplementaryContentRedesign:

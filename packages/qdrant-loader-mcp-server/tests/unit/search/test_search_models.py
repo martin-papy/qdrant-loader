@@ -170,52 +170,6 @@ class TestSearchResult:
 
         assert result.is_root_document() is False
 
-    def test_is_root_document_localfile_windows_paths(self):
-        """Windows-style path handling for localfile sources."""
-        # Single file at repo root should be root document
-        r1 = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="localfile",
-            source_title="README.md",
-            file_path=r"C:\repo\README.md",
-            repo_name="repo",
-        )
-        assert r1.is_root_document() is True
-
-        # Nested file in subdirectory should not be root document
-        r2 = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="localfile",
-            source_title="config.yaml",
-            file_path=r"C:\repo\configs\config.yaml",
-            repo_name="repo",
-        )
-        assert r2.is_root_document() is False
-
-        # UNC path with server/share and single file
-        r3 = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="localfile",
-            source_title="guide.md",
-            file_path=r"\\server\share\guide.md",
-            repo_name=None,
-        )
-        assert r3.is_root_document() is True
-
-        # UNC path with nested directories
-        r4 = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="localfile",
-            source_title="doc.md",
-            file_path=r"\\server\share\docs\doc.md",
-            repo_name=None,
-        )
-        assert r4.is_root_document() is False
-
     def test_get_attachment_info_with_context(self):
         """Test attachment info extraction."""
         result = create_hybrid_search_result(

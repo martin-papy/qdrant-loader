@@ -26,14 +26,13 @@ class BaseConnector(ABC):
     ) -> None:
         """Set file conversion configuration.
 
-        This default implementation stores the configuration for potential
-        use by subclasses that choose to honor it.
+        This is a default implementation that does nothing.
+        Subclasses that support file conversion should override this method.
 
         Args:
             file_conversion_config: Global file conversion configuration
         """
-        # Store on the instance so connectors that opt-in can access it.
-        self._file_conversion_config = file_conversion_config
+        pass
 
     @abstractmethod
     async def get_documents(self) -> list[Document]:

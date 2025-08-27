@@ -240,7 +240,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                         current_chunk_lines[-overlap // 50 :] if overlap > 0 else []
                     )
                     current_chunk_lines = overlap_lines + [line]
-                    current_size = sum(len(line_item) + 1 for line_item in current_chunk_lines)
+                    current_size = sum(len(l) + 1 for l in current_chunk_lines)
                     chunk_index += 1
                 else:
                     current_chunk_lines.append(line)

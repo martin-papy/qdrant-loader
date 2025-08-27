@@ -23,7 +23,7 @@ from qdrant_loader_mcp_server.search.enhanced.faceted_search import (
     FacetFilter,
     FacetType,
 )
-from qdrant_loader_mcp_server.search.hybrid.engine import HybridSearchEngine
+from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 
 
 @pytest.fixture

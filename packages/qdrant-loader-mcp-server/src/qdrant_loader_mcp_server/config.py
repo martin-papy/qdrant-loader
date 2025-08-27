@@ -1,8 +1,8 @@
 """Configuration settings for the RAG MCP Server."""
 
+import os
 import json
 import logging
-import os
 from typing import Annotated
 
 from dotenv import load_dotenv
@@ -247,17 +247,11 @@ class SearchConfig(BaseModel):
             )
         if "conflict_embeddings_timeout_s" not in data:
             data["conflict_embeddings_timeout_s"] = parse_float_env(
-                "SEARCH_CONFLICT_EMBEDDINGS_TIMEOUT_S",
-                2.0,
-                min_value=1.0,
-                max_value=30.0,
+                "SEARCH_CONFLICT_EMBEDDINGS_TIMEOUT_S", 2.0, min_value=1.0, max_value=30.0
             )
         if "conflict_embeddings_max_concurrency" not in data:
             data["conflict_embeddings_max_concurrency"] = parse_int_env(
-                "SEARCH_CONFLICT_EMBEDDINGS_MAX_CONCURRENCY",
-                5,
-                min_value=1,
-                max_value=20,
+                "SEARCH_CONFLICT_EMBEDDINGS_MAX_CONCURRENCY", 5, min_value=1, max_value=20
             )
         super().__init__(**data)
 
