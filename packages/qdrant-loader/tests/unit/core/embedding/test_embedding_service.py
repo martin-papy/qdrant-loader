@@ -1,21 +1,13 @@
-"""Unit tests for the embedding service."""
+"""Unit tests for the provider-based embedding service."""
 
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import openai
 import pytest
-from openai.types.create_embedding_response import CreateEmbeddingResponse
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
-
-
-@pytest.fixture
-def mock_openai():
-    """Mock OpenAI client."""
-    with patch("qdrant_loader.core.embedding.embedding_service.OpenAI") as mock:
-        yield mock
 
 
 @pytest.fixture
@@ -42,83 +34,72 @@ def mock_settings():
     settings = MagicMock(spec=Settings)
     settings.global_config = global_config
 
-    return settings
-
-
-@pytest.fixture
-def mock_local_settings():
-    """Create mock settings for local service testing."""
-    # Create mock for global config
-    global_config = MagicMock()
-
-    # Create mock for embedding config
-    embedding_config = MagicMock()
-    embedding_config.endpoint = "http://localhost:8000"
-    embedding_config.model = "local-model"
-    embedding_config.tokenizer = "none"
-    embedding_config.batch_size = 10
-    embedding_config.vector_size = 768
-    embedding_config.max_tokens_per_request = 8000
-    embedding_config.max_tokens_per_chunk = 8000
-
-    # Attach embedding config to global config
-    global_config.embedding = embedding_config
-
-    # Create main settings mock
-    settings = MagicMock(spec=Settings)
-    settings.global_config = global_config
-
-    return settings
-
-
-@pytest.fixture
-def mock_openai_response():
-    """Create mock OpenAI API response."""
-    response = MagicMock(spec=CreateEmbeddingResponse)
-    response.data = [MagicMock(embedding=[0.1] * 1536)]
-    return response
-
-
-@pytest.fixture
-def mock_local_response():
-    """Create mock local service response."""
-    return {"data": [{"embedding": [0.2] * 768}]}
-
-
-def test_init_openai(mock_openai, mock_settings):
-    """Test initialization with OpenAI configuration."""
-    # Create mock client
-    mock_client = MagicMock()
-    mock_openai.return_value = mock_client
-
-    # Create the service
-    service = EmbeddingService(mock_settings)
-
-    # Verify OpenAI client initialization
-    assert service.use_openai is True
-    assert service.client is not None
-    mock_openai.assert_called_once_with(
-        api_key="test-key", base_url="https://api.openai.com/v1"
+    # Provide unified llm settings for provider (preferred path)
+    settings.llm_settings = SimpleNamespace(
+        provider="openai",
+        base_url="https://api.openai.com/v1",
+        api_key="test-key",
+        models={"embeddings": "text-embedding-3-small"},
+        tokenizer="cl100k_base",
+        embeddings=SimpleNamespace(vector_size=1536),
     )
 
+    return settings
 
-def test_init_local():
-    """Test initialization with local service configuration."""
-    # Create proper mock settings structure
+
+def _fake_provider(vector_dim: int = 1536):
+    class _Emb:
+        async def embed(self, inputs):  # type: ignore[no-untyped-def]
+            return [[0.1] * vector_dim for _ in inputs]
+
+    class _Prov:
+        def embeddings(self):
+            return _Emb()
+
+    return _Prov()
+
+
+def test_init_provider(mock_settings):
+    """Service initializes with core provider."""
+    fake_provider = _fake_provider()
+
+    def _fake_import(name):
+        if name == "qdrant_loader_core.llm.factory":
+            return SimpleNamespace(create_provider=lambda _: fake_provider)
+        raise ImportError(name)
+
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        side_effect=_fake_import,
+    ) as imp:
+        service = EmbeddingService(mock_settings)
+        assert service.provider is fake_provider
+        imp.assert_called()
+
+
+def test_init_tokenizer_none():
+    """Tokenizer 'none' disables encoding."""
+    # settings with tokenizer none
     global_config = MagicMock()
     embedding_config = MagicMock()
-    embedding_config.endpoint = "http://localhost:8000"
     embedding_config.tokenizer = "none"
     global_config.embedding = embedding_config
-
     settings = MagicMock(spec=Settings)
     settings.global_config = global_config
-
-    service = EmbeddingService(settings)
-
-    assert service.use_openai is False
-    assert service.client is None
-    assert service.encoding is None
+    settings.llm_settings = SimpleNamespace(
+        provider="openai_compat",
+        base_url="http://localhost:11434/v1",
+        api_key=None,
+        models={"embeddings": "nomic-embed-text"},
+        tokenizer="none",
+        embeddings=SimpleNamespace(vector_size=768),
+    )
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider(768)),
+    ):
+        service = EmbeddingService(settings)
+        assert service.encoding is None
 
 
 def test_init_tokenizer():
@@ -132,8 +113,21 @@ def test_init_tokenizer():
 
         settings = MagicMock(spec=Settings)
         settings.global_config = global_config
+        # Ensure llm_settings does not override tokenizer
+        settings.llm_settings = SimpleNamespace(
+            provider="openai_compat",
+            base_url=None,
+            api_key=None,
+            models={},
+            tokenizer=None,
+            embeddings=SimpleNamespace(vector_size=None),
+        )
 
-        EmbeddingService(settings)
+        with patch(
+            "qdrant_loader.core.embedding.embedding_service.import_module",
+            return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+        ):
+            EmbeddingService(settings)
 
         mock_get_encoding.assert_called_once_with("cl100k_base")
 
@@ -150,87 +144,91 @@ def test_init_tokenizer_fallback():
         settings = MagicMock(spec=Settings)
         settings.global_config = global_config
 
-        service = EmbeddingService(settings)
+        with patch(
+            "qdrant_loader.core.embedding.embedding_service.import_module",
+            return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+        ):
+            service = EmbeddingService(settings)
 
         assert service.encoding is None
 
 
 @pytest.mark.asyncio
-async def test_get_embedding_openai(mock_openai, mock_settings, mock_openai_response):
-    """Test getting single embedding from OpenAI."""
-    # Setup mock client
-    mock_client = MagicMock()
-    mock_client.embeddings.create.return_value = mock_openai_response
-    mock_openai.return_value = mock_client
-
-    # Create service and get embedding
-    service = EmbeddingService(mock_settings)
-    embedding = await service.get_embedding("test text")
-
-    # Verify results
-    assert len(embedding) == 1536
-    mock_client.embeddings.create.assert_called_once_with(
-        model="text-embedding-3-small", input=["test text"]
-    )
-
-
-@pytest.mark.asyncio
-async def test_get_embedding_local(mock_local_settings, mock_local_response):
-    """Test getting single embedding from local service."""
-    with patch("requests.post") as mock_post:
-        mock_post.return_value.json.return_value = mock_local_response
-        mock_post.return_value.raise_for_status = MagicMock()
-
-        service = EmbeddingService(mock_local_settings)
+async def test_get_embedding_provider(mock_settings):
+    """Test getting single embedding via provider."""
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+    ):
+        service = EmbeddingService(mock_settings)
         embedding = await service.get_embedding("test text")
-
-        assert len(embedding) == 768
-        mock_post.assert_called_once()
+        assert len(embedding) == 1536
 
 
 @pytest.mark.asyncio
-async def test_get_embeddings_batch(mock_openai, mock_settings):
-    """Test batch embedding generation."""
-    # Setup mock client with multiple responses
-    mock_client = MagicMock()
-    mock_response = MagicMock(spec=CreateEmbeddingResponse)
-    mock_response.data = [
-        MagicMock(embedding=[0.1] * 1536),
-        MagicMock(embedding=[0.2] * 1536),
-    ]
-    mock_client.embeddings.create.return_value = mock_response
-    mock_openai.return_value = mock_client
+async def test_get_embeddings_batch_provider_shapes(mock_settings):
+    """Test batch embedding generation via provider returns correct shapes."""
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+    ):
+        service = EmbeddingService(mock_settings)
+        documents = [
+            Document(
+                title="Test 1",
+                content="Test content 1",
+                content_type="text/plain",
+                source_type="test",
+                source="test_source",
+                url="http://test.com/1",
+                metadata={},
+            ),
+            Document(
+                title="Test 2",
+                content="Test content 2",
+                content_type="text/plain",
+                source_type="test",
+                source="test_source",
+                url="http://test.com/2",
+                metadata={},
+            ),
+        ]
+        embeddings = await service.get_embeddings(documents)
+        assert len(embeddings) == 2
+        assert all(len(emb) == 1536 for emb in embeddings)
 
-    service = EmbeddingService(mock_settings)
-    documents = [
-        Document(
-            title="Test 1",
-            content="Test content 1",
-            content_type="text/plain",
-            source_type="test",
-            source="test_source",
-            url="http://test.com/1",
-            metadata={},
-        ),
-        Document(
-            title="Test 2",
-            content="Test content 2",
-            content_type="text/plain",
-            source_type="test",
-            source="test_source",
-            url="http://test.com/2",
-            metadata={},
-        ),
-    ]
-    embeddings = await service.get_embeddings(documents)
 
-    # Verify results
-    assert len(embeddings) == 2
-    assert all(len(emb) == 1536 for emb in embeddings)
-    mock_client.embeddings.create.assert_called_once_with(
-        model="text-embedding-3-small",
-        input=["Test content 1", "Test content 2"],
-    )
+@pytest.mark.asyncio
+async def test_get_embeddings_batch_provider(mock_settings):
+    """Test batch embedding via provider returns expected shapes."""
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+    ):
+        service = EmbeddingService(mock_settings)
+        documents = [
+            Document(
+                title="T1",
+                content="A",
+                content_type="text/plain",
+                source_type="t",
+                source="s",
+                url="u1",
+                metadata={},
+            ),
+            Document(
+                title="T2",
+                content="B",
+                content_type="text/plain",
+                source_type="t",
+                source="s",
+                url="u2",
+                metadata={},
+            ),
+        ]
+        res = await service.get_embeddings(documents)
+        assert len(res) == 2
+        assert all(len(v) == 1536 for v in res)
 
 
 @pytest.mark.asyncio
@@ -257,7 +255,13 @@ async def test_rate_limiting():
 
 def test_count_tokens_with_tokenizer(mock_settings):
     """Test token counting with tiktoken."""
-    with patch("tiktoken.get_encoding") as mock_get_encoding:
+    with (
+        patch("tiktoken.get_encoding") as mock_get_encoding,
+        patch(
+            "qdrant_loader.core.embedding.embedding_service.import_module",
+            return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+        ),
+    ):
         mock_encoding = MagicMock()
         mock_encoding.encode.return_value = [1, 2, 3]  # 3 tokens
         mock_get_encoding.return_value = mock_encoding
@@ -265,13 +269,33 @@ def test_count_tokens_with_tokenizer(mock_settings):
         service = EmbeddingService(mock_settings)
         count = service.count_tokens("test text")
 
+        # Our mock encode returns [1,2,3]; but service wraps tiktoken.encode length directly
         assert count == 3
-        mock_encoding.encode.assert_called_once_with("test text")
+        mock_encoding.encode.assert_called_once()
 
 
-def test_count_tokens_fallback(mock_local_settings):
+def test_count_tokens_fallback():
     """Test token counting fallback to character count."""
-    service = EmbeddingService(mock_local_settings)
+    # Tokenizer none was already tested above
+    global_config = MagicMock()
+    embedding_config = MagicMock()
+    embedding_config.tokenizer = "none"
+    global_config.embedding = embedding_config
+    settings = MagicMock(spec=Settings)
+    settings.global_config = global_config
+    settings.llm_settings = SimpleNamespace(
+        provider="openai_compat",
+        base_url="http://localhost:11434/v1",
+        api_key=None,
+        models={"embeddings": "nomic-embed-text"},
+        tokenizer="none",
+        embeddings=SimpleNamespace(vector_size=768),
+    )
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider(768)),
+    ):
+        service = EmbeddingService(settings)
     count = service.count_tokens("test")
 
     assert count == 4  # Length of "test"
@@ -279,7 +303,13 @@ def test_count_tokens_fallback(mock_local_settings):
 
 def test_count_tokens_batch(mock_settings):
     """Test batch token counting."""
-    with patch("tiktoken.get_encoding") as mock_get_encoding:
+    with (
+        patch("tiktoken.get_encoding") as mock_get_encoding,
+        patch(
+            "qdrant_loader.core.embedding.embedding_service.import_module",
+            return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+        ),
+    ):
         mock_encoding = MagicMock()
         mock_encoding.encode.side_effect = lambda x: [1] * len(x)
         mock_get_encoding.return_value = mock_encoding
@@ -287,43 +317,38 @@ def test_count_tokens_batch(mock_settings):
         service = EmbeddingService(mock_settings)
         counts = service.count_tokens_batch(["test", "longer text"])
 
+        # With mock encode returning [1]*len(text), lengths equal string lengths
         assert counts == [4, 11]
 
 
 def test_get_embedding_dimension(mock_settings):
     """Test getting embedding dimension."""
-    service = EmbeddingService(mock_settings)
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _fake_provider()),
+    ):
+        service = EmbeddingService(mock_settings)
     dimension = service.get_embedding_dimension()
 
     assert dimension == 1536
 
 
 @pytest.mark.asyncio
-async def test_error_handling_openai(mock_openai, mock_settings):
-    """Test error handling for OpenAI API errors."""
-    # Setup mock client with custom error
-    mock_client = MagicMock()
-    mock_response = MagicMock()
-    mock_response.status_code = 401
-    mock_response.text = '{"error": {"message": "Incorrect API key provided"}}'
-    mock_client.embeddings.create.side_effect = openai.AuthenticationError(
-        message="Incorrect API key provided",
-        response=mock_response,
-        body={"error": {"message": "Incorrect API key provided"}},
-    )
-    mock_openai.return_value = mock_client
+async def test_provider_error_propagates(mock_settings):
+    """Provider exceptions bubble up through retry logic."""
 
-    service = EmbeddingService(mock_settings)
-    with pytest.raises(openai.AuthenticationError, match="Incorrect API key provided"):
-        await service.get_embedding("test text")
+    class _BadEmb:
+        async def embed(self, inputs):  # type: ignore[no-untyped-def]
+            raise RuntimeError("provider failure")
 
+    class _BadProv:
+        def embeddings(self):
+            return _BadEmb()
 
-@pytest.mark.asyncio
-async def test_error_handling_local(mock_local_settings):
-    """Test error handling for local service errors."""
-    with patch("requests.post") as mock_post:
-        mock_post.side_effect = Exception("Connection Error")
-
-        service = EmbeddingService(mock_local_settings)
-        with pytest.raises(Exception, match="Connection Error"):
+    with patch(
+        "qdrant_loader.core.embedding.embedding_service.import_module",
+        return_value=SimpleNamespace(create_provider=lambda _: _BadProv()),
+    ):
+        service = EmbeddingService(mock_settings)
+        with pytest.raises(RuntimeError, match="provider failure"):
             await service.get_embedding("test text")

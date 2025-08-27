@@ -78,9 +78,9 @@ class HTMLDocumentParser(BaseDocumentParser):
             return {
                 "heading_hierarchy": headings,
                 "semantic_elements": semantic_elements,
-                "internal_links": len([l for l in links if l.get("internal", False)]),
+                "internal_links": len([link for link in links if link.get("internal", False)]),
                 "external_links": len(
-                    [l for l in links if not l.get("internal", False)]
+                    [link for link in links if not link.get("internal", False)]
                 ),
                 "has_navigation": bool(soup.find("nav")),
                 "has_main_content": bool(soup.find("main")),

@@ -93,7 +93,7 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
-mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src"
+mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src:packages/qdrant-loader-core/src"
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -160,6 +160,14 @@ exclude_lines = [
 [tool.ruff]
 target-version = "py312"
 line-length = 88
+extend-exclude = [
+    "venv",
+    "venv-*",
+    "**/venv/**",
+    "**/.venv/**",
+    "env",
+    "env-*",
+]
 
 [tool.ruff.lint]
 select = [

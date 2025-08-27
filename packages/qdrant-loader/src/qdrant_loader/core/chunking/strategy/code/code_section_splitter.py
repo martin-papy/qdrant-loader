@@ -7,9 +7,13 @@ import structlog
 from qdrant_loader.core.chunking.strategy.base.section_splitter import (
     BaseSectionSplitter,
 )
+from qdrant_loader.core.chunking.strategy.code.parser.common import (
+    CodeElement,
+    CodeElementType,
+)
 from qdrant_loader.core.document import Document
 
-from .code_document_parser import CodeDocumentParser, CodeElement, CodeElementType
+from .code_document_parser import CodeDocumentParser
 
 logger = structlog.get_logger(__name__)
 
