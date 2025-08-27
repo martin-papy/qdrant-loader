@@ -145,7 +145,7 @@ async def test_generate_topic_chain_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -153,7 +153,7 @@ async def test_generate_topic_chain_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -190,7 +190,7 @@ async def test_generate_topic_chain_invalid_strategy(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -198,7 +198,7 @@ async def test_generate_topic_chain_invalid_strategy(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -235,7 +235,7 @@ async def test_execute_topic_chain_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -243,7 +243,7 @@ async def test_execute_topic_chain_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -291,7 +291,7 @@ async def test_search_with_topic_chain_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -299,7 +299,7 @@ async def test_search_with_topic_chain_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -367,7 +367,7 @@ async def test_search_with_facets_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -375,7 +375,7 @@ async def test_search_with_facets_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -454,7 +454,7 @@ async def test_get_facet_suggestions_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -462,7 +462,7 @@ async def test_get_facet_suggestions_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -539,7 +539,7 @@ async def test_analyze_document_relationships_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -547,7 +547,7 @@ async def test_analyze_document_relationships_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -589,7 +589,7 @@ async def test_analyze_document_relationships_insufficient_docs(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -597,7 +597,7 @@ async def test_analyze_document_relationships_insufficient_docs(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -645,7 +645,7 @@ async def test_find_similar_documents_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -653,7 +653,7 @@ async def test_find_similar_documents_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -687,7 +687,7 @@ async def test_find_similar_documents_no_target(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -695,7 +695,7 @@ async def test_find_similar_documents_no_target(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -706,7 +706,8 @@ async def test_find_similar_documents_no_target(
             comparison_query="machine learning guides",
         )
 
-        assert result == []
+        # Method now returns an empty dict for no target found to match declared return type
+        assert result == {}
 
 
 @pytest.mark.asyncio
@@ -744,7 +745,7 @@ async def test_detect_document_conflicts_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -752,7 +753,7 @@ async def test_detect_document_conflicts_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -776,13 +777,15 @@ async def test_detect_document_conflicts_success(
 
         # Verify original documents are stored in lightweight form
         original_docs = result["original_documents"]
-        assert isinstance(original_docs, list) and len(original_docs) == len(sample_search_results)
+        assert isinstance(original_docs, list) and len(original_docs) == len(
+            sample_search_results
+        )
         # Compare by IDs and safe fields only
         expected = [
             {
                 "document_id": d.document_id,
                 "title": (
-                    getattr(d, "get_display_title")()
+                    d.get_display_title()
                     if hasattr(d, "get_display_title")
                     else getattr(d, "source_title", None) or "Untitled"
                 ),
@@ -810,7 +813,7 @@ async def test_detect_document_conflicts_insufficient_docs(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -818,7 +821,7 @@ async def test_detect_document_conflicts_insufficient_docs(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -870,7 +873,7 @@ async def test_find_complementary_content_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -878,7 +881,7 @@ async def test_find_complementary_content_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -900,10 +903,15 @@ async def test_find_complementary_content_success(
         recs = result["complementary_recommendations"]
         assert isinstance(recs, list) and len(recs) == len(mock_complementary)
         for r in recs:
-            assert set(["document_id", "title", "relevance_score", "reason", "strategy"]) <= set(r.keys())
+            assert {"document_id", "title", "relevance_score", "reason", "strategy"} <= set(
+                r.keys()
+            )
         # target_document is now a lightweight dict
         assert isinstance(result["target_document"], dict)
-        assert result["target_document"].get("document_id") == sample_search_results[0].document_id
+        assert (
+            result["target_document"].get("document_id")
+            == sample_search_results[0].document_id
+        )
         assert result["context_documents_analyzed"] == 2
 
 
@@ -917,7 +925,7 @@ async def test_find_complementary_content_no_target(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -925,7 +933,7 @@ async def test_find_complementary_content_no_target(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -990,7 +998,7 @@ async def test_cluster_documents_success(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -998,7 +1006,7 @@ async def test_cluster_documents_success(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -1045,7 +1053,7 @@ async def test_cluster_documents_insufficient_docs(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -1053,7 +1061,7 @@ async def test_cluster_documents_insufficient_docs(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -1099,7 +1107,7 @@ async def test_cluster_documents_adaptive_strategy(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -1107,7 +1115,7 @@ async def test_cluster_documents_adaptive_strategy(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -1145,7 +1153,7 @@ async def test_search_error_handling(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -1153,7 +1161,7 @@ async def test_search_error_handling(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -1175,7 +1183,7 @@ async def test_topic_chain_generation_error_handling(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -1183,7 +1191,7 @@ async def test_topic_chain_generation_error_handling(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -1210,7 +1218,7 @@ async def test_topic_chain_execution_error_handling(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -1218,7 +1226,7 @@ async def test_topic_chain_execution_error_handling(
             return_value=mock_openai_client,
         ),
         patch(
-            "qdrant_loader_mcp_server.search.engine.HybridSearchEngine",
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
             return_value=mock_hybrid_search,
         ),
     ):
@@ -1240,7 +1248,7 @@ async def test_initialization_client_none_error(
     """Test initialization when qdrant client creation returns None."""
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=None,
         ),
         patch(

@@ -83,16 +83,15 @@ class TestConfigValidator:
 
     def test_validate_projects_section_duplicate_ids(self, validator):
         """Test projects section with duplicate project IDs."""
+        # Since Python dict doesn't allow duplicate keys, simulate a case with two different
+        # project IDs to ensure the validator handles multiple entries without error.
         projects_data = {
             "project1": {"display_name": "Project 1"},
-            "project1": {
-                "display_name": "Project 1 Duplicate"
-            },  # This won't actually create a duplicate in Python dict
+            "project2": {"display_name": "Project 2"},
         }
 
-        # Since Python dict doesn't allow duplicate keys, let's test the logic differently
-        # by simulating the validation process
-        validator._validate_projects_section(projects_data)  # Should work fine
+        # Should not raise for distinct keys
+        validator._validate_projects_section(projects_data)
 
     def test_validate_projects_section_duplicate_collection_names(self, validator):
         """Test projects section with duplicate collection names."""

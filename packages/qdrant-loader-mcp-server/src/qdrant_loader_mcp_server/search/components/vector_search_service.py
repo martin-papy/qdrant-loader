@@ -6,7 +6,6 @@ from asyncio import Lock
 from dataclasses import dataclass
 from typing import Any
 
-from openai import AsyncOpenAI
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
 
@@ -26,7 +25,6 @@ class VectorSearchService:
     def __init__(
         self,
         qdrant_client: AsyncQdrantClient,
-        openai_client: AsyncOpenAI,
         collection_name: str,
         min_score: float = 0.3,
         cache_enabled: bool = True,
@@ -34,6 +32,9 @@ class VectorSearchService:
         cache_max_size: int = 500,
         hnsw_ef: int = 128,
         use_exact_search: bool = False,
+        *,
+        embeddings_provider: Any | None = None,
+        openai_client: Any | None = None,
     ):
         """Initialize the vector search service.
 
@@ -47,6 +48,7 @@ class VectorSearchService:
             cache_max_size: Maximum number of cached results
         """
         self.qdrant_client = qdrant_client
+        self.embeddings_provider = embeddings_provider
         self.openai_client = openai_client
         self.collection_name = collection_name
         self.min_score = min_score
@@ -117,7 +119,7 @@ class VectorSearchService:
                 del self._search_cache[key]
 
     async def get_embedding(self, text: str) -> list[float]:
-        """Get embedding for text using OpenAI.
+        """Get embedding for text using OpenAI client when available, else provider.
 
         Args:
             text: Text to get embedding for
@@ -128,15 +130,36 @@ class VectorSearchService:
         Raises:
             Exception: If embedding generation fails
         """
-        try:
-            response = await self.openai_client.embeddings.create(
-                model="text-embedding-3-small",
-                input=text,
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            self.logger.error("Failed to get embedding", error=str(e))
-            raise
+        # Prefer provider when available
+        if self.embeddings_provider is not None:
+            try:
+                # Accept either a provider (with .embeddings()) or a direct embeddings client
+                client = (
+                    self.embeddings_provider.embeddings()
+                    if hasattr(self.embeddings_provider, "embeddings")
+                    else self.embeddings_provider
+                )
+                vectors = await client.embed([text])
+                return vectors[0]
+            except Exception as e:
+                self.logger.error("Provider embeddings failed", error=str(e))
+                raise
+
+        # Fallback to OpenAI client when provider is not configured
+        if self.openai_client is not None:
+            try:
+                response = await self.openai_client.embeddings.create(
+                    model="text-embedding-3-small",
+                    input=text,
+                )
+                return response.data[0].embedding
+            except Exception as e:
+                # Do not fall back silently; propagate error as tests expect
+                self.logger.error("Failed to get embedding", error=str(e))
+                raise
+
+        # Nothing configured
+        raise RuntimeError("No embeddings provider or OpenAI client configured")
 
     async def vector_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
@@ -329,3 +352,20 @@ class VectorSearchService:
         return None
 
     # Note: _build_filter method added back for backward compatibility - prefer FieldQueryParser.create_qdrant_filter()
+
+    def build_filter(
+        self, project_ids: list[str] | None = None
+    ) -> models.Filter | None:
+        """Public wrapper for building a Qdrant filter for project constraints.
+
+        Prefer using `FieldQueryParser.create_qdrant_filter` for field queries. This
+        method exists to expose project filter building via a public API and wraps the
+        legacy `_build_filter` implementation for compatibility.
+
+        Args:
+            project_ids: Optional list of project IDs to filter by.
+
+        Returns:
+            A Qdrant `models.Filter` or `None` if no filtering is needed.
+        """
+        return self._build_filter(project_ids)
