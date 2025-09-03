@@ -56,7 +56,8 @@ def get_search_tool_schema() -> dict[str, Any]:
                     "minItems": 0,
                     "items": {
                         "type": "object",
-                        "additionalProperties": False,
+                        # Allow extra fields for richer result payloads (e.g., document_id, content_snippet, source_url)
+                        "additionalProperties": True,
                         "properties": {
                             "score": {"type": "number"},
                             "title": {"type": "string"},
@@ -73,7 +74,8 @@ def get_search_tool_schema() -> dict[str, Any]:
                             },
                             "metadata": {
                                 "type": "object",
-                                "additionalProperties": False,
+                                # Allow flexible metadata keys; formatter may include breadcrumb, hierarchy, etc.
+                                "additionalProperties": True,
                                 "properties": {
                                     "file_path": {"type": "string"},
                                     "project_id": {"type": "string"},
@@ -86,12 +88,6 @@ def get_search_tool_schema() -> dict[str, Any]:
                                         "format": "date-time",
                                     },
                                 },
-                                "required": [
-                                    "file_path",
-                                    "project_id",
-                                    "created_at",
-                                    "last_modified",
-                                ],
                             },
                         },
                         "required": [
