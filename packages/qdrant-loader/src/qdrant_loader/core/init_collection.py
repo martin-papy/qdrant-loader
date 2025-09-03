@@ -41,7 +41,7 @@ async def init_collection(settings=None, force=False):
                 collection=settings.qdrant_collection_name,
             )
 
-        # Create collection (vector size is hardcoded to 1536 in QdrantManager)
+        # Create collection (vector size comes from config; QdrantManager handles defaulting)
         manager.create_collection()
 
         logger.debug("Collection initialization completed")

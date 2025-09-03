@@ -34,15 +34,52 @@ def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
         llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
         return create_provider(llm_settings)
     except ImportError:
-        if logger is not None:
-            try:
-                logger.debug(
-                    "LLM provider import failed; falling back to None",
-                    exc_info=True,
-                )
-            except Exception:
-                pass
-        return None
+        # Attempt monorepo-relative import by adding sibling core package to sys.path
+        try:
+            import sys
+            from pathlib import Path
+
+            current_file = Path(__file__).resolve()
+            for ancestor in current_file.parents:
+                core_src = ancestor / "qdrant-loader-core" / "src"
+                if core_src.exists():
+                    sys.path.append(str(core_src))
+                    break
+            # Retry import after amending sys.path
+            from importlib import import_module as _import_module  # type: ignore
+
+            core_settings_mod = _import_module("qdrant_loader_core.llm.settings")
+            core_factory_mod = _import_module("qdrant_loader_core.llm.factory")
+            LLMSettings = core_settings_mod.LLMSettings
+            create_provider = core_factory_mod.create_provider
+
+            import os as _os
+
+            llm_cfg = {
+                "provider": (_os.getenv("LLM_PROVIDER") or "openai"),
+                "base_url": _os.getenv("LLM_BASE_URL"),
+                "api_key": _os.getenv("LLM_API_KEY") or _os.getenv("OPENAI_API_KEY"),
+                "models": {
+                    "embeddings": _os.getenv("LLM_EMBEDDING_MODEL")
+                    or "text-embedding-3-small",
+                },
+                "tokenizer": _os.getenv("LLM_TOKENIZER") or "none",
+                "request": {},
+                "rate_limits": {},
+                "embeddings": {},
+            }
+            llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
+            return create_provider(llm_settings)
+        except Exception:
+            if logger is not None:
+                try:
+                    logger.debug(
+                        "LLM provider import failed after path adjustment; falling back to None",
+                        exc_info=True,
+                    )
+                except Exception:
+                    pass
+            return None
     except Exception as e:
         if logger is not None:
             try:

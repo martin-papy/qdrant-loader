@@ -23,14 +23,9 @@ from .search import SearchOperations
 from .strategies import StrategySelector
 from .topic_chain import TopicChainOperations
 
-# Expose OpenAI Async client symbol at module scope for tests to patch.
-try:  # pragma: no cover - defensive import; tests may monkeypatch this
-    from openai import AsyncOpenAI as _AsyncOpenAI  # type: ignore
-except Exception:  # pragma: no cover - openai may be optional
-    _AsyncOpenAI = None  # type: ignore[assignment]
-
-# Public alias so tests can patch qdrant_loader_mcp_server.search.engine.AsyncOpenAI
-AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
+# Expose OpenAI Async client symbol at module scope for tests to patch only.
+# Do not import the OpenAI library at runtime to avoid hard dependency.
+AsyncOpenAI = None  # type: ignore[assignment]
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -107,7 +102,7 @@ class SearchEngine:
                 api_key=config.api_key,
                 timeout=120,  # 120 seconds timeout for cloud instances
             )
-            # Keep legacy OpenAI client for now; vector embeddings use provider with fallback
+            # Keep legacy OpenAI client for now only when tests patch AsyncOpenAI
             try:
                 if AsyncOpenAI is not None and getattr(openai_config, "api_key", None):
                     # Use module-scope alias so tests can patch this symbol
@@ -125,27 +120,37 @@ class SearchEngine:
             if not any(
                 c.name == config.collection_name for c in collections.collections
             ):
-                # Determine vector size from llm settings or defaults
-                vector_size = 1536
+                # Determine vector size from env or config file; avoid hardcoded default when possible
+                vector_size = None
                 # 1) From env variable if provided
                 try:
                     env_size = os.getenv("LLM_VECTOR_SIZE")
                     if env_size:
                         vector_size = int(env_size)
                 except Exception:
-                    pass
+                    vector_size = None
                 # 2) From MCP_CONFIG file if present
-                try:
-                    cfg_path = os.getenv("MCP_CONFIG")
-                    if cfg_path and Path(cfg_path).exists():
-                        with open(cfg_path, encoding="utf-8") as f:
-                            data = yaml.safe_load(f) or {}
-                        llm = data.get("global", {}).get("llm") or {}
-                        emb = llm.get("embeddings") or {}
-                        if isinstance(emb.get("vector_size"), int):
-                            vector_size = int(emb["vector_size"])
-                except Exception:
-                    pass
+                if vector_size is None:
+                    try:
+                        cfg_path = os.getenv("MCP_CONFIG")
+                        if cfg_path and Path(cfg_path).exists():
+                            with open(cfg_path, encoding="utf-8") as f:
+                                data = yaml.safe_load(f) or {}
+                            llm = data.get("global", {}).get("llm") or {}
+                            emb = llm.get("embeddings") or {}
+                            if isinstance(emb.get("vector_size"), int):
+                                vector_size = int(emb["vector_size"])
+                    except Exception:
+                        vector_size = None
+                # 3) Deprecated fallback
+                if vector_size is None:
+                    vector_size = 1536
+                    try:
+                        self.logger.warning(
+                            "No vector_size provided via global.llm or env; falling back to 1536 (deprecated)."
+                        )
+                    except Exception:
+                        pass
 
                 await self.client.create_collection(
                     collection_name=config.collection_name,

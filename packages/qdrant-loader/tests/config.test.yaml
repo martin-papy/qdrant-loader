@@ -4,6 +4,17 @@
 
 # Global configuration for all sources
 global:
+  # Unified LLM configuration (provider-agnostic)
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o"
+    tokenizer: "cl100k_base"
+    embeddings:
+      vector_size: 1536
   # Qdrant configuration
   qdrant:
     url: "https://4f2a12b9-a595-491c-ba55-9ae23e21e02a.europe-west3-0.gcp.cloud.qdrant.io"

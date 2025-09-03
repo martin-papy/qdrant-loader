@@ -100,6 +100,23 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     qdrant = dict(global_data.get("qdrant") or {})
     search = dict(config_data.get("search") or {})
 
+    # Deprecation: detect legacy blocks and log a warning once
+    legacy_embedding = global_data.get("embedding")
+    legacy_markit = (
+        (config_data.get("file_conversion") or {}).get("markitdown")
+        if isinstance(config_data.get("file_conversion"), dict)
+        else None
+    )
+    try:
+        if legacy_embedding or legacy_markit:
+            logger.warning(
+                "Legacy configuration fields detected; please migrate to global.llm",
+                legacy_embedding=bool(legacy_embedding),
+                legacy_markitdown=bool(legacy_markit),
+            )
+    except Exception:
+        pass
+
     # Apply environment overrides
     _overlay_env_llm(llm)
     _overlay_env_qdrant(qdrant)
@@ -204,4 +221,10 @@ def load_config(cli_config: Path | None) -> tuple[Config, dict[str, Any], bool]:
         },
         "warning": "Using legacy env-only mode; providing a config file is recommended and will be required in a future release.",
     }
+    try:
+        logger.warning(
+            "Running in legacy env-only mode; provide --config or MCP_CONFIG file",
+        )
+    except Exception:
+        pass
     return cfg, effective, used_file

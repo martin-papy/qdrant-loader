@@ -113,7 +113,10 @@ class AsyncIngestionPipeline:
         # Initialize performance monitor with custom or default metrics directory
         if metrics_dir:
             # Use provided metrics directory (workspace mode)
-            final_metrics_dir = metrics_dir
+            # Accept both Path and str inputs
+            final_metrics_dir = (
+                metrics_dir if isinstance(metrics_dir, Path) else Path(metrics_dir)
+            )
         else:
             # Use default metrics directory
             final_metrics_dir = Path.cwd() / "metrics"
