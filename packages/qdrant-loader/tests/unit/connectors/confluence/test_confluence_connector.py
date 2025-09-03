@@ -166,6 +166,116 @@ class TestConfluenceConnector:
         expected = "Test content with HTML tags and special chars"
         assert connector._clean_html(html).strip() == expected
 
+    def test_construct_page_url_cloud(self, connector):
+        """Test URL construction for Confluence Cloud."""
+        # Test page URL
+        url = connector._construct_page_url("TEST", "123", "Test Page", "page")
+        expected = "https://test.atlassian.net/spaces/TEST/pages/123"
+        assert url == expected
+        
+        # Test blogpost URL
+        url = connector._construct_page_url("TEST", "456", "Test Blog", "blogpost")
+        expected = "https://test.atlassian.net/spaces/TEST/blog/456"
+        assert url == expected
+
+    def test_construct_page_url_datacenter(self, config):
+        """Test URL construction for Confluence Data Center."""
+        # Create Data Center config
+        datacenter_config = ConfluenceSpaceConfig(
+            source="test-confluence",
+            source_type=SourceType.CONFLUENCE,
+            base_url=HttpUrl("https://confluence.example.com"),
+            deployment_type=ConfluenceDeploymentType.DATACENTER,
+            space_key="TEST",
+            content_types=["page", "blogpost"],
+            token="test-token",
+        )
+        connector = ConfluenceConnector(datacenter_config)
+        
+        # Test page URL with title
+        url = connector._construct_page_url("TEST", "123", "Test Page Title", "page")
+        expected = "https://confluence.example.com/display/TEST/Test+Page+Title"
+        assert url == expected
+        
+        # Test blogpost URL with title
+        url = connector._construct_page_url("TEST", "456", "Test Blog Post", "blogpost")
+        expected = "https://confluence.example.com/display/TEST/Test+Blog+Post"
+        assert url == expected
+
+    def test_construct_page_url_special_characters(self, config):
+        """Test URL construction with special characters in titles."""
+        datacenter_config = ConfluenceSpaceConfig(
+            source="test-confluence",
+            source_type=SourceType.CONFLUENCE,
+            base_url=HttpUrl("https://confluence.example.com"),
+            deployment_type=ConfluenceDeploymentType.DATACENTER,
+            space_key="TEST",
+            content_types=["page"],
+            token="test-token",
+        )
+        connector = ConfluenceConnector(datacenter_config)
+        
+        # Test with special characters
+        url = connector._construct_page_url("TEST", "123", "API & Documentation", "page")
+        expected = "https://confluence.example.com/display/TEST/API+%26+Documentation"
+        assert url == expected
+
+    def test_construct_page_url_no_double_slash(self, config):
+        """Test that URLs don't have double slashes."""
+        datacenter_config = ConfluenceSpaceConfig(
+            source="test-confluence",
+            source_type=SourceType.CONFLUENCE,
+            base_url=HttpUrl("https://confluence.example.com/"),  # Note trailing slash
+            deployment_type=ConfluenceDeploymentType.DATACENTER,
+            space_key="TEST",
+            content_types=["page"],
+            token="test-token",
+        )
+        connector = ConfluenceConnector(datacenter_config)
+        
+        url = connector._construct_page_url("TEST", "123", "Test Page", "page")
+        # Should not have double slashes
+        assert "//" not in url.replace("https://", "")
+        expected = "https://confluence.example.com/display/TEST/Test+Page"
+        assert url == expected
+
+    def test_construct_page_url_unicode_characters(self, config):
+        """Test URL construction with Unicode characters in titles."""
+        datacenter_config = ConfluenceSpaceConfig(
+            source="test-confluence",
+            source_type=SourceType.CONFLUENCE,
+            base_url=HttpUrl("https://confluence.example.com"),
+            deployment_type=ConfluenceDeploymentType.DATACENTER,
+            space_key="TEST",
+            content_types=["page"],
+            token="test-token",
+        )
+        connector = ConfluenceConnector(datacenter_config)
+        
+        # Test with Unicode characters
+        url = connector._construct_page_url("TEST", "123", "Café & Résumé", "page")
+        expected = "https://confluence.example.com/display/TEST/Caf%C3%A9+%26+R%C3%A9sum%C3%A9"
+        assert url == expected
+
+    def test_construct_page_url_long_title(self, config):
+        """Test URL construction with very long titles."""
+        datacenter_config = ConfluenceSpaceConfig(
+            source="test-confluence",
+            source_type=SourceType.CONFLUENCE,
+            base_url=HttpUrl("https://confluence.example.com"),
+            deployment_type=ConfluenceDeploymentType.DATACENTER,
+            space_key="TEST",
+            content_types=["page"],
+            token="test-token",
+        )
+        connector = ConfluenceConnector(datacenter_config)
+        
+        # Test with long title
+        long_title = "This is a very long page title that contains many words and should be properly encoded"
+        url = connector._construct_page_url("TEST", "123", long_title, "page")
+        expected = "https://confluence.example.com/display/TEST/This+is+a+very+long+page+title+that+contains+many+words+and+should+be+properly+encoded"
+        assert url == expected
+
     @pytest.mark.asyncio
     async def test_get_documents(self, connector):
         """Test document retrieval and processing."""
