@@ -27,3 +27,17 @@ def test_logging_redacts_sensitive_fields(caplog):
     # Redacted placeholders should appear
     assert "***REDACTED***" in output
 
+
+def test_stdlib_logs_are_redacted(caplog):
+    # Ensure setup called
+    LoggingConfig.setup(level="DEBUG", format="console", clean_output=True)
+    logger = logging.getLogger("stdlib.logger")
+
+    with caplog.at_level(logging.DEBUG):
+        logger.info("Sending token=%s and api_key=%s", "tok-SECRET-123456", "sk-abcdef0123456789")
+
+    out = "\n".join(record.getMessage() for record in caplog.records)
+    assert "tok-SECRET-123456" not in out
+    assert "sk-abcdef0123456789" not in out
+    assert "***REDACTED***" in out
+

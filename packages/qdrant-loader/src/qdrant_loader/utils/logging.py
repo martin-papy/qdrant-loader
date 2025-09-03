@@ -626,3 +626,12 @@ class LoggingConfig:
             # Initialize with default settings if not already initialized
             cls.setup()
         return structlog.get_logger(name)
+
+# Standardize on core logging configuration
+try:
+    from qdrant_loader_core.logging import LoggingConfig as _CoreLoggingConfig  # type: ignore
+
+    LoggingConfig = _CoreLoggingConfig  # type: ignore[assignment]
+except Exception:
+    # Fallback to local implementation if core is unavailable
+    pass
