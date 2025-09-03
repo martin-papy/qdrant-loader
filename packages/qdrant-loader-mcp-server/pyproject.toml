@@ -42,7 +42,6 @@ dependencies = [
     "tomli>=2.0.0",
     "networkx>=3.0.0",
     "qdrant-loader-core",
-    "qdrant-loader",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
