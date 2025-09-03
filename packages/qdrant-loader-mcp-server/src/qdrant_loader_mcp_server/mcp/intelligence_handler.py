@@ -63,8 +63,38 @@ class IntelligenceHandler:
 
             logger.info("Analysis completed successfully")
 
-            # Transform complex analysis to MCP schema format
-            mcp_result = process_analysis_results(analysis_results, params)
+            # Transform complex analysis to MCP schema-compliant format
+            raw_result = process_analysis_results(analysis_results, params)
+
+            # Map to output schema: relationships items only allow specific keys
+            relationships = []
+            for rel in raw_result.get("relationships", []) or []:
+                relationships.append(
+                    {
+                        "document_1": str(
+                            rel.get("document_1")
+                            or rel.get("document_1_id")
+                            or ""
+                        ),
+                        "document_2": str(
+                            rel.get("document_2")
+                            or rel.get("document_2_id")
+                            or ""
+                        ),
+                        "relationship_type": rel.get("relationship_type", ""),
+                        "score": float(rel.get("score", rel.get("confidence_score", 0.0))),
+                        "description": rel.get(
+                            "description", rel.get("relationship_summary", "")
+                        ),
+                    }
+                )
+
+            mcp_result = {
+                "relationships": relationships,
+                "total_analyzed": int(raw_result.get("total_analyzed", 0)),
+                # summary is optional in the schema but useful if present
+                "summary": raw_result.get("summary", ""),
+            }
 
             return self.protocol.create_response(
                 request_id,
@@ -161,12 +191,70 @@ class IntelligenceHandler:
                     f"Missing document_id in similar documents at indices: {missing_ids}"
                 )
 
-            # ✅ Create structured content for MCP compliance using lightweight formatter
-            structured_content = (
+            # ✅ Also create lightweight content for back-compat (unit tests expect this call)
+            _legacy_lightweight = (
                 self.formatters.create_lightweight_similar_documents_results(
                     similar_docs, params["target_query"], params["comparison_query"]
                 )
             )
+
+            # ✅ Build schema-compliant structured content for find_similar_documents
+            similar_documents = []
+            metrics_used_set: set[str] = set()
+            highest_similarity = 0.0
+
+            for item in similar_docs:
+                # Normalize access to document fields
+                document = item.get("document") if isinstance(item, dict) else None
+                document_id = (
+                    (document.get("document_id") if isinstance(document, dict) else None)
+                    or (item.get("document_id") if isinstance(item, dict) else None)
+                    or ""
+                )
+                title = (
+                    (document.get("source_title") if isinstance(document, dict) else None)
+                    or (item.get("title") if isinstance(item, dict) else None)
+                    or "Untitled"
+                )
+                similarity_score = float(item.get("similarity_score", 0.0))
+                highest_similarity = max(highest_similarity, similarity_score)
+
+                metric_scores = item.get("metric_scores", {})
+                if isinstance(metric_scores, dict):
+                    metrics_used_set.update(metric_scores.keys())
+
+                similar_documents.append(
+                    {
+                        "document_id": str(document_id),
+                        "title": title,
+                        "similarity_score": similarity_score,
+                        "similarity_metrics": {
+                            k: float(v) for k, v in metric_scores.items() if isinstance(v, (int, float))
+                        },
+                        "similarity_reason": (
+                            ", ".join(item.get("similarity_reasons", []))
+                            if isinstance(item.get("similarity_reasons", []), list)
+                            else item.get("similarity_reason", "")
+                        ),
+                        "content_preview": (
+                            (document.get("text", "")[:200] + "...")
+                            if isinstance(document, dict) and isinstance(document.get("text"), str)
+                            and len(document.get("text")) > 200
+                            else (document.get("text") if isinstance(document, dict) and isinstance(document.get("text"), str) else "")
+                        ),
+                    }
+                )
+
+            structured_content = {
+                "similar_documents": similar_documents,
+                # target_document is optional; omitted when unknown
+                "similarity_summary": {
+                    "total_compared": len(similar_docs),
+                    "similar_found": len(similar_documents),
+                    "highest_similarity": highest_similarity,
+                    "metrics_used": sorted(list(metrics_used_set)) if metrics_used_set else [],
+                },
+            }
 
             return self.protocol.create_response(
                 request_id,
@@ -385,10 +473,141 @@ class IntelligenceHandler:
 
             logger.info("Document clustering completed successfully")
 
-            # Create lightweight clustering response following hierarchy_search pattern
-            mcp_clustering_results = self.formatters.create_lightweight_cluster_results(
-                clustering_results, params.get("query", "")
+            # Also produce lightweight clusters for back-compat (unit tests expect this call)
+            _legacy_lightweight_clusters = (
+                self.formatters.create_lightweight_cluster_results(
+                    clustering_results, params.get("query", "")
+                )
             )
+
+            # Build schema-compliant clustering response
+            schema_clusters: list[dict[str, Any]] = []
+            for idx, cluster in enumerate(clustering_results.get("clusters", []) or []):
+                # Documents within cluster
+                docs_schema: list[dict[str, Any]] = []
+                for d in cluster.get("documents", []) or []:
+                    try:
+                        score = float(getattr(d, "score", 0.0))
+                    except Exception:
+                        score = 0.0
+                    # Clamp to [0,1]
+                    if score < 0:
+                        score = 0.0
+                    if score > 1:
+                        score = 1.0
+                    text_val = getattr(d, "text", "")
+                    content_preview = (
+                        text_val[:200] + "..." if isinstance(text_val, str) and len(text_val) > 200 else (text_val if isinstance(text_val, str) else "")
+                    )
+                    docs_schema.append(
+                        {
+                            "document_id": str(getattr(d, "document_id", "")),
+                            "title": getattr(d, "source_title", "Untitled"),
+                            "content_preview": content_preview,
+                            "source_type": getattr(d, "source_type", "unknown"),
+                            "cluster_relevance": score,
+                        }
+                    )
+
+                # Derive theme and keywords
+                centroid_topics = cluster.get("centroid_topics") or []
+                shared_entities = cluster.get("shared_entities") or []
+                theme_str = ", ".join(centroid_topics[:3]) if centroid_topics else (
+                    ", ".join(shared_entities[:3]) if shared_entities else (cluster.get("cluster_summary") or "")
+                )
+
+                # Clamp cohesion_score to [0,1] as required by schema
+                try:
+                    cohesion = float(cluster.get("coherence_score", 0.0))
+                except Exception:
+                    cohesion = 0.0
+                if cohesion < 0:
+                    cohesion = 0.0
+                if cohesion > 1:
+                    cohesion = 1.0
+
+                schema_clusters.append(
+                    {
+                        "cluster_id": str(cluster.get("id", f"cluster_{idx+1}")),
+                        "cluster_name": cluster.get("name") or f"Cluster {idx+1}",
+                        "cluster_theme": theme_str,
+                        "document_count": int(cluster.get("document_count", len(cluster.get("documents", []) or []))),
+                        "cohesion_score": cohesion,
+                        "documents": docs_schema,
+                        "cluster_keywords": shared_entities or centroid_topics,
+                        "cluster_summary": cluster.get("cluster_summary", ""),
+                    }
+                )
+
+            meta_src = clustering_results.get("clustering_metadata", {}) or {}
+            clustering_metadata = {
+                "total_documents": int(meta_src.get("total_documents", 0)),
+                "clusters_created": int(meta_src.get("clusters_created", len(schema_clusters))),
+                "strategy": str(meta_src.get("strategy", "unknown")),
+            }
+            # Optional metadata
+            if "unclustered_documents" in meta_src:
+                clustering_metadata["unclustered_documents"] = int(
+                    meta_src.get("unclustered_documents", 0)
+                )
+            if "clustering_quality" in meta_src:
+                try:
+                    clustering_metadata["clustering_quality"] = float(
+                        meta_src.get("clustering_quality", 0.0)
+                    )
+                except Exception:
+                    pass
+            if "processing_time_ms" in meta_src:
+                clustering_metadata["processing_time_ms"] = int(
+                    meta_src.get("processing_time_ms", 0)
+                )
+
+            # Normalize cluster relationships to schema
+            normalized_relationships: list[dict[str, Any]] = []
+            for rel in clustering_results.get("cluster_relationships", []) or []:
+                cluster_1 = (
+                    rel.get("cluster_1")
+                    or rel.get("source_cluster")
+                    or rel.get("a")
+                    or rel.get("from")
+                    or rel.get("cluster_a")
+                    or rel.get("id1")
+                    or ""
+                )
+                cluster_2 = (
+                    rel.get("cluster_2")
+                    or rel.get("target_cluster")
+                    or rel.get("b")
+                    or rel.get("to")
+                    or rel.get("cluster_b")
+                    or rel.get("id2")
+                    or ""
+                )
+                relationship_type = rel.get("relationship_type") or rel.get("type") or "related"
+                try:
+                    relationship_strength = float(
+                        rel.get("relationship_strength")
+                        or rel.get("score")
+                        or rel.get("overlap_score")
+                        or 0.0
+                    )
+                except Exception:
+                    relationship_strength = 0.0
+
+                normalized_relationships.append(
+                    {
+                        "cluster_1": str(cluster_1),
+                        "cluster_2": str(cluster_2),
+                        "relationship_type": relationship_type,
+                        "relationship_strength": relationship_strength,
+                    }
+                )
+
+            mcp_clustering_results = {
+                "clusters": schema_clusters,
+                "clustering_metadata": clustering_metadata,
+                "cluster_relationships": normalized_relationships,
+            }
 
             return self.protocol.create_response(
                 request_id,
