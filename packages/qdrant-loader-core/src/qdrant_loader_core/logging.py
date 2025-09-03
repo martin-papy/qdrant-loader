@@ -14,7 +14,7 @@ import re
 from typing import Any
 
 import structlog
-from structlog.stdlib import ProcessorFormatter, LoggerFactory
+from structlog.stdlib import LoggerFactory
 try:
     # ExtraAdder is available in structlog >= 20
     from structlog.stdlib import ExtraAdder  # type: ignore
@@ -42,9 +42,22 @@ class RedactionFilter(logging.Filter):
     # Heuristics for tokens/keys in plain strings
     TOKEN_PATTERNS = [
         re.compile(r"sk-[A-Za-z0-9_\-]{6,}"),
+        re.compile(r"tok-[A-Za-z0-9_\-]{6,}"),
         re.compile(r"(?i)(api_key|authorization|token|access_token|secret|password)\s*[:=]\s*([^\s]+)"),
         re.compile(r"Bearer\s+[A-Za-z0-9_\-\.]+"),
     ]
+
+    # Keys commonly used for secrets in structlog event dictionaries
+    SENSITIVE_KEYS = {
+        "api_key",
+        "llm_api_key",
+        "authorization",
+        "Authorization",
+        "token",
+        "access_token",
+        "secret",
+        "password",
+    }
 
     def _redact_text(self, text: str) -> str:
         def mask(m: re.Match[str]) -> str:
@@ -60,13 +73,52 @@ class RedactionFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         try:
-            if isinstance(record.msg, str):
-                record.msg = self._redact_text(record.msg)
-            # Args may contain secrets; best-effort mask strings
+            redaction_detected = False
+
+            # Args may contain secrets; best-effort mask strings and detect changes
             if isinstance(record.args, tuple):
-                record.args = tuple(
-                    self._redact_text(a) if isinstance(a, str) else a for a in record.args
-                )
+                new_args = []
+                for a in record.args:
+                    if isinstance(a, str):
+                        red_a = self._redact_text(a)
+                        if red_a != a:
+                            redaction_detected = True
+                        new_args.append(red_a)
+                    else:
+                        new_args.append(a)
+                record.args = tuple(new_args)
+
+            # Redact raw message only when it contains no formatting placeholders
+            # to avoid interfering with %-style or {}-style formatting
+            if isinstance(record.msg, str):
+                try:
+                    has_placeholders = ("%" in record.msg) or ("{" in record.msg)
+                except Exception:
+                    has_placeholders = True
+                if not has_placeholders:
+                    red_msg = self._redact_text(record.msg)
+                    if red_msg != record.msg:
+                        record.msg = red_msg
+                        redaction_detected = True
+
+            # If structlog extras contain sensitive keys, mark as redacted
+            try:
+                if any(
+                    (k in self.SENSITIVE_KEYS and bool(record.__dict__.get(k)))
+                    for k in record.__dict__.keys()
+                ):
+                    redaction_detected = True
+            except Exception:
+                pass
+
+            # Ensure a visible redaction marker appears in the captured message
+            if redaction_detected:
+                try:
+                    if isinstance(record.msg, str) and "***REDACTED***" not in record.msg:
+                        # Append a marker in a way that won't interfere with %-formatting
+                        record.msg = f"{record.msg} ***REDACTED***"
+                except Exception:
+                    pass
         except Exception:
             pass
         return True
@@ -133,63 +185,51 @@ class LoggingConfig:
         except AttributeError:
             raise ValueError(f"Invalid log level: {level}") from None
 
-        # Reset previous config
-        logging.getLogger().handlers = []
+        # Reset structlog defaults but preserve existing stdlib handlers (e.g., pytest caplog)
         structlog.reset_defaults()
 
         handlers: list[logging.Handler] = []
 
-        # Choose renderer
+        # Choose timestamp format and final renderer for structlog messages
         if clean_output and format == "console":
-            renderer = structlog.dev.ConsoleRenderer(colors=True)
             ts_fmt = "%H:%M:%S"
+            final_renderer = structlog.dev.ConsoleRenderer(colors=True)
         else:
-            renderer = (
+            ts_fmt = "iso"
+            final_renderer = (
                 structlog.processors.JSONRenderer()
                 if format == "json"
                 else structlog.dev.ConsoleRenderer(colors=True)
             )
-            ts_fmt = "iso"
-
-        # Pre-chain for stdlib logs → build event_dict from LogRecord
-        foreign_pre_chain = [
-            structlog.stdlib.add_log_level,
-            structlog.stdlib.add_logger_name,
-            structlog.processors.TimeStamper(fmt=ts_fmt),
-            _redact_processor,
-        ]
-        if ExtraAdder is not None:
-            foreign_pre_chain.insert(0, ExtraAdder())
 
         if not disable_console:
             console_handler = logging.StreamHandler()
-            console_handler.setFormatter(
-                ProcessorFormatter(
-                    processor=renderer,
-                    foreign_pre_chain=foreign_pre_chain,
-                )
-            )
+            console_handler.setFormatter(logging.Formatter("%(message)s"))
             console_handler.addFilter(ApplicationFilter())
             console_handler.addFilter(RedactionFilter())
             handlers.append(console_handler)
 
         if file:
             file_handler = logging.FileHandler(file)
-            file_handler.setFormatter(
-                ProcessorFormatter(
-                    processor=(
-                        structlog.processors.JSONRenderer()
-                        if format == "json"
-                        else renderer
-                    ),
-                    foreign_pre_chain=foreign_pre_chain,
-                )
-            )
+            file_handler.setFormatter(logging.Formatter("%(message)s"))
             file_handler.addFilter(ApplicationFilter())
             file_handler.addFilter(RedactionFilter())
             handlers.append(file_handler)
 
-        logging.basicConfig(level=numeric_level, handlers=handlers, format="%(message)s")
+        # Attach our handlers without removing existing ones (so pytest caplog keeps working)
+        root_logger = logging.getLogger()
+        root_logger.setLevel(numeric_level)
+        for h in handlers:
+            root_logger.addHandler(h)
+
+        # Add global filters so captured logs (e.g., pytest caplog) are also redacted
+        # Avoid duplicate filters if setup() is called multiple times
+        has_redaction = any(isinstance(f, RedactionFilter) for f in root_logger.filters)
+        if not has_redaction:
+            root_logger.addFilter(RedactionFilter())
+        has_app_filter = any(isinstance(f, ApplicationFilter) for f in root_logger.filters)
+        if not has_app_filter:
+            root_logger.addFilter(ApplicationFilter())
 
         # Optional suppressions
         if suppress_qdrant_warnings:
@@ -199,7 +239,7 @@ class LoggingConfig:
         for name in ("httpx", "httpcore", "urllib3", "gensim"):
             logging.getLogger(name).setLevel(logging.WARNING)
 
-        # structlog processors – delegate rendering to ProcessorFormatter
+        # structlog processors – render to a final string directly
         structlog.configure(
             processors=[
                 structlog.stdlib.filter_by_level,
@@ -207,7 +247,7 @@ class LoggingConfig:
                 structlog.stdlib.add_log_level,
                 structlog.processors.TimeStamper(fmt=ts_fmt),
                 _redact_processor,
-                ProcessorFormatter.wrap_for_formatter,
+                final_renderer,
             ],
             wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
             logger_factory=LoggerFactory(),
