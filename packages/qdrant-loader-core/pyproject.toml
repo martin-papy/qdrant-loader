@@ -30,6 +30,30 @@ ollama = [
   "httpx>=0.24.0",
 ]
 
+[project.urls]
+Homepage = "https://qdrant-loader.net"
+Documentation = "https://qdrant-loader.net/docs/packages/core/README.html"
+Repository = "https://github.com/martin-papy/qdrant-loader"
+Issues = "https://github.com/martin-papy/qdrant-loader/issues"
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Text Processing :: Linguistic",
+    "Environment :: Console",
+    "Typing :: Typed",
+]
 [tool.setuptools.packages.find]
 where = ["src"]
 
