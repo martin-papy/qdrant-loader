@@ -43,37 +43,86 @@ class CleanFormatter(logging.Formatter):
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         return ansi_escape.sub("", message)
 
-
 try:
-    # Re-export core LoggingConfig to standardize behavior across packages
-    from qdrant_loader_core.logging import LoggingConfig  # type: ignore
-except Exception:
-    # Fallback shim using previous behavior if core is unavailable
-    class LoggingConfig:
-        @classmethod
-        def setup(
-            cls,
-            level: str = "INFO",
-            format: str = "console",
-            file: str | None = None,
-            suppress_qdrant_warnings: bool = True,
-        ) -> None:
-            # Maintain minimal behavior
-            disable_console_logging = (
-                os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
+    # Use core logging config if available
+    from qdrant_loader_core.logging import LoggingConfig as CoreLoggingConfig  # type: ignore
+except Exception:  # pragma: no cover - core may not be available
+    CoreLoggingConfig = None  # type: ignore
+
+
+class LoggingConfig:
+    """Wrapper that standardizes env handling and tracks current config.
+
+    Delegates to core LoggingConfig when available, while maintaining
+    _initialized and _current_config for MCP server tests and utilities.
+    """
+
+    _initialized = False
+    _current_config: tuple[str, str, str | None, bool] | None = None
+
+    @classmethod
+    def setup(
+        cls,
+        level: str = "INFO",
+        format: str = "console",
+        file: str | None = None,
+        suppress_qdrant_warnings: bool = True,
+    ) -> None:
+        # Resolve from environment when present for level; for file only when using all defaults
+        env_level = os.getenv("MCP_LOG_LEVEL")
+        resolved_level = (env_level or level).upper()
+        env_file = os.getenv("MCP_LOG_FILE")
+        all_defaults = (
+            level == "INFO"
+            and format == "console"
+            and file is None
+            and suppress_qdrant_warnings is True
+        )
+        resolved_file = file if file is not None else (env_file if all_defaults else None)
+        disable_console_logging = (
+            os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
+        )
+
+        # Validate level
+        if not hasattr(logging, resolved_level):
+            raise ValueError(f"Invalid log level: {resolved_level}")
+
+        numeric_level = getattr(logging, resolved_level)
+
+        if CoreLoggingConfig is not None:
+            # Delegate to core implementation
+            CoreLoggingConfig.setup(
+                level=resolved_level,
+                format=format,
+                file=resolved_file,
+                suppress_qdrant_warnings=suppress_qdrant_warnings,
+                disable_console=disable_console_logging,
             )
-            numeric_level = getattr(logging, level.upper(), logging.INFO)
-            handlers = []
+        else:
+            # Minimal fallback behavior
+            handlers: list[logging.Handler] = []
             if not disable_console_logging:
                 stderr_handler = logging.StreamHandler(sys.stderr)
                 stderr_handler.setFormatter(logging.Formatter("%(message)s"))
                 handlers.append(stderr_handler)
-            if file:
-                file_handler = logging.FileHandler(file)
+            if resolved_file:
+                file_handler = logging.FileHandler(resolved_file)
                 file_handler.setFormatter(CleanFormatter("%(message)s"))
                 handlers.append(file_handler)
             logging.basicConfig(level=numeric_level, handlers=handlers, force=True)
+            if suppress_qdrant_warnings:
+                logging.getLogger("qdrant_client").addFilter(QdrantVersionFilter())
 
-        @classmethod
-        def get_logger(cls, name: str | None = None):  # type: ignore
-            return structlog.get_logger(name)
+        cls._initialized = True
+        cls._current_config = (
+            resolved_level,
+            format,
+            resolved_file,
+            suppress_qdrant_warnings,
+        )
+
+    @classmethod
+    def get_logger(cls, name: str | None = None):  # type: ignore
+        if not cls._initialized:
+            cls.setup()
+        return structlog.get_logger(name)
