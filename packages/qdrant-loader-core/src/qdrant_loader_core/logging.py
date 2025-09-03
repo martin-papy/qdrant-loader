@@ -14,6 +14,12 @@ import re
 from typing import Any
 
 import structlog
+from structlog.stdlib import ProcessorFormatter, LoggerFactory
+try:
+    # ExtraAdder is available in structlog >= 20
+    from structlog.stdlib import ExtraAdder  # type: ignore
+except Exception:  # pragma: no cover - fallback when absent
+    ExtraAdder = None  # type: ignore
 
 
 class QdrantVersionFilter(logging.Filter):
@@ -133,16 +139,52 @@ class LoggingConfig:
 
         handlers: list[logging.Handler] = []
 
+        # Choose renderer
+        if clean_output and format == "console":
+            renderer = structlog.dev.ConsoleRenderer(colors=True)
+            ts_fmt = "%H:%M:%S"
+        else:
+            renderer = (
+                structlog.processors.JSONRenderer()
+                if format == "json"
+                else structlog.dev.ConsoleRenderer(colors=True)
+            )
+            ts_fmt = "iso"
+
+        # Pre-chain for stdlib logs → build event_dict from LogRecord
+        foreign_pre_chain = [
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.TimeStamper(fmt=ts_fmt),
+            _redact_processor,
+        ]
+        if ExtraAdder is not None:
+            foreign_pre_chain.insert(0, ExtraAdder())
+
         if not disable_console:
             console_handler = logging.StreamHandler()
-            console_handler.setFormatter(logging.Formatter("%(message)s"))
+            console_handler.setFormatter(
+                ProcessorFormatter(
+                    processor=renderer,
+                    foreign_pre_chain=foreign_pre_chain,
+                )
+            )
             console_handler.addFilter(ApplicationFilter())
             console_handler.addFilter(RedactionFilter())
             handlers.append(console_handler)
 
         if file:
             file_handler = logging.FileHandler(file)
-            file_handler.setFormatter(logging.Formatter("%(message)s"))
+            file_handler.setFormatter(
+                ProcessorFormatter(
+                    processor=(
+                        structlog.processors.JSONRenderer()
+                        if format == "json"
+                        else renderer
+                    ),
+                    foreign_pre_chain=foreign_pre_chain,
+                )
+            )
             file_handler.addFilter(ApplicationFilter())
             file_handler.addFilter(RedactionFilter())
             handlers.append(file_handler)
@@ -157,33 +199,18 @@ class LoggingConfig:
         for name in ("httpx", "httpcore", "urllib3", "gensim"):
             logging.getLogger(name).setLevel(logging.WARNING)
 
-        # structlog processors
-        if clean_output and format == "console":
-            processors = [
-                structlog.stdlib.filter_by_level,
-                structlog.processors.TimeStamper(fmt="%H:%M:%S"),
-                _redact_processor,
-                structlog.dev.ConsoleRenderer(colors=True),
-            ]
-        else:
-            processors = [
+        # structlog processors – delegate rendering to ProcessorFormatter
+        structlog.configure(
+            processors=[
                 structlog.stdlib.filter_by_level,
                 structlog.stdlib.add_logger_name,
                 structlog.stdlib.add_log_level,
-                structlog.processors.TimeStamper(fmt="iso"),
-                structlog.processors.StackInfoRenderer(),
-                structlog.processors.UnicodeDecoder(),
+                structlog.processors.TimeStamper(fmt=ts_fmt),
                 _redact_processor,
-            ]
-            if format == "json":
-                processors.append(structlog.processors.JSONRenderer())
-            else:
-                processors.append(structlog.dev.ConsoleRenderer(colors=True))
-
-        structlog.configure(
-            processors=processors,
+                ProcessorFormatter.wrap_for_formatter,
+            ],
             wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
-            logger_factory=structlog.stdlib.LoggerFactory(),
+            logger_factory=LoggerFactory(),
             cache_logger_on_first_use=False,
         )
 
