@@ -162,6 +162,18 @@ class FileConverter:
                         llm_endpoint=self.config.markitdown.llm_endpoint,
                     )
 
+                    # Warn when legacy MarkItDown overrides are in effect
+                    try:
+                        if self.config.markitdown.llm_model or self.config.markitdown.llm_endpoint or self.config.markitdown.llm_api_key:
+                            self.logger.warning(
+                                "Using MarkItDown llm_* overrides; prefer configuring global.llm",
+                                llm_model=bool(self.config.markitdown.llm_model),
+                                llm_endpoint=bool(self.config.markitdown.llm_endpoint),
+                                llm_api_key=bool(self.config.markitdown.llm_api_key),
+                            )
+                    except Exception:
+                        pass
+
                     # Create LLM client backed by provider (OpenAI-compatible wrapper)
                     llm_client = self._create_llm_client()
 
@@ -275,13 +287,79 @@ class FileConverter:
 
             return _OpenAICompatibleClient(chat_client)
         except Exception as e:
-            # Provider path unavailable; fall back to OpenAI-compatible client directly
+            # Provider path unavailable; fall back to an HTTP-based OpenAI-compatible client
             try:
-                api_key = self.config.markitdown.llm_api_key or os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY", "")
-                from openai import OpenAI  # type: ignore
-                return OpenAI(base_url=self.config.markitdown.llm_endpoint, api_key=api_key)
+                import json as _json
+                import urllib.request as _urlreq
+
+                base_url = (self.config.markitdown.llm_endpoint or "").rstrip("/")
+                if not base_url:
+                    raise RuntimeError("No llm_endpoint configured for MarkItDown fallback")
+                api_key = (
+                    self.config.markitdown.llm_api_key
+                    or os.getenv("OPENAI_API_KEY")
+                    or os.getenv("LLM_API_KEY", "")
+                )
+
+                class _ResponseMessage:
+                    def __init__(self, content: str):
+                        self.content = content
+
+                class _ResponseChoice:
+                    def __init__(self, content: str):
+                        self.message = _ResponseMessage(content)
+
+                class _Response:
+                    def __init__(self, content: str, model_name: str, usage: dict | None, raw: dict):
+                        self.choices = [_ResponseChoice(content)]
+                        self.model = model_name
+                        self.usage = usage
+                        self.raw = raw
+
+                def _join(u: str, p: str) -> str:
+                    return f"{u}/{p.lstrip('/')}"
+
+                class _HTTPCompletions:
+                    def __init__(self, base: str, api_key: str):
+                        self._base = base
+                        self._api_key = api_key
+
+                    def create(self, *, model: str, messages: list[dict], **kwargs):
+                        url = _join(self._base, "/chat/completions")
+                        payload = {"model": model, "messages": messages}
+                        for k in ("temperature", "max_tokens", "top_p", "frequency_penalty", "presence_penalty", "stop"):
+                            if k in kwargs and kwargs[k] is not None:
+                                payload[k] = kwargs[k]
+                        headers = {"Content-Type": "application/json"}
+                        if self._api_key:
+                            headers["Authorization"] = f"Bearer {self._api_key}"
+                        req = _urlreq.Request(url, data=_json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+                        with _urlreq.urlopen(req, timeout=60) as resp:  # nosec B310 - controlled URL from config
+                            body = resp.read()
+                        data = _json.loads(body.decode("utf-8"))
+                        text = ""
+                        choices = data.get("choices") or []
+                        if choices:
+                            msg = (choices[0] or {}).get("message") or {}
+                            text = msg.get("content", "") or ""
+                        usage = data.get("usage")
+                        used_model = data.get("model", model)
+                        return _Response(text, used_model, usage, data)
+
+                class _HTTPChat:
+                    def __init__(self, base: str, api_key: str):
+                        self.completions = _HTTPCompletions(base, api_key)
+
+                class _HTTPOpenAICompatibleClient:
+                    def __init__(self, base: str, api_key: str):
+                        self.chat = _HTTPChat(base, api_key)
+
+                return _HTTPOpenAICompatibleClient(base_url, api_key)
             except Exception as e2:  # pragma: no cover
-                self.logger.warning("LLM provider and OpenAI client unavailable for MarkItDown", error=str(e2) or str(e))
+                self.logger.warning(
+                    "LLM provider unavailable and HTTP OpenAI-compatible fallback failed for MarkItDown",
+                    error=str(e2) or str(e),
+                )
                 raise MarkItDownError(Exception("No LLM client available for MarkItDown"))
 
     def convert_file(self, file_path: str) -> str:

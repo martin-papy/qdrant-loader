@@ -6,7 +6,7 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Release Notes v0.6.1](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (August 13, 2025)
+📋 **[Release Notes v0.7,0](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (August 29, 2025)
 
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
 
@@ -166,6 +166,12 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA setup
 - **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
+
+## 🔄 Migration note (LLM configuration)
+
+- LLM settings have moved from legacy `global.embedding.*` to the unified, provider-agnostic `global.llm.*` block.
+- Legacy fields are still supported but emit deprecation warnings and will be removed in a future release.
+- See: [Configuration File Reference](./docs/users/configuration/config-file-reference.md) and [Environment Variables](./docs/users/configuration/environment-variables.md).
 
 ### 🛠️ Developer Resources
 

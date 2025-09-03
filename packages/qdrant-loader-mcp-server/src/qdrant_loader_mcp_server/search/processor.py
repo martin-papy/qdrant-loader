@@ -3,13 +3,9 @@
 import re
 from typing import Any
 
-try:  # pragma: no cover - optional import; tests patch symbol
-    from openai import AsyncOpenAI as _AsyncOpenAI  # type: ignore
-except Exception:
-    _AsyncOpenAI = None  # type: ignore[assignment]
-
 # Public alias so tests can patch qdrant_loader_mcp_server.search.processor.AsyncOpenAI
-AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
+# Do not import the OpenAI library at runtime to avoid hard dependency.
+AsyncOpenAI = None  # type: ignore[assignment]
 
 from ..config import OpenAIConfig
 from ..utils.logging import LoggingConfig
@@ -30,7 +26,6 @@ class QueryProcessor:
                          If loading fails, will attempt fallback to 'en_core_web_sm'.
         """
         # Expose patchable AsyncOpenAI alias to align with engine pattern
-        AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
         self.openai_client: Any | None = (
             AsyncOpenAI(api_key=openai_config.api_key) if AsyncOpenAI else None
         )

@@ -15,11 +15,9 @@ from typing import TYPE_CHECKING, Any
 
 # Soft-import async clients to avoid hard dependency at import time
 if TYPE_CHECKING:
-    from openai import AsyncOpenAI
     from qdrant_client import AsyncQdrantClient
 else:
     AsyncQdrantClient = None  # type: ignore[assignment]
-    AsyncOpenAI = None  # type: ignore[assignment]
 
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
@@ -73,7 +71,7 @@ class ConflictDetector:
         self,
         spacy_analyzer: SpaCyQueryAnalyzer,
         qdrant_client: AsyncQdrantClient | None = None,
-        openai_client: AsyncOpenAI | None = None,
+        openai_client: Any | None = None,
         collection_name: str = "documents",
         preferred_vector_name: str | None = "dense",
     ):

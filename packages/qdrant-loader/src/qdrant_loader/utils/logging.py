@@ -521,11 +521,54 @@ class LoggingConfig:
             logger.setLevel(logging.WARNING)  # Only show warnings and errors
 
         # Configure structlog processors based on format and clean_output
+        # Redaction processor to mask sensitive fields in event_dict
+        def _redact_sensitive(logger, method_name, event_dict):  # type: ignore[no-redef]
+            sensitive_keys = {
+                "api_key",
+                "llm_api_key",
+                "authorization",
+                "Authorization",
+                "token",
+                "access_token",
+                "secret",
+                "password",
+            }
+
+            def _mask(value: str) -> str:
+                try:
+                    if not isinstance(value, str) or not value:
+                        return "***REDACTED***"
+                    # Preserve small hint while masking majority
+                    if len(value) <= 8:
+                        return "***REDACTED***"
+                    return value[:2] + "***REDACTED***" + value[-2:]
+                except Exception:
+                    return "***REDACTED***"
+
+            def _deep_redact(obj):
+                try:
+                    if isinstance(obj, dict):
+                        red = {}
+                        for k, v in obj.items():
+                            if k in sensitive_keys:
+                                red[k] = _mask(v) if isinstance(v, str) else "***REDACTED***"
+                            else:
+                                red[k] = _deep_redact(v)
+                        return red
+                    if isinstance(obj, list):
+                        return [_deep_redact(i) for i in obj]
+                    return obj
+                except Exception:
+                    return obj
+
+            return _deep_redact(event_dict)
+
         if clean_output and format == "console":
             # Minimal processors for clean output
             processors = [
                 structlog.stdlib.filter_by_level,
                 structlog.processors.TimeStamper(fmt="%H:%M:%S"),
+                _redact_sensitive,
                 CustomConsoleRenderer(colors=True),
             ]
         else:
@@ -544,6 +587,7 @@ class LoggingConfig:
                         structlog.processors.CallsiteParameter.LINENO,
                     ]
                 ),
+                _redact_sensitive,
             ]
 
             if format == "json":

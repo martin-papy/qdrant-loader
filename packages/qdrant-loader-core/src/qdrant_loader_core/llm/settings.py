@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
+import warnings
 
 
 @dataclass
@@ -77,6 +78,22 @@ class LLMSettings:
         }
         if isinstance(markit.get("llm_model"), str):
             models["chat"] = markit.get("llm_model")
+
+        # Emit deprecation warnings when relying on legacy fields
+        try:
+            if embedding or markit:
+                warnings.warn(
+                    (
+                        "Using legacy configuration fields is deprecated. "
+                        "Please migrate to 'global.llm' (see docs: configuration reference). "
+                        "Mapped from: global.embedding.* and/or file_conversion.markitdown.*"
+                    ),
+                    category=DeprecationWarning,
+                    stacklevel=2,
+                )
+        except Exception:
+            # Best-effort warning; never break mapping
+            pass
 
         return LLMSettings(
             provider=provider,

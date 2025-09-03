@@ -388,8 +388,13 @@ class EmbeddingService:
     def get_embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors."""
         # Prefer vector size from unified settings when available
-        return (
+        dimension = (
             self.settings.llm_settings.embeddings.vector_size
             or self.settings.global_config.embedding.vector_size
-            or 1536
         )
+        if not dimension:
+            logger.warning(
+                "Embedding dimension not set in config; using 1536 (deprecated default). Set global.llm.embeddings.vector_size."
+            )
+            return 1536
+        return int(dimension)
