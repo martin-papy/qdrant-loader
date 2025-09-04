@@ -139,6 +139,8 @@ global:
     provider_options:
       # For Azure: set azure_endpoint explicitly if different from base_url
       azure_endpoint: null
+      # For Ollama native servers: force endpoint behavior (auto|embed|embeddings)
+      native_endpoint: auto
 
   # Semantic analysis configuration
   # Controls text processing and topic extraction

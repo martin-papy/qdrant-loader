@@ -68,6 +68,7 @@ class OllamaEmbeddings(EmbeddingsClient):
                         model=self._model,
                         base_host=self._base_url,
                         inputs=len(inputs),
+                        # latency for v1 path hard to compute here; omitted for now
                     )
                     return [item["embedding"] for item in data.get("data", [])]
                 else:
@@ -103,6 +104,7 @@ class OllamaEmbeddings(EmbeddingsClient):
                                 model=self._model,
                                 base_host=self._base_url,
                                 inputs=len(inputs),
+                                # latency for native batch path not measured in this stub
                             )
                             return norm
                         except httpx.HTTPStatusError as exc:
@@ -136,6 +138,7 @@ class OllamaEmbeddings(EmbeddingsClient):
                         model=self._model,
                         base_host=self._base_url,
                         inputs=len(inputs),
+                        # latency for per-item path not measured in this stub
                     )
                     return vectors2
             except httpx.TimeoutException as exc:
@@ -175,6 +178,8 @@ class OllamaChat(ChatClient):
                     payload[k] = kwargs[k]
             async with httpx.AsyncClient(timeout=60.0) as client:
                 try:
+                    from datetime import datetime
+                    started = datetime.utcnow()
                     resp = await client.post(url, json=payload, headers=self._headers)
                     resp.raise_for_status()
                     data = resp.json()
@@ -183,6 +188,7 @@ class OllamaChat(ChatClient):
                     if choices:
                         msg = (choices[0] or {}).get("message") or {}
                         text = msg.get("content", "") or ""
+                    duration_ms = int((datetime.utcnow() - started).total_seconds() * 1000)
                     logger.info(
                         "LLM request",
                         provider="ollama",
@@ -190,6 +196,7 @@ class OllamaChat(ChatClient):
                         model=self._model,
                         base_host=self._base_url,
                         messages=len(messages),
+                        latency_ms=duration_ms,
                     )
                     return {"text": text, "raw": data, "usage": data.get("usage"), "model": data.get("model", self._model)}
                 except httpx.TimeoutException as exc:
@@ -217,6 +224,8 @@ class OllamaChat(ChatClient):
                 payload["options"] = {"temperature": kwargs["temperature"]}
             async with httpx.AsyncClient(timeout=60.0) as client:
                 try:
+                    from datetime import datetime
+                    started = datetime.utcnow()
                     resp = await client.post(url, json=payload, headers=self._headers)
                     resp.raise_for_status()
                     data = resp.json()
@@ -224,6 +233,7 @@ class OllamaChat(ChatClient):
                     text = ""
                     if isinstance(data.get("message"), dict):
                         text = data["message"].get("content", "") or ""
+                    duration_ms = int((datetime.utcnow() - started).total_seconds() * 1000)
                     logger.info(
                         "LLM request",
                         provider="ollama",
@@ -231,6 +241,7 @@ class OllamaChat(ChatClient):
                         model=self._model,
                         base_host=self._base_url,
                         messages=len(messages),
+                        latency_ms=duration_ms,
                     )
                     return {"text": text, "raw": data, "usage": None, "model": self._model}
                 except httpx.TimeoutException as exc:

@@ -115,6 +115,7 @@ global:
       vector_size: 1536
     provider_options:
       azure_endpoint: ${AZURE_OPENAI_ENDPOINT}
+      native_endpoint: auto
 
 > Azure OpenAI notes:
 > - Use the resource root for `base_url`, e.g. `https://<resource>.openai.azure.com` (do not include `/openai/deployments/...`).
@@ -125,6 +126,18 @@ global:
 > - If your server exposes OpenAI-compatible `/v1`, set `base_url` to include `/v1` and we will call `/v1/embeddings` and parse `data[].embedding`.
 > - In native mode (no `/v1`), we try batch `POST /api/embed` first and parse `{ "embeddings": [[...], ...] }`. If unsupported (404/405/501), we fall back to per-item `POST /api/embeddings` and parse `{ "embedding": [...] }` or `{ "data": { "embedding": [...] } }`.
 > - You can override detection with `global.llm.provider_options.native_endpoint: embed | embeddings | auto` (default: auto).
+
+### Troubleshooting
+
+- Azure 404 or 400 with deployment path
+  - Symptom: 404 Not Found or confusing errors when calling embeddings/chat
+  - Cause: `base_url` incorrectly includes `/openai/deployments/...`
+  - Fix: Use resource root `https://<resource>.openai.azure.com` and set `models.*` to deployment names; include `api_version` (e.g., `2024-05-01-preview`).
+
+- Ollama empty or invalid embeddings
+  - Symptom: Empty vectors or key errors parsing response
+  - Cause: Server endpoint mismatch (`/api/embed` vs `/api/embeddings`)
+  - Fix: Set `provider_options.native_endpoint` to `embed` or `embeddings`, or rely on auto-detection.
   chunking:
     chunk_size: 1500
     chunk_overlap: 200

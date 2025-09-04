@@ -93,10 +93,13 @@ class _OpenAITokenCounter(TokenCounter):
 
 
 class OpenAIEmbeddings(EmbeddingsClient):
-    def __init__(self, client: Any, model: str, base_host: str | None):
+    def __init__(
+        self, client: Any, model: str, base_host: str | None, *, provider_label: str = "openai"
+    ):
         self._client = client
         self._model = model
         self._base_host = base_host
+        self._provider_label = provider_label
 
     async def embed(self, inputs: list[str]) -> list[list[float]]:
         if not self._client:
@@ -113,7 +116,7 @@ class OpenAIEmbeddings(EmbeddingsClient):
             try:
                 logger.info(
                     "LLM request",
-                    provider="openai",
+                    provider=self._provider_label,
                     operation="embeddings",
                     model=self._model,
                     base_host=self._base_host,
@@ -128,7 +131,7 @@ class OpenAIEmbeddings(EmbeddingsClient):
             try:
                 logger.warning(
                     "LLM error",
-                    provider="openai",
+                    provider=self._provider_label,
                     operation="embeddings",
                     model=self._model,
                     base_host=self._base_host,
@@ -140,10 +143,13 @@ class OpenAIEmbeddings(EmbeddingsClient):
 
 
 class OpenAIChat(ChatClient):
-    def __init__(self, client: Any, model: str, base_host: str | None):
+    def __init__(
+        self, client: Any, model: str, base_host: str | None, *, provider_label: str = "openai"
+    ):
         self._client = client
         self._model = model
         self._base_host = base_host
+        self._provider_label = provider_label
 
     async def chat(
         self, messages: list[dict[str, Any]], **kwargs: Any
@@ -175,7 +181,7 @@ class OpenAIChat(ChatClient):
             try:
                 logger.info(
                     "LLM request",
-                    provider="openai",
+                    provider=self._provider_label,
                     operation="chat",
                     model=model_name,
                     base_host=self._base_host,
@@ -213,7 +219,7 @@ class OpenAIChat(ChatClient):
             try:
                 logger.warning(
                     "LLM error",
-                    provider="openai",
+                    provider=self._provider_label,
                     operation="chat",
                     model=model_name,
                     base_host=self._base_host,
@@ -240,11 +246,11 @@ class OpenAIProvider(LLMProvider):
 
     def embeddings(self) -> EmbeddingsClient:
         model = self._settings.models.get("embeddings", "")
-        return OpenAIEmbeddings(self._client, model, self._base_host)
+        return OpenAIEmbeddings(self._client, model, self._base_host, provider_label="openai")
 
     def chat(self) -> ChatClient:
         model = self._settings.models.get("chat", "")
-        return OpenAIChat(self._client, model, self._base_host)
+        return OpenAIChat(self._client, model, self._base_host, provider_label="openai")
 
     def tokenizer(self) -> TokenCounter:
         return _OpenAITokenCounter(self._settings.tokenizer)

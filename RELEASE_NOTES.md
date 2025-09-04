@@ -4,11 +4,15 @@
 
 ### LLM Provider-Agnostic Configuration & Migration
 
-- BETA : Introduced support of Ollama and Azure AI LLM providers
+- BETA: Added Azure OpenAI support (no more 404s from misconfigured endpoints) and robust Ollama endpoint handling
 - Introduced unified `global.llm.*` configuration controlling provider, `base_url`, models, tokenizer, request policy, rate limits, and `embeddings.vector_size`.
 - Legacy fields (`global.embedding.*` and `file_conversion.markitdown.*`) remain supported with deprecation warnings; migration is recommended.
 - Vector size is now read from config; hardcoded `1536` defaults replaced with config-driven values and a deprecated fallback warning when unspecified.
 - Structured logging added for LLM requests (provider, operation, model, latency; secrets redacted) and normalized exception mapping across providers.
+- Documentation updated with the new schema and env vars:
+  - Azure logs label provider as `azure_openai`; OpenAI as `openai`; Ollama logs include latency for chat.
+  - Clear error when Azure `base_url` includes `/openai/deployments/...`; requires `api_version`.
+  - Ollama auto-detects `/v1` vs native. Native tries batch `/api/embed` first, falls back to `/api/embeddings`.
 - Documentation updated with the new schema and env vars:
   - Configuration reference: `docs/users/configuration/config-file-reference.md`
   - Environment variables: `docs/users/configuration/environment-variables.md`
