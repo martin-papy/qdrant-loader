@@ -153,6 +153,7 @@ class FieldQueryParser:
             Qdrant Filter object or None if no filters needed
         """
         must_conditions = []
+        should_conditions = []
 
         # Add field query conditions
         if field_queries:
@@ -196,19 +197,40 @@ class FieldQueryParser:
             else False
         )
         if project_ids and not has_project_id_field_query:
-            project_condition = models.FieldCondition(
+            # Support both top-level project_id and nested metadata.project_id, and root 'source'
+            top_level = models.FieldCondition(
                 key="project_id", match=models.MatchAny(any=project_ids)
             )
-            must_conditions.append(project_condition)
-            self.logger.debug(f"Added project filter: {project_ids}")
+            top_level_source = models.FieldCondition(
+                key="source", match=models.MatchAny(any=project_ids)
+            )
+            nested_meta = models.NestedCondition(
+                nested=models.Nested(
+                    key="metadata",
+                    filter=models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key="project_id",
+                                match=models.MatchAny(any=project_ids),
+                            )
+                        ]
+                    ),
+                )
+            )
+
+            # Use OR semantics so either storage layout matches
+            should_conditions.extend([top_level, top_level_source, nested_meta])
+            self.logger.debug(
+                f"Added project filter (top-level or nested): {project_ids}"
+            )
         elif project_ids and has_project_id_field_query:
             self.logger.debug(
                 "Skipping project filter because a project_id field query is present"
             )
 
         # Return filter if we have conditions
-        if must_conditions:
-            return models.Filter(must=must_conditions)
+        if must_conditions or should_conditions:
+            return models.Filter(must=must_conditions, should=should_conditions)
 
         return None
 

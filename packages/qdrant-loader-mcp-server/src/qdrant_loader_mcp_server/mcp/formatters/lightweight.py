@@ -353,16 +353,23 @@ class LightweightResultFormatters:
                         "recommendation_reason", rec.get("reason", "")
                     ),
                     "relationship_type": rec.get("strategy", ""),
-                    "basic_metadata": {
-                        "source_type": getattr(
-                            rec.get("document"),
-                            "source_type",
-                            rec.get("source_type", "unknown"),
-                        ),
-                        "project_id": getattr(
-                            rec.get("document"), "project_id", rec.get("project_id")
-                        ),
-                    },
+                    "basic_metadata": (lambda doc_obj, rec_dict: {
+                        "source_type": (
+                            getattr(doc_obj, "source_type", None)
+                            if doc_obj is not None
+                            else None
+                        )
+                        or rec_dict.get("source_type")
+                        or (rec_dict.get("document") or {}).get("source_type")
+                        or "unknown",
+                        "project_id": (
+                            getattr(doc_obj, "project_id", None)
+                            if doc_obj is not None
+                            else None
+                        )
+                        or rec_dict.get("project_id")
+                        or (rec_dict.get("document") or {}).get("project_id"),
+                    })(rec.get("document"), rec),
                 }
                 for rec in complementary_recommendations
             ],
@@ -403,11 +410,29 @@ class LightweightResultFormatters:
             "expand_document_hint": "Use tools/call with 'search' to get full document details",
         }
 
-        # Only include target_document if available to satisfy schema type constraints
+        # Only include target_document if available; shape must match schema
         if target_document is not None:
-            result["target_document"] = FormatterUtils.extract_minimal_doc_fields(
-                target_document
-            )
+            if isinstance(target_document, dict):
+                result["target_document"] = {
+                    "title": target_document.get("title", "Untitled"),
+                    "content_preview": target_document.get("content_preview", ""),
+                    "source_type": target_document.get("source_type", "unknown"),
+                }
+            else:
+                # Assume HybridSearchResult-like object
+                title_val = (
+                    target_document.get_display_title()
+                    if hasattr(target_document, "get_display_title")
+                    else getattr(target_document, "source_title", "Untitled")
+                )
+                text_val = getattr(target_document, "text", "") or ""
+                result["target_document"] = {
+                    "title": title_val,
+                    "content_preview": (
+                        text_val[:200] + "..." if isinstance(text_val, str) and len(text_val) > 200 else text_val
+                    ),
+                    "source_type": getattr(target_document, "source_type", "unknown"),
+                }
 
         return result
 

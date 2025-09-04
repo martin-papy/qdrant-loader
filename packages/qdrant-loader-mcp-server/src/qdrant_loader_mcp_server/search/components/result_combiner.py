@@ -213,6 +213,8 @@ class ResultCombiner:
                     "created_at": info.get("created_at", ""),
                     "last_modified": info.get("updated_at", ""),
                     "repo_name": info.get("source", ""),
+                    # Project scoping is stored at the root as 'source'
+                    "project_id": info.get("source", ""),
                     # Construct file path from nested metadata
                     "file_path": (
                         metadata.get("file_directory", "").rstrip("/")
@@ -237,9 +239,7 @@ class ResultCombiner:
                     "total_chunks": metadata.get("total_sub_chunks", total_chunks),
                     "chunking_strategy": metadata.get("chunking_strategy")
                     or metadata.get("conversion_method"),
-                    "project_id": metadata.get("project_id"),
-                    "project_name": metadata.get("project_name"),
-                    "project_description": metadata.get("project_description"),
+                    # Project fields now come from root payload; avoid overriding with nested metadata
                     "collection_name": metadata.get("collection_name"),
                     # Additional rich fields from actual Qdrant structure
                     "section_title": metadata.get("section_title"),
@@ -257,6 +257,8 @@ class ResultCombiner:
                 # Merge with flattened metadata components (flattened takes precedence for conflicts)
                 flattened_components = flatten_metadata_components(metadata_components)
                 enhanced_metadata.update(flattened_components)
+
+                # NOTE: No additional fallback; root payload project_id is authoritative
 
                 # Create HybridSearchResult using factory function
                 hybrid_result = create_hybrid_search_result(

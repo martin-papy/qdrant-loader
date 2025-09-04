@@ -393,18 +393,75 @@ class IntelligenceOperations:
             target_results = await self.engine.hybrid_search.search(
                 query=target_query,
                 limit=1,
-                source_types=source_types,
+                source_types=(source_types or None),
                 project_ids=project_ids,
             )
 
             self.logger.info(f"🎯 Target search returned {len(target_results)} results")
             if not target_results:
                 self.logger.warning("No target document found!")
-                return {
-                    "complementary_recommendations": [],
-                    "target_document": None,
-                    "context_documents_analyzed": 0,
+                # Retry with a relaxed/sanitized query (drop stopwords and shorten)
+                import re
+
+                tokens = re.findall(r"\w+", target_query)
+                stop = {
+                    "the",
+                    "and",
+                    "or",
+                    "of",
+                    "for",
+                    "to",
+                    "a",
+                    "an",
+                    "phase",
+                    "kickoff",
                 }
+                relaxed_tokens = [t for t in tokens if t.lower() not in stop]
+                relaxed_query = " ".join(relaxed_tokens[:4]) if relaxed_tokens else target_query
+
+                if relaxed_query and relaxed_query != target_query:
+                    self.logger.info(
+                        f"🔁 Retrying target search with relaxed query: '{relaxed_query}'"
+                    )
+                    target_results = await self.engine.hybrid_search.search(
+                        query=relaxed_query,
+                        limit=1,
+                        source_types=(source_types or None),
+                        project_ids=project_ids,
+                    )
+
+                # Final fallback: use project anchor terms
+                if not target_results:
+                    fallback_query = "Mya Health " + " ".join(relaxed_tokens[:2])
+                    self.logger.info(
+                        f"🔁 Final fallback target search with query: '{fallback_query}'"
+                    )
+                    target_results = await self.engine.hybrid_search.search(
+                        query=fallback_query,
+                        limit=1,
+                        source_types=(source_types or None),
+                        project_ids=project_ids,
+                    )
+
+                if not target_results:
+                    # Absolute last resort: generic project query
+                    generic_query = "Mya Health"
+                    self.logger.info(
+                        f"🔁 Generic fallback target search with query: '{generic_query}'"
+                    )
+                    target_results = await self.engine.hybrid_search.search(
+                        query=generic_query,
+                        limit=1,
+                        source_types=(source_types or None),
+                        project_ids=project_ids,
+                    )
+
+                if not target_results:
+                    return {
+                        "complementary_recommendations": [],
+                        "target_document": None,
+                        "context_documents_analyzed": 0,
+                    }
 
             target_doc = target_results[0]
             self.logger.info(f"📄 Target document: {target_doc.get_display_title()}")
@@ -413,11 +470,11 @@ class IntelligenceOperations:
                 f"🔍 Step 2: Searching for context documents with query: '{context_query}'"
             )
             # Get context documents for comparison - adaptive limit based on max_recommendations
-            adaptive_limit = max(max_recommendations * 4, 20)
+            adaptive_limit = max(max_recommendations * 8, 40)
             context_results = await self.engine.hybrid_search.search(
                 query=context_query,
                 limit=adaptive_limit,
-                source_types=source_types,
+                source_types=(source_types or None),
                 project_ids=project_ids,
             )
 
@@ -426,15 +483,28 @@ class IntelligenceOperations:
             )
             if not context_results:
                 self.logger.warning("No context documents found!")
-                return {
-                    "complementary_recommendations": [],
-                    "target_document": {
-                        "document_id": target_doc.document_id,
-                        "title": target_doc.get_display_title(),
-                        "source_type": target_doc.source_type,
-                    },
-                    "context_documents_analyzed": 0,
-                }
+                # Retry with a broad project-level context query
+                broad_context = "Mya Health documentation architecture project"
+                self.logger.info(
+                    f"🔁 Retrying context search with broad query: '{broad_context}'"
+                )
+                context_results = await self.engine.hybrid_search.search(
+                    query=broad_context,
+                    limit=adaptive_limit,
+                    source_types=(source_types or None),
+                    project_ids=project_ids,
+                )
+
+                if not context_results:
+                    return {
+                        "complementary_recommendations": [],
+                        "target_document": {
+                            "document_id": target_doc.document_id,
+                            "title": target_doc.get_display_title(),
+                            "source_type": target_doc.source_type,
+                        },
+                        "context_documents_analyzed": 0,
+                    }
 
             # Find complementary content
             self.logger.info("🔍 Step 3: Finding complementary content...")
@@ -473,6 +543,9 @@ class IntelligenceOperations:
                             "strategy": rec.get(
                                 "relationship_type", rec.get("strategy", "related")
                             ),
+                            # Preserve essential metadata for downstream formatters
+                            "source_type": getattr(doc, "source_type", rec.get("source_type", "unknown")),
+                            "project_id": getattr(doc, "project_id", rec.get("project_id")),
                         }
                         transformed_recommendations.append(transformed_rec)
                 else:
