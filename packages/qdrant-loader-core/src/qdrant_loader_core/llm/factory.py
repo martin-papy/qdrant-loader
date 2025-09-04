@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from .providers.ollama import OllamaProvider
 from .providers.openai import OpenAIProvider
+
 try:
     from .providers.azure_openai import AzureOpenAIProvider  # type: ignore
 except Exception:  # pragma: no cover - optional dependency surface

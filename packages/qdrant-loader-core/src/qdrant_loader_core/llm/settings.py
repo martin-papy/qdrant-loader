@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
-import warnings
 from urllib.parse import urlparse
 
 

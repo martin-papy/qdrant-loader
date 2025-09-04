@@ -201,8 +201,8 @@ class FileConverter:
         """
         # Attempt provider-first wiring using core settings
         try:
-            from importlib import import_module
             from dataclasses import replace as _dc_replace
+            from importlib import import_module
 
             # Lazy import to avoid circular import at module import time
             from importlib import import_module as _import_module
@@ -213,7 +213,7 @@ class FileConverter:
             LLMSettings = core_settings_mod.LLMSettings
             create_provider = core_factory_mod.create_provider
 
-            base_llm: "LLMSettings" = settings.llm_settings  # type: ignore
+            base_llm: LLMSettings = settings.llm_settings  # type: ignore
 
             # Apply legacy MarkItDown overrides (model/endpoint/api_key) when provided
             md = self.config.markitdown

@@ -2,24 +2,23 @@ from __future__ import annotations
 
 from typing import Any
 
-import json
-
 try:
     import httpx  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     httpx = None  # type: ignore
 
 from ...logging import LoggingConfig
-from ..settings import LLMSettings
-from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 from ..errors import (
-    LLMError,
-    TimeoutError as LLMTimeoutError,
-    RateLimitedError,
-    InvalidRequestError,
     AuthError,
+    InvalidRequestError,
+    RateLimitedError,
     ServerError,
 )
+from ..errors import (
+    TimeoutError as LLMTimeoutError,
+)
+from ..settings import LLMSettings
+from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -75,11 +74,9 @@ class OllamaEmbeddings(EmbeddingsClient):
                     # Determine native endpoint preference: embed | embeddings | auto (default)
                     native_pref = str(self._provider_options.get("native_endpoint", "auto")).lower()
                     prefer_embed = native_pref != "embeddings"
-                    tried_embed = False
 
                     # Try batch embed first when preferred
                     if prefer_embed:
-                        tried_embed = True
                         url = _join_url(self._base_url, "/api/embed")
                         payload = {"model": self._model, "input": inputs}
                         try:

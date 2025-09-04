@@ -144,7 +144,7 @@ async def test_pipeline_accepts_string_metrics_dir(
     metrics_dir_str = str(tmp_path / "metrics-out")
 
     # Create pipeline with metrics_dir as string
-    pipeline = AsyncIngestionPipeline(
+    AsyncIngestionPipeline(
         settings=sample_multi_project_settings,
         qdrant_manager=mock_qdrant_manager,
         state_manager=mock_state_manager,

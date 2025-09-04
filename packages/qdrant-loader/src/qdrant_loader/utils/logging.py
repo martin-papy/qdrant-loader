@@ -629,7 +629,9 @@ class LoggingConfig:
 
 # Standardize on core logging configuration
 try:
-    from qdrant_loader_core.logging import LoggingConfig as _CoreLoggingConfig  # type: ignore
+    from qdrant_loader_core.logging import (
+        LoggingConfig as _CoreLoggingConfig,  # type: ignore
+    )
 
     LoggingConfig = _CoreLoggingConfig  # type: ignore[assignment]
 except Exception:

@@ -15,6 +15,7 @@ from typing import Any
 
 import structlog
 from structlog.stdlib import LoggerFactory
+
 try:
     # ExtraAdder is available in structlog >= 20
     from structlog.stdlib import ExtraAdder  # type: ignore
