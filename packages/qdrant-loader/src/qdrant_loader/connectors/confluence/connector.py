@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from urllib.parse import quote, urljoin
 
 import requests
 
@@ -633,7 +634,10 @@ class ConfluenceConnector(BaseConnector):
 
             # Construct URL based on deployment type
             page_url = self._construct_page_url(
-                space or "", content_id or "", content.get("type", "page")
+                space or "",
+                content_id or "",
+                title or "",
+                content.get("type", "page"),
             )
 
             # Parse timestamps for Document constructor
@@ -668,30 +672,39 @@ class ConfluenceConnector(BaseConnector):
             raise
 
     def _construct_page_url(
-        self, space: str, content_id: str, content_type: str = "page"
+        self, space: str, content_id: str, title: str, content_type: str = "page"
     ) -> str:
         """Construct the appropriate URL for a Confluence page based on deployment type.
 
         Args:
             space: The space key
             content_id: The content ID
+            title: The page title (used for Data Center URLs)
             content_type: The type of content (page, blogpost, etc.)
 
         Returns:
             The constructed URL
         """
+        # Ensure base is treated as a directory to preserve any path components
+        base = str(self.base_url)
+        base = base if base.endswith("/") else base + "/"
+
         if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
-            # Cloud URLs use a different format
+            # Cloud URLs use ID-based format
             if content_type == "blogpost":
-                return f"{self.base_url}/spaces/{space}/blog/{content_id}"
+                path = f"spaces/{space}/blog/{content_id}"
             else:
-                return f"{self.base_url}/spaces/{space}/pages/{content_id}"
+                path = f"spaces/{space}/pages/{content_id}"
+            return urljoin(base, path)
         else:
-            # Data Center/Server URLs
+            # Data Center/Server URLs - use title for better readability
+            # URL-encode the title, replacing spaces with '+' (Confluence format)
+            encoded_title = quote(title.replace(" ", "+"), safe="+")
             if content_type == "blogpost":
-                return f"{self.base_url}/display/{space}/{content_id}"
+                path = f"display/{space}/{encoded_title}"
             else:
-                return f"{self.base_url}/display/{space}/{content_id}"
+                path = f"display/{space}/{encoded_title}"
+            return urljoin(base, path)
 
     def _parse_timestamp(self, timestamp_str: str | None) -> "datetime | None":
         """Parse a timestamp string into a datetime object.

@@ -98,6 +98,40 @@ class TestConfluenceConnector:
         expected_url = f"{connector.base_url}/rest/api/{endpoint}"
         assert connector._get_api_url(endpoint) == expected_url
 
+    def test_construct_page_url_cloud(self, connector):
+        """Cloud URLs should use ID-based format and handle base slashes."""
+        connector.config.deployment_type = ConfluenceDeploymentType.CLOUD
+        # base without trailing slash
+        connector.base_url = HttpUrl("https://company.atlassian.net/wiki")
+        url = connector._construct_page_url("DOCS", "123", "Title", "page")
+        assert url == "https://company.atlassian.net/wiki/spaces/DOCS/pages/123"
+
+        url = connector._construct_page_url("DOCS", "456", "Blog post", "blogpost")
+        assert url == "https://company.atlassian.net/wiki/spaces/DOCS/blog/456"
+
+    def test_construct_page_url_datacenter_encoding_and_double_slash(self, connector):
+        """Data Center URLs should use encoded title and avoid double slashes."""
+        connector.config.deployment_type = ConfluenceDeploymentType.DATACENTER
+        # base with trailing slash
+        connector.base_url = HttpUrl("https://confluence.example.com/")
+
+        url = connector._construct_page_url("TEST", "123", "API & Documentation", "page")
+        assert url == "https://confluence.example.com/display/TEST/API+%26+Documentation"
+
+        # Unicode characters
+        url = connector._construct_page_url("TEST", "123", "Café & Résumé", "page")
+        assert url == "https://confluence.example.com/display/TEST/Caf%C3%A9+%26+R%C3%A9sum%C3%A9"
+
+        # Long title
+        long_title = (
+            "This is a very long page title that contains many words and should be properly encoded"
+        )
+        url = connector._construct_page_url("TEST", "123", long_title, "page")
+        assert (
+            url
+            == "https://confluence.example.com/display/TEST/This+is+a+very+long+page+title+that+contains+many+words+and+should+be+properly+encoded"
+        )
+
     @pytest.mark.asyncio
     async def test_make_request_success(self, connector):
         """Test successful API request."""
