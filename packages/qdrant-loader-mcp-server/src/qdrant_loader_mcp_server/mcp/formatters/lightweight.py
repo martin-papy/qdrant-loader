@@ -336,13 +336,8 @@ class LightweightResultFormatters:
         target_query: str = "",
     ) -> dict[str, Any]:
         """Create lightweight complementary content results."""
-        return {
+        result: dict[str, Any] = {
             "target_query": target_query,
-            "target_document": (
-                FormatterUtils.extract_minimal_doc_fields(target_document)
-                if target_document
-                else None
-            ),
             "complementary_index": [
                 {
                     "document_id": getattr(
@@ -407,6 +402,14 @@ class LightweightResultFormatters:
             "lazy_loading_enabled": False,
             "expand_document_hint": "Use tools/call with 'search' to get full document details",
         }
+
+        # Only include target_document if available to satisfy schema type constraints
+        if target_document is not None:
+            result["target_document"] = FormatterUtils.extract_minimal_doc_fields(
+                target_document
+            )
+
+        return result
 
     @staticmethod
     def create_lightweight_attachment_results(
