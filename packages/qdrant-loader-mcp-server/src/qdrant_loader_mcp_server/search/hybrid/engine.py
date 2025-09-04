@@ -58,6 +58,9 @@ class HybridSearchEngine(HybridEngineAPI):
             processing_config: Optional processing configuration controlling hybrid processing behaviors
         """
         self.qdrant_client = qdrant_client
+        # Use a property-backed attribute so test fixtures can inject a client after init
+        self._openai_client = None
+        # Assign via setter to allow future propagation when pipeline is ready
         self.openai_client = openai_client
         self.collection_name = collection_name
         self.vector_weight = vector_weight
@@ -85,6 +88,28 @@ class HybridSearchEngine(HybridEngineAPI):
             search_config=search_config,
             processing_config=effective_processing_config,
         )
+
+    @property
+    def openai_client(self) -> Any:
+        return self._openai_client
+
+    @openai_client.setter
+    def openai_client(self, client: Any) -> None:
+        # Store locally
+        self._openai_client = client
+        # Best-effort propagate to vector search service and prefer explicit client over provider
+        try:
+            vss = getattr(self, "vector_search_service", None)
+            if vss is not None:
+                try:
+                    vss.openai_client = client
+                    if client is not None:
+                        # Prefer explicit OpenAI client; disable provider to avoid NotImplemented stubs
+                        setattr(vss, "embeddings_provider", None)
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
     async def search(self, *args, **kwargs):  # type: ignore[override]
         try:
