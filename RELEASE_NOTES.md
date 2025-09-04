@@ -4,6 +4,7 @@
 
 ### LLM Provider-Agnostic Configuration & Migration
 
+- BETA : Introduced support of Ollama and Azure AI LLM providers
 - Introduced unified `global.llm.*` configuration controlling provider, `base_url`, models, tokenizer, request policy, rate limits, and `embeddings.vector_size`.
 - Legacy fields (`global.embedding.*` and `file_conversion.markitdown.*`) remain supported with deprecation warnings; migration is recommended.
 - Vector size is now read from config; hardcoded `1536` defaults replaced with config-driven values and a deprecated fallback warning when unspecified.
