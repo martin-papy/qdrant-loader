@@ -133,6 +133,55 @@ class TestConfluenceConnector:
         )
 
     @pytest.mark.asyncio
+    async def test_canonical_vs_display_url_datacenter(self, connector):
+        """Display URL is title-based; canonical URL is ID-based for DC."""
+        connector.config.deployment_type = ConfluenceDeploymentType.DATACENTER
+        connector.base_url = HttpUrl("https://confluence.example.com")
+
+        content = {
+            "id": "999",
+            "title": "API & Docs",
+            "type": "page",
+            "space": {"key": "TEST"},
+            "body": {"storage": {"value": "<p>Body</p>"}},
+            "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+            "history": {"createdBy": {"displayName": "User"}, "createdDate": "2024-01-01T00:00:00Z"},
+            "metadata": {"labels": {"results": []}},
+            "children": {"comment": {"results": []}},
+            "ancestors": [],
+        }
+
+        doc = connector._process_content(content)
+        # canonical url should be id-based
+        assert doc.url == "https://confluence.example.com/spaces/TEST/pages/999"
+        # display_url should be encoded title-based
+        assert doc.metadata.get("display_url") == "https://confluence.example.com/display/TEST/API+%26+Docs"
+
+    @pytest.mark.asyncio
+    async def test_canonical_vs_display_url_cloud(self, connector):
+        """For Cloud, display and canonical are both ID-based."""
+        connector.config.deployment_type = ConfluenceDeploymentType.CLOUD
+        connector.base_url = HttpUrl("https://company.atlassian.net/wiki")
+
+        content = {
+            "id": "111",
+            "title": "Any Title",
+            "type": "page",
+            "space": {"key": "DOCS"},
+            "body": {"storage": {"value": "<p>Body</p>"}},
+            "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+            "history": {"createdBy": {"displayName": "User"}, "createdDate": "2024-01-01T00:00:00Z"},
+            "metadata": {"labels": {"results": []}},
+            "children": {"comment": {"results": []}},
+            "ancestors": [],
+        }
+
+        doc = connector._process_content(content)
+        expected = "https://company.atlassian.net/wiki/spaces/DOCS/pages/111"
+        assert doc.url == expected
+        assert doc.metadata.get("display_url") == expected
+
+    @pytest.mark.asyncio
     async def test_make_request_success(self, connector):
         """Test successful API request."""
         mock_response = MagicMock()

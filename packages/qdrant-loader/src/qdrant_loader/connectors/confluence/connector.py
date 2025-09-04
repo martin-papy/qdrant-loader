@@ -597,6 +597,19 @@ class ConfluenceConnector(BaseConnector):
             # Extract hierarchy information
             hierarchy_info = self._extract_hierarchy_info(content)
 
+            # Build canonical and display URLs
+            canonical_url = self._construct_canonical_page_url(
+                space or "",
+                content_id or "",
+                content.get("type", "page"),
+            )
+            display_url = self._construct_page_url(
+                space or "",
+                content_id or "",
+                title or "",
+                content.get("type", "page"),
+            )
+
             # Create metadata with all available information including hierarchy
             metadata = {
                 "id": content_id,
@@ -605,6 +618,8 @@ class ConfluenceConnector(BaseConnector):
                 "version": version_number,
                 "type": content.get("type", "unknown"),
                 "author": author,
+                # Human-friendly URL (kept in metadata)
+                "display_url": display_url,
                 "labels": [
                     label["name"]
                     for label in content.get("metadata", {})
@@ -632,14 +647,6 @@ class ConfluenceConnector(BaseConnector):
             # Clean content if requested
             content_text = self._clean_html(body) if clean_html else body
 
-            # Construct URL based on deployment type
-            page_url = self._construct_page_url(
-                space or "",
-                content_id or "",
-                title or "",
-                content.get("type", "page"),
-            )
-
             # Parse timestamps for Document constructor
             parsed_created_at = self._parse_timestamp(created_at)
             parsed_updated_at = self._parse_timestamp(updated_at)
@@ -652,7 +659,7 @@ class ConfluenceConnector(BaseConnector):
                 metadata=metadata,
                 source_type=SourceType.CONFLUENCE,
                 source=self.config.source,
-                url=page_url,
+                url=canonical_url,
                 is_deleted=False,
                 updated_at=parsed_updated_at,
                 created_at=parsed_created_at,
@@ -696,15 +703,19 @@ class ConfluenceConnector(BaseConnector):
             else:
                 path = f"spaces/{space}/pages/{content_id}"
             return urljoin(base, path)
+
+    def _construct_canonical_page_url(
+        self, space: str, content_id: str, content_type: str = "page"
+    ) -> str:
+        """Construct a canonical ID-based URL for both Cloud and Data Center."""
+        base = str(self.base_url)
+        base = base if base.endswith("/") else base + "/"
+
+        if content_type == "blogpost":
+            path = f"spaces/{space}/blog/{content_id}"
         else:
-            # Data Center/Server URLs - use title for better readability
-            # URL-encode the title, replacing spaces with '+' (Confluence format)
-            encoded_title = quote(title.replace(" ", "+"), safe="+")
-            if content_type == "blogpost":
-                path = f"display/{space}/{encoded_title}"
-            else:
-                path = f"display/{space}/{encoded_title}"
-            return urljoin(base, path)
+            path = f"spaces/{space}/pages/{content_id}"
+        return urljoin(base, path)
 
     def _parse_timestamp(self, timestamp_str: str | None) -> "datetime | None":
         """Parse a timestamp string into a datetime object.
