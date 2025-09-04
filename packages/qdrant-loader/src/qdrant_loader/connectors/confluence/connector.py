@@ -703,6 +703,15 @@ class ConfluenceConnector(BaseConnector):
             else:
                 path = f"spaces/{space}/pages/{content_id}"
             return urljoin(base, path)
+        else:
+            # Data Center/Server URLs - use title for better readability
+            # URL-encode the title, replacing spaces with '+' (Confluence format)
+            encoded_title = quote(title.replace(" ", "+"), safe="+")
+            if content_type == "blogpost":
+                path = f"display/{space}/{encoded_title}"
+            else:
+                path = f"display/{space}/{encoded_title}"
+            return urljoin(base, path)
 
     def _construct_canonical_page_url(
         self, space: str, content_id: str, content_type: str = "page"
