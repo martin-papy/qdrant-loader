@@ -4,6 +4,17 @@
 
 # Global configuration for all projects
 global:
+  # Unified LLM configuration for tests (provider-agnostic)
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o"
+    tokenizer: "cl100k_base"
+    embeddings:
+      vector_size: 1536
   # Qdrant configuration for tests
   qdrant:
     url: "${QDRANT_URL}"

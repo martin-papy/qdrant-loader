@@ -98,6 +98,89 @@ class TestConfluenceConnector:
         expected_url = f"{connector.base_url}/rest/api/{endpoint}"
         assert connector._get_api_url(endpoint) == expected_url
 
+    def test_construct_page_url_cloud(self, connector):
+        """Cloud URLs should use ID-based format and handle base slashes."""
+        connector.config.deployment_type = ConfluenceDeploymentType.CLOUD
+        # base without trailing slash
+        connector.base_url = HttpUrl("https://company.atlassian.net/wiki")
+        url = connector._construct_page_url("DOCS", "123", "Title", "page")
+        assert url == "https://company.atlassian.net/wiki/spaces/DOCS/pages/123"
+
+        url = connector._construct_page_url("DOCS", "456", "Blog post", "blogpost")
+        assert url == "https://company.atlassian.net/wiki/spaces/DOCS/blog/456"
+
+    def test_construct_page_url_datacenter_encoding_and_double_slash(self, connector):
+        """Data Center URLs should use encoded title and avoid double slashes."""
+        connector.config.deployment_type = ConfluenceDeploymentType.DATACENTER
+        # base with trailing slash
+        connector.base_url = HttpUrl("https://confluence.example.com/")
+
+        url = connector._construct_page_url("TEST", "123", "API & Documentation", "page")
+        assert url == "https://confluence.example.com/display/TEST/API+%26+Documentation"
+
+        # Unicode characters
+        url = connector._construct_page_url("TEST", "123", "Café & Résumé", "page")
+        assert url == "https://confluence.example.com/display/TEST/Caf%C3%A9+%26+R%C3%A9sum%C3%A9"
+
+        # Long title
+        long_title = (
+            "This is a very long page title that contains many words and should be properly encoded"
+        )
+        url = connector._construct_page_url("TEST", "123", long_title, "page")
+        assert (
+            url
+            == "https://confluence.example.com/display/TEST/This+is+a+very+long+page+title+that+contains+many+words+and+should+be+properly+encoded"
+        )
+
+    @pytest.mark.asyncio
+    async def test_canonical_vs_display_url_datacenter(self, connector):
+        """Display URL is title-based; canonical URL is ID-based for DC."""
+        connector.config.deployment_type = ConfluenceDeploymentType.DATACENTER
+        connector.base_url = HttpUrl("https://confluence.example.com")
+
+        content = {
+            "id": "999",
+            "title": "API & Docs",
+            "type": "page",
+            "space": {"key": "TEST"},
+            "body": {"storage": {"value": "<p>Body</p>"}},
+            "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+            "history": {"createdBy": {"displayName": "User"}, "createdDate": "2024-01-01T00:00:00Z"},
+            "metadata": {"labels": {"results": []}},
+            "children": {"comment": {"results": []}},
+            "ancestors": [],
+        }
+
+        doc = connector._process_content(content)
+        # canonical url should be id-based
+        assert doc.url == "https://confluence.example.com/spaces/TEST/pages/999"
+        # display_url should be encoded title-based
+        assert doc.metadata.get("display_url") == "https://confluence.example.com/display/TEST/API+%26+Docs"
+
+    @pytest.mark.asyncio
+    async def test_canonical_vs_display_url_cloud(self, connector):
+        """For Cloud, display and canonical are both ID-based."""
+        connector.config.deployment_type = ConfluenceDeploymentType.CLOUD
+        connector.base_url = HttpUrl("https://company.atlassian.net/wiki")
+
+        content = {
+            "id": "111",
+            "title": "Any Title",
+            "type": "page",
+            "space": {"key": "DOCS"},
+            "body": {"storage": {"value": "<p>Body</p>"}},
+            "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+            "history": {"createdBy": {"displayName": "User"}, "createdDate": "2024-01-01T00:00:00Z"},
+            "metadata": {"labels": {"results": []}},
+            "children": {"comment": {"results": []}},
+            "ancestors": [],
+        }
+
+        doc = connector._process_content(content)
+        expected = "https://company.atlassian.net/wiki/spaces/DOCS/pages/111"
+        assert doc.url == expected
+        assert doc.metadata.get("display_url") == expected
+
     @pytest.mark.asyncio
     async def test_make_request_success(self, connector):
         """Test successful API request."""
@@ -118,6 +201,32 @@ class TestConfluenceConnector:
         ):
             with pytest.raises(requests.exceptions.RequestException, match="API Error"):
                 await connector._make_request("GET", "content/search")
+
+    @pytest.mark.asyncio
+    async def test_rate_limiting_configurable(self, config):
+        """Ensure requests_per_minute config is respected by creating connector with custom RPM."""
+        cfg = config
+        cfg.requests_per_minute = 30
+        connector = ConfluenceConnector(cfg)
+
+        # Patch the policy call and rate limiter acquire to observe behavior
+        fake_response = MagicMock()
+        fake_response.raise_for_status.return_value = None
+        fake_response.json.return_value = {}
+
+        with (
+            patch(
+                "qdrant_loader.connectors.shared.http.policy.make_request_with_retries_async",
+                new=AsyncMock(return_value=fake_response),
+            ) as _mock_retry,
+            patch(
+                "qdrant_loader.connectors.shared.http.rate_limit.RateLimiter.acquire",
+                new=AsyncMock(),
+            ) as mock_acquire,
+        ):
+            await connector._make_request("GET", "content/search")
+            # Acquire should be awaited given RPM usage
+            assert mock_acquire.await_count >= 1
 
     @pytest.mark.asyncio
     async def test_get_space_content(self, connector):

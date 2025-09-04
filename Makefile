@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-loader test-mcp test-coverage lint format clean build publish-loader publish-mcp docs
+.PHONY: help install install-dev test test-loader test-mcp test-core test-coverage lint format clean build publish-loader publish-mcp docs quality quality-all
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -23,12 +23,24 @@ test-loader: ## Run tests for qdrant-loader package only
 test-mcp: ## Run tests for mcp-server package only
 	pytest packages/qdrant-loader-mcp-server/tests/
 
+test-core: ## Run tests for qdrant-loader-core package only
+	pytest packages/qdrant-loader-core/tests/
+
 test-coverage: ## Run tests with coverage report
 	pytest packages/ --cov=packages --cov-report=html --cov-report=term-missing
 
+quality: ## Run quality gates (import cycles, module sizes) for qdrant-loader
+	cd packages/qdrant-loader && pytest -q tests/unit/quality -v
+
+quality-all: ## Run quality gates for all packages (currently qdrant-loader and qdrant-loader-core)
+	cd packages/qdrant-loader && pytest -q tests/unit/quality -v
+	cd packages/qdrant-loader-core && pytest -q tests/unit/quality -v
+	# Add additional per-package quality directories here if/when created
+
 lint: ## Run linting on all packages
-	ruff check packages/
-	mypy packages/
+	ruff check .
+	# TODO: Add mypy check for all packages
+	# mypy -p qdrant_loader -p qdrant_loader_core -p qdrant_loader_mcp_server
 
 format: ## Format code in all packages
 	black packages/
@@ -62,7 +74,7 @@ publish-mcp: build-mcp ## Publish mcp-server to PyPI
 	cd packages/qdrant-loader-mcp-server && python -m twine upload dist/*
 
 docs: ## Generate documentation
-	@echo "Documentation generation not yet implemented"
+	python website/build.py --output website/site --templates website/templates
 
 setup-dev: ## Set up development environment
 	python3.12 -m venv venv
@@ -71,7 +83,7 @@ setup-dev: ## Set up development environment
 	@echo "  venv\\Scripts\\activate     # On Windows"
 	@echo "Then run: make install-dev"
 
-check: lint test ## Run all checks (lint + test)
+check: lint quality test ## Run all checks (lint + quality + test)
 
 profile-pyspy:
 	@echo "Running py-spy..."

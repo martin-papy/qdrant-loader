@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 0.7.0 - Sept 03, 2025
+
+### LLM Provider-Agnostic Configuration & Migration
+
+- BETA: Added Azure OpenAI support (no more 404s from misconfigured endpoints) and robust Ollama endpoint handling
+- Introduced unified `global.llm.*` configuration controlling provider, `base_url`, models, tokenizer, request policy, rate limits, and `embeddings.vector_size`.
+- Legacy fields (`global.embedding.*` and `file_conversion.markitdown.*`) remain supported with deprecation warnings; migration is recommended.
+- Vector size is now read from config; hardcoded `1536` defaults replaced with config-driven values and a deprecated fallback warning when unspecified.
+- Structured logging added for LLM requests (provider, operation, model, latency; secrets redacted) and normalized exception mapping across providers.
+- Documentation updated with the new schema and env vars:
+  - Azure logs label provider as `azure_openai`; OpenAI as `openai`; Ollama logs include latency for chat.
+  - Clear error when Azure `base_url` includes `/openai/deployments/...`; requires `api_version`.
+  - Ollama auto-detects `/v1` vs native. Native tries batch `/api/embed` first, falls back to `/api/embeddings`.
+- Documentation updated with the new schema and env vars:
+  - Configuration reference: `docs/users/configuration/config-file-reference.md`
+  - Environment variables: `docs/users/configuration/environment-variables.md`
+
+### Massive Codebase Refactor
+
+- Centralized LLM layer in `qdrant-loader-core` with provider adapters (OpenAI / OpenAI-compatible via `base_url`, Ollama native or `/v1`).
+- Removed direct OpenAI imports from application code; apps now use a provider factory from the core package.
+- MCP server now prefers config file loading with CLI/env/file precedence and redacted `--print-config`; legacy env-only mode warns.
+- Replaced hardcoded vector-size usage across components with configuration-driven values.
+- Updated tests and documentation to align with provider-agnostic architecture.
+
 ## Version 0.6.1 - August 13, 2025
 
 ### Document Conflict Detection : Performance Improvements

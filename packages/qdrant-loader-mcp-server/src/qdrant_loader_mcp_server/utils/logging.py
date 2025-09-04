@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import sys
-from pathlib import Path
 
 import structlog
 
@@ -43,12 +42,24 @@ class CleanFormatter(logging.Formatter):
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         return ansi_escape.sub("", message)
 
+try:
+    # Use core logging config if available
+    from qdrant_loader_core.logging import (
+        LoggingConfig as CoreLoggingConfig,  # type: ignore
+    )
+except Exception:  # pragma: no cover - core may not be available
+    CoreLoggingConfig = None  # type: ignore
+
 
 class LoggingConfig:
-    """Centralized logging configuration."""
+    """Wrapper that standardizes env handling and tracks current config.
+
+    Delegates to core LoggingConfig when available, while maintaining
+    _initialized and _current_config for MCP server tests and utilities.
+    """
 
     _initialized = False
-    _current_config = None
+    _current_config: tuple[str, str, str | None, bool] | None = None
 
     @classmethod
     def setup(
@@ -58,119 +69,61 @@ class LoggingConfig:
         file: str | None = None,
         suppress_qdrant_warnings: bool = True,
     ) -> None:
-        """Setup logging configuration.
-
-        Args:
-            level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-            format: Log format (json or text)
-            file: Path to log file (optional)
-            suppress_qdrant_warnings: Whether to suppress Qdrant version check warnings
-        """
-        # Check if console logging is disabled first
+        # Resolve from environment when present for level; for file only when using all defaults
+        env_level = os.getenv("MCP_LOG_LEVEL")
+        resolved_level = (env_level or level).upper()
+        env_file = os.getenv("MCP_LOG_FILE")
+        all_defaults = (
+            level == "INFO"
+            and format == "console"
+            and file is None
+            and suppress_qdrant_warnings is True
+        )
+        resolved_file = file if file is not None else (env_file if all_defaults else None)
         disable_console_logging = (
             os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
         )
 
-        try:
-            # Get log level from environment variable or use default
-            level = os.getenv("MCP_LOG_LEVEL", level)
-            # Convert string level to logging level
-            numeric_level = getattr(logging, level.upper())
-        except AttributeError:
-            raise ValueError(f"Invalid log level: {level}") from None
+        # Validate level
+        if not hasattr(logging, resolved_level):
+            raise ValueError(f"Invalid log level: {resolved_level}")
 
-        # Reset logging configuration
-        logging.getLogger().handlers = []
-        structlog.reset_defaults()
+        numeric_level = getattr(logging, resolved_level)
 
-        # Create a list of handlers
-        handlers = []
-
-        # Add console handler for stderr only if console logging is not disabled
-        if not disable_console_logging:
-            stderr_handler = logging.StreamHandler(sys.stderr)
-            stderr_handler.setFormatter(logging.Formatter("%(message)s"))
-            stderr_handler.addFilter(
-                ApplicationFilter()
-            )  # Only show our application logs
-            handlers.append(stderr_handler)
-
-        # Add file handler if file is configured
-        if file:
-            file_handler = logging.FileHandler(file)
-            file_handler.setFormatter(CleanFormatter("%(message)s"))
-            handlers.append(file_handler)
-
-        # Add clean log file handler at configured path
-        log_file = os.getenv("MCP_LOG_FILE")
-        if log_file:
-            log_path = Path(log_file)
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            clean_log_handler = logging.FileHandler(log_path)
-            clean_log_handler.setFormatter(CleanFormatter("%(message)s"))
-            clean_log_handler.addFilter(ApplicationFilter())
-            handlers.append(clean_log_handler)
-
-        # Configure standard logging
-        logging.basicConfig(
-            level=numeric_level,
-            format="%(message)s",
-            handlers=handlers,
-            force=True,  # Force reconfiguration
-        )
-
-        # Add filter to suppress Qdrant version check warnings
-        if suppress_qdrant_warnings:
-            qdrant_logger = logging.getLogger("qdrant_client")
-            qdrant_logger.addFilter(QdrantVersionFilter())
-
-        # Configure structlog processors based on format
-        processors = [
-            structlog.stdlib.filter_by_level,
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.UnicodeDecoder(),
-            structlog.processors.CallsiteParameterAdder(
-                [
-                    structlog.processors.CallsiteParameter.FILENAME,
-                    structlog.processors.CallsiteParameter.FUNC_NAME,
-                    structlog.processors.CallsiteParameter.LINENO,
-                ]
-            ),
-        ]
-
-        if format == "json":
-            # JSON format needs explicit exception formatting
-            processors.append(structlog.processors.format_exc_info)
-            processors.append(structlog.processors.JSONRenderer())
+        if CoreLoggingConfig is not None:
+            # Delegate to core implementation
+            CoreLoggingConfig.setup(
+                level=resolved_level,
+                format=format,
+                file=resolved_file,
+                suppress_qdrant_warnings=suppress_qdrant_warnings,
+                disable_console=disable_console_logging,
+            )
         else:
-            # Console renderer handles exception formatting itself
-            processors.append(structlog.dev.ConsoleRenderer(colors=True))
-
-        # Configure structlog
-        structlog.configure(
-            processors=processors,
-            wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
-            logger_factory=structlog.stdlib.LoggerFactory(),
-            cache_logger_on_first_use=False,  # Disable caching to ensure new configuration is used
-        )
+            # Minimal fallback behavior
+            handlers: list[logging.Handler] = []
+            if not disable_console_logging:
+                stderr_handler = logging.StreamHandler(sys.stderr)
+                stderr_handler.setFormatter(logging.Formatter("%(message)s"))
+                handlers.append(stderr_handler)
+            if resolved_file:
+                file_handler = logging.FileHandler(resolved_file)
+                file_handler.setFormatter(CleanFormatter("%(message)s"))
+                handlers.append(file_handler)
+            logging.basicConfig(level=numeric_level, handlers=handlers, force=True)
+            if suppress_qdrant_warnings:
+                logging.getLogger("qdrant_client").addFilter(QdrantVersionFilter())
 
         cls._initialized = True
-        cls._current_config = (level, format, file, suppress_qdrant_warnings)
+        cls._current_config = (
+            resolved_level,
+            format,
+            resolved_file,
+            suppress_qdrant_warnings,
+        )
 
     @classmethod
-    def get_logger(cls, name: str | None = None) -> structlog.BoundLogger:
-        """Get a logger instance.
-
-        Args:
-            name: Logger name. If None, will use the calling module's name.
-
-        Returns:
-            structlog.BoundLogger: Logger instance
-        """
+    def get_logger(cls, name: str | None = None):  # type: ignore
         if not cls._initialized:
-            # Initialize with default settings if not already initialized
             cls.setup()
         return structlog.get_logger(name)

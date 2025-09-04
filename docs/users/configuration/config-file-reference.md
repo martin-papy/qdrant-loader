@@ -55,10 +55,17 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  # New unified LLM configuration (provider-agnostic)
+  llm:
+    provider: ${LLM_PROVIDER}              # openai | ollama | openai_compat | custom
+    base_url: ${LLM_BASE_URL}              # e.g. https://api.openai.com/v1, http://localhost:11434/v1
+    api_key: ${LLM_API_KEY}                # optional for local providers like Ollama
+    models:
+      embeddings: ${LLM_EMBEDDING_MODEL}   # e.g. text-embedding-3-small | nomic-embed-text | bge-small-en-v1.5
+      chat: ${LLM_CHAT_MODEL}              # e.g. gpt-4o-mini | llama3.1:8b-instruct
+    tokenizer: cl100k_base                 # cl100k_base | none
+    embeddings:
+      vector_size: 1536                    # set according to chosen embedding model
 
 projects:
   my-project:
@@ -85,15 +92,52 @@ global:
     url: "http://localhost:6333"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "documents"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
-    batch_size: 100
-    vector_size: 1536
-    tokenizer: "cl100k_base"
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
+  llm:
+    provider: ${LLM_PROVIDER}
+    base_url: ${LLM_BASE_URL}
+    api_key: ${LLM_API_KEY}
+    api_version: ${LLM_API_VERSION}  # Required for azure_openai
+    headers: {}
+    models:
+      embeddings: ${LLM_EMBEDDING_MODEL}
+      chat: ${LLM_CHAT_MODEL}
+    tokenizer: cl100k_base
+    request:
+      timeout_s: 30
+      max_retries: 3
+      backoff_s_min: 1
+      backoff_s_max: 30
+    rate_limits:
+      rpm: 1800
+      tpm: 2000000
+      concurrency: 5
+    embeddings:
+      vector_size: 1536
+    provider_options:
+      azure_endpoint: ${AZURE_OPENAI_ENDPOINT}
+      native_endpoint: auto
+
+> Azure OpenAI notes:
+> - Use the resource root for `base_url`, e.g. `https://<resource>.openai.azure.com` (do not include `/openai/deployments/...`).
+> - Set `api_version` (e.g., `2024-05-01-preview`).
+> - `models.embeddings` and `models.chat` should be Azure deployment names.
+
+> Ollama notes:
+> - If your server exposes OpenAI-compatible `/v1`, set `base_url` to include `/v1` and we will call `/v1/embeddings` and parse `data[].embedding`.
+> - In native mode (no `/v1`), we try batch `POST /api/embed` first and parse `{ "embeddings": [[...], ...] }`. If unsupported (404/405/501), we fall back to per-item `POST /api/embeddings` and parse `{ "embedding": [...] }` or `{ "data": { "embedding": [...] } }`.
+> - You can override detection with `global.llm.provider_options.native_endpoint: embed | embeddings | auto` (default: auto).
+
+### Troubleshooting
+
+- Azure 404 or 400 with deployment path
+  - Symptom: 404 Not Found or confusing errors when calling embeddings/chat
+  - Cause: `base_url` incorrectly includes `/openai/deployments/...`
+  - Fix: Use resource root `https://<resource>.openai.azure.com` and set `models.*` to deployment names; include `api_version` (e.g., `2024-05-01-preview`).
+
+- Ollama empty or invalid embeddings
+  - Symptom: Empty vectors or key errors parsing response
+  - Cause: Server endpoint mismatch (`/api/embed` vs `/api/embeddings`)
+  - Fix: Set `provider_options.native_endpoint` to `embed` or `embeddings`, or rely on auto-detection.
   chunking:
     chunk_size: 1500
     chunk_overlap: 200
@@ -260,27 +304,28 @@ global:
 
 - `api_key` - API key for QDrant Cloud (use environment variable)
 
-#### Embedding Configuration
+#### LLM Configuration (Unified)
 
 ```yaml
 global:
-  embedding:
-    # Required: API endpoint (OpenAI or compatible)
-    endpoint: "https://api.openai.com/v1"
-    # Required: API key for the embedding service
-    api_key: "${OPENAI_API_KEY}"
-    # Optional: Embedding model (default: "text-embedding-3-small")
-    model: "text-embedding-3-small"
-    # Optional: Batch size for API calls (default: 100)
-    batch_size: 100
-    # Optional: Vector dimension (default: 1536 for OpenAI models)
-    vector_size: 1536
-    # Optional: Tokenizer for token counting (default: "cl100k_base")
-    tokenizer: "cl100k_base"
-    # Optional: Maximum tokens per API request (default: 8000)
-    max_tokens_per_request: 8000
-    # Optional: Maximum tokens per chunk (default: 8000)
-    max_tokens_per_chunk: 8000
+  llm:
+    # Required: Provider and endpoint
+    provider: ${LLM_PROVIDER}
+    base_url: ${LLM_BASE_URL}
+    api_key: ${LLM_API_KEY}
+    # Required: Models
+    models:
+      embeddings: ${LLM_EMBEDDING_MODEL}
+      chat: ${LLM_CHAT_MODEL}
+    # Optional: Tokenizer and policies
+    tokenizer: cl100k_base
+    request:
+      timeout_s: 30
+      max_retries: 3
+    embeddings:
+      vector_size: 1536
+
+> Deprecation: `global.embedding.*` is still honored but will be removed in a future release. Migrate to `global.llm.*`.
 ```
 
 **Required Fields:**

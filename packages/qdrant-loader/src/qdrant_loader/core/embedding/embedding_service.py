@@ -2,10 +2,10 @@ import asyncio
 import logging
 import time
 from collections.abc import Sequence
+from importlib import import_module
 
 import requests
 import tiktoken
-from openai import OpenAI
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
@@ -15,7 +15,7 @@ logger = LoggingConfig.get_logger(__name__)
 
 
 class EmbeddingService:
-    """Service for generating embeddings using OpenAI's API or local service."""
+    """Service for generating embeddings using provider-agnostic API (via core)."""
 
     def __init__(self, settings: Settings):
         """Initialize the embedding service.
@@ -24,20 +24,18 @@ class EmbeddingService:
             settings: The application settings containing API key and endpoint.
         """
         self.settings = settings
-        self.endpoint = settings.global_config.embedding.endpoint.rstrip("/")
-        self.model = settings.global_config.embedding.model
-        self.tokenizer = settings.global_config.embedding.tokenizer
+        # Build LLM settings from global config and create provider
+        llm_settings = settings.llm_settings
+        factory_mod = import_module("qdrant_loader_core.llm.factory")
+        create_provider = factory_mod.create_provider
+        self.provider = create_provider(llm_settings)
+        self.model = llm_settings.models.get(
+            "embeddings", settings.global_config.embedding.model
+        )
+        self.tokenizer = (
+            llm_settings.tokenizer or settings.global_config.embedding.tokenizer
+        )
         self.batch_size = settings.global_config.embedding.batch_size
-
-        # Initialize client based on endpoint
-        if "https://api.openai.com/v1" == self.endpoint:
-            self.client = OpenAI(
-                api_key=settings.global_config.embedding.api_key, base_url=self.endpoint
-            )
-            self.use_openai = True
-        else:
-            self.client = None
-            self.use_openai = False
 
         # Initialize tokenizer based on configuration
         if self.tokenizer == "none":
@@ -317,48 +315,9 @@ class EmbeddingService:
             List of embedding vectors
         """
         try:
-            if self.use_openai and self.client is not None:
-                logger.debug(
-                    "Getting batch embeddings from OpenAI",
-                    model=self.model,
-                    batch_num=batch_num,
-                )
-
-                # Use shorter timeout for initial attempts, let retry logic handle failures
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.client.embeddings.create, model=self.model, input=batch
-                    ),
-                    timeout=45.0,  # Reduced from 90s for faster failure detection
-                )
-                batch_embeddings = [embedding.embedding for embedding in response.data]
-
-            else:
-                # Local service request
-                logger.debug(
-                    "Getting batch embeddings from local service",
-                    model=self.model,
-                    endpoint=self.endpoint,
-                    batch_num=batch_num,
-                )
-
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        requests.post,
-                        f"{self.endpoint}/embeddings",
-                        json={"input": batch, "model": self.model},
-                        headers={"Content-Type": "application/json"},
-                        timeout=30,  # Reduced timeout for faster failure detection
-                    ),
-                    timeout=45.0,  # Reduced from 90s
-                )
-                response.raise_for_status()
-                data = response.json()
-                if "data" not in data or not data["data"]:
-                    raise ValueError(
-                        "Invalid response format from local embedding service"
-                    )
-                batch_embeddings = [item["embedding"] for item in data["data"]]
+            # Use core provider for embeddings
+            embeddings_client = self.provider.embeddings()
+            batch_embeddings = await embeddings_client.embed(batch)
 
             logger.debug(
                 "Completed batch processing",
@@ -404,41 +363,9 @@ class EmbeddingService:
         """
         try:
             await self._apply_rate_limit()
-            if self.use_openai and self.client is not None:
-                logger.debug("Getting embedding from OpenAI", model=self.model)
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.client.embeddings.create,
-                        model=self.model,
-                        input=[text],  # OpenAI API expects a list
-                    ),
-                    timeout=30.0,  # Reduced timeout for faster failure detection
-                )
-                return response.data[0].embedding
-            else:
-                # Local service request
-                logger.debug(
-                    "Getting embedding from local service",
-                    model=self.model,
-                    endpoint=self.endpoint,
-                )
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        requests.post,
-                        f"{self.endpoint}/embeddings",
-                        json={"input": text, "model": self.model},
-                        headers={"Content-Type": "application/json"},
-                        timeout=15,  # Reduced timeout
-                    ),
-                    timeout=30.0,  # Reduced timeout
-                )
-                response.raise_for_status()
-                data = response.json()
-                if "data" not in data or not data["data"]:
-                    raise ValueError(
-                        "Invalid response format from local embedding service"
-                    )
-                return data["data"][0]["embedding"]
+            embeddings_client = self.provider.embeddings()
+            vectors = await embeddings_client.embed([text])
+            return vectors[0]
         except Exception as e:
             logger.debug(
                 "Single embedding request failed",
@@ -460,4 +387,14 @@ class EmbeddingService:
 
     def get_embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors."""
-        return self.settings.global_config.embedding.vector_size or 1536
+        # Prefer vector size from unified settings when available
+        dimension = (
+            self.settings.llm_settings.embeddings.vector_size
+            or self.settings.global_config.embedding.vector_size
+        )
+        if not dimension:
+            logger.warning(
+                "Embedding dimension not set in config; using 1536 (deprecated default). Set global.llm.embeddings.vector_size."
+            )
+            return 1536
+        return int(dimension)

@@ -31,7 +31,7 @@
 #    - Move global settings to global_config section
 
 # Global configuration shared across all projects
-global_config:
+global:
   # Qdrant vector database configuration
   qdrant:
     url: "http://localhost:6333"
@@ -111,6 +111,36 @@ global_config:
     # - sentence-transformers models: varies (typically 256-512)
     max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
     max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
+
+  # Unified LLM configuration (provider-agnostic)
+  # New preferred configuration block; legacy embedding/markitdown fields still work
+  llm:
+    provider: "openai"               # openai | ollama | azure_openai | custom
+    base_url: "https://api.openai.com/v1"  # For Azure use the resource root, e.g. https://<resource>.openai.azure.com
+    api_key: "${LLM_API_KEY}"
+    api_version: null                 # Required for azure_openai (e.g., 2024-05-01-preview)
+    headers: {}
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    tokenizer: "none"               # cl100k_base | none
+    request:
+      timeout_s: 30
+      max_retries: 3
+      backoff_s_min: 1
+      backoff_s_max: 30
+    rate_limits:
+      rpm: 1800
+      tpm: 2000000
+      concurrency: 5
+    embeddings:
+      vector_size: 1536
+    # Optional provider-specific options
+    provider_options:
+      # For Azure: set azure_endpoint explicitly if different from base_url
+      azure_endpoint: null
+      # For Ollama native servers: force endpoint behavior (auto|embed|embeddings)
+      native_endpoint: auto
 
   # Semantic analysis configuration
   # Controls text processing and topic extraction

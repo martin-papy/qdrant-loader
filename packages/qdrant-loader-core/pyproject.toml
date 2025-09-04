@@ -1,0 +1,64 @@
+# qdrant-loader-core package: shared LLM layer
+
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qdrant-loader-core"
+version = "0.6.1"
+description = "Shared core for provider-agnostic LLM support and configuration mapping for qdrant-loader ecosystem"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "GPL-3.0"
+authors = [
+  { name = "Martin Papy", email = "martin.papy@cbtw.tech" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Text Processing :: Linguistic",
+    "Environment :: Console",
+    "Typing :: Typed",
+]
+dependencies = [
+  "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+openai = [
+  "openai>=1.3.0",
+  "tiktoken>=0.5.0",
+]
+ollama = [
+  "httpx>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://qdrant-loader.net"
+Documentation = "https://qdrant-loader.net/docs/packages/core/README.html"
+Repository = "https://github.com/martin-papy/qdrant-loader"
+Issues = "https://github.com/martin-papy/qdrant-loader/issues"
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = [
+  "packages/qdrant-loader-core/tests",
+]
+
+

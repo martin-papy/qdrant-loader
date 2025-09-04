@@ -3,17 +3,21 @@
 import re
 from typing import Any
 
-from openai import AsyncOpenAI
-
 from ..config import OpenAIConfig
 from ..utils.logging import LoggingConfig
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
+
+# Public alias so tests can patch qdrant_loader_mcp_server.search.processor.AsyncOpenAI
+# Do not import the OpenAI library at runtime to avoid hard dependency.
+AsyncOpenAI = None  # type: ignore[assignment]
 
 
 class QueryProcessor:
     """Query processor for handling search queries with spaCy-powered intelligence."""
 
-    def __init__(self, openai_config: OpenAIConfig, spacy_model: str = "en_core_web_md"):
+    def __init__(
+        self, openai_config: OpenAIConfig, spacy_model: str = "en_core_web_md"
+    ):
         """Initialize the query processor.
 
         Args:
@@ -21,8 +25,9 @@ class QueryProcessor:
             spacy_model: Preferred spaCy model to load (defaults to 'en_core_web_md').
                          If loading fails, will attempt fallback to 'en_core_web_sm'.
         """
-        self.openai_client: AsyncOpenAI | None = AsyncOpenAI(
-            api_key=openai_config.api_key
+        # Expose patchable AsyncOpenAI alias to align with engine pattern
+        self.openai_client: Any | None = (
+            AsyncOpenAI(api_key=openai_config.api_key) if AsyncOpenAI else None
         )
         self.logger = LoggingConfig.get_logger(__name__)
 
@@ -36,13 +41,13 @@ class QueryProcessor:
             )
             try:
                 if spacy_model != "en_core_web_sm":
-                    self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_sm")
+                    self.spacy_analyzer = SpaCyQueryAnalyzer(
+                        spacy_model="en_core_web_sm"
+                    )
                 else:
                     raise primary_error
             except Exception as fallback_error:
-                message = (
-                    f"Failed to load spaCy models '{spacy_model}' and 'en_core_web_sm': {fallback_error}"
-                )
+                message = f"Failed to load spaCy models '{spacy_model}' and 'en_core_web_sm': {fallback_error}"
                 self.logger.error(message)
                 raise RuntimeError(message)
 
@@ -236,7 +241,9 @@ class QueryProcessor:
             "incident",
             "defect",
         ]
-        issue_pattern = r"\b(?:" + "|".join(re.escape(k) for k in issue_synonyms) + r")\b"
+        issue_pattern = (
+            r"\b(?:" + "|".join(re.escape(k) for k in issue_synonyms) + r")\b"
+        )
         if re.search(issue_pattern, query_lower):
             return "jira"
 
@@ -260,7 +267,7 @@ class QueryProcessor:
         return self._extract_source_type(cleaned, intent="general")
 
     def get_analyzer_stats(self) -> dict[str, Any]:
-        """ Get spaCy analyzer statistics for monitoring."""
+        """Get spaCy analyzer statistics for monitoring."""
         try:
             return {
                 "spacy_model": self.spacy_analyzer.spacy_model,
