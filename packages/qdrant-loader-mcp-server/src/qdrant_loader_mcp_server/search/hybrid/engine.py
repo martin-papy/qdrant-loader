@@ -105,7 +105,7 @@ class HybridSearchEngine(HybridEngineAPI):
                     vss.openai_client = client
                     if client is not None:
                         # Prefer explicit OpenAI client; disable provider to avoid NotImplemented stubs
-                        setattr(vss, "embeddings_provider", None)
+                        vss.embeddings_provider = None
                 except Exception:
                     pass
         except Exception:

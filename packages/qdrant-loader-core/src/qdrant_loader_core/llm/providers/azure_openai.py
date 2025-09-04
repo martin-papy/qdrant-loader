@@ -13,7 +13,6 @@ from ..settings import LLMSettings
 from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 from .openai import OpenAIChat, OpenAIEmbeddings, _OpenAITokenCounter
 
-
 logger = LoggingConfig.get_logger(__name__)
 
 

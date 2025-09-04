@@ -3,13 +3,13 @@
 import re
 from typing import Any
 
-# Public alias so tests can patch qdrant_loader_mcp_server.search.processor.AsyncOpenAI
-# Do not import the OpenAI library at runtime to avoid hard dependency.
-AsyncOpenAI = None  # type: ignore[assignment]
-
 from ..config import OpenAIConfig
 from ..utils.logging import LoggingConfig
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
+
+# Public alias so tests can patch qdrant_loader_mcp_server.search.processor.AsyncOpenAI
+# Do not import the OpenAI library at runtime to avoid hard dependency.
+AsyncOpenAI = None  # type: ignore[assignment]
 
 
 class QueryProcessor:

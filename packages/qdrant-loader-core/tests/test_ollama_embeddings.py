@@ -65,7 +65,9 @@ async def test_v1_openai_compatible_parsing(monkeypatch):
         class HTTPError(Exception):
             pass
 
-        AsyncClient = lambda timeout: _Client([_Resp(200, data)])  # type: ignore[assignment]
+        @staticmethod
+        def AsyncClient(timeout):  # type: ignore[no-untyped-def]
+            return _Client([_Resp(200, data)])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX)
     emb = _make_embeddings("http://localhost:11434/v1")
@@ -90,7 +92,9 @@ async def test_native_batch_embed_then_ok(monkeypatch):
         class HTTPError(Exception):
             pass
 
-        AsyncClient = lambda timeout: _Client([_Resp(200, batch)])  # type: ignore[assignment]
+        @staticmethod
+        def AsyncClient(timeout):  # type: ignore[no-untyped-def]
+            return _Client([_Resp(200, batch)])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX2)
     emb = _make_embeddings("http://localhost:11434", provider_options={"native_endpoint": "embed"})
@@ -118,7 +122,9 @@ async def test_native_embed_404_fallback_to_embeddings(monkeypatch):
         class HTTPError(Exception):
             pass
 
-        AsyncClient = lambda timeout: _Client([resp404, item1, item2])  # type: ignore[assignment]
+        @staticmethod
+        def AsyncClient(timeout):  # type: ignore[no-untyped-def]
+            return _Client([resp404, item1, item2])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX3)
     emb = _make_embeddings("http://localhost:11434", provider_options={"native_endpoint": "auto"})
@@ -143,7 +149,9 @@ async def test_invalid_batch_response_raises(monkeypatch):
         class HTTPError(Exception):
             pass
 
-        AsyncClient = lambda timeout: _Client([_Resp(200, bad)])  # type: ignore[assignment]
+        @staticmethod
+        def AsyncClient(timeout):  # type: ignore[no-untyped-def]
+            return _Client([_Resp(200, bad)])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX4)
     emb = _make_embeddings("http://localhost:11434", provider_options={"native_endpoint": "embed"})

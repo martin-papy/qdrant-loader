@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import sys
-from pathlib import Path
 
 import structlog
 
@@ -45,7 +44,9 @@ class CleanFormatter(logging.Formatter):
 
 try:
     # Use core logging config if available
-    from qdrant_loader_core.logging import LoggingConfig as CoreLoggingConfig  # type: ignore
+    from qdrant_loader_core.logging import (
+        LoggingConfig as CoreLoggingConfig,  # type: ignore
+    )
 except Exception:  # pragma: no cover - core may not be available
     CoreLoggingConfig = None  # type: ignore
 

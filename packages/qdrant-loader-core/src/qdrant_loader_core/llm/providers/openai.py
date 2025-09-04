@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
 from datetime import datetime
+from typing import Any
 from urllib.parse import urlparse
 
 try:
@@ -17,23 +17,24 @@ try:
             RateLimitError,
         )
     except Exception:  # pragma: no cover - optional dependency surface
-        APIConnectionError = APIStatusError = APITimeoutError = AuthenticationError = BadRequestError = RateLimitError = tuple()  # type: ignore
+        APIConnectionError = APIStatusError = APITimeoutError = AuthenticationError = BadRequestError = RateLimitError = ()  # type: ignore
 except Exception:  # pragma: no cover - optional dependency at this phase
     OpenAI = None  # type: ignore
-    APIConnectionError = APIStatusError = APITimeoutError = AuthenticationError = BadRequestError = RateLimitError = tuple()  # type: ignore
+    APIConnectionError = APIStatusError = APITimeoutError = AuthenticationError = BadRequestError = RateLimitError = ()  # type: ignore
 
 from ...logging import LoggingConfig
-from ..settings import LLMSettings
-from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 from ..errors import (
-    LLMError,
-    TimeoutError as LLMTimeoutError,
-    RateLimitedError,
-    InvalidRequestError,
     AuthError,
+    InvalidRequestError,
+    LLMError,
+    RateLimitedError,
     ServerError,
 )
-
+from ..errors import (
+    TimeoutError as LLMTimeoutError,
+)
+from ..settings import LLMSettings
+from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
 logger = LoggingConfig.get_logger(__name__)
 
