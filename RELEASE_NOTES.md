@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.7.0 - Sept 03, 2025
+## Version 0.7.1 - Sept 04, 2025
 
 ### LLM Provider-Agnostic Configuration & Migration
 
