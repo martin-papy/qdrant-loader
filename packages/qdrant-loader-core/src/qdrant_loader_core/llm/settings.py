@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 import warnings
+from urllib.parse import urlparse
 
 
 @dataclass
@@ -74,7 +75,22 @@ class LLMSettings:
         endpoint = embedding.get("endpoint")
         # Detect Azure OpenAI in legacy endpoint to set provider accordingly
         endpoint_l = (endpoint or "").lower() if isinstance(endpoint, str) else ""
-        if "openai.azure.com" in endpoint_l or "cognitiveservices.azure.com" in endpoint_l:
+        host: str | None = None
+        if endpoint_l:
+            try:
+                host = urlparse(endpoint_l).hostname or None
+            except Exception:
+                host = None
+        is_azure = False
+        if host:
+            host_l = host.lower()
+            is_azure = (
+                host_l == "openai.azure.com"
+                or host_l.endswith(".openai.azure.com")
+                or host_l == "cognitiveservices.azure.com"
+                or host_l.endswith(".cognitiveservices.azure.com")
+            )
+        if is_azure:
             provider = "azure_openai"
         elif "openai" in endpoint_l:
             provider = "openai"
