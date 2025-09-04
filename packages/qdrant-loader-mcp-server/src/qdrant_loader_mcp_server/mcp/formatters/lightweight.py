@@ -360,7 +360,7 @@ class LightweightResultFormatters:
                             else None
                         )
                         or rec_dict.get("source_type")
-                        or (rec_dict.get("document") or {}).get("source_type")
+                        or (doc_obj.get("source_type") if isinstance(doc_obj, dict) else None)
                         or "unknown",
                         "project_id": (
                             getattr(doc_obj, "project_id", None)
@@ -368,7 +368,7 @@ class LightweightResultFormatters:
                             else None
                         )
                         or rec_dict.get("project_id")
-                        or (rec_dict.get("document") or {}).get("project_id"),
+                        or (doc_obj.get("project_id") if isinstance(doc_obj, dict) else None),
                     })(rec.get("document"), rec),
                 }
                 for rec in complementary_recommendations
