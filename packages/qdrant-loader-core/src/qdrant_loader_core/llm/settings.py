@@ -37,6 +37,8 @@ class LLMSettings:
     request: RequestPolicy
     rate_limits: RateLimitPolicy
     embeddings: EmbeddingPolicy
+    api_version: str | None = None
+    provider_options: dict[str, Any] | None = None
 
     @staticmethod
     def from_global_config(global_data: Mapping[str, Any]) -> LLMSettings:
@@ -52,12 +54,14 @@ class LLMSettings:
                 provider=str(llm.get("provider")),
                 base_url=llm.get("base_url"),
                 api_key=llm.get("api_key"),
+                api_version=llm.get("api_version"),
                 headers=dict(llm.get("headers") or {}),
                 models=dict(llm.get("models") or {}),
                 tokenizer=str(llm.get("tokenizer", "none")),
                 request=RequestPolicy(**(llm.get("request") or {})),
                 rate_limits=RateLimitPolicy(**(llm.get("rate_limits") or {})),
                 embeddings=EmbeddingPolicy(**(llm.get("embeddings") or {})),
+                provider_options=dict(llm.get("provider_options") or {}),
             )
 
         # Legacy mapping
@@ -99,10 +103,12 @@ class LLMSettings:
             provider=provider,
             base_url=endpoint,
             api_key=embedding.get("api_key"),
+            api_version=None,
             headers=None,
             models=models,
             tokenizer=str(embedding.get("tokenizer", "none")),
             request=RequestPolicy(),
             rate_limits=RateLimitPolicy(),
             embeddings=EmbeddingPolicy(vector_size=embedding.get("vector_size")),
+            provider_options=None,
         )

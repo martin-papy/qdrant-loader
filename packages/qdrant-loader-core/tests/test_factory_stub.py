@@ -12,12 +12,14 @@ def _minimal_settings():
         provider="openai_compat",
         base_url="http://localhost:11434/v1",
         api_key=None,
+        api_version=None,
         headers=None,
         models={"embeddings": "nomic-embed-text"},
         tokenizer="none",
         request=RequestPolicy(),
         rate_limits=RateLimitPolicy(),
         embeddings=EmbeddingPolicy(vector_size=768),
+        provider_options=None,
     )
 
 

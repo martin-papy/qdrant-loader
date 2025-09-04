@@ -116,8 +116,9 @@ global:
   # New preferred configuration block; legacy embedding/markitdown fields still work
   llm:
     provider: "openai"               # openai | ollama | azure_openai | custom
-    base_url: "https://api.openai.com/v1"  # e.g., http://localhost:11434/v1 for Ollama
+    base_url: "https://api.openai.com/v1"  # For Azure use the resource root, e.g. https://<resource>.openai.azure.com
     api_key: "${LLM_API_KEY}"
+    api_version: null                 # Required for azure_openai (e.g., 2024-05-01-preview)
     headers: {}
     models:
       embeddings: "text-embedding-3-small"
@@ -134,6 +135,10 @@ global:
       concurrency: 5
     embeddings:
       vector_size: 1536
+    # Optional provider-specific options
+    provider_options:
+      # For Azure: set azure_endpoint explicitly if different from base_url
+      azure_endpoint: null
 
   # Semantic analysis configuration
   # Controls text processing and topic extraction

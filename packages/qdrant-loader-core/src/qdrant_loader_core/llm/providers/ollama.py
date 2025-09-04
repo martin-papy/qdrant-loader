@@ -31,10 +31,20 @@ def _join_url(base: str | None, path: str) -> str:
 
 
 class OllamaEmbeddings(EmbeddingsClient):
-    def __init__(self, base_url: str | None, model: str, headers: dict[str, str] | None):
-        self._base_url = base_url or "http://localhost:11434"
+    def __init__(
+        self,
+        base_url: str | None,
+        model: str,
+        headers: dict[str, str] | None,
+        *,
+        timeout_s: float | None = None,
+        provider_options: dict[str, Any] | None = None,
+    ):
+        self._base_url = (base_url or "http://localhost:11434").rstrip("/")
         self._model = model
         self._headers = headers or {}
+        self._timeout_s = float(timeout_s) if timeout_s is not None else 30.0
+        self._provider_options = provider_options or {}
 
     async def embed(self, inputs: list[str]) -> list[list[float]]:
         if httpx is None:
@@ -42,7 +52,7 @@ class OllamaEmbeddings(EmbeddingsClient):
 
         # Prefer OpenAI-compatible if base_url seems to expose /v1
         use_v1 = "/v1" in (self._base_url or "")
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=self._timeout_s) as client:
             try:
                 if use_v1:
                     # OpenAI-compatible embeddings endpoint
@@ -61,21 +71,64 @@ class OllamaEmbeddings(EmbeddingsClient):
                     )
                     return [item["embedding"] for item in data.get("data", [])]
                 else:
-                    # Native Ollama endpoint (one input at a time)
+                    # Determine native endpoint preference: embed | embeddings | auto (default)
+                    native_pref = str(self._provider_options.get("native_endpoint", "auto")).lower()
+                    prefer_embed = native_pref != "embeddings"
+                    tried_embed = False
+
+                    # Try batch embed first when preferred
+                    if prefer_embed:
+                        tried_embed = True
+                        url = _join_url(self._base_url, "/api/embed")
+                        payload = {"model": self._model, "input": inputs}
+                        try:
+                            resp = await client.post(
+                                url, json=payload, headers=self._headers
+                            )
+                            resp.raise_for_status()
+                            data = resp.json()
+                            vectors = data.get("embeddings")
+                            if not isinstance(vectors, list) or (
+                                len(vectors) != len(inputs)
+                            ):
+                                raise ValueError(
+                                    "Invalid embeddings response from /api/embed"
+                                )
+                            # Normalize to list[list[float]]
+                            norm = [list(vec) for vec in vectors]
+                            logger.info(
+                                "LLM request",
+                                provider="ollama",
+                                operation="embeddings",
+                                model=self._model,
+                                base_host=self._base_url,
+                                inputs=len(inputs),
+                            )
+                            return norm
+                        except httpx.HTTPStatusError as exc:
+                            status = exc.response.status_code if exc.response else None
+                            # Fallback for servers that don't support /api/embed
+                            if status not in (404, 405, 501):
+                                raise
+
+                    # Per-item embeddings endpoint fallback or preference
                     url = _join_url(self._base_url, "/api/embeddings")
-                    vectors: list[list[float]] = []
+                    vectors2: list[list[float]] = []
                     for text in inputs:
                         payload = {"model": self._model, "input": text}
-                        resp = await client.post(url, json=payload, headers=self._headers)
+                        resp = await client.post(
+                            url, json=payload, headers=self._headers
+                        )
                         resp.raise_for_status()
                         data = resp.json()
-                        # Some Ollama versions return {"embedding": [...]} or {"data": {"embedding": [...]}}
                         emb = data.get("embedding")
                         if emb is None and isinstance(data.get("data"), dict):
                             emb = data["data"].get("embedding")
                         if emb is None:
-                            raise ValueError("Invalid embedding response from Ollama")
-                        vectors.append(list(emb))
+                            raise ValueError(
+                                "Invalid embedding response from /api/embeddings"
+                            )
+                        vectors2.append(list(emb))
                     logger.info(
                         "LLM request",
                         provider="ollama",
@@ -84,7 +137,7 @@ class OllamaEmbeddings(EmbeddingsClient):
                         base_host=self._base_url,
                         inputs=len(inputs),
                     )
-                    return vectors
+                    return vectors2
             except httpx.TimeoutException as exc:
                 raise LLMTimeoutError(str(exc))
             except httpx.HTTPStatusError as exc:
@@ -206,7 +259,14 @@ class OllamaProvider(LLMProvider):
 
     def embeddings(self) -> EmbeddingsClient:
         model = self._settings.models.get("embeddings", "")
-        return OllamaEmbeddings(self._settings.base_url, model, self._settings.headers)
+        timeout = (self._settings.request.timeout_s if self._settings and self._settings.request else 30.0)
+        return OllamaEmbeddings(
+            self._settings.base_url,
+            model,
+            self._settings.headers,
+            timeout_s=timeout,
+            provider_options=self._settings.provider_options,
+        )
 
     def chat(self) -> ChatClient:
         model = self._settings.models.get("chat", "")
