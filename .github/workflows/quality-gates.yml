@@ -36,8 +36,8 @@ jobs:
           pip install -e .[dev]
           # Package installs
           pip install -e packages/qdrant-loader-core[openai]
-          pip install -e packages/qdrant-loader[dev]
-          pip install -e packages/qdrant-loader-mcp-server[dev]
+          pip install -e packages/qdrant-loader
+          pip install -e packages/qdrant-loader-mcp-server
 
       - name: Lint
         run: |

@@ -70,6 +70,7 @@ jobs:
           python -m pip install --upgrade pip
           # Install monorepo packages locally first to avoid PyPI resolution issues
           pip install -e packages/qdrant-loader-core[openai]
+          pip install -e .[dev]
           pip install -e packages/qdrant-loader
           pip install -e ".[docs]"
 
