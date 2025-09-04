@@ -501,12 +501,33 @@ class SearchEngine:
         )
 
         # Use the hybrid search engine's method to find similarities
+        # API expects a single target document and a list of comparison documents.
+        target_doc = target_documents[0]
+
+        # Convert metric strings to enum values when provided; otherwise default
+        try:
+            from ..hybrid_search import SimilarityMetric as _SimMetric
+
+            metric_enums = None
+            if similarity_metrics:
+                metric_enums = []
+                for m in similarity_metrics:
+                    try:
+                        metric_enums.append(_SimMetric(m))
+                    except Exception:
+                        # Ignore unknown metrics gracefully
+                        continue
+            # Fallback default if conversion produced empty list
+            if metric_enums is not None and len(metric_enums) == 0:
+                metric_enums = None
+        except Exception:
+            metric_enums = None
+
         return await self.hybrid_search.find_similar_documents(
-            target_documents=target_documents,
-            comparison_documents=comparison_documents,
-            similarity_metrics=similarity_metrics or ["semantic_similarity"],
-            max_similar=max_similar,
-            similarity_threshold=similarity_threshold,
+            target_doc,
+            comparison_documents,
+            metric_enums,
+            max_similar,
         )
 
     async def detect_document_conflicts(

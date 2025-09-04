@@ -221,7 +221,11 @@ class IntelligenceHandler:
 
                 metric_scores = item.get("metric_scores", {})
                 if isinstance(metric_scores, dict):
-                    metrics_used_set.update(metric_scores.keys())
+                    # Normalize metric keys to strings (Enums -> value) to avoid sort/type errors
+                    normalized_metric_keys = [
+                        (getattr(k, "value", None) or str(k)) for k in metric_scores.keys()
+                    ]
+                    metrics_used_set.update(normalized_metric_keys)
 
                 similar_documents.append(
                     {
@@ -229,7 +233,9 @@ class IntelligenceHandler:
                         "title": title,
                         "similarity_score": similarity_score,
                         "similarity_metrics": {
-                            k: float(v) for k, v in metric_scores.items() if isinstance(v, (int, float))
+                            (getattr(k, "value", None) or str(k)): float(v)
+                            for k, v in metric_scores.items()
+                            if isinstance(v, (int, float))
                         },
                         "similarity_reason": (
                             ", ".join(item.get("similarity_reasons", []))
@@ -252,6 +258,7 @@ class IntelligenceHandler:
                     "total_compared": len(similar_docs),
                     "similar_found": len(similar_documents),
                     "highest_similarity": highest_similarity,
+                    # Ensure metrics are strings for deterministic sorting
                     "metrics_used": sorted(list(metrics_used_set)) if metrics_used_set else [],
                 },
             }
