@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from .providers.ollama import OllamaProvider
 from .providers.openai import OpenAIProvider
 try:
@@ -36,6 +38,16 @@ class _NoopProvider(LLMProvider):
         return _NoopTokenizer()
 
 
+def _safe_hostname(url: str | None) -> str | None:
+    if not url:
+        return None
+    try:
+        host = urlparse(url).hostname
+        return host.lower() if host else None
+    except Exception:
+        return None
+
+
 def create_provider(settings: LLMSettings) -> LLMProvider:
     """Create a provider by settings.
 
@@ -43,13 +55,21 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
     Ollama returns a stub provider for now.
     """
     provider_name = (settings.provider or "").lower()
-    base_url = (settings.base_url or "").lower()
+    base_url = (settings.base_url or "")
+    base_host = _safe_hostname(base_url)
 
     # Route Azure before generic OpenAI routing
     is_azure = (
         "azure" in provider_name
-        or "openai.azure.com" in base_url
-        or "cognitiveservices.azure.com" in base_url
+        or (
+            base_host is not None
+            and (
+                base_host == "openai.azure.com"
+                or base_host.endswith(".openai.azure.com")
+                or base_host == "cognitiveservices.azure.com"
+                or base_host.endswith(".cognitiveservices.azure.com")
+            )
+        )
     )
     if is_azure and AzureOpenAIProvider is not None:  # type: ignore[truthy-bool]
         try:
@@ -57,13 +77,13 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
         except Exception:
             return _NoopProvider()
 
-    if "openai" in provider_name or "openai" in base_url:
+    if "openai" in provider_name or "openai" in base_url.lower():
         try:
             return OpenAIProvider(settings)
         except Exception:
             return _NoopProvider()
 
-    if provider_name == "ollama" or "localhost" in base_url:
+    if provider_name == "ollama" or (base_host in ("localhost", "127.0.0.1")):
         return OllamaProvider(settings)
 
     return _NoopProvider()
