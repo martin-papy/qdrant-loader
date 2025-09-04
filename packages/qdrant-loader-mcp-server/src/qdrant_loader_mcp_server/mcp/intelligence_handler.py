@@ -673,20 +673,19 @@ class IntelligenceHandler:
             # Since we don't have cluster data persistence yet, return a helpful message
             # In the future, this would retrieve stored cluster data and expand it
 
+            # Build schema-compliant placeholder payload
+            page_num = (int(offset) // int(limit)) + 1 if isinstance(limit, int) and limit > 0 else 1
             expansion_result = {
-                "cluster_id": cluster_id,
-                "message": "Cluster expansion functionality requires re-running clustering",
-                "suggestion": "Please run cluster_documents again and use the lightweight response for navigation",
+                "cluster_id": str(cluster_id),
                 "cluster_info": {
-                    "expansion_requested": True,
-                    "limit": limit,
-                    "offset": offset,
-                    "include_metadata": include_metadata,
+                    "cluster_name": "",
+                    "cluster_theme": "",
+                    "document_count": 0,
                 },
                 "documents": [],
                 "pagination": {
-                    "offset": offset,
-                    "limit": limit,
+                    "page": page_num,
+                    "page_size": int(limit) if isinstance(limit, int) else 20,
                     "total": 0,
                     "has_more": False,
                 },
