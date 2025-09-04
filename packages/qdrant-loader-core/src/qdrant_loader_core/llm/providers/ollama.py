@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
 
 import json
 
@@ -10,6 +9,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     httpx = None  # type: ignore
 
+from ...logging import LoggingConfig
 from ..settings import LLMSettings
 from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 from ..errors import (
@@ -21,7 +21,7 @@ from ..errors import (
     ServerError,
 )
 
-logger = logging.getLogger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 def _join_url(base: str | None, path: str) -> str:
@@ -53,13 +53,11 @@ class OllamaEmbeddings(EmbeddingsClient):
                     data = resp.json()
                     logger.info(
                         "LLM request",
-                        extra={
-                            "provider": "ollama",
-                            "operation": "embeddings",
-                            "model": self._model,
-                            "base_host": self._base_url,
-                            "inputs": len(inputs),
-                        },
+                        provider="ollama",
+                        operation="embeddings",
+                        model=self._model,
+                        base_host=self._base_url,
+                        inputs=len(inputs),
                     )
                     return [item["embedding"] for item in data.get("data", [])]
                 else:
@@ -80,13 +78,11 @@ class OllamaEmbeddings(EmbeddingsClient):
                         vectors.append(list(emb))
                     logger.info(
                         "LLM request",
-                        extra={
-                            "provider": "ollama",
-                            "operation": "embeddings",
-                            "model": self._model,
-                            "base_host": self._base_url,
-                            "inputs": len(inputs),
-                        },
+                        provider="ollama",
+                        operation="embeddings",
+                        model=self._model,
+                        base_host=self._base_url,
+                        inputs=len(inputs),
                     )
                     return vectors
             except httpx.TimeoutException as exc:
@@ -136,13 +132,11 @@ class OllamaChat(ChatClient):
                         text = msg.get("content", "") or ""
                     logger.info(
                         "LLM request",
-                        extra={
-                            "provider": "ollama",
-                            "operation": "chat",
-                            "model": self._model,
-                            "base_host": self._base_url,
-                            "messages": len(messages),
-                        },
+                        provider="ollama",
+                        operation="chat",
+                        model=self._model,
+                        base_host=self._base_url,
+                        messages=len(messages),
                     )
                     return {"text": text, "raw": data, "usage": data.get("usage"), "model": data.get("model", self._model)}
                 except httpx.TimeoutException as exc:
@@ -179,13 +173,11 @@ class OllamaChat(ChatClient):
                         text = data["message"].get("content", "") or ""
                     logger.info(
                         "LLM request",
-                        extra={
-                            "provider": "ollama",
-                            "operation": "chat",
-                            "model": self._model,
-                            "base_host": self._base_url,
-                            "messages": len(messages),
-                        },
+                        provider="ollama",
+                        operation="chat",
+                        model=self._model,
+                        base_host=self._base_url,
+                        messages=len(messages),
                     )
                     return {"text": text, "raw": data, "usage": None, "model": self._model}
                 except httpx.TimeoutException as exc:
