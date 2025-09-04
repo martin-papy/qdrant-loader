@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 from datetime import datetime
-import logging
 from urllib.parse import urlparse
 
 try:
@@ -23,6 +22,7 @@ except Exception:  # pragma: no cover - optional dependency at this phase
     OpenAI = None  # type: ignore
     APIConnectionError = APIStatusError = APITimeoutError = AuthenticationError = BadRequestError = RateLimitError = tuple()  # type: ignore
 
+from ...logging import LoggingConfig
 from ..settings import LLMSettings
 from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 from ..errors import (
@@ -35,7 +35,7 @@ from ..errors import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 def _safe_host(url: str | None) -> str | None:
@@ -113,14 +113,12 @@ class OpenAIEmbeddings(EmbeddingsClient):
             try:
                 logger.info(
                     "LLM request",
-                    extra={
-                        "provider": "openai",
-                        "operation": "embeddings",
-                        "model": self._model,
-                        "base_host": self._base_host,
-                        "inputs": len(inputs),
-                        "latency_ms": duration_ms,
-                    },
+                    provider="openai",
+                    operation="embeddings",
+                    model=self._model,
+                    base_host=self._base_host,
+                    inputs=len(inputs),
+                    latency_ms=duration_ms,
                 )
             except Exception:
                 pass
@@ -130,13 +128,11 @@ class OpenAIEmbeddings(EmbeddingsClient):
             try:
                 logger.warning(
                     "LLM error",
-                    extra={
-                        "provider": "openai",
-                        "operation": "embeddings",
-                        "model": self._model,
-                        "base_host": self._base_host,
-                        "error": type(exc).__name__,
-                    },
+                    provider="openai",
+                    operation="embeddings",
+                    model=self._model,
+                    base_host=self._base_host,
+                    error=type(exc).__name__,
                 )
             except Exception:
                 pass
@@ -179,14 +175,12 @@ class OpenAIChat(ChatClient):
             try:
                 logger.info(
                     "LLM request",
-                    extra={
-                        "provider": "openai",
-                        "operation": "chat",
-                        "model": model_name,
-                        "base_host": self._base_host,
-                        "messages": len(messages),
-                        "latency_ms": duration_ms,
-                    },
+                    provider="openai",
+                    operation="chat",
+                    model=model_name,
+                    base_host=self._base_host,
+                    messages=len(messages),
+                    latency_ms=duration_ms,
                 )
             except Exception:
                 pass
@@ -219,13 +213,11 @@ class OpenAIChat(ChatClient):
             try:
                 logger.warning(
                     "LLM error",
-                    extra={
-                        "provider": "openai",
-                        "operation": "chat",
-                        "model": model_name,
-                        "base_host": self._base_host,
-                        "error": type(exc).__name__,
-                    },
+                    provider="openai",
+                    operation="chat",
+                    model=model_name,
+                    base_host=self._base_host,
+                    error=type(exc).__name__,
                 )
             except Exception:
                 pass

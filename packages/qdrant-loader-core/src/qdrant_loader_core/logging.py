@@ -124,6 +124,18 @@ class RedactionFilter(logging.Filter):
         return True
 
 
+class CleanFormatter(logging.Formatter):
+    """Formatter that removes ANSI color codes for clean file output."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        message = super().format(record)
+        try:
+            ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+            return ansi_escape.sub("", message)
+        except Exception:
+            return message
+
+
 def _redact_processor(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     """Structlog processor to redact sensitive fields in event_dict."""
     sensitive_keys = {
@@ -211,7 +223,8 @@ class LoggingConfig:
 
         if file:
             file_handler = logging.FileHandler(file)
-            file_handler.setFormatter(logging.Formatter("%(message)s"))
+            # Use CleanFormatter to strip ANSI sequences from structlog console renderer output
+            file_handler.setFormatter(CleanFormatter("%(message)s"))
             file_handler.addFilter(ApplicationFilter())
             file_handler.addFilter(RedactionFilter())
             handlers.append(file_handler)
