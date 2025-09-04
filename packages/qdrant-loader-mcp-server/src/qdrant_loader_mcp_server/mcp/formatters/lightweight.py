@@ -414,6 +414,7 @@ class LightweightResultFormatters:
         if target_document is not None:
             if isinstance(target_document, dict):
                 result["target_document"] = {
+                    "document_id": target_document.get("document_id", target_document.get("id", "")),
                     "title": target_document.get("title", "Untitled"),
                     "content_preview": target_document.get("content_preview", ""),
                     "source_type": target_document.get("source_type", "unknown"),
@@ -427,6 +428,7 @@ class LightweightResultFormatters:
                 )
                 text_val = getattr(target_document, "text", "") or ""
                 result["target_document"] = {
+                    "document_id": getattr(target_document, "document_id", getattr(target_document, "id", "")),
                     "title": title_val,
                     "content_preview": (
                         text_val[:200] + "..." if isinstance(text_val, str) and len(text_val) > 200 else text_val
