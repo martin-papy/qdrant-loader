@@ -70,7 +70,11 @@ class StructuredResultFormatters:
                             if hasattr(result, "get_project_info")
                             else None
                         ),
-                        "project_id": getattr(result, "project_id", None),
+                        "project_id": (
+                            ""
+                            if getattr(result, "project_id", None) is None
+                            else str(getattr(result, "project_id", ""))
+                        ),
                         "file_path": getattr(result, "file_path", None),
                         "word_count": getattr(result, "word_count", None),
                         "chunk_index": getattr(result, "chunk_index", None),
