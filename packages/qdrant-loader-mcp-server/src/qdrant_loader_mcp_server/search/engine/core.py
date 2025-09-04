@@ -97,11 +97,13 @@ class SearchEngine:
         try:
             # Configure timeout for Qdrant cloud instances
             # Set to 120 seconds to handle large datasets and prevent ReadTimeout errors
-            self.client = AsyncQdrantClient(
-                url=config.url,
-                api_key=config.api_key,
-                timeout=120,  # 120 seconds timeout for cloud instances
-            )
+            client_kwargs = {
+                "url": config.url,
+                "timeout": 120,  # 120 seconds timeout for cloud instances
+            }
+            if getattr(config, "api_key", None):
+                client_kwargs["api_key"] = config.api_key
+            self.client = AsyncQdrantClient(**client_kwargs)
             # Keep legacy OpenAI client for now only when tests patch AsyncOpenAI
             try:
                 if AsyncOpenAI is not None and getattr(openai_config, "api_key", None):
