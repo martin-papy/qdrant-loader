@@ -26,14 +26,14 @@ jobs:
             echo "publish-loader=false" >> $GITHUB_OUTPUT
             echo "publish-mcp-server=true" >> $GITHUB_OUTPUT
             echo "publish-core=false" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.release.tag_name }}" == qdrant-loader-* ]]; then
-            echo "publish-loader=true" >> $GITHUB_OUTPUT
-            echo "publish-mcp-server=false" >> $GITHUB_OUTPUT
-            echo "publish-core=false" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event.release.tag_name }}" == qdrant-loader-core-* ]]; then
             echo "publish-loader=false" >> $GITHUB_OUTPUT
             echo "publish-mcp-server=false" >> $GITHUB_OUTPUT
             echo "publish-core=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.release.tag_name }}" == qdrant-loader-* ]]; then
+            echo "publish-loader=true" >> $GITHUB_OUTPUT
+            echo "publish-mcp-server=false" >> $GITHUB_OUTPUT
+            echo "publish-core=false" >> $GITHUB_OUTPUT
           else
             echo "publish-loader=false" >> $GITHUB_OUTPUT
             echo "publish-mcp-server=false" >> $GITHUB_OUTPUT
