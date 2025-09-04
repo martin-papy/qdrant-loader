@@ -798,6 +798,34 @@ class TestConflictDetectorAlgorithms:
         assert 0.0 <= high_confidence <= 1.0
         assert 0.0 <= medium_confidence <= 1.0
         assert 0.0 <= low_confidence <= 1.0
+class TestConflictDetectorStatsAccessor:
+    @pytest.fixture
+    def mock_spacy_analyzer(self):
+        """Create a mock SpaCy analyzer."""
+        analyzer = Mock()
+        mock_doc = Mock()
+        mock_doc.similarity.return_value = 0.0
+        mock_doc.ents = []
+        analyzer.nlp.return_value = mock_doc
+        return analyzer
+
+    def test_get_stats_returns_dict_and_never_raises(self, mock_spacy_analyzer):
+        detector = ConflictDetector(mock_spacy_analyzer)
+        # No stats yet
+        stats = detector.get_stats()
+        assert isinstance(stats, dict)
+        assert stats == {}
+
+        # Populate private last stats and ensure accessor returns it
+        detector._last_stats = {"pairs_analyzed": 10, "llm_enabled": False}
+        stats2 = detector.get_stats()
+        assert stats2 == {"pairs_analyzed": 10, "llm_enabled": False}
+
+    def test_get_last_stats_backward_compatible(self, mock_spacy_analyzer):
+        detector = ConflictDetector(mock_spacy_analyzer)
+        detector._last_stats = {"conflicts_found": 3}
+        stats = detector.get_last_stats()
+        assert stats == {"conflicts_found": 3}
 
 
 class TestCrossDocumentIntelligenceEnginePerformance:

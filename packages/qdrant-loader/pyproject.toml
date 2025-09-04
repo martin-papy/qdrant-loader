@@ -35,6 +35,7 @@ dependencies = [
     "structlog>=23.0.0",
     "httpx>=0.24.0",
     "openai>=1.0.0",
+    "qdrant-loader-core[openai]>=0.6.1",
     "qdrant-client>=1.7.0",
     "PyYAML>=6.0.0",
     "beautifulsoup4>=4.12.0",
@@ -92,21 +93,7 @@ Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 [project.scripts]
 qdrant-loader = "qdrant_loader.main:cli"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-mock>=3.10.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-timeout>=2.3.0",
-    "responses>=0.24.1",
-    "requests_mock>=1.11.0",
-    "sqlite-web>=0.6.4",
-    "py-spy",
-    "snakeviz",
-    "memory_profiler",
-    "prometheus_client",
-]
+
 
 [tool.setuptools.packages.find]
 where = [

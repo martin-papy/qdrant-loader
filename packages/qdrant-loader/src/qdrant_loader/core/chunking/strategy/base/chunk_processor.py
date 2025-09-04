@@ -307,7 +307,17 @@ class BaseChunkProcessor(ABC):
         to clean up any resources (thread pools, connections, etc.).
         """
         # Default implementation - can be overridden by specific processors
-        pass
+        # Null out any optional resource handles if present to avoid leaks
+        if hasattr(self, "_resources"):
+            try:
+                resources = self._resources  # type: ignore[attr-defined]
+                if resources and hasattr(resources, "shutdown"):
+                    resources.shutdown()  # type: ignore[attr-defined]
+            except Exception:
+                # Best-effort cleanup in base implementation
+                pass
+            finally:
+                self._resources = None  # type: ignore[attr-defined]
 
     def __del__(self):
         """Cleanup on deletion."""

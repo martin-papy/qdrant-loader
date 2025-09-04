@@ -62,19 +62,56 @@ export QDRANT_COLLECTION_NAME="documents"
 export QDRANT_COLLECTION_NAME="my_project_docs"
 ```
 
-### OpenAI Configuration
+### LLM Provider (Unified)
 
-#### OPENAI_API_KEY
+#### LLM_PROVIDER
 
-- **Description**: OpenAI API key for embeddings and file conversion
-- **Used by**: MCP server configuration, file conversion fallback
-- **Required**: Yes (when using OpenAI models)
-- **Format**: String starting with "sk-"
+- **Description**: LLM provider identifier
+- **Used by**: Both apps (via config loader or file substitution)
+- **Required**: Yes (set explicitly or in config)
 - **Examples**:
 
 ```bash
-export OPENAI_API_KEY="sk-your-openai-api-key"
+export LLM_PROVIDER="openai"      # or ollama, openai_compat, custom
 ```
+
+#### LLM_BASE_URL
+
+- **Description**: Base URL for the provider's API (OpenAI-compatible or native)
+- **Required**: Yes for custom/compat endpoints; Ollama default is `http://localhost:11434`
+
+```bash
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_BASE_URL="http://localhost:11434/v1"   # Ollama OpenAI-compatible
+```
+
+#### LLM_API_KEY
+
+- **Description**: API key for the provider
+- **Required**: When provider needs auth (OpenAI and most hosted compat endpoints)
+
+```bash
+export LLM_API_KEY="sk-your-openai-api-key"
+```
+
+#### LLM_EMBEDDING_MODEL / LLM_CHAT_MODEL
+
+- **Description**: Model names for embeddings and chat
+
+```bash
+export LLM_EMBEDDING_MODEL="text-embedding-3-small"
+export LLM_CHAT_MODEL="gpt-4o-mini"
+```
+
+#### LLM_VECTOR_SIZE
+
+- **Description**: Embedding vector dimension used for collection creation
+
+```bash
+export LLM_VECTOR_SIZE=1536
+```
+
+> Legacy: `OPENAI_API_KEY` remains supported for compatibility but will be superseded by `LLM_API_KEY`.
 
 ### Data Source Authentication
 

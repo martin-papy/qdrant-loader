@@ -33,6 +33,11 @@ PACKAGES = {
         "pyproject": "packages/qdrant-loader-mcp-server/pyproject.toml",
         "create_release": True,
     },
+    "qdrant-loader-core": {
+        "path": "packages/qdrant-loader-core",
+        "pyproject": "packages/qdrant-loader-core/pyproject.toml",
+        "create_release": True,
+    },
 }
 
 

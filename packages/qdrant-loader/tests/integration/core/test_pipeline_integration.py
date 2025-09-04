@@ -85,6 +85,15 @@ def sample_multi_project_settings():
         projects_config=projects_config,
     )
 
+    # Provide unified LLM configuration to avoid legacy deprecation warnings
+    settings.global_config.llm = {
+        "provider": "openai",
+        "base_url": "https://api.openai.com/v1",
+        "models": {"embeddings": "text-embedding-3-small", "chat": "gpt-4o"},
+        "tokenizer": "cl100k_base",
+        "embeddings": {"vector_size": 1536},
+    }
+
     return settings
 
 
@@ -128,12 +137,36 @@ async def test_pipeline_initialization_with_projects(
 
 
 @pytest.mark.asyncio
+async def test_pipeline_accepts_string_metrics_dir(
+    sample_multi_project_settings, mock_qdrant_manager, mock_state_manager, tmp_path
+):
+    """Ensure AsyncIngestionPipeline accepts metrics_dir as string and creates directory."""
+    metrics_dir_str = str(tmp_path / "metrics-out")
+
+    # Create pipeline with metrics_dir as string
+    AsyncIngestionPipeline(
+        settings=sample_multi_project_settings,
+        qdrant_manager=mock_qdrant_manager,
+        state_manager=mock_state_manager,
+        enable_metrics=False,
+        metrics_dir=metrics_dir_str,
+    )
+
+    # Directory should be created on init
+    from pathlib import Path
+
+    assert Path(metrics_dir_str).exists()
+
+
+@pytest.mark.asyncio
 async def test_pipeline_project_specific_processing(
     sample_multi_project_settings, mock_qdrant_manager, mock_state_manager
 ):
     """Test processing documents for a specific project."""
     # Mock session for project manager initialization
     mock_session = AsyncMock()
+    # Ensure sync SQLAlchemy APIs are mocked as sync to avoid RuntimeWarning
+    mock_session.add = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
@@ -193,6 +226,7 @@ async def test_pipeline_all_projects_processing(
     """Test processing documents for all projects."""
     # Mock session for project manager initialization
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
@@ -261,6 +295,7 @@ async def test_pipeline_project_metadata_injection(
     """Test that project metadata is properly injected into documents."""
     # Mock session for project manager initialization
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
@@ -304,6 +339,7 @@ async def test_pipeline_project_validation(
     """Test pipeline validation for project existence."""
     # Mock session for project manager initialization
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result

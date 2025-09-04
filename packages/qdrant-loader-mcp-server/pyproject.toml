@@ -41,7 +41,7 @@ dependencies = [
     "click>=8.0.0",
     "tomli>=2.0.0",
     "networkx>=3.0.0",
-    "qdrant-loader",
+    "qdrant-loader-core",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -69,14 +69,7 @@ Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 [project.scripts]
 mcp-qdrant-loader = "qdrant_loader_mcp_server.main:main"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.4.3",
-    "pytest-asyncio>=0.21.1",
-    "pytest-cov>=4.1.0",
-    "pytest-mock>=3.12.0",
-    "pre-commit>=3.5.0",
-]
+
 
 [tool.setuptools.packages.find]
 where = [
