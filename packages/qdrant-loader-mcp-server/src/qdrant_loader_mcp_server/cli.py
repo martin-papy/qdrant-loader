@@ -39,6 +39,15 @@ def _setup_logging(log_level: str, transport: str | None = None) -> None:
             os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
         )
 
+        # Reset any pre-existing handlers to prevent duplicate logs when setup() is
+        # invoked implicitly during module imports before CLI config is applied.
+        root_logger = logging.getLogger()
+        for h in list(root_logger.handlers):
+            try:
+                root_logger.removeHandler(h)
+            except Exception:
+                pass
+
         if not disable_console_logging:
             # Console format goes to stderr via our logging config
             LoggingConfig.setup(level=log_level.upper(), format="console")
@@ -479,13 +488,24 @@ def cli(
         # Load environment variables from .env file if specified
         if env:
             load_dotenv(env)
-            # Route message through logger (stderr), not stdout, to avoid polluting stdio transport
+
+        # Setup logging (force-disable console logging in stdio transport)
+        _setup_logging(log_level, transport)
+
+        # Log env file load after logging is configured to avoid duplicate handler setup
+        if env:
             LoggingConfig.get_logger(__name__).info(
                 "Loaded environment variables", env=str(env)
             )
 
-        # Setup logging (force-disable console logging in stdio transport)
-        _setup_logging(log_level, transport)
+        # If a config file was provided, propagate it via MCP_CONFIG so that
+        # any internal callers that resolve config without CLI context can find it.
+        if config is not None:
+            try:
+                os.environ["MCP_CONFIG"] = str(config)
+            except Exception:
+                # Best-effort; continue without blocking startup
+                pass
 
         # Initialize configuration (file/env precedence)
         config_obj, effective_cfg, used_file = load_config(config)

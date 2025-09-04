@@ -18,19 +18,75 @@ def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
         LLMSettings = core_settings_mod.LLMSettings
         create_provider = core_factory_mod.create_provider
 
-        llm_cfg = {
-            "provider": (os.getenv("LLM_PROVIDER") or "openai"),
-            "base_url": os.getenv("LLM_BASE_URL"),
-            "api_key": os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY"),
-            "models": {
-                "embeddings": os.getenv("LLM_EMBEDDING_MODEL")
-                or "text-embedding-3-small",
-            },
-            "tokenizer": os.getenv("LLM_TOKENIZER") or "none",
-            "request": {},
-            "rate_limits": {},
-            "embeddings": {},
-        }
+        # 1) Try to load LLM settings from the MCP server config file (global.llm)
+        llm_cfg: dict | None = None
+        try:
+            cfg_loader_mod = import_module("qdrant_loader_mcp_server.config_loader")
+            load_config = getattr(cfg_loader_mod, "load_config", None)
+            if callable(load_config):
+                _cfg, effective, _used_file = load_config(None)
+                if isinstance(effective, dict):
+                    maybe_llm = (effective.get("global") or {}).get("llm")
+                    if isinstance(maybe_llm, dict) and maybe_llm:
+                        # Make a shallow copy so we can safely overlay defaults/env
+                        llm_cfg = dict(maybe_llm)
+        except Exception:
+            # Non-fatal: fall through to env-only defaults
+            llm_cfg = None
+
+        # 2) If no file config present, construct from environment (legacy behavior)
+        if not llm_cfg:
+            llm_cfg = {
+                "provider": (os.getenv("LLM_PROVIDER") or "openai"),
+                "base_url": os.getenv("LLM_BASE_URL"),
+                "api_key": os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY"),
+                "models": {
+                    "embeddings": os.getenv("LLM_EMBEDDING_MODEL")
+                    or "text-embedding-3-small",
+                },
+                "tokenizer": os.getenv("LLM_TOKENIZER") or "none",
+                "request": {},
+                "rate_limits": {},
+                "embeddings": {},
+            }
+        else:
+            # Ensure sane defaults and environment overlays for partial file configs
+            def _resolve_placeholder(value: object, fallback_env: str | None = None, default: object | None = None) -> object | None:
+                if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+                    env_name = value[2:-1]
+                    return os.getenv(env_name) or (os.getenv(fallback_env) if fallback_env else None) or default
+                return value if value not in (None, "") else (os.getenv(fallback_env) if fallback_env else default)
+
+            # Provider and endpoints
+            llm_cfg["provider"] = _resolve_placeholder(
+                llm_cfg.get("provider"), fallback_env="LLM_PROVIDER", default="openai"
+            )
+            llm_cfg["base_url"] = _resolve_placeholder(
+                llm_cfg.get("base_url"), fallback_env="LLM_BASE_URL", default=None
+            )
+            llm_cfg["api_key"] = _resolve_placeholder(
+                llm_cfg.get("api_key"), fallback_env="LLM_API_KEY", default=os.getenv("OPENAI_API_KEY")
+            )
+
+            # Models
+            models = dict(llm_cfg.get("models") or {})
+            models["embeddings"] = _resolve_placeholder(
+                models.get("embeddings"), fallback_env="LLM_EMBEDDING_MODEL", default="text-embedding-3-small"
+            )
+            if models.get("chat") in (None, "") or (isinstance(models.get("chat"), str) and str(models.get("chat")).startswith("${") and str(models.get("chat")).endswith("}")):
+                env_chat = os.getenv("LLM_CHAT_MODEL")
+                if env_chat:
+                    models["chat"] = env_chat
+            llm_cfg["models"] = models
+
+            # Other optional blocks
+            llm_cfg["tokenizer"] = _resolve_placeholder(
+                llm_cfg.get("tokenizer"), fallback_env="LLM_TOKENIZER", default="none"
+            )
+            llm_cfg.setdefault("request", {})
+            llm_cfg.setdefault("rate_limits", {})
+            llm_cfg.setdefault("embeddings", {})
+
         llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
         return create_provider(llm_settings)
     except ImportError:
