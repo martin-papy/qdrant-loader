@@ -60,11 +60,11 @@ class AzureOpenAIProvider(LLMProvider):
 
     def embeddings(self) -> EmbeddingsClient:
         model = self._settings.models.get("embeddings", "")
-        return OpenAIEmbeddings(self._client, model, self._base_host)
+        return OpenAIEmbeddings(self._client, model, self._base_host, provider_label="azure_openai")
 
     def chat(self) -> ChatClient:
         model = self._settings.models.get("chat", "")
-        return OpenAIChat(self._client, model, self._base_host)
+        return OpenAIChat(self._client, model, self._base_host, provider_label="azure_openai")
 
     def tokenizer(self) -> TokenCounter:
         return _OpenAITokenCounter(self._settings.tokenizer)

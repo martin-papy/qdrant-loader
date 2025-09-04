@@ -72,11 +72,14 @@ class LLMSettings:
         )
 
         endpoint = embedding.get("endpoint")
-        provider = (
-            "openai"
-            if (isinstance(endpoint, str) and "openai" in endpoint.lower())
-            else "openai_compat"
-        )
+        # Detect Azure OpenAI in legacy endpoint to set provider accordingly
+        endpoint_l = (endpoint or "").lower() if isinstance(endpoint, str) else ""
+        if "openai.azure.com" in endpoint_l or "cognitiveservices.azure.com" in endpoint_l:
+            provider = "azure_openai"
+        elif "openai" in endpoint_l:
+            provider = "openai"
+        else:
+            provider = "openai_compat"
         models = {
             "embeddings": embedding.get("model"),
         }
