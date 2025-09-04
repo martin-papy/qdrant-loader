@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader"
-version = "0.6.1"
+version = "0.7.0"
 description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -92,8 +92,6 @@ Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 
 [project.scripts]
 qdrant-loader = "qdrant_loader.main:cli"
-
-
 
 [tool.setuptools.packages.find]
 where = [

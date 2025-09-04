@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-mcp-server"
-version = "0.6.1"
+version = "0.7.0"
 description = "A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor using Qdrant."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -68,8 +68,6 @@ Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 
 [project.scripts]
 mcp-qdrant-loader = "qdrant_loader_mcp_server.main:main"
-
-
 
 [tool.setuptools.packages.find]
 where = [
