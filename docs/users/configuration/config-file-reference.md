@@ -96,6 +96,7 @@ global:
     provider: ${LLM_PROVIDER}
     base_url: ${LLM_BASE_URL}
     api_key: ${LLM_API_KEY}
+    api_version: ${LLM_API_VERSION}  # Required for azure_openai
     headers: {}
     models:
       embeddings: ${LLM_EMBEDDING_MODEL}
@@ -112,6 +113,18 @@ global:
       concurrency: 5
     embeddings:
       vector_size: 1536
+    provider_options:
+      azure_endpoint: ${AZURE_OPENAI_ENDPOINT}
+
+> Azure OpenAI notes:
+> - Use the resource root for `base_url`, e.g. `https://<resource>.openai.azure.com` (do not include `/openai/deployments/...`).
+> - Set `api_version` (e.g., `2024-05-01-preview`).
+> - `models.embeddings` and `models.chat` should be Azure deployment names.
+
+> Ollama notes:
+> - If your server exposes OpenAI-compatible `/v1`, set `base_url` to include `/v1` and we will call `/v1/embeddings` and parse `data[].embedding`.
+> - In native mode (no `/v1`), we try batch `POST /api/embed` first and parse `{ "embeddings": [[...], ...] }`. If unsupported (404/405/501), we fall back to per-item `POST /api/embeddings` and parse `{ "embedding": [...] }` or `{ "data": { "embedding": [...] } }`.
+> - You can override detection with `global.llm.provider_options.native_endpoint: embed | embeddings | auto` (default: auto).
   chunking:
     chunk_size: 1500
     chunk_overlap: 200

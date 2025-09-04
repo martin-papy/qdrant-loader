@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from .providers.ollama import OllamaProvider
 from .providers.openai import OpenAIProvider
+try:
+    from .providers.azure_openai import AzureOpenAIProvider  # type: ignore
+except Exception:  # pragma: no cover - optional dependency surface
+    AzureOpenAIProvider = None  # type: ignore
 from .settings import LLMSettings
 from .types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
@@ -40,6 +44,18 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
     """
     provider_name = (settings.provider or "").lower()
     base_url = (settings.base_url or "").lower()
+
+    # Route Azure before generic OpenAI routing
+    is_azure = (
+        "azure" in provider_name
+        or "openai.azure.com" in base_url
+        or "cognitiveservices.azure.com" in base_url
+    )
+    if is_azure and AzureOpenAIProvider is not None:  # type: ignore[truthy-bool]
+        try:
+            return AzureOpenAIProvider(settings)  # type: ignore[misc]
+        except Exception:
+            return _NoopProvider()
 
     if "openai" in provider_name or "openai" in base_url:
         try:
