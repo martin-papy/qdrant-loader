@@ -746,12 +746,57 @@ Sitemap: {site_base}/sitemap.xml
 </section>
 
 <script>
-// Load coverage status (best-effort)
-function setLoaded(id){ var el = document.getElementById(id); if(el){ el.textContent = 'Loaded'; }}
-fetch('loader/status.json').then(r=>r.json()).then(_=>setLoaded('loader-coverage')).catch(()=>{});
-fetch('mcp/status.json').then(r=>r.json()).then(_=>setLoaded('mcp-coverage')).catch(()=>{});
-fetch('website/status.json').then(r=>r.json()).then(_=>setLoaded('website-coverage')).catch(()=>{});
-fetch('core/status.json').then(r=>r.json()).then(_=>setLoaded('core-coverage')).catch(()=>{});
+// Compute and render coverage summary from status.json
+function coverageSummary(data){
+  try{
+    let total = 0, missing = 0;
+    if (data && data.files){
+      for (const k in data.files){
+        const f = data.files[k];
+        const nums = f && f.index && f.index.nums ? f.index.nums : (f.index && f.index.numbers ? f.index.numbers : null);
+        if (nums && typeof nums.n_statements === 'number'){
+          total += (nums.n_statements||0);
+          missing += (nums.n_missing||0);
+        }
+      }
+    }
+    // Fallback if a totals object exists
+    if (total === 0 && data && data.totals){
+      if (typeof data.totals.n_statements === 'number'){
+        total = data.totals.n_statements||0;
+        missing = data.totals.n_missing||0;
+      } else if (typeof data.totals.covered_lines === 'number' && typeof data.totals.num_statements === 'number'){
+        total = data.totals.num_statements;
+        missing = total - data.totals.covered_lines;
+      }
+    }
+    if (total > 0){
+      const covered = Math.max(0, total - missing);
+      const pct = Math.round((covered/total)*1000)/10; // one decimal
+      return {pct, covered, total};
+    }
+  } catch(e){}
+  return null;
+}
+
+function renderCoverage(id, summary){
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!summary){ el.textContent = 'Loaded'; return; }
+  const {pct, covered, total} = summary;
+  el.innerHTML = `
+    <div class="d-flex align-items-center">
+      <div class="progress flex-grow-1 me-2" style="height: 10px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+      <span class="small fw-semibold">${pct}% (${covered}/${total})</span>
+    </div>`;
+}
+
+fetch('loader/status.json').then(r=>r.json()).then(d=>renderCoverage('loader-coverage', coverageSummary(d))).catch(()=>{});
+fetch('mcp/status.json').then(r=>r.json()).then(d=>renderCoverage('mcp-coverage', coverageSummary(d))).catch(()=>{});
+fetch('website/status.json').then(r=>r.json()).then(d=>renderCoverage('website-coverage', coverageSummary(d))).catch(()=>{});
+fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverage', coverageSummary(d))).catch(()=>{});
 </script>
 """
             # Render through site template for full styling/navigation
