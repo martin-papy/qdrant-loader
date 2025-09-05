@@ -2,13 +2,13 @@ from types import SimpleNamespace
 
 
 def _doc(**kwargs):
-    defaults = dict(
-        entities=[],
-        topics=[],
-        project_id=None,
-        breadcrumb_text="",
-        source_type="confluence",
-    )
+    defaults = {
+        "entities": [],
+        "topics": [],
+        "project_id": None,
+        "breadcrumb_text": "",
+        "source_type": "confluence",
+    }
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)
 
