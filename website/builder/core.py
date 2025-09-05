@@ -270,6 +270,12 @@ class WebsiteBuilder:
             content="<h1>Documentation</h1><p>Welcome to the QDrant Loader documentation.</p>"
         )
 
+        # Build package README documentation into docs/packages
+        try:
+            self.build_package_docs()
+        except Exception as e:
+            print(f"⚠️  Failed to build package docs: {e}")
+
         # Always create coverage directory and ensure index.html exists
         coverage_output_dir = self.output_dir / "coverage"
         coverage_output_dir.mkdir(exist_ok=True)
@@ -523,6 +529,8 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                     dest_name = "mcp"
                 elif "htmlcov-website" in item.name:
                     dest_name = "website"
+                elif "htmlcov-core" in item.name or "htmlcov-qdrant-loader-core" in item.name:
+                    dest_name = "core"
                 elif "htmlcov" in item.name:
                     dest_name = item.name.replace("htmlcov-", "").replace("htmlcov_", "")
 
@@ -603,6 +611,20 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
                     </div>
                 </div>
             </div>'''
+                elif report["name"] == "core":
+                    index_content += '''
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Core Library</h4>
+                        <span id="core-test-indicator" class="badge">Loading...</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="core-coverage">Core library coverage data</div>
+                        <a href="core/" class="btn btn-warning">View Detailed Report</a>
+                    </div>
+                </div>
+            </div>'''
 
             index_content += """
         </div>
@@ -622,12 +644,54 @@ fetch('mcp/status.json').then(response => response.json()).then(data => {
 fetch('website/status.json').then(response => response.json()).then(data => {
     document.getElementById('website-coverage').textContent = 'Loaded';
 });
+// Optional core coverage (if present)
+fetch('core/status.json').then(response => response.json()).then(data => {
+    var el = document.getElementById('core-coverage');
+    if (el) { el.textContent = 'Loaded'; }
+}).catch(() => {});
 </script>
 </body></html>"""
             main_index.write_text(index_content)
             print("📄 Generated coverage index.html")
 
         return {"coverage_reports": reports}
+
+    def build_package_docs(self) -> None:
+        """Build documentation pages from package README files into docs/packages.
+
+        Maps package README.md files to site docs under:
+          - packages/qdrant-loader -> docs/packages/qdrant-loader/README.html
+          - packages/qdrant-loader-mcp-server -> docs/packages/mcp-server/README.html
+          - packages/qdrant-loader-core -> docs/packages/core/README.html
+        """
+        package_mappings: list[tuple[str, str, str]] = [
+            ("qdrant-loader", "qdrant-loader", "QDrant Loader"),
+            ("qdrant-loader-mcp-server", "mcp-server", "MCP Server"),
+            ("qdrant-loader-core", "core", "Core Library"),
+        ]
+
+        for pkg_name, alias, display_name in package_mappings:
+            readme_path = Path("packages") / pkg_name / "README.md"
+            if not readme_path.exists():
+                continue
+
+            try:
+                with open(readme_path, encoding="utf-8") as f:
+                    markdown_content = f.read()
+
+                html_content = self.markdown_to_html(markdown_content, str(readme_path), f"docs/packages/{alias}/README.html")
+
+                output_path = f"docs/packages/{alias}/README.html"
+                self.build_page(
+                    "base.html",
+                    output_path,
+                    f"{display_name} - README",
+                    f"{display_name} Documentation",
+                    output_path,
+                    content=html_content,
+                )
+            except Exception as e:
+                print(f"⚠️  Failed to build docs for package {pkg_name}: {e}")
 
     def generate_directory_indexes(self) -> None:
         """Generate index files for directories."""
