@@ -729,6 +729,145 @@ def update_all_development_status_classifiers(
         update_development_status_classifier(package_name, new_version, dry_run)
 
 
+def get_internal_package_names() -> set[str]:
+    """Return the set of internal package names (excluding the workspace meta-package)."""
+    return {name for name in PACKAGES.keys() if name != "qdrant-loader-workspace"}
+
+
+def _update_dependency_string(
+    dep: str, internal_names: set[str], target_version: str, current_project_name: str
+) -> tuple[str, bool]:
+    """If dep references an internal package, pin it to target_version.
+
+    - Preserves extras (e.g. pkg[extra]) and markers (e.g. ; python_version<"3.12").
+    - Replaces any existing version specifiers with ==target_version.
+    """
+    import re
+
+    original = dep
+    base, sep, marker = dep.partition(";")
+    base = base.strip()
+    marker = marker.strip() if sep else ""
+
+    m = re.match(r"^([A-Za-z0-9_.-]+)(\[[^\]]+\])?.*$", base)
+    if not m:
+        return original, False
+
+    name = m.group(1)
+    extras = m.group(2) or ""
+
+    if name.lower() not in {n.lower() for n in internal_names}:
+        return original, False
+
+    # Avoid self-dependency pinning
+    if name.lower() == current_project_name.lower():
+        return original, False
+
+    new_base = f"{name}{extras}=={target_version}"
+    new_dep = f"{new_base}; {marker}" if marker else new_base
+    if new_dep != original:
+        return new_dep, True
+    return original, False
+
+
+def update_internal_dependencies_for_package(
+    package_name: str, internal_names: set[str], target_version: str, dry_run: bool = False
+) -> list[tuple[str, str]]:
+    """Update internal dependency pins inside a single package's pyproject.
+
+    Returns a list of (old_dep, new_dep) tuples for changes that would be made.
+    """
+    logger = logging.getLogger(__name__)
+    pyproject_path = PACKAGES[package_name]["pyproject"]
+
+    if not Path(pyproject_path).exists():
+        logger.error(
+            f"pyproject.toml not found for {package_name} at {pyproject_path}"
+        )
+        return []
+
+    with open(pyproject_path, "rb") as f:
+        pyproject = tomli.load(f)
+
+    project_table = pyproject.get("project", {})
+    current_project_name = project_table.get("name", package_name)
+
+    changes: list[tuple[str, str]] = []
+    wrote_changes = False
+
+    # Update core dependencies
+    deps = list(project_table.get("dependencies", []) or [])
+    if deps:
+        new_deps: list[str] = []
+        for dep in deps:
+            if not isinstance(dep, str):
+                new_deps.append(dep)
+                continue
+            updated, changed = _update_dependency_string(
+                dep, internal_names, target_version, current_project_name
+            )
+            if changed:
+                changes.append((dep, updated))
+                wrote_changes = True
+            new_deps.append(updated)
+
+        if wrote_changes and not dry_run:
+            pyproject.setdefault("project", {})["dependencies"] = new_deps
+
+    # Update optional dependencies (per-extra)
+    opt_deps = project_table.get("optional-dependencies", {}) or {}
+    opt_changed = False
+    if isinstance(opt_deps, dict) and opt_deps:
+        new_opt_deps: dict[str, list[str]] = {}
+        for extra, items in opt_deps.items():
+            if not isinstance(items, list):
+                new_opt_deps[extra] = items
+                continue
+            new_items: list[str] = []
+            for dep in items:
+                if not isinstance(dep, str):
+                    new_items.append(dep)
+                    continue
+                updated, changed = _update_dependency_string(
+                    dep, internal_names, target_version, current_project_name
+                )
+                if changed:
+                    changes.append((dep, updated))
+                    opt_changed = True
+                new_items.append(updated)
+            new_opt_deps[extra] = new_items
+
+        if opt_changed and not dry_run:
+            pyproject.setdefault("project", {})["optional-dependencies"] = new_opt_deps
+
+    if (wrote_changes or opt_changed) and not dry_run:
+        with open(pyproject_path, "wb") as f:
+            tomli_w.dump(pyproject, f)
+
+    return changes
+
+
+def update_all_internal_dependencies_versions(
+    target_version: str, dry_run: bool = False
+) -> None:
+    """Pin internal inter-package dependencies to the unified version across all packages."""
+    logger = logging.getLogger(__name__)
+    logger.info("Updating internal dependency versions for all packages")
+
+    internal_names = get_internal_package_names()
+    for package_name in PACKAGES.keys():
+        if package_name == "qdrant-loader-workspace":
+            continue
+        changes = update_internal_dependencies_for_package(
+            package_name, internal_names, target_version, dry_run
+        )
+        if dry_run and changes:
+            for old, new in changes:
+                logger.info(
+                    f"[DRY RUN] Would update internal dependency in {package_name}: {old} → {new}"
+                )
+
+
 @command()
 @option(
     "--dry-run",
@@ -772,6 +911,16 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             target_classifier = get_development_status_classifier(source_version)
             for package_name in PACKAGES.keys():
                 print(f"   • {package_name}: {target_classifier}")
+
+            print(
+                "\n[DRY RUN] Would also pin internal dependencies to this version where applicable:"
+            )
+            for package_name in PACKAGES.keys():
+                if package_name == "qdrant-loader-workspace":
+                    continue
+                print(
+                    f"   • {package_name}: internal deps referencing repo packages → '=={source_version}'"
+                )
         else:
             print("\nSyncing packages...")
             sync_all_package_versions(source_version, dry_run)
@@ -781,9 +930,12 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             sync_versions_dict = dict.fromkeys(PACKAGES.keys(), source_version)
             update_all_development_status_classifiers(sync_versions_dict, dry_run)
 
+            print("Updating internal dependency pins...")
+            update_all_internal_dependencies_versions(source_version, dry_run)
+
             run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
             run_command(
-                f'git commit -m "chore: sync all packages to version {source_version} and update classifiers"',
+                f'git commit -m "chore: sync all packages to version {source_version}; update classifiers and internal deps"',
                 dry_run,
             )
             print("✅ All packages synced successfully!")
@@ -929,17 +1081,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("\n🚀 PLANNED RELEASE ACTIONS")
         print("─" * 50)
 
-        print("\n1️⃣  Create and push tags:")
-        for package_name in get_packages_for_release():
-            tag_name = f"{package_name}-v{current_version}"
-            print(f"   • {tag_name}")
-        print("   • Push all tags to GitHub")
-
-        print("\n2️⃣  Create GitHub releases:")
-        for package_name in get_packages_for_release():
-            print(f"   • {package_name} v{current_version}")
-
-        print("\n3️⃣  Update package versions and classifiers:")
+        print("\n1️⃣  Update package versions, classifiers, and internal dependency pins:")
         print(f"   • All packages: {current_version} → {new_version}")
 
         # Show classifier updates
@@ -951,12 +1093,41 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             else:
                 print(f"   • {package_name}: {new_classifier} (no change)")
 
-        print("\n4️⃣  Commit changes:")
+        # Preview internal dependency pin changes
+        internal_names = get_internal_package_names()
+        any_internal_changes = False
+        for package_name in PACKAGES.keys():
+            if package_name == "qdrant-loader-workspace":
+                continue
+            changes = update_internal_dependencies_for_package(
+                package_name, internal_names, new_version, True
+            )
+            if changes:
+                any_internal_changes = True
+                print(f"   • {package_name} internal deps:")
+                for old, new in changes:
+                    print(f"      - {old} → {new}")
+        if not any_internal_changes:
+            print("   • No internal dependency pin changes required")
+
+        print("\n2️⃣  Commit changes:")
         print("   • Stage updated pyproject.toml files")
         print(
-            "   • Create commit: 'chore(release): bump versions and update classifiers'"
+            "   • Create commit: 'chore(release): bump versions; update classifiers and internal deps'"
         )
+
+        print("\n3️⃣  Push changes:")
         print("   • Push new version to remote repository")
+
+        print("\n4️⃣  Create and push tags:")
+        for package_name in get_packages_for_release():
+            tag_name = f"{package_name}-v{new_version}"
+            print(f"   • {tag_name}")
+        print("   • Push all tags to GitHub")
+
+        print("\n5️⃣  Create GitHub releases:")
+        for package_name in get_packages_for_release():
+            print(f"   • {package_name} v{new_version}")
 
         print("\n" + "─" * 50)
 
@@ -992,10 +1163,14 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     # Update Development Status classifiers for all packages
     update_all_development_status_classifiers(new_versions, dry_run)
 
+    # Update internal inter-package dependency pins
+    update_all_internal_dependencies_versions(new_version, dry_run)
+
     # Create commit with all version and classifier updates
     run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
     run_command(
-        'git commit -m "chore(release): bump versions and update classifiers"', dry_run
+        'git commit -m "chore(release): bump versions; update classifiers and internal deps"',
+        dry_run,
     )
 
     # Push the new version commit to remote
