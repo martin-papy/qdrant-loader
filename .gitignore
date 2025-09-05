@@ -62,6 +62,7 @@ packages/*/dist/
 packages/*/build/
 packages/*/*.egg-info/
 *.egg-info/
+site/
 
 # Ignore cursor AI rules
 qdrant-loader.code-workspace

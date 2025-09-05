@@ -361,18 +361,21 @@ class WebsiteBuilder:
                     elif item.is_dir():
                         shutil.copytree(item, coverage_output_dir / item.name, dirs_exist_ok=True)
         else:
-            # Create placeholder coverage index if no artifacts provided
-            placeholder_index = coverage_output_dir / "index.html"
-            if not placeholder_index.exists():
-                placeholder_content = """<html>
-<head><title>Coverage Reports</title></head>
-<body>
-    <h1>Coverage Reports</h1>
-    <p>No coverage artifacts available.</p>
-</body>
-</html>"""
-                placeholder_index.write_text(placeholder_content)
-                print("📄 Generated placeholder coverage index.html")
+            # Create styled placeholder coverage index if no artifacts provided
+            placeholder_html = (
+                '<section class="py-5"><div class="container">'
+                '<h1 class="display-5 fw-bold text-primary"><i class="bi bi-graph-up me-2"></i>Coverage Reports</h1>'
+                '<div class="alert alert-info mt-4">No coverage artifacts available.</div>'
+                '</div></section>'
+            )
+            self.build_page(
+                "base.html",
+                "coverage/index.html",
+                "Coverage Reports",
+                "Test coverage analysis",
+                "coverage/index.html",
+                content=placeholder_html,
+            )
 
         # Generate directory indexes
         self.generate_directory_indexes()
@@ -670,15 +673,14 @@ Sitemap: {site_base}/sitemap.xml
                         "url": f"coverage/{subdir.name}/index.html",
                     })
 
-        # Create main coverage index.html if it doesn't exist
-        main_index = coverage_output_dir / "index.html"
-        if not main_index.exists() and reports:
-            # Create coverage index with proper structure
-            index_content = """<html><head><title>Coverage Reports</title></head><body>
-<section class="py-5">
-    <div class="container">
-        <h1>Coverage Reports</h1>
-        <div class="row g-4">"""
+        # Create main coverage index page using site template when reports exist
+        if reports:
+            # Build coverage index with Bootstrap styling
+            index_content = """
+<section class=\"py-5\">
+  <div class=\"container\">
+    <h1 class=\"display-5 fw-bold text-primary mb-4\"><i class=\"bi bi-graph-up me-2\"></i>Coverage Reports</h1>
+    <div class=\"row g-4\">"""
 
             for report in reports:
                 if report["name"] == "loader":
@@ -739,31 +741,28 @@ Sitemap: {site_base}/sitemap.xml
             </div>'''
 
             index_content += """
-        </div>
     </div>
+  </div>
 </section>
 
 <script>
-// Load coverage data for all three packages
-fetch('loader/status.json').then(response => response.json()).then(data => {
-    document.getElementById('loader-coverage').textContent = 'Loaded';
-});
-
-fetch('mcp/status.json').then(response => response.json()).then(data => {
-    document.getElementById('mcp-coverage').textContent = 'Loaded';
-});
-
-fetch('website/status.json').then(response => response.json()).then(data => {
-    document.getElementById('website-coverage').textContent = 'Loaded';
-});
-// Optional core coverage (if present)
-fetch('core/status.json').then(response => response.json()).then(data => {
-    var el = document.getElementById('core-coverage');
-    if (el) { el.textContent = 'Loaded'; }
-}).catch(() => {});
+// Load coverage status (best-effort)
+function setLoaded(id){ var el = document.getElementById(id); if(el){ el.textContent = 'Loaded'; }}
+fetch('loader/status.json').then(r=>r.json()).then(_=>setLoaded('loader-coverage')).catch(()=>{});
+fetch('mcp/status.json').then(r=>r.json()).then(_=>setLoaded('mcp-coverage')).catch(()=>{});
+fetch('website/status.json').then(r=>r.json()).then(_=>setLoaded('website-coverage')).catch(()=>{});
+fetch('core/status.json').then(r=>r.json()).then(_=>setLoaded('core-coverage')).catch(()=>{});
 </script>
-</body></html>"""
-            main_index.write_text(index_content)
+"""
+            # Render through site template for full styling/navigation
+            self.build_page(
+                "base.html",
+                "coverage/index.html",
+                "Coverage Reports",
+                "Test coverage analysis",
+                "coverage/index.html",
+                content=index_content,
+            )
             print("📄 Generated coverage index.html")
 
         return {"coverage_reports": reports}
