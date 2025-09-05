@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -108,12 +108,12 @@ class OpenAIEmbeddings(EmbeddingsClient):
         # Use thread offloading to keep async interface consistent with sync client
         import asyncio
 
-        started = datetime.utcnow()
+        started = datetime.now(UTC)
         try:
             response = await asyncio.to_thread(
                 self._client.embeddings.create, model=self._model, input=inputs
             )
-            duration_ms = int((datetime.utcnow() - started).total_seconds() * 1000)
+            duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
             try:
                 logger.info(
                     "LLM request",
@@ -170,7 +170,7 @@ class OpenAIChat(ChatClient):
         import asyncio
 
         # The OpenAI python client call is sync for chat.completions
-        started = datetime.utcnow()
+        started = datetime.now(UTC)
         try:
             response = await asyncio.to_thread(
                 self._client.chat.completions.create,
@@ -178,7 +178,7 @@ class OpenAIChat(ChatClient):
                 messages=messages,
                 **create_kwargs,
             )
-            duration_ms = int((datetime.utcnow() - started).total_seconds() * 1000)
+            duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
             try:
                 logger.info(
                     "LLM request",

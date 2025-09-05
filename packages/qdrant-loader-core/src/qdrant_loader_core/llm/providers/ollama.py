@@ -175,8 +175,8 @@ class OllamaChat(ChatClient):
                     payload[k] = kwargs[k]
             async with httpx.AsyncClient(timeout=60.0) as client:
                 try:
-                    from datetime import datetime
-                    started = datetime.utcnow()
+                    from datetime import UTC, datetime
+                    started = datetime.now(UTC)
                     resp = await client.post(url, json=payload, headers=self._headers)
                     resp.raise_for_status()
                     data = resp.json()
@@ -185,7 +185,7 @@ class OllamaChat(ChatClient):
                     if choices:
                         msg = (choices[0] or {}).get("message") or {}
                         text = msg.get("content", "") or ""
-                    duration_ms = int((datetime.utcnow() - started).total_seconds() * 1000)
+                    duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
                     logger.info(
                         "LLM request",
                         provider="ollama",
@@ -221,8 +221,8 @@ class OllamaChat(ChatClient):
                 payload["options"] = {"temperature": kwargs["temperature"]}
             async with httpx.AsyncClient(timeout=60.0) as client:
                 try:
-                    from datetime import datetime
-                    started = datetime.utcnow()
+                    from datetime import UTC, datetime
+                    started = datetime.now(UTC)
                     resp = await client.post(url, json=payload, headers=self._headers)
                     resp.raise_for_status()
                     data = resp.json()
@@ -230,7 +230,7 @@ class OllamaChat(ChatClient):
                     text = ""
                     if isinstance(data.get("message"), dict):
                         text = data["message"].get("content", "") or ""
-                    duration_ms = int((datetime.utcnow() - started).total_seconds() * 1000)
+                    duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
                     logger.info(
                         "LLM request",
                         provider="ollama",
