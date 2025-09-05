@@ -432,24 +432,21 @@ class WebsiteBuilder:
         current_date = datetime.now().strftime('%Y-%m-%d')
 
         # Generate simple sitemap.xml
-        sitemap_content = '''<?xml version="1.0" encoding="UTF-8"?>
+        sitemap_content = f'''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>{base_url}/</loc>
-    <lastmod>{date}</lastmod>
+    <loc>{site_base}/</loc>
+    <lastmod>{current_date}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>{base_url}/docs/</loc>
-    <lastmod>{date}</lastmod>
+    <loc>{site_base}/docs/</loc>
+    <lastmod>{current_date}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-</urlset>'''.format(
-            base_url=site_base,
-            date=current_date
-        )
+</urlset>'''
 
         sitemap_path = self.output_dir / "sitemap.xml"
         with open(sitemap_path, 'w', encoding='utf-8') as f:
