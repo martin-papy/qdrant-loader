@@ -15,7 +15,9 @@ EXEMPTIONS = {
 
 
 def _count_lines(path: Path) -> int:
-    return sum(1 for _ in path.open("r", encoding="utf-8", errors="ignore"))
+    # Ensure file is closed promptly to avoid ResourceWarning in tests
+    with path.open("r", encoding="utf-8", errors="ignore") as f:
+        return sum(1 for _ in f)
 
 
 def _normalize_scope(scope: str) -> str:
