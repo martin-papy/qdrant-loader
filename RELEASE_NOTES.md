@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 0.7.2 - Sept 05, 2025
+
+### Release Process Enhancements
+
+- Internal inter-package dependencies are now pinned to the unified release version to prevent mismatched installs when only one package is upgraded.
+- Dry-run output enhanced: previews internal dependency pin changes per package and uses the new version for tag and release previews.
+- Enforced, explicit release order: bump versions → update classifiers → pin internal deps → commit & push → tag → release.
+- Updated commit messages to reflect classifier and internal dependency updates.
+
 ## Version 0.7.1 - Sept 04, 2025
 
 ### LLM Provider-Agnostic Configuration & Migration
