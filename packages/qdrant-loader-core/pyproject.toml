@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-core"
-version = "0.7.1"
+version = "0.7.2"
 description = "Shared core for provider-agnostic LLM support and configuration mapping for qdrant-loader ecosystem"
 readme = "README.md"
 requires-python = ">=3.12"
