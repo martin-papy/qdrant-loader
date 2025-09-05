@@ -9,7 +9,7 @@ from pathlib import Path
 import requests
 import tomli
 import tomli_w
-from click import command, option
+from click import command, option, confirm
 from click.termui import prompt
 from dotenv import load_dotenv
 
@@ -1048,6 +1048,14 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         new_version = calculate_new_version(current_version, choice, custom_version)
     except ValueError as e:
         logger.error(f"Version calculation failed: {e}")
+        sys.exit(1)
+
+    # Ask for confirmation before proceeding further
+    print(f"\nSelected new version: {new_version}")
+    if not confirm(f"Proceed with version bump to {new_version}?", default=True):
+        logger.error("Release aborted by user.")
+        if dry_run:
+            return
         sys.exit(1)
 
     # Now check if release notes have been updated for the new version
