@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import pytest
+
 
 def _r(id, st, title, sec, score):
     return SimpleNamespace(
@@ -40,10 +42,7 @@ def test_apply_diversity_filtering_edge_cases():
     assert apply_diversity_filtering(r, diversity_factor=0.0, limit=5) == r
 
     # Invalid factor
-    try:
+    with pytest.raises(ValueError):
         apply_diversity_filtering(r, diversity_factor=2.0, limit=1)
-        assert False, "Expected ValueError"
-    except ValueError:
-        pass
 
 

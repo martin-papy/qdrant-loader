@@ -1,6 +1,6 @@
 import runpy
-from pathlib import Path
 from importlib import import_module
+from pathlib import Path
 
 
 def test_engine_reexport_importable():
@@ -26,8 +26,6 @@ def test_mcp_formatters_reexport_importable():
 
 
 def test_monolithic_schemas_module_executes():
-    import runpy
-    from pathlib import Path
     import qdrant_loader_mcp_server as pkg
 
     schemas_py = Path(pkg.__file__).resolve().parent / "mcp" / "schemas.py"

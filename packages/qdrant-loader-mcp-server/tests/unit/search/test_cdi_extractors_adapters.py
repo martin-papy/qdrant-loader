@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import pytest
+
 
 def test_default_recommender_adapter_invokes_legacy(monkeypatch):
     from qdrant_loader_mcp_server.search.enhanced.cdi.extractors.recommendation import (
@@ -30,10 +32,6 @@ def test_default_recommender_adapter_invokes_legacy(monkeypatch):
 
     assert called["args"] == (target, pool)
     assert hasattr(result, "items")
-
- 
-import pytest
-
 
 @pytest.mark.asyncio
 async def test_default_conflict_detector_adapter_invokes_legacy(monkeypatch):

@@ -1,7 +1,7 @@
-from importlib import import_module
 import importlib
 import sys
 import types
+from importlib import import_module
 
 import pytest
 

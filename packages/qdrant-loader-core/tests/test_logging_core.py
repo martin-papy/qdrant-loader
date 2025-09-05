@@ -1,8 +1,6 @@
 import logging
 from importlib import import_module
 
-import pytest
-
 
 def test_redaction_filter_masks_and_marks(caplog):
     caplog.set_level(logging.INFO)

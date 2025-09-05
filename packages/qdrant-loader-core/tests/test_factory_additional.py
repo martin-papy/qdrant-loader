@@ -34,9 +34,9 @@ def test_factory_routes_to_noop_on_openai_init_failure(monkeypatch):
     chat = provider.chat()
     tok = provider.tokenizer()
     assert tok.count("abc") == 3
-    import pytest
-
     import asyncio
+
+    import pytest
 
     async def _run():
         with pytest.raises(NotImplementedError):
