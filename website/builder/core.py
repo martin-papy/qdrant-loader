@@ -119,7 +119,7 @@ class WebsiteBuilder:
             "name": "QDrant Loader",
             "version": "0.4.0b1",
             "description": "Enterprise-ready vector database toolkit",
-            "github_url": "https://github.com/your-org/qdrant-loader",
+            "github_url": "https://github.com/martin-papy/qdrant-loader",
         }
 
         # Override with any provided kwargs
@@ -136,6 +136,19 @@ class WebsiteBuilder:
                     "version": project_section.get("version", project_info["version"]),
                     "description": project_section.get("description", project_info["description"]),
                 })
+                # Normalize workspace naming to product name
+                if isinstance(project_info.get("name"), str) and project_info["name"].endswith("-workspace"):
+                    project_info["name"] = "QDrant Loader"
+
+                # Try to get homepage/repository from pyproject urls
+                urls = project_section.get("urls", {}) if isinstance(project_section, dict) else {}
+                homepage = urls.get("Homepage")
+                if homepage and not getattr(self, 'base_url_user_set', False) and not self.base_url:
+                    # Set base_url from pyproject if not provided externally
+                    self.base_url = homepage.rstrip('/')
+                repo_url = urls.get("Repository") or urls.get("Source")
+                if repo_url:
+                    project_info["github_url"] = repo_url
         except Exception:
             # Ignore malformed project section entries
             pass
@@ -218,7 +231,11 @@ class WebsiteBuilder:
         if canonical_path.count('/') > 0:
             base_url = '../' * canonical_path.count('/')
         else:
-            base_url = self.base_url or './'
+            # Normalize root base URL
+            if self.base_url:
+                base_url = self.base_url.rstrip('/') + '/'
+            else:
+                base_url = './'
 
         # Merge extra replacements ensuring defaults for optional placeholders
         extras = dict(extra_replacements)
@@ -275,6 +292,19 @@ class WebsiteBuilder:
             "index.html",
         )
 
+        # Build a friendly 404 page
+        try:
+            self.build_page(
+                "base.html",
+                "404.html",
+                "Page Not Found",
+                "The page you are looking for does not exist.",
+                "404.html",
+                content=self.load_template("404.html"),
+            )
+        except Exception as e:
+            print(f"⚠️  Failed to build 404 page: {e}")
+
         # Build docs structure and pages
         self.build_docs_nav()
         _docs_structure = self.build_docs_structure()
@@ -283,15 +313,29 @@ class WebsiteBuilder:
         docs_output_dir = self.output_dir / "docs"
         docs_output_dir.mkdir(exist_ok=True)
 
-        # Build docs index page
+        # Build docs index page using dedicated template content
         self.build_page(
             "base.html",
             "docs/index.html",
             "Documentation",
             "QDrant Loader Documentation",
             "docs/index.html",
-            content="<h1>Documentation</h1><p>Welcome to the QDrant Loader documentation.</p>"
+            content=self.load_template("docs-index.html"),
         )
+
+        # Bridge root docs from repository top-level files
+        try:
+            if Path("README.md").exists():
+                self.build_markdown_page("README.md", "docs/README.html")
+            if Path("RELEASE_NOTES.md").exists():
+                self.build_markdown_page("RELEASE_NOTES.md", "docs/RELEASE_NOTES.html")
+            if Path("CONTRIBUTING.md").exists():
+                self.build_markdown_page("CONTRIBUTING.md", "docs/CONTRIBUTING.html")
+            # License (plain text) rendered via helper
+            if Path("LICENSE").exists():
+                self.build_license_page("LICENSE", "docs/LICENSE.html", "License", "License")
+        except Exception as e:
+            print(f"⚠️  Failed to build root docs pages: {e}")
 
         # Build package README documentation into docs/packages
         try:
@@ -334,7 +378,17 @@ class WebsiteBuilder:
         self.generate_directory_indexes()
 
         # Generate SEO files
-        self.generate_seo_files()
+        # Build a dynamic sitemap including all HTML pages
+        try:
+            self.generate_dynamic_sitemap()
+        except Exception as e:
+            print(f"⚠️  Failed to generate dynamic sitemap: {e}")
+
+        # Always (re)write robots.txt pointing to the sitemap
+        try:
+            self.generate_robots_file()
+        except Exception as e:
+            print(f"⚠️  Failed to generate robots.txt: {e}")
 
         # Create .nojekyll file for GitHub Pages
         nojekyll_path = self.output_dir / ".nojekyll"
@@ -371,6 +425,9 @@ class WebsiteBuilder:
         """Generate SEO files like sitemap.xml and robots.txt."""
         from datetime import datetime
 
+        # Determine base site URL
+        site_base = self.base_url.rstrip('/') if self.base_url else 'https://qdrant-loader.net'
+
         # Get current date for lastmod
         current_date = datetime.now().strftime('%Y-%m-%d')
 
@@ -390,7 +447,7 @@ class WebsiteBuilder:
     <priority>0.8</priority>
   </url>
 </urlset>'''.format(
-            base_url=self.base_url.rstrip('/') if self.base_url else 'https://example.com',
+            base_url=site_base,
             date=current_date
         )
 
@@ -408,6 +465,19 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
 
         robots_path = self.output_dir / "robots.txt"
         with open(robots_path, 'w', encoding='utf-8') as f:
+            f.write(robots_content.replace('https://example.com', site_base))
+        print("📄 Generated robots.txt")
+
+    def generate_robots_file(self) -> None:
+        """Generate only robots.txt referencing the sitemap URL."""
+        site_base = self.base_url.rstrip('/') if self.base_url else 'https://qdrant-loader.net'
+        robots_content = f'''User-agent: *
+Allow: /
+
+Sitemap: {site_base}/sitemap.xml
+'''
+        robots_path = self.output_dir / "robots.txt"
+        with open(robots_path, 'w', encoding='utf-8') as f:
             f.write(robots_content)
         print("📄 Generated robots.txt")
 
@@ -415,7 +485,7 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
         """Generate dynamic sitemap with custom pages."""
         from datetime import datetime
 
-        base_url = self.base_url.rstrip('/') if self.base_url else 'https://example.com'
+        base_url = self.base_url.rstrip('/') if self.base_url else 'https://qdrant-loader.net'
 
         # Auto-discover pages if not provided
         if pages is None:
@@ -480,6 +550,28 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
         # Convert markdown to HTML
         html_content = self.markdown_to_html(markdown_content)
 
+        # Build a Table of Contents and wrap in docs layout
+        toc_html = self.render_toc(html_content)
+        if toc_html:
+            toc_html = self.add_bootstrap_classes(toc_html)
+
+        wrapped_content = f"""
+<section class=\"py-5\">
+  <div class=\"container\">
+    <div class=\"row\">
+      <aside class=\"col-lg-3 d-none d-lg-block\">
+        <div class=\"position-sticky\" style=\"top: 6rem;\">
+          {toc_html or '<div class=\"text-muted small\">No sections</div>'}
+        </div>
+      </aside>
+      <div class=\"col-lg-9\">
+        {html_content}
+      </div>
+    </div>
+  </div>
+</section>
+"""
+
         # Build the page
         self.build_page(
             "base.html",
@@ -487,7 +579,7 @@ Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}
             title,
             f"{title} - QDrant Loader",
             output_path,
-            content=html_content,
+            content=wrapped_content,
             breadcrumb=breadcrumb,
             **kwargs
         )

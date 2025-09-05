@@ -74,7 +74,7 @@ publish-mcp: build-mcp ## Publish mcp-server to PyPI
 	cd packages/qdrant-loader-mcp-server && python -m twine upload dist/*
 
 docs: ## Generate documentation
-	python website/build.py --output site --templates website/templates
+	python website/build.py --output site --templates website/templates --base-url ""
 
 setup-dev: ## Set up development environment
 	python3.12 -m venv venv
