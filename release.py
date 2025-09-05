@@ -9,7 +9,7 @@ from pathlib import Path
 import requests
 import tomli
 import tomli_w
-from click import command, option, confirm
+from click import command, confirm, option
 from click.termui import prompt
 from dotenv import load_dotenv
 
