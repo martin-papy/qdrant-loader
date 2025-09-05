@@ -41,7 +41,7 @@ dependencies = [
     "click>=8.0.0",
     "tomli>=2.0.0",
     "networkx>=3.0.0",
-    "qdrant-loader-core",
+    "qdrant-loader-core==0.7.1",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
