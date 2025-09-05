@@ -166,6 +166,18 @@ class WebsiteBuilder:
             # Git not available or not a git repository
             pass
 
+        # Add build metadata
+        from datetime import datetime
+        commit_hash = project_info.get("commit_hash", "")
+        project_info["commit"] = {
+            "hash": commit_hash,
+            "short": commit_hash[:7] if isinstance(commit_hash, str) else "",
+            "date": project_info.get("commit_date", ""),
+        }
+        project_info["build"] = {
+            "timestamp": datetime.utcnow().isoformat(timespec='seconds') + 'Z'
+        }
+
         # Write project info JSON file
         project_info_path = self.output_dir / "project-info.json"
         project_info_path.parent.mkdir(parents=True, exist_ok=True)
@@ -187,12 +199,18 @@ class WebsiteBuilder:
         """Build a single page from template."""
         template_content = self.load_template(template_name)
 
-        # If no explicit content is provided and the output filename differs from
-        # the canonical path, interpret the output filename as a content template
-        # to be loaded from the templates directory. This ensures missing content
-        # templates raise FileNotFoundError as expected by edge-case tests.
-        if not content and output_filename != canonical_path:
-            content = self.load_template(output_filename)
+        # Load a content template if available when no explicit content is given.
+        # For pages where output and canonical differ, missing content should raise.
+        # For pages where they are the same (e.g., index.html), load content if
+        # the template exists, otherwise fall back to empty content.
+        if not content:
+            try:
+                content = self.load_template(output_filename)
+            except FileNotFoundError:
+                if output_filename != canonical_path:
+                    # Maintain behavior for explicit content templates
+                    raise
+                # Otherwise, leave content empty
 
         project_info = self.generate_project_info()
 
@@ -201,6 +219,11 @@ class WebsiteBuilder:
             base_url = '../' * canonical_path.count('/')
         else:
             base_url = self.base_url or './'
+
+        # Merge extra replacements ensuring defaults for optional placeholders
+        extras = dict(extra_replacements)
+        extras.setdefault('additional_head', '')
+        extras.setdefault('additional_scripts', '')
 
         replacements = {
             'page_title': title,
@@ -213,7 +236,7 @@ class WebsiteBuilder:
             'project_name': project_info['name'],
             'project_version': project_info['version'],
             'project_description': project_info['description'],
-            **extra_replacements,
+            **extras,
         }
 
         final_content = self.replace_placeholders(template_content, replacements)

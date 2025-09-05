@@ -103,7 +103,7 @@ jobs:
         with:
           pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: coverage-artifacts/
-          merge-multiple: false
+          merge-multiple: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
