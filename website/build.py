@@ -43,6 +43,11 @@ def main():
 
     builder = WebsiteBuilder(args.templates, args.output)
     builder.base_url = args.base_url
+    # Mark that base_url came from CLI (even if empty string). Avoid auto-overrides.
+    try:
+        builder.base_url_user_set = True
+    except Exception:
+        pass
 
     try:
         builder.build_site(args.coverage_artifacts, args.test_results)
