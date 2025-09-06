@@ -2,9 +2,9 @@ name: Test and Coverage
 
 on:
   push:
-    branches: [ main, develop, feature/*, bugfix/*, release/* ]
+    branches: [ main, develop, feature/*, bugfix/*, release/*, fix/* ]
   pull_request:
-    branches: [ main, develop, feature/*, bugfix/*, release/* ]
+    branches: [ main, develop, feature/*, bugfix/*, release/*, fix/* ]
 
 permissions:
   contents: read
