@@ -38,14 +38,12 @@ quality-all: ## Run quality gates for all packages (currently qdrant-loader and 
 	# Add additional per-package quality directories here if/when created
 
 lint: ## Run linting on all packages
-	ruff check .
-	# TODO: Add mypy check for all packages
-	# mypy -p qdrant_loader -p qdrant_loader_core -p qdrant_loader_mcp_server
+	ruff check --fix .
 
 format: ## Format code in all packages
-	black packages/
-	isort packages/
-	ruff check --fix packages/
+	black .
+	isort .
+	ruff check --fix .
 
 clean: ## Clean build artifacts
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -74,7 +72,7 @@ publish-mcp: build-mcp ## Publish mcp-server to PyPI
 	cd packages/qdrant-loader-mcp-server && python -m twine upload dist/*
 
 docs: ## Generate documentation
-	python website/build.py --output site --templates website/templates --base-url ""
+	python website/build.py --output site --templates website/templates --base-url "http://127.0.0.1:3000/site/"
 
 setup-dev: ## Set up development environment
 	python3.12 -m venv venv

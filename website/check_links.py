@@ -31,8 +31,21 @@ class LinkChecker:
         parsed = urlparse(self.base_url_slash)
         self.base_scheme = parsed.scheme
         self.base_netloc = parsed.netloc
+        # Normalize prefix: if base points to a file like "/site/index.html", use its directory ("/site")
+        path = parsed.path or "/"
+        if path and not path.endswith("/"):
+            last_segment = path.rsplit("/", 1)[-1]
+            if "." in last_segment:
+                # Drop the filename, keep the directory
+                path = path.rsplit("/", 1)[0] or "/"
         # Ensure prefix always starts with "/" and has no trailing slash ("/website/site")
-        self.base_path_prefix = parsed.path.rstrip("/") or "/"
+        self.base_path_prefix = (path if path.startswith("/") else "/" + path).rstrip("/") or "/"
+        # Derive site root prefix from the first path segment (e.g., "/site" from "/site/docs")
+        segments = [seg for seg in self.base_path_prefix.split('/') if seg]
+        if segments:
+            self.site_root_prefix = '/' + segments[0]
+        else:
+            self.site_root_prefix = '/'
 
     def is_internal_url(self, url):
         """Check if URL is internal to our site and within the site path prefix.
@@ -86,14 +99,15 @@ class LinkChecker:
             if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", link):
                 # Keep http/https links as-is; others will be filtered by callers
                 return link
-            # Absolute root links -> prefix with site path (e.g., /docs/ -> /website/site/docs/)
+            # Absolute root links -> prefix with site root path (e.g., /docs/ -> /site/docs/)
             if link.startswith("/"):
-                # Avoid double slashes when prefix is "/"
-                if link.startswith(self.base_path_prefix + "/"):
+                # If the link already includes the full base path prefix, keep as-is
+                if link.startswith(self.base_path_prefix + "/") or link == self.base_path_prefix:
                     return f"{self.base_scheme}://{self.base_netloc}{link}"
-                if self.base_path_prefix == "/":
+                # Otherwise, join with the site root prefix so /docs -> /site/docs on local dev
+                if self.site_root_prefix == '/':
                     return f"{self.base_scheme}://{self.base_netloc}{link}"
-                return f"{self.base_scheme}://{self.base_netloc}{self.base_path_prefix}{link}"
+                return f"{self.base_scheme}://{self.base_netloc}{self.site_root_prefix}{link}"
             # Relative link
             base_dir = current_url if current_url.endswith('/') else current_url.rsplit('/', 1)[0] + '/'
             return urljoin(base_dir, link)

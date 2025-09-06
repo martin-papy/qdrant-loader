@@ -6,6 +6,7 @@ all build operations and manages the overall build lifecycle.
 """
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -60,9 +61,9 @@ class WebsiteBuilder:
         """Basic markdown to HTML conversion."""
         return self.markdown_processor.basic_markdown_to_html(markdown_content)
 
-    def convert_markdown_links_to_html(self, markdown_content: str, source_dir: str = "", target_dir: str = "") -> str:
+    def convert_markdown_links_to_html(self, markdown_content: str, source_file: str = "", target_dir: str = "") -> str:
         """Convert markdown links to HTML format."""
-        return self.markdown_processor.convert_markdown_links_to_html(markdown_content, source_dir, target_dir)
+        return self.markdown_processor.convert_markdown_links_to_html(markdown_content, source_file, target_dir)
 
     def add_bootstrap_classes(self, html_content: str) -> str:
         """Add Bootstrap classes to HTML elements."""
@@ -334,6 +335,18 @@ class WebsiteBuilder:
             # License (plain text) rendered via helper
             if Path("LICENSE").exists():
                 self.build_license_page("LICENSE", "docs/LICENSE.html", "License", "License")
+            # Privacy policy page from template
+            try:
+                self.build_page(
+                    "base.html",
+                    "privacy-policy.html",
+                    "Privacy Policy",
+                    "Privacy policy for QDrant Loader",
+                    "privacy-policy.html",
+                    content=self.load_template("privacy-policy.html"),
+                )
+            except FileNotFoundError:
+                pass
         except Exception as e:
             print(f"⚠️  Failed to build root docs pages: {e}")
 
@@ -547,8 +560,13 @@ Sitemap: {site_base}/sitemap.xml
         if not title:
             title = self.extract_title_from_markdown(markdown_content)
 
+        # Normalize links in markdown before conversion
+        markdown_content = self.markdown_processor.convert_markdown_links_to_html(markdown_content, str(markdown_path))
+
         # Convert markdown to HTML
-        html_content = self.markdown_to_html(markdown_content)
+        html_content = self.markdown_to_html(markdown_content, str(markdown_path), output_path)
+        # Normalize any remaining HTML hrefs
+        html_content = self.markdown_processor.convert_markdown_links_to_html(html_content, str(markdown_path))
 
         # Build a Table of Contents and wrap in docs layout
         toc_html = self.render_toc(html_content)
@@ -835,7 +853,44 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                 with open(readme_path, encoding="utf-8") as f:
                     markdown_content = f.read()
 
-                html_content = self.markdown_to_html(markdown_content, str(readme_path), f"docs/packages/{alias}/README.html")
+                # Normalize links in markdown before conversion
+                normalized_md = self.markdown_processor.convert_markdown_links_to_html(markdown_content)
+
+                html_content = self.markdown_to_html(normalized_md, str(readme_path), f"docs/packages/{alias}/README.html")
+                # Normalize any remaining HTML hrefs
+                html_content = self.markdown_processor.convert_markdown_links_to_html(html_content, str(readme_path), f"docs/packages/{alias}/README.html")
+
+                # Final hardening for package README links: collapse relative ../../docs to /docs
+                try:
+                    html_content = re.sub(r'href="(?:\.{2}/)+docs/', 'href="/docs/', html_content)
+                    # Convert README root files and .md links under docs to .html
+                    html_content = re.sub(r'href="(?:\.{2}/)+CONTRIBUTING\.md"', 'href="/docs/CONTRIBUTING.html"', html_content)
+                    html_content = re.sub(r'href="(?:\.{2}/)+LICENSE(\.html)?"', 'href="/docs/LICENSE.html"', html_content)
+                    html_content = re.sub(r'href="(?:\.{2}/)+docs/([^"#]+)\.md(#[^"]*)?"', r'href="/docs/\1.html\2"', html_content)
+                except Exception:
+                    pass
+
+                # Build a Table of Contents and wrap with standard docs layout for consistent look
+                toc_html = self.render_toc(html_content)
+                if toc_html:
+                    toc_html = self.add_bootstrap_classes(toc_html)
+
+                wrapped_content = f"""
+<section class=\"py-5\">
+  <div class=\"container\">
+    <div class=\"row\">
+      <aside class=\"col-lg-3 d-none d-lg-block\">
+        <div class=\"position-sticky\" style=\"top: 6rem;\">
+          {toc_html or '<div class=\"text-muted small\">No sections</div>'}
+        </div>
+      </aside>
+      <div class=\"col-lg-9\">
+        {html_content}
+      </div>
+    </div>
+  </div>
+</section>
+"""
 
                 output_path = f"docs/packages/{alias}/README.html"
                 self.build_page(
@@ -844,7 +899,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                     f"{display_name} - README",
                     f"{display_name} Documentation",
                     output_path,
-                    content=html_content,
+                    content=wrapped_content,
                 )
             except Exception as e:
                 print(f"⚠️  Failed to build docs for package {pkg_name}: {e}")
@@ -882,10 +937,10 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                     if source_file:
                         try:
                             if docs_dir == site_docs_dir:
-                                # For files in site directory, create index.html directly there
+                                # For files in site directory, create/overwrite index.html directly there
                                 index_file = directory / "index.html"
-                                if source_file.suffix == '.html' and not index_file.exists():
-                                    # Copy HTML file content directly
+                                if source_file.suffix == '.html':
+                                    # Copy HTML file content directly (always overwrite to avoid stale links)
                                     content = source_file.read_text()
                                     index_file.write_text(content)
                                     print(f"📄 Generated index.html from {source_file.name}")
