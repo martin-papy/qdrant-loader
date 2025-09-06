@@ -44,7 +44,9 @@ class RedactionFilter(logging.Filter):
     TOKEN_PATTERNS = [
         re.compile(r"sk-[A-Za-z0-9_\-]{6,}"),
         re.compile(r"tok-[A-Za-z0-9_\-]{6,}"),
-        re.compile(r"(?i)(api_key|authorization|token|access_token|secret|password)\s*[:=]\s*([^\s]+)"),
+        re.compile(
+            r"(?i)(api_key|authorization|token|access_token|secret|password)\s*[:=]\s*([^\s]+)"
+        ),
         re.compile(r"Bearer\s+[A-Za-z0-9_\-\.]+"),
     ]
 
@@ -115,7 +117,10 @@ class RedactionFilter(logging.Filter):
             # Ensure a visible redaction marker appears in the captured message
             if redaction_detected:
                 try:
-                    if isinstance(record.msg, str) and "***REDACTED***" not in record.msg:
+                    if (
+                        isinstance(record.msg, str)
+                        and "***REDACTED***" not in record.msg
+                    ):
                         # Append a marker in a way that won't interfere with %-formatting
                         record.msg = f"{record.msg} ***REDACTED***"
                 except Exception:
@@ -137,7 +142,9 @@ class CleanFormatter(logging.Formatter):
             return message
 
 
-def _redact_processor(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+def _redact_processor(
+    logger: Any, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
     """Structlog processor to redact sensitive fields in event_dict."""
     sensitive_keys = {
         "api_key",
@@ -163,7 +170,14 @@ def _redact_processor(logger: Any, method_name: str, event_dict: dict[str, Any])
     def deep_redact(obj: Any) -> Any:
         try:
             if isinstance(obj, dict):
-                return {k: (mask(v) if k in sensitive_keys and isinstance(v, str) else deep_redact(v)) for k, v in obj.items()}
+                return {
+                    k: (
+                        mask(v)
+                        if k in sensitive_keys and isinstance(v, str)
+                        else deep_redact(v)
+                    )
+                    for k, v in obj.items()
+                }
             if isinstance(obj, list):
                 return [deep_redact(i) for i in obj]
             return obj
@@ -191,7 +205,9 @@ class LoggingConfig:
     ) -> None:
         # Env override for console toggling (e.g., MCP server)
         if disable_console is None:
-            disable_console = os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
+            disable_console = (
+                os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
+            )
 
         try:
             numeric_level = getattr(logging, level.upper())
@@ -241,7 +257,9 @@ class LoggingConfig:
         has_redaction = any(isinstance(f, RedactionFilter) for f in root_logger.filters)
         if not has_redaction:
             root_logger.addFilter(RedactionFilter())
-        has_app_filter = any(isinstance(f, ApplicationFilter) for f in root_logger.filters)
+        has_app_filter = any(
+            isinstance(f, ApplicationFilter) for f in root_logger.filters
+        )
         if not has_app_filter:
             root_logger.addFilter(ApplicationFilter())
 
@@ -275,5 +293,3 @@ class LoggingConfig:
         if not cls._initialized:
             cls.setup()
         return structlog.get_logger(name)
-
-

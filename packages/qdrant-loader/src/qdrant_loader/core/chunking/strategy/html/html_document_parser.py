@@ -78,7 +78,9 @@ class HTMLDocumentParser(BaseDocumentParser):
             return {
                 "heading_hierarchy": headings,
                 "semantic_elements": semantic_elements,
-                "internal_links": len([link for link in links if link.get("internal", False)]),
+                "internal_links": len(
+                    [link for link in links if link.get("internal", False)]
+                ),
                 "external_links": len(
                     [link for link in links if not link.get("internal", False)]
                 ),

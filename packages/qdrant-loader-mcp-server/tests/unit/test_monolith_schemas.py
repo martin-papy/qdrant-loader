@@ -26,5 +26,3 @@ def test_monolithic_mcp_schemas_static_methods():
     all_schemas = MCPSchemas.get_all_tool_schemas()
     names = [s.get("name") for s in all_schemas]
     assert len(names) == len(set(names))
-
-

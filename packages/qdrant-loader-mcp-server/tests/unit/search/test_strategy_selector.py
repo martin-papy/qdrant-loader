@@ -20,9 +20,7 @@ def test_strategy_selector_empty_defaults_to_mixed_features():
     from qdrant_loader_mcp_server.search.enhanced.cdi import ClusteringStrategy
 
     selector = StrategySelector(engine=None)  # engine is not used in logic here
-    assert (
-        selector.select_optimal_strategy([]) == ClusteringStrategy.MIXED_FEATURES
-    )
+    assert selector.select_optimal_strategy([]) == ClusteringStrategy.MIXED_FEATURES
 
 
 def test_strategy_selection_prefers_entity_based_with_rich_entities(monkeypatch):
@@ -91,5 +89,3 @@ def test_analyze_document_characteristics_edge_cases():
         "source_diversity",
     ):
         assert 0 <= analysis[key] <= 1
-
-

@@ -4,7 +4,9 @@ import asyncio
 from typing import Any
 
 
-async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, similarity_score: float) -> tuple[bool, str, float]:
+async def validate_conflict_with_llm(
+    detector: Any, doc1: Any, doc2: Any, similarity_score: float
+) -> tuple[bool, str, float]:
     # Prefer core provider when available; fallback to AsyncOpenAI client if present
     provider = getattr(getattr(detector, "engine", None), "llm_provider", None)
     openai_client = getattr(detector, "openai_client", None)
@@ -12,7 +14,9 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
         return False, "LLM validation not available", 0.0
 
     try:
-        settings = getattr(detector, "_settings", {}) if hasattr(detector, "_settings") else {}
+        settings = (
+            getattr(detector, "_settings", {}) if hasattr(detector, "_settings") else {}
+        )
         timeout_s = settings.get("conflict_llm_timeout_s", 10.0)
 
         prompt = (
@@ -29,9 +33,9 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
                 chat_client.chat(
                     messages=[{"role": "user", "content": prompt}],
                     model=(
-                        getattr(getattr(detector, "_settings", {}), "get", lambda *_: None)(
-                            "conflict_llm_model", None
-                        )
+                        getattr(
+                            getattr(detector, "_settings", {}), "get", lambda *_: None
+                        )("conflict_llm_model", None)
                         or "gpt-3.5-turbo"
                     ),
                     max_tokens=200,
@@ -51,7 +55,9 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
                 ),
                 timeout=timeout_s,
             )
-            content = getattr(getattr(raw.choices[0], "message", {}), "content", "") or ""
+            content = (
+                getattr(getattr(raw.choices[0], "message", {}), "content", "") or ""
+            )
 
         content = (content or "").strip()
         parts = content.split("|", 2)
@@ -84,7 +90,9 @@ async def validate_conflict_with_llm(detector: Any, doc1: Any, doc2: Any, simila
         return False, f"LLM validation error: {str(e)}", 0.0
 
 
-async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_score: float) -> dict | None:
+async def llm_analyze_conflicts(
+    detector: Any, doc1: Any, doc2: Any, similarity_score: float
+) -> dict | None:
     provider = getattr(getattr(detector, "engine", None), "llm_provider", None)
     openai_client = getattr(detector, "openai_client", None)
     if provider is None and openai_client is None:
@@ -95,8 +103,14 @@ async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_
             chat_client = provider.chat()
             response = await chat_client.chat(
                 messages=[
-                    {"role": "system", "content": "You are a conflict detection assistant."},
-                    {"role": "user", "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}"},
+                    {
+                        "role": "system",
+                        "content": "You are a conflict detection assistant.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}",
+                    },
                 ],
                 model=(
                     getattr(getattr(detector, "_settings", {}), "get", lambda *_: None)(
@@ -112,13 +126,21 @@ async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_
             raw = await openai_client.chat.completions.create(  # type: ignore[union-attr]
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a conflict detection assistant."},
-                    {"role": "user", "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}"},
+                    {
+                        "role": "system",
+                        "content": "You are a conflict detection assistant.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Analyze conflicts between:\nDoc1: {doc1.text}\nDoc2: {doc2.text}",
+                    },
                 ],
                 max_tokens=500,
                 temperature=0.1,
             )
-            content = getattr(getattr(raw.choices[0], "message", {}), "content", "") or ""
+            content = (
+                getattr(getattr(raw.choices[0], "message", {}), "content", "") or ""
+            )
 
         import json
 
@@ -128,7 +150,9 @@ async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_
             if not text:
                 return None
             n = len(text)
-            limit = min(n, max_scan) if isinstance(max_scan, int) and max_scan > 0 else n
+            limit = (
+                min(n, max_scan) if isinstance(max_scan, int) and max_scan > 0 else n
+            )
             start = text.find("{", 0, limit)
             if start == -1:
                 return None
@@ -166,7 +190,9 @@ async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_
         except Exception:
             extracted = extract_json_object(content)
             if extracted is None:
-                detector.logger.warning("No JSON object found in LLM content", snippet=content[:200])
+                detector.logger.warning(
+                    "No JSON object found in LLM content", snippet=content[:200]
+                )
                 return None
             try:
                 llm_result = json.loads(extracted)
@@ -187,7 +213,11 @@ async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_
         elif isinstance(raw_has_conflicts, int | float):
             has_conflicts = bool(raw_has_conflicts)
         else:
-            has_conflicts = str(raw_has_conflicts).strip().lower() in {"true", "yes", "1"}
+            has_conflicts = str(raw_has_conflicts).strip().lower() in {
+                "true",
+                "yes",
+                "1",
+            }
 
         if not has_conflicts:
             return None
@@ -227,5 +257,3 @@ async def llm_analyze_conflicts(detector: Any, doc1: Any, doc2: Any, similarity_
     except Exception as e:  # pragma: no cover
         detector.logger.warning("LLM conflict analysis failed", error=str(e))
         return None
-
-

@@ -6,7 +6,9 @@ from typing import Any
 import numpy as np
 
 
-async def get_document_embeddings(detector: Any, document_ids: list[str]) -> dict[str, list[float]]:
+async def get_document_embeddings(
+    detector: Any, document_ids: list[str]
+) -> dict[str, list[float]]:
     """Retrieve document embeddings from Qdrant using detector settings.
 
     This function mirrors ConflictDetector._get_document_embeddings and is extracted
@@ -19,7 +21,9 @@ async def get_document_embeddings(detector: Any, document_ids: list[str]) -> dic
     qdrant_client = detector.qdrant_client
 
     # Support mocked client in tests
-    if hasattr(qdrant_client, "retrieve") and hasattr(qdrant_client.retrieve, "_mock_name"):
+    if hasattr(qdrant_client, "retrieve") and hasattr(
+        qdrant_client.retrieve, "_mock_name"
+    ):
         embeddings: dict[str, list[float]] = {}
         for doc_id in document_ids:
             try:
@@ -33,12 +37,16 @@ async def get_document_embeddings(detector: Any, document_ids: list[str]) -> dic
                     if hasattr(point, "vector") and point.vector:
                         embeddings[doc_id] = point.vector
             except Exception as e:  # pragma: no cover (best-effort logging)
-                detector.logger.warning(f"Failed to retrieve embedding for {doc_id}: {e}")
+                detector.logger.warning(
+                    f"Failed to retrieve embedding for {doc_id}: {e}"
+                )
         return embeddings
 
     try:
         embeddings: dict[str, list[float]] = {}
-        settings = getattr(detector, "_settings", {}) if hasattr(detector, "_settings") else {}
+        settings = (
+            getattr(detector, "_settings", {}) if hasattr(detector, "_settings") else {}
+        )
         timeout_s = settings.get("conflict_embeddings_timeout_s", 5.0)
         max_cc = settings.get("conflict_embeddings_max_concurrency", 5)
 
@@ -79,22 +87,35 @@ async def get_document_embeddings(detector: Any, document_ids: list[str]) -> dic
                             if vector_data:
                                 embeddings[doc_id] = vector_data
                             else:
-                                detector.logger.warning(f"No vector data found for document {doc_id}")
+                                detector.logger.warning(
+                                    f"No vector data found for document {doc_id}"
+                                )
                         else:
-                            detector.logger.warning(f"No vectors found for document {doc_id}")
+                            detector.logger.warning(
+                                f"No vectors found for document {doc_id}"
+                            )
                 except TimeoutError:
-                    detector.logger.warning(f"Timeout retrieving embedding for document {doc_id}")
+                    detector.logger.warning(
+                        f"Timeout retrieving embedding for document {doc_id}"
+                    )
                 except Exception as e:  # pragma: no cover
-                    detector.logger.error(f"Error retrieving embedding for document {doc_id}: {e}")
+                    detector.logger.error(
+                        f"Error retrieving embedding for document {doc_id}: {e}"
+                    )
 
-        await asyncio.gather(*(fetch_embedding(doc_id) for doc_id in document_ids), return_exceptions=True)
+        await asyncio.gather(
+            *(fetch_embedding(doc_id) for doc_id in document_ids),
+            return_exceptions=True,
+        )
         return embeddings
     except Exception as e:  # pragma: no cover
         detector.logger.error(f"Error retrieving document embeddings: {e}")
         return {}
 
 
-def calculate_vector_similarity(_detector: Any, embedding1: list[float], embedding2: list[float]) -> float:
+def calculate_vector_similarity(
+    _detector: Any, embedding1: list[float], embedding2: list[float]
+) -> float:
     """Cosine similarity with clipping to [-1, 1]."""
     try:
         vec1 = np.array(embedding1)
@@ -111,13 +132,18 @@ def calculate_vector_similarity(_detector: Any, embedding1: list[float], embeddi
         return 0.0
 
 
-async def filter_by_vector_similarity(detector: Any, documents: list[Any]) -> list[tuple]:
+async def filter_by_vector_similarity(
+    detector: Any, documents: list[Any]
+) -> list[tuple]:
     """Filter document pairs by vector similarity within configured band."""
     similar_pairs: list[tuple] = []
     if len(documents) < 2:
         return similar_pairs
 
-    document_ids = [getattr(doc, "document_id", f"{doc.source_type}:{doc.source_title}") for doc in documents]
+    document_ids = [
+        getattr(doc, "document_id", f"{doc.source_type}:{doc.source_title}")
+        for doc in documents
+    ]
     embeddings = await get_document_embeddings(detector, document_ids)
 
     for i, doc1 in enumerate(documents):
@@ -126,8 +152,14 @@ async def filter_by_vector_similarity(detector: Any, documents: list[Any]) -> li
             doc2_id = document_ids[j]
             similarity_score = 0.0
             if doc1_id in embeddings and doc2_id in embeddings:
-                similarity_score = calculate_vector_similarity(detector, embeddings[doc1_id], embeddings[doc2_id])
-            if detector.MIN_VECTOR_SIMILARITY <= similarity_score <= detector.MAX_VECTOR_SIMILARITY:
+                similarity_score = calculate_vector_similarity(
+                    detector, embeddings[doc1_id], embeddings[doc2_id]
+                )
+            if (
+                detector.MIN_VECTOR_SIMILARITY
+                <= similarity_score
+                <= detector.MAX_VECTOR_SIMILARITY
+            ):
                 similar_pairs.append((doc1, doc2, similarity_score))
 
     similar_pairs.sort(key=lambda x: x[2], reverse=True)
@@ -174,5 +206,3 @@ async def get_tiered_analysis_pairs(detector: Any, documents: list[Any]) -> list
 
     pairs.sort(key=lambda x: x[3], reverse=True)
     return pairs
-
-

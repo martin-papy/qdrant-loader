@@ -483,7 +483,9 @@ class TestLinkCheckerCLI:
             with patch("sys.exit") as mock_exit:
                 check_links.main()
 
-        mock_checker_class.assert_called_once_with("http://127.0.0.1:3000/website/site", 3)
+        mock_checker_class.assert_called_once_with(
+            "http://127.0.0.1:3000/website/site", 3
+        )
         mock_exit.assert_called_once_with(0)
 
     @patch("sys.argv", ["check_links.py"])

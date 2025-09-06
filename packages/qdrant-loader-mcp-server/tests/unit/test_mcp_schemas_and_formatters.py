@@ -28,5 +28,3 @@ def test_mcp_formatters_reexports():
         "FormatterUtils",
     ):
         assert hasattr(formatters, symbol)
-
-

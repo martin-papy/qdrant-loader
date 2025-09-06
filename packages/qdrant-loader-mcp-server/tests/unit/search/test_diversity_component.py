@@ -44,5 +44,3 @@ def test_apply_diversity_filtering_edge_cases():
     # Invalid factor
     with pytest.raises(ValueError):
         apply_diversity_filtering(r, diversity_factor=2.0, limit=1)
-
-

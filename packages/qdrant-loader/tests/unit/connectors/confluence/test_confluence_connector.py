@@ -115,17 +115,22 @@ class TestConfluenceConnector:
         # base with trailing slash
         connector.base_url = HttpUrl("https://confluence.example.com/")
 
-        url = connector._construct_page_url("TEST", "123", "API & Documentation", "page")
-        assert url == "https://confluence.example.com/display/TEST/API+%26+Documentation"
+        url = connector._construct_page_url(
+            "TEST", "123", "API & Documentation", "page"
+        )
+        assert (
+            url == "https://confluence.example.com/display/TEST/API+%26+Documentation"
+        )
 
         # Unicode characters
         url = connector._construct_page_url("TEST", "123", "Café & Résumé", "page")
-        assert url == "https://confluence.example.com/display/TEST/Caf%C3%A9+%26+R%C3%A9sum%C3%A9"
+        assert (
+            url
+            == "https://confluence.example.com/display/TEST/Caf%C3%A9+%26+R%C3%A9sum%C3%A9"
+        )
 
         # Long title
-        long_title = (
-            "This is a very long page title that contains many words and should be properly encoded"
-        )
+        long_title = "This is a very long page title that contains many words and should be properly encoded"
         url = connector._construct_page_url("TEST", "123", long_title, "page")
         assert (
             url
@@ -145,7 +150,10 @@ class TestConfluenceConnector:
             "space": {"key": "TEST"},
             "body": {"storage": {"value": "<p>Body</p>"}},
             "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
-            "history": {"createdBy": {"displayName": "User"}, "createdDate": "2024-01-01T00:00:00Z"},
+            "history": {
+                "createdBy": {"displayName": "User"},
+                "createdDate": "2024-01-01T00:00:00Z",
+            },
             "metadata": {"labels": {"results": []}},
             "children": {"comment": {"results": []}},
             "ancestors": [],
@@ -155,7 +163,10 @@ class TestConfluenceConnector:
         # canonical url should be id-based
         assert doc.url == "https://confluence.example.com/spaces/TEST/pages/999"
         # display_url should be encoded title-based
-        assert doc.metadata.get("display_url") == "https://confluence.example.com/display/TEST/API+%26+Docs"
+        assert (
+            doc.metadata.get("display_url")
+            == "https://confluence.example.com/display/TEST/API+%26+Docs"
+        )
 
     @pytest.mark.asyncio
     async def test_canonical_vs_display_url_cloud(self, connector):
@@ -170,7 +181,10 @@ class TestConfluenceConnector:
             "space": {"key": "DOCS"},
             "body": {"storage": {"value": "<p>Body</p>"}},
             "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
-            "history": {"createdBy": {"displayName": "User"}, "createdDate": "2024-01-01T00:00:00Z"},
+            "history": {
+                "createdBy": {"displayName": "User"},
+                "createdDate": "2024-01-01T00:00:00Z",
+            },
             "metadata": {"labels": {"results": []}},
             "children": {"comment": {"results": []}},
             "ancestors": [],

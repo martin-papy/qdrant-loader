@@ -288,10 +288,7 @@ class StructuredResultFormatters:
                                 else 0
                             ),
                             "source_types": list(
-                                {
-                                    getattr(r, "source_type", "unknown")
-                                    for r in results
-                                }
+                                {getattr(r, "source_type", "unknown") for r in results}
                             ),
                         }
                         if include_metadata

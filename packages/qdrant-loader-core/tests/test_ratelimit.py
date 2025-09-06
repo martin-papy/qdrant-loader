@@ -54,5 +54,3 @@ async def test_rate_limiter_releases_permit():
     # With concurrency=1, we should never see more than 1 in the critical section
     await asyncio.gather(work(), work(), work())
     assert max_seen == 1
-
-

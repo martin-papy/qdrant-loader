@@ -14,7 +14,11 @@ def describe_conflict(_detector: Any, indicators: list) -> str:
             descriptions.append(indicator)
         else:
             descriptions.append("General conflict indicator")
-    return "; ".join(descriptions) if descriptions else "Multiple conflict indicators found."
+    return (
+        "; ".join(descriptions)
+        if descriptions
+        else "Multiple conflict indicators found."
+    )
 
 
 def generate_resolution_suggestions(_detector: Any, conflicts: Any) -> dict[str, str]:
@@ -26,14 +30,20 @@ def generate_resolution_suggestions(_detector: Any, conflicts: Any) -> dict[str,
     if hasattr(conflicts, "conflict_categories"):
         for category, _pairs in conflicts.conflict_categories.items():
             if category == "version":
-                suggestions[category] = "Consider consolidating version information across documents."
+                suggestions[category] = (
+                    "Consider consolidating version information across documents."
+                )
             elif category == "procedural":
                 suggestions[category] = "Review and standardize procedural steps."
             elif category == "data":
-                suggestions[category] = "Verify and update data consistency across sources."
+                suggestions[category] = (
+                    "Verify and update data consistency across sources."
+                )
             else:
                 suggestions[category] = f"Review and resolve {category} conflicts."
-        return suggestions or {"general": "Review conflicting documents and update accordingly."}
+        return suggestions or {
+            "general": "Review conflicting documents and update accordingly."
+        }
 
     if isinstance(conflicts, list):
         for i, conflict in enumerate(conflicts[:3]):
@@ -41,21 +51,35 @@ def generate_resolution_suggestions(_detector: Any, conflicts: Any) -> dict[str,
             if isinstance(conflict, dict):
                 ctype = conflict.get("type", "unknown").lower()
                 if "version" in ctype:
-                    suggestions[key] = "Consider consolidating version information across documents."
+                    suggestions[key] = (
+                        "Consider consolidating version information across documents."
+                    )
                 elif "procedure" in ctype or "process" in ctype:
                     suggestions[key] = "Review and standardize procedural steps."
                 elif "data" in ctype:
-                    suggestions[key] = "Verify and update data consistency across sources."
+                    suggestions[key] = (
+                        "Verify and update data consistency across sources."
+                    )
                 else:
-                    suggestions[key] = "Review conflicting information and update as needed."
+                    suggestions[key] = (
+                        "Review conflicting information and update as needed."
+                    )
             else:
                 suggestions[key] = "Review and resolve identified conflicts."
-        return suggestions or {"general": "Review conflicting documents and update accordingly."}
+        return suggestions or {
+            "general": "Review conflicting documents and update accordingly."
+        }
 
     return {"general": "Review and resolve detected conflicts."}
 
 
-def extract_context_snippet(_detector: Any, text: str, keyword: str, context_length: int = 100, max_length: int | None = None) -> str:
+def extract_context_snippet(
+    _detector: Any,
+    text: str,
+    keyword: str,
+    context_length: int = 100,
+    max_length: int | None = None,
+) -> str:
     if not keyword or not text:
         return ""
     keyword_lower = keyword.lower()
@@ -67,5 +91,3 @@ def extract_context_snippet(_detector: Any, text: str, keyword: str, context_len
     context_start = max(0, start_idx - effective_length // 2)
     context_end = min(len(text), start_idx + len(keyword) + effective_length // 2)
     return text[context_start:context_end].strip()
-
-

@@ -162,8 +162,8 @@ class TestWebsiteBuilderMarkdown:
 
         markdown = "- Item 1\n- Item 2"
         html = builder.basic_markdown_to_html(markdown)
-        assert 'Item 1' in html
-        assert 'Item 2' in html
+        assert "Item 1" in html
+        assert "Item 2" in html
         assert 'class="list-group list-group-flush"' in html
         assert 'class="list-group-item"' in html
 
@@ -215,10 +215,12 @@ class TestWebsiteBuilderMarkdown:
         """Test markdown conversion fallback when library unavailable."""
         # Test the fallback method directly to avoid mocking issues
         builder = WebsiteBuilder()
-        result = builder.markdown_processor._basic_markdown_to_html_no_regex("# Test Header")
+        result = builder.markdown_processor._basic_markdown_to_html_no_regex(
+            "# Test Header"
+        )
 
         # Should convert basic markdown
-        assert '<h1>Test Header</h1>' in result
+        assert "<h1>Test Header</h1>" in result
 
 
 class TestWebsiteBuilderPageBuilding:
@@ -291,8 +293,10 @@ class TestWebsiteBuilderPageBuilding:
         # Add breadcrumb placeholder to base template
         base_template = mock_project_structure / "website" / "templates" / "base.html"
         content = base_template.read_text()
-        content = content.replace("<main>{{ content }}</main>",
-                                "<div class=\"breadcrumb\">{{ breadcrumb }}</div><main>{{ content }}</main>")
+        content = content.replace(
+            "<main>{{ content }}</main>",
+            '<div class="breadcrumb">{{ breadcrumb }}</div><main>{{ content }}</main>',
+        )
         base_template.write_text(content)
 
         md_file = mock_project_structure / "test.md"

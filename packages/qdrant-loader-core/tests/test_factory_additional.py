@@ -28,7 +28,9 @@ def test_factory_routes_to_noop_on_openai_init_failure(monkeypatch):
 
     monkeypatch.setattr(factory, "OpenAIProvider", _BadProvider)
 
-    provider = factory.create_provider(_settings("openai", base_url="https://api.openai.com/v1"))
+    provider = factory.create_provider(
+        _settings("openai", base_url="https://api.openai.com/v1")
+    )
     # Should return a noop provider which raises NotImplementedError on use
     emb = provider.embeddings()
     chat = provider.chat()
@@ -58,7 +60,9 @@ def test_factory_azure_error_returns_noop(monkeypatch):
     # If Azure provider is importable, force failure path
     if getattr(factory, "AzureOpenAIProvider", None) is not None:
         monkeypatch.setattr(factory, "AzureOpenAIProvider", _BadAzure)
-        provider = factory.create_provider(_settings("azure_openai", base_url="https://x.openai.azure.com"))
+        provider = factory.create_provider(
+            _settings("azure_openai", base_url="https://x.openai.azure.com")
+        )
         assert provider.__class__.__name__ == "_NoopProvider"
 
 
@@ -67,5 +71,3 @@ def test_factory_routes_ollama_by_host_local():
     provider = factory.create_provider(_settings("", base_url="http://127.0.0.1:11434"))
     # Should be OllamaProvider
     assert provider.__class__.__name__ == "OllamaProvider"
-
-

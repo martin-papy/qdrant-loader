@@ -84,7 +84,9 @@ projects:
                     assert used_api_key == configured_api_key
                 else:
                     # Provider-backed client path; no OpenAI instantiation occurs
-                    assert hasattr(client, "chat") and hasattr(client.chat, "completions")
+                    assert hasattr(client, "chat") and hasattr(
+                        client.chat, "completions"
+                    )
 
         finally:
             if "OPENAI_API_KEY" in os.environ:
@@ -141,7 +143,9 @@ projects:
                     used_api_key = call_args.kwargs.get("api_key")
                     assert used_api_key == "fake-fallback-test-key"
                 else:
-                    assert hasattr(client, "chat") and hasattr(client.chat, "completions")
+                    assert hasattr(client, "chat") and hasattr(
+                        client.chat, "completions"
+                    )
 
         finally:
             if "OPENAI_API_KEY" in os.environ:
@@ -181,7 +185,9 @@ projects:
                     assert used_api_key == "fake-test-api-key-for-testing-only"
                     assert used_api_key != "fake-env-key-should-not-be-used"
                 else:
-                    assert hasattr(client, "chat") and hasattr(client.chat, "completions")
+                    assert hasattr(client, "chat") and hasattr(
+                        client.chat, "completions"
+                    )
 
         finally:
             if "OPENAI_API_KEY" in os.environ:
@@ -215,7 +221,9 @@ projects:
                     used_endpoint = call_args.kwargs.get("base_url")
                     assert used_endpoint == configured_endpoint
                 else:
-                    assert hasattr(client, "chat") and hasattr(client.chat, "completions")
+                    assert hasattr(client, "chat") and hasattr(
+                        client.chat, "completions"
+                    )
 
         finally:
             pass

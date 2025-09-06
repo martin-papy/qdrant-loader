@@ -29,7 +29,9 @@ def test_redaction_filter_masks_and_marks(caplog):
         assert all("sk-ABCDEFGHIJKLMN" not in m for m in messages)
         # Mask should keep first/last 2 chars for long secrets.
         # Depending on exact pattern matched, the visible context may be key or value.
-        assert any(("sk***REDACTED***MN" in m) or ("ap***REDACTED***MN" in m) for m in messages)
+        assert any(
+            ("sk***REDACTED***MN" in m) or ("ap***REDACTED***MN" in m) for m in messages
+        )
     finally:
         # Restore handlers
         for h in list(root.handlers):
@@ -86,5 +88,3 @@ def test_redact_processor_masks_nested_fields():
     assert "***REDACTED***" in out["nested"]["list"][0]["password"]
     # Non-sensitive content preserved
     assert out["note"] == "keep"
-
-

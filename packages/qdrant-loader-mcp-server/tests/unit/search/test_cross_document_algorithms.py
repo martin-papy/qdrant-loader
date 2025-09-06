@@ -798,6 +798,8 @@ class TestConflictDetectorAlgorithms:
         assert 0.0 <= high_confidence <= 1.0
         assert 0.0 <= medium_confidence <= 1.0
         assert 0.0 <= low_confidence <= 1.0
+
+
 class TestConflictDetectorStatsAccessor:
     @pytest.fixture
     def mock_spacy_analyzer(self):

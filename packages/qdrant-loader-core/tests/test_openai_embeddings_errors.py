@@ -50,7 +50,9 @@ def _make_stub(emb_exc=None, emb_exc_ctor: tuple[str, tuple, dict] | None = None
     class OpenAI:
         def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
             self.embeddings = _Emb()
-            self.chat = types.SimpleNamespace(completions=types.SimpleNamespace(create=lambda **k: None))
+            self.chat = types.SimpleNamespace(
+                completions=types.SimpleNamespace(create=lambda **k: None)
+            )
 
     m.OpenAI = OpenAI
     m.APIStatusError = APIStatusError
@@ -79,7 +81,9 @@ def _make_stub(emb_exc=None, emb_exc_ctor: tuple[str, tuple, dict] | None = None
 async def test_openai_embeddings_error_mapping(monkeypatch, exc_ctor, expected):
     name, args, kwargs = exc_ctor
     # Build stub and reload provider; exception will be constructed by the stub module
-    monkeypatch.setitem(sys.modules, "openai", _make_stub(emb_exc_ctor=(name, args, kwargs)))
+    monkeypatch.setitem(
+        sys.modules, "openai", _make_stub(emb_exc_ctor=(name, args, kwargs))
+    )
 
     mod = import_module("qdrant_loader_core.llm.providers.openai")
     mod = importlib.reload(mod)

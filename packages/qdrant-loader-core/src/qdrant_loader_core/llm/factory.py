@@ -56,20 +56,17 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
     Ollama returns a stub provider for now.
     """
     provider_name = (settings.provider or "").lower()
-    base_url = (settings.base_url or "")
+    base_url = settings.base_url or ""
     base_host = _safe_hostname(base_url)
 
     # Route Azure before generic OpenAI routing
-    is_azure = (
-        "azure" in provider_name
-        or (
-            base_host is not None
-            and (
-                base_host == "openai.azure.com"
-                or base_host.endswith(".openai.azure.com")
-                or base_host == "cognitiveservices.azure.com"
-                or base_host.endswith(".cognitiveservices.azure.com")
-            )
+    is_azure = "azure" in provider_name or (
+        base_host is not None
+        and (
+            base_host == "openai.azure.com"
+            or base_host.endswith(".openai.azure.com")
+            or base_host == "cognitiveservices.azure.com"
+            or base_host.endswith(".cognitiveservices.azure.com")
         )
     )
     if is_azure and AzureOpenAIProvider is not None:  # type: ignore[truthy-bool]

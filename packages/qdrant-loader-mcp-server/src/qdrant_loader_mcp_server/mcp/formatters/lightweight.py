@@ -320,7 +320,10 @@ class LightweightResultFormatters:
                 "total_groups": len(organized_results),
                 "analysis_type": "hierarchy",
                 "source_types_found": list(
-                    {getattr(result, "source_type", "unknown") for result in filtered_results}
+                    {
+                        getattr(result, "source_type", "unknown")
+                        for result in filtered_results
+                    }
                 ),
             },
             # Keep legacy fields for backward compatibility
@@ -353,23 +356,33 @@ class LightweightResultFormatters:
                         "recommendation_reason", rec.get("reason", "")
                     ),
                     "relationship_type": rec.get("strategy", ""),
-                    "basic_metadata": (lambda doc_obj, rec_dict: {
-                        "source_type": (
-                            getattr(doc_obj, "source_type", None)
-                            if doc_obj is not None
-                            else None
-                        )
-                        or rec_dict.get("source_type")
-                        or (doc_obj.get("source_type") if isinstance(doc_obj, dict) else None)
-                        or "unknown",
-                        "project_id": (
-                            getattr(doc_obj, "project_id", None)
-                            if doc_obj is not None
-                            else None
-                        )
-                        or rec_dict.get("project_id")
-                        or (doc_obj.get("project_id") if isinstance(doc_obj, dict) else None),
-                    })(rec.get("document"), rec),
+                    "basic_metadata": (
+                        lambda doc_obj, rec_dict: {
+                            "source_type": (
+                                getattr(doc_obj, "source_type", None)
+                                if doc_obj is not None
+                                else None
+                            )
+                            or rec_dict.get("source_type")
+                            or (
+                                doc_obj.get("source_type")
+                                if isinstance(doc_obj, dict)
+                                else None
+                            )
+                            or "unknown",
+                            "project_id": (
+                                getattr(doc_obj, "project_id", None)
+                                if doc_obj is not None
+                                else None
+                            )
+                            or rec_dict.get("project_id")
+                            or (
+                                doc_obj.get("project_id")
+                                if isinstance(doc_obj, dict)
+                                else None
+                            ),
+                        }
+                    )(rec.get("document"), rec),
                 }
                 for rec in complementary_recommendations
             ],
@@ -403,7 +416,10 @@ class LightweightResultFormatters:
                     else 0
                 ),
                 "strategies_used": list(
-                    {rec.get("strategy", "unknown") for rec in complementary_recommendations}
+                    {
+                        rec.get("strategy", "unknown")
+                        for rec in complementary_recommendations
+                    }
                 ),
             },
             "lazy_loading_enabled": False,
@@ -414,7 +430,9 @@ class LightweightResultFormatters:
         if target_document is not None:
             if isinstance(target_document, dict):
                 result["target_document"] = {
-                    "document_id": target_document.get("document_id", target_document.get("id", "")),
+                    "document_id": target_document.get(
+                        "document_id", target_document.get("id", "")
+                    ),
                     "title": target_document.get("title", "Untitled"),
                     "content_preview": target_document.get("content_preview", ""),
                     "source_type": target_document.get("source_type", "unknown"),
@@ -428,10 +446,16 @@ class LightweightResultFormatters:
                 )
                 text_val = getattr(target_document, "text", "") or ""
                 result["target_document"] = {
-                    "document_id": getattr(target_document, "document_id", getattr(target_document, "id", "")),
+                    "document_id": getattr(
+                        target_document,
+                        "document_id",
+                        getattr(target_document, "id", ""),
+                    ),
                     "title": title_val,
                     "content_preview": (
-                        text_val[:200] + "..." if isinstance(text_val, str) and len(text_val) > 200 else text_val
+                        text_val[:200] + "..."
+                        if isinstance(text_val, str) and len(text_val) > 200
+                        else text_val
                     ),
                     "source_type": getattr(target_document, "source_type", "unknown"),
                 }

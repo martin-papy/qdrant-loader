@@ -24,8 +24,22 @@ class FakeHybridSearch:
             name="source",
             display_name="Source",
             description="Source type",
-            values=[SimpleNamespace(value="confluence", count=2, display_name="Confluence", description="")],
-            get_top_values=lambda n: [SimpleNamespace(value="confluence", count=2, display_name="Confluence", description="")],
+            values=[
+                SimpleNamespace(
+                    value="confluence",
+                    count=2,
+                    display_name="Confluence",
+                    description="",
+                )
+            ],
+            get_top_values=lambda n: [
+                SimpleNamespace(
+                    value="confluence",
+                    count=2,
+                    display_name="Confluence",
+                    description="",
+                )
+            ],
         )
         return SimpleNamespace(
             results=[SimpleNamespace()],
@@ -48,7 +62,13 @@ def test_search_with_facets_basic():
     ops = FacetedSearchOperations(engine=FakeEngine())
 
     async def run():
-        resp = await ops.search_with_facets("q", limit=5, facet_filters=[{"facet_type": "source", "values": ["confluence"], "operator": "OR"}])
+        resp = await ops.search_with_facets(
+            "q",
+            limit=5,
+            facet_filters=[
+                {"facet_type": "source", "values": ["confluence"], "operator": "OR"}
+            ],
+        )
         assert resp["total_results"] == 2
         assert resp["filtered_count"] == 2
         assert resp["facets"][0]["type"] == "source"
@@ -75,13 +95,19 @@ def test_get_facet_suggestions_basic(monkeypatch):
                     display_name="Source",
                     description="",
                     values=["confluence"],
-                    get_top_values=lambda n: [SimpleNamespace(value="confluence", count=2, display_name="Confluence")],
+                    get_top_values=lambda n: [
+                        SimpleNamespace(
+                            value="confluence", count=2, display_name="Confluence"
+                        )
+                    ],
                 )
             ]
             self.generation_time_ms = 1.0
 
     class FakeFacetGen:
-        async def generate_facets_from_documents(self, documents, max_facets_per_type, enable_ai_generation):
+        async def generate_facets_from_documents(
+            self, documents, max_facets_per_type, enable_ai_generation
+        ):
             return FakeSuggestion()
 
     # Patch DynamicFacetGenerator used inside the function
@@ -92,7 +118,15 @@ def test_get_facet_suggestions_basic(monkeypatch):
     )
 
     # Build sample docs with minimal attributes used by coverage paths
-    docs = [SimpleNamespace(source_type="confluence", project_id="p1", created_at="2024-01-01", topics=["t"], entities=["e"]) ]
+    docs = [
+        SimpleNamespace(
+            source_type="confluence",
+            project_id="p1",
+            created_at="2024-01-01",
+            topics=["t"],
+            entities=["e"],
+        )
+    ]
 
     ops = FacetedSearchOperations(engine=FakeEngine())
 
@@ -102,5 +136,3 @@ def test_get_facet_suggestions_basic(monkeypatch):
         assert out["generation_metadata"]["total_documents_analyzed"] == 1
 
     asyncio.get_event_loop().run_until_complete(run())
-
-

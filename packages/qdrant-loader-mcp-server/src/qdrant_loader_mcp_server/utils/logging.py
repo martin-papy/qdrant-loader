@@ -42,6 +42,7 @@ class CleanFormatter(logging.Formatter):
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         return ansi_escape.sub("", message)
 
+
 try:
     # Use core logging config if available
     from qdrant_loader_core.logging import (
@@ -79,7 +80,9 @@ class LoggingConfig:
             and file is None
             and suppress_qdrant_warnings is True
         )
-        resolved_file = file if file is not None else (env_file if all_defaults else None)
+        resolved_file = (
+            file if file is not None else (env_file if all_defaults else None)
+        )
         disable_console_logging = (
             os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
         )

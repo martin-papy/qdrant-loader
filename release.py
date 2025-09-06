@@ -771,7 +771,10 @@ def _update_dependency_string(
 
 
 def update_internal_dependencies_for_package(
-    package_name: str, internal_names: set[str], target_version: str, dry_run: bool = False
+    package_name: str,
+    internal_names: set[str],
+    target_version: str,
+    dry_run: bool = False,
 ) -> list[tuple[str, str]]:
     """Update internal dependency pins inside a single package's pyproject.
 
@@ -781,9 +784,7 @@ def update_internal_dependencies_for_package(
     pyproject_path = PACKAGES[package_name]["pyproject"]
 
     if not Path(pyproject_path).exists():
-        logger.error(
-            f"pyproject.toml not found for {package_name} at {pyproject_path}"
-        )
+        logger.error(f"pyproject.toml not found for {package_name} at {pyproject_path}")
         return []
 
     with open(pyproject_path, "rb") as f:
@@ -1089,7 +1090,9 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("\n🚀 PLANNED RELEASE ACTIONS")
         print("─" * 50)
 
-        print("\n1️⃣  Update package versions, classifiers, and internal dependency pins:")
+        print(
+            "\n1️⃣  Update package versions, classifiers, and internal dependency pins:"
+        )
         print(f"   • All packages: {current_version} → {new_version}")
 
         # Show classifier updates

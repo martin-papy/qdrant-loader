@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 
-def analyze_text_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[bool, str, float]:
+def analyze_text_conflicts(
+    detector: Any, doc1: Any, doc2: Any
+) -> tuple[bool, str, float]:
     """spaCy-driven textual conflict heuristics (extracted)."""
     try:
         doc1_analysis = detector.spacy_analyzer.analyze_query_semantic(doc1.content)
@@ -14,8 +16,12 @@ def analyze_text_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[bool, s
         doc1_keywords = {kw.lower() for kw in doc1_analysis.semantic_keywords}
         doc2_keywords = {kw.lower() for kw in doc2_analysis.semantic_keywords}
 
-        entity_overlap = len(doc1_entities & doc2_entities) / max(len(doc1_entities | doc2_entities), 1)
-        _keyword_overlap = len(doc1_keywords & doc2_keywords) / max(len(doc1_keywords | doc2_keywords), 1)
+        entity_overlap = len(doc1_entities & doc2_entities) / max(
+            len(doc1_entities | doc2_entities), 1
+        )
+        _keyword_overlap = len(doc1_keywords & doc2_keywords) / max(
+            len(doc1_keywords | doc2_keywords), 1
+        )
 
         conflict_indicators = [
             "should not",
@@ -31,11 +37,17 @@ def analyze_text_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[bool, s
             "worse",
         ]
 
-        doc1_indicators = sum(1 for indicator in conflict_indicators if indicator in doc1.content.lower())
-        doc2_indicators = sum(1 for indicator in conflict_indicators if indicator in doc2.content.lower())
+        doc1_indicators = sum(
+            1 for indicator in conflict_indicators if indicator in doc1.content.lower()
+        )
+        doc2_indicators = sum(
+            1 for indicator in conflict_indicators if indicator in doc2.content.lower()
+        )
 
         if entity_overlap > 0.3 and (doc1_indicators > 0 or doc2_indicators > 0):
-            confidence = min(entity_overlap * (doc1_indicators + doc2_indicators) / 10, 1.0)
+            confidence = min(
+                entity_overlap * (doc1_indicators + doc2_indicators) / 10, 1.0
+            )
             explanation = f"Similar topics with conflicting recommendations (overlap: {entity_overlap:.2f})"
             return True, explanation, confidence
 
@@ -45,7 +57,9 @@ def analyze_text_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[bool, s
         return False, f"Text analysis error: {str(e)}", 0.0
 
 
-def analyze_metadata_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[bool, str, float]:
+def analyze_metadata_conflicts(
+    detector: Any, doc1: Any, doc2: Any
+) -> tuple[bool, str, float]:
     """Metadata-driven conflict heuristics (extracted)."""
     try:
         conflicts: list[tuple[str, float, str]] = []
@@ -56,7 +70,9 @@ def analyze_metadata_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[boo
         if doc1_date and doc2_date:
             date_diff = abs((doc1_date - doc2_date).days)
             if date_diff > 365:
-                conflicts.append(("date_conflict", 0.3, f"Documents created {date_diff} days apart"))
+                conflicts.append(
+                    ("date_conflict", 0.3, f"Documents created {date_diff} days apart")
+                )
                 total_weight += 0.3
 
         if doc1.source_type != doc2.source_type:
@@ -64,11 +80,27 @@ def analyze_metadata_conflicts(detector: Any, doc1: Any, doc2: Any) -> tuple[boo
             conflict_key = tuple(sorted([doc1.source_type, doc2.source_type]))
             if conflict_key in source_conflicts:
                 w = source_conflicts[conflict_key]
-                conflicts.append(("source_type_conflict", w, f"Different source types: {conflict_key}"))
+                conflicts.append(
+                    (
+                        "source_type_conflict",
+                        w,
+                        f"Different source types: {conflict_key}",
+                    )
+                )
                 total_weight += w
 
-        if hasattr(doc1, "project_id") and hasattr(doc2, "project_id") and doc1.project_id != doc2.project_id:
-            conflicts.append(("project_conflict", 0.1, f"Different projects: {doc1.project_id} vs {doc2.project_id}"))
+        if (
+            hasattr(doc1, "project_id")
+            and hasattr(doc2, "project_id")
+            and doc1.project_id != doc2.project_id
+        ):
+            conflicts.append(
+                (
+                    "project_conflict",
+                    0.1,
+                    f"Different projects: {doc1.project_id} vs {doc2.project_id}",
+                )
+            )
             total_weight += 0.1
 
         if conflicts and total_weight > 0.2:
@@ -124,7 +156,9 @@ def categorize_conflict(_detector: Any, patterns) -> str:
     return "general"
 
 
-def calculate_conflict_confidence(_detector: Any, patterns, doc1_score: float = 1.0, doc2_score: float = 1.0) -> float:
+def calculate_conflict_confidence(
+    _detector: Any, patterns, doc1_score: float = 1.0, doc2_score: float = 1.0
+) -> float:
     if not patterns:
         return 0.0
     confidences: list[float] = []
@@ -138,9 +172,20 @@ def calculate_conflict_confidence(_detector: Any, patterns, doc1_score: float = 
                 confidences.append(0.5)
         else:
             pattern_text = str(pattern).lower()
-            if any(ind in pattern_text for ind in ["conflict", "incompatible", "contradicts", "different values"]):
+            if any(
+                ind in pattern_text
+                for ind in [
+                    "conflict",
+                    "incompatible",
+                    "contradicts",
+                    "different values",
+                ]
+            ):
                 confidences.append(0.8)
-            elif any(ind in pattern_text for ind in ["different approach", "alternative method"]):
+            elif any(
+                ind in pattern_text
+                for ind in ["different approach", "alternative method"]
+            ):
                 confidences.append(0.6)
             elif any(ind in pattern_text for ind in ["unclear", "possibly different"]):
                 confidences.append(0.3)
@@ -149,5 +194,3 @@ def calculate_conflict_confidence(_detector: Any, patterns, doc1_score: float = 
     pattern_strength = sum(confidences) / len(confidences) if confidences else 0.5
     doc_score_avg = (doc1_score + doc2_score) / 2
     return min(1.0, pattern_strength * doc_score_avg)
-
-

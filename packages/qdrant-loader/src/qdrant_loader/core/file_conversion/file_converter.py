@@ -164,7 +164,11 @@ class FileConverter:
 
                     # Warn when legacy MarkItDown overrides are in effect
                     try:
-                        if self.config.markitdown.llm_model or self.config.markitdown.llm_endpoint or self.config.markitdown.llm_api_key:
+                        if (
+                            self.config.markitdown.llm_model
+                            or self.config.markitdown.llm_endpoint
+                            or self.config.markitdown.llm_api_key
+                        ):
                             self.logger.warning(
                                 "Using MarkItDown llm_* overrides; prefer configuring global.llm",
                                 llm_model=bool(self.config.markitdown.llm_model),
@@ -202,10 +206,11 @@ class FileConverter:
         # Attempt provider-first wiring using core settings
         try:
             from dataclasses import replace as _dc_replace
-            from importlib import import_module
 
             # Lazy import to avoid circular import at module import time
+            from importlib import import_module
             from importlib import import_module as _import_module
+
             cfg_mod = _import_module("qdrant_loader.config")
             settings = cfg_mod.get_settings()
             core_settings_mod = import_module("qdrant_loader_core.llm.settings")
@@ -255,6 +260,7 @@ class FileConverter:
 
                 def create(self, *, model: str, messages: list[dict], **kwargs):
                     import asyncio as _asyncio
+
                     async def _run():
                         result = await self._chat_client.chat(
                             messages=messages,
@@ -269,6 +275,7 @@ class FileConverter:
                         loop = _asyncio.get_event_loop()
                         if loop.is_running():
                             import concurrent.futures as _cf
+
                             with _cf.ThreadPoolExecutor(max_workers=1) as ex:
                                 fut = ex.submit(_asyncio.run, _run())
                                 return fut.result()
@@ -294,7 +301,9 @@ class FileConverter:
 
                 base_url = (self.config.markitdown.llm_endpoint or "").rstrip("/")
                 if not base_url:
-                    raise RuntimeError("No llm_endpoint configured for MarkItDown fallback")
+                    raise RuntimeError(
+                        "No llm_endpoint configured for MarkItDown fallback"
+                    )
                 api_key = (
                     self.config.markitdown.llm_api_key
                     or os.getenv("OPENAI_API_KEY")
@@ -310,7 +319,13 @@ class FileConverter:
                         self.message = _ResponseMessage(content)
 
                 class _Response:
-                    def __init__(self, content: str, model_name: str, usage: dict | None, raw: dict):
+                    def __init__(
+                        self,
+                        content: str,
+                        model_name: str,
+                        usage: dict | None,
+                        raw: dict,
+                    ):
                         self.choices = [_ResponseChoice(content)]
                         self.model = model_name
                         self.usage = usage
@@ -327,14 +342,28 @@ class FileConverter:
                     def create(self, *, model: str, messages: list[dict], **kwargs):
                         url = _join(self._base, "/chat/completions")
                         payload = {"model": model, "messages": messages}
-                        for k in ("temperature", "max_tokens", "top_p", "frequency_penalty", "presence_penalty", "stop"):
+                        for k in (
+                            "temperature",
+                            "max_tokens",
+                            "top_p",
+                            "frequency_penalty",
+                            "presence_penalty",
+                            "stop",
+                        ):
                             if k in kwargs and kwargs[k] is not None:
                                 payload[k] = kwargs[k]
                         headers = {"Content-Type": "application/json"}
                         if self._api_key:
                             headers["Authorization"] = f"Bearer {self._api_key}"
-                        req = _urlreq.Request(url, data=_json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-                        with _urlreq.urlopen(req, timeout=60) as resp:  # nosec B310 - controlled URL from config
+                        req = _urlreq.Request(
+                            url,
+                            data=_json.dumps(payload).encode("utf-8"),
+                            headers=headers,
+                            method="POST",
+                        )
+                        with _urlreq.urlopen(
+                            req, timeout=60
+                        ) as resp:  # nosec B310 - controlled URL from config
                             body = resp.read()
                         data = _json.loads(body.decode("utf-8"))
                         text = ""
@@ -360,7 +389,9 @@ class FileConverter:
                     "LLM provider unavailable and HTTP OpenAI-compatible fallback failed for MarkItDown",
                     error=str(e2) or str(e),
                 )
-                raise MarkItDownError(Exception("No LLM client available for MarkItDown"))
+                raise MarkItDownError(
+                    Exception("No LLM client available for MarkItDown")
+                )
 
     def convert_file(self, file_path: str) -> str:
         """Convert a file to Markdown format with timeout support."""

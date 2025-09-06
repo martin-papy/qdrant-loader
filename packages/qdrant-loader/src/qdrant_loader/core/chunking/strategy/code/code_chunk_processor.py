@@ -137,7 +137,9 @@ class CodeChunkProcessor(BaseChunkProcessor):
         if not non_empty:
             return False
         avg_len = sum(len(line) for line in non_empty) / len(non_empty)
-        specials = sum(1 for line in non_empty if any(ch in line for ch in ["{", "}", ";"]))
+        specials = sum(
+            1 for line in non_empty if any(ch in line for ch in ["{", "}", ";"])
+        )
         ratio = specials / len(non_empty)
         return avg_len > 200 and ratio > self.skip_conditions["minified_code_threshold"]
 
