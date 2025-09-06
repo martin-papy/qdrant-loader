@@ -28,7 +28,9 @@ def _make_llm_settings():
     )
 
 
-def _make_openai_stub(*, emb_exc=None, chat_exc=None, chat_exc_ctor: tuple[str, tuple, dict] | None = None):
+def _make_openai_stub(
+    *, emb_exc=None, chat_exc=None, chat_exc_ctor: tuple[str, tuple, dict] | None = None
+):
     mod = types.ModuleType("openai")
 
     class APIConnectionError(Exception):
@@ -128,9 +130,17 @@ def _make_openai_stub(*, emb_exc=None, chat_exc=None, chat_exc_ctor: tuple[str, 
     return mod
 
 
-def _reload_openai_provider(monkeypatch, *, emb_exc=None, chat_exc=None, chat_exc_ctor: tuple[str, tuple, dict] | None = None):
+def _reload_openai_provider(
+    monkeypatch,
+    *,
+    emb_exc=None,
+    chat_exc=None,
+    chat_exc_ctor: tuple[str, tuple, dict] | None = None,
+):
     # Inject our stub and reload the provider to pick up symbols
-    stub = _make_openai_stub(emb_exc=emb_exc, chat_exc=chat_exc, chat_exc_ctor=chat_exc_ctor)
+    stub = _make_openai_stub(
+        emb_exc=emb_exc, chat_exc=chat_exc, chat_exc_ctor=chat_exc_ctor
+    )
     monkeypatch.setitem(sys.modules, "openai", stub)
 
     mod = import_module("qdrant_loader_core.llm.providers.openai")
@@ -153,7 +163,11 @@ async def test_openai_provider_success(monkeypatch):
     # Chat path
     resp = await provider.chat().chat([{"role": "user", "content": "hi"}])
     assert resp["text"] == "hello"
-    assert resp["usage"] == {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}
+    assert resp["usage"] == {
+        "prompt_tokens": 3,
+        "completion_tokens": 2,
+        "total_tokens": 5,
+    }
     assert resp["model"] == "gpt-4o-mini"
 
 
@@ -185,5 +199,3 @@ async def test_openai_exception_mapping(monkeypatch, exc_ctor, expected_module_e
     mapped = ei.value
     assert isinstance(mapped, err_mod.LLMError)
     assert mapped.__class__.__name__ == expected_module_error
-
-

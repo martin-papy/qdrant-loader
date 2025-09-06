@@ -551,7 +551,9 @@ class LoggingConfig:
                         red = {}
                         for k, v in obj.items():
                             if k in sensitive_keys:
-                                red[k] = _mask(v) if isinstance(v, str) else "***REDACTED***"
+                                red[k] = (
+                                    _mask(v) if isinstance(v, str) else "***REDACTED***"
+                                )
                             else:
                                 red[k] = _deep_redact(v)
                         return red
@@ -626,6 +628,7 @@ class LoggingConfig:
             # Initialize with default settings if not already initialized
             cls.setup()
         return structlog.get_logger(name)
+
 
 # Standardize on core logging configuration
 try:

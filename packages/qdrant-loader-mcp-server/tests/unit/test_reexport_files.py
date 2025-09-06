@@ -55,5 +55,3 @@ def test_search_engine_reexport_file_executes():
         "TopicSearchChain",
     ):
         assert hasattr(mod, symbol)
-
-

@@ -52,6 +52,7 @@ async def test_v1_openai_compatible_parsing(monkeypatch):
     ollama_mod = import_module("qdrant_loader_core.llm.providers.ollama")
     # Patch httpx.AsyncClient to our stub returning OpenAI-compatible data
     data = {"data": [{"embedding": [1.0, 2.0]}]}
+
     class _HTTPX:
         class HTTPStatusError(Exception):
             def __init__(self, *args, request=None, response=None):  # type: ignore[no-untyped-def]
@@ -79,6 +80,7 @@ async def test_v1_openai_compatible_parsing(monkeypatch):
 async def test_native_batch_embed_then_ok(monkeypatch):
     ollama_mod = import_module("qdrant_loader_core.llm.providers.ollama")
     batch = {"embeddings": [[0.1, 0.2], [0.3, 0.4]]}
+
     class _HTTPX2:
         class HTTPStatusError(Exception):
             def __init__(self, *args, request=None, response=None):  # type: ignore[no-untyped-def]
@@ -97,7 +99,9 @@ async def test_native_batch_embed_then_ok(monkeypatch):
             return _Client([_Resp(200, batch)])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX2)
-    emb = _make_embeddings("http://localhost:11434", provider_options={"native_endpoint": "embed"})
+    emb = _make_embeddings(
+        "http://localhost:11434", provider_options={"native_endpoint": "embed"}
+    )
     vecs = await emb.embed(["a", "b"])
     assert vecs == [[0.1, 0.2], [0.3, 0.4]]
 
@@ -109,6 +113,7 @@ async def test_native_embed_404_fallback_to_embeddings(monkeypatch):
     resp404 = _Resp(404, {"error": "not found"})
     item1 = _Resp(200, {"embedding": [9.0]})
     item2 = _Resp(200, {"data": {"embedding": [8.0]}})
+
     class _HTTPX3:
         class HTTPStatusError(Exception):
             def __init__(self, *args, request=None, response=None):  # type: ignore[no-untyped-def]
@@ -127,7 +132,9 @@ async def test_native_embed_404_fallback_to_embeddings(monkeypatch):
             return _Client([resp404, item1, item2])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX3)
-    emb = _make_embeddings("http://localhost:11434", provider_options={"native_endpoint": "auto"})
+    emb = _make_embeddings(
+        "http://localhost:11434", provider_options={"native_endpoint": "auto"}
+    )
     vecs = await emb.embed(["x", "y"])
     assert vecs == [[9.0], [8.0]]
 
@@ -136,6 +143,7 @@ async def test_native_embed_404_fallback_to_embeddings(monkeypatch):
 async def test_invalid_batch_response_raises(monkeypatch):
     ollama_mod = import_module("qdrant_loader_core.llm.providers.ollama")
     bad = {"embeddings": [[0.1, 0.2]]}  # length 1 but inputs length 2
+
     class _HTTPX4:
         class HTTPStatusError(Exception):
             def __init__(self, *args, request=None, response=None):  # type: ignore[no-untyped-def]
@@ -154,8 +162,8 @@ async def test_invalid_batch_response_raises(monkeypatch):
             return _Client([_Resp(200, bad)])
 
     monkeypatch.setattr(ollama_mod, "httpx", _HTTPX4)
-    emb = _make_embeddings("http://localhost:11434", provider_options={"native_endpoint": "embed"})
+    emb = _make_embeddings(
+        "http://localhost:11434", provider_options={"native_endpoint": "embed"}
+    )
     with pytest.raises(ValueError):
         await emb.embed(["p", "q"])
-
-

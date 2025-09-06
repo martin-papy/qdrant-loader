@@ -33,6 +33,7 @@ def test_default_recommender_adapter_invokes_legacy(monkeypatch):
     assert called["args"] == (target, pool)
     assert hasattr(result, "items")
 
+
 @pytest.mark.asyncio
 async def test_default_conflict_detector_adapter_invokes_legacy(monkeypatch):
     from qdrant_loader_mcp_server.search.enhanced.cdi.extractors.conflicts import (
@@ -69,10 +70,9 @@ def test_default_graph_builder_builds_network():
     from qdrant_loader_mcp_server.search.enhanced.cdi.extractors.graph import (
         DefaultGraphBuilder,
     )
+
     builder = DefaultGraphBuilder()
     network = builder.build([])
     # The network object provides nodes and edges collections
     assert hasattr(network, "nodes")
     assert hasattr(network, "edges")
-
-

@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 try:
     from openai import OpenAI  # type: ignore
+
     # New-style exception classes (OpenAI Python SDK >=1.x)
     try:  # nested to avoid failing entirely on older clients
         from openai import (  # type: ignore
@@ -30,9 +31,7 @@ from ..errors import (
     RateLimitedError,
     ServerError,
 )
-from ..errors import (
-    TimeoutError as LLMTimeoutError,
-)
+from ..errors import TimeoutError as LLMTimeoutError
 from ..settings import LLMSettings
 from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
@@ -95,7 +94,12 @@ class _OpenAITokenCounter(TokenCounter):
 
 class OpenAIEmbeddings(EmbeddingsClient):
     def __init__(
-        self, client: Any, model: str, base_host: str | None, *, provider_label: str = "openai"
+        self,
+        client: Any,
+        model: str,
+        base_host: str | None,
+        *,
+        provider_label: str = "openai",
     ):
         self._client = client
         self._model = model
@@ -145,7 +149,12 @@ class OpenAIEmbeddings(EmbeddingsClient):
 
 class OpenAIChat(ChatClient):
     def __init__(
-        self, client: Any, model: str, base_host: str | None, *, provider_label: str = "openai"
+        self,
+        client: Any,
+        model: str,
+        base_host: str | None,
+        *,
+        provider_label: str = "openai",
     ):
         self._client = client
         self._model = model
@@ -160,7 +169,16 @@ class OpenAIChat(ChatClient):
 
         # Normalize kwargs to OpenAI python client parameters
         create_kwargs: dict[str, Any] = {}
-        for key in ("temperature", "max_tokens", "top_p", "frequency_penalty", "presence_penalty", "stop", "seed", "response_format"):
+        for key in (
+            "temperature",
+            "max_tokens",
+            "top_p",
+            "frequency_penalty",
+            "presence_penalty",
+            "stop",
+            "seed",
+            "response_format",
+        ):
             if key in kwargs and kwargs[key] is not None:
                 create_kwargs[key] = kwargs[key]
 
@@ -193,7 +211,9 @@ class OpenAIChat(ChatClient):
                 pass
 
             # Normalize to provider-agnostic dict
-            choice0 = response.choices[0] if getattr(response, "choices", None) else None
+            choice0 = (
+                response.choices[0] if getattr(response, "choices", None) else None
+            )
             text = ""
             if choice0 is not None:
                 message = getattr(choice0, "message", None)
@@ -247,7 +267,9 @@ class OpenAIProvider(LLMProvider):
 
     def embeddings(self) -> EmbeddingsClient:
         model = self._settings.models.get("embeddings", "")
-        return OpenAIEmbeddings(self._client, model, self._base_host, provider_label="openai")
+        return OpenAIEmbeddings(
+            self._client, model, self._base_host, provider_label="openai"
+        )
 
     def chat(self) -> ChatClient:
         model = self._settings.models.get("chat", "")

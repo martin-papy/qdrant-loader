@@ -96,5 +96,3 @@ def test_azure_provider_raises_on_missing_api_version():
     )
     with pytest.raises(ValueError):
         provider_cls(missing_ver)
-
-

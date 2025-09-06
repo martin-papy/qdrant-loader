@@ -51,11 +51,27 @@ def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
             }
         else:
             # Ensure sane defaults and environment overlays for partial file configs
-            def _resolve_placeholder(value: object, fallback_env: str | None = None, default: object | None = None) -> object | None:
-                if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            def _resolve_placeholder(
+                value: object,
+                fallback_env: str | None = None,
+                default: object | None = None,
+            ) -> object | None:
+                if (
+                    isinstance(value, str)
+                    and value.startswith("${")
+                    and value.endswith("}")
+                ):
                     env_name = value[2:-1]
-                    return os.getenv(env_name) or (os.getenv(fallback_env) if fallback_env else None) or default
-                return value if value not in (None, "") else (os.getenv(fallback_env) if fallback_env else default)
+                    return (
+                        os.getenv(env_name)
+                        or (os.getenv(fallback_env) if fallback_env else None)
+                        or default
+                    )
+                return (
+                    value
+                    if value not in (None, "")
+                    else (os.getenv(fallback_env) if fallback_env else default)
+                )
 
             # Provider and endpoints
             llm_cfg["provider"] = _resolve_placeholder(
@@ -65,15 +81,23 @@ def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
                 llm_cfg.get("base_url"), fallback_env="LLM_BASE_URL", default=None
             )
             llm_cfg["api_key"] = _resolve_placeholder(
-                llm_cfg.get("api_key"), fallback_env="LLM_API_KEY", default=os.getenv("OPENAI_API_KEY")
+                llm_cfg.get("api_key"),
+                fallback_env="LLM_API_KEY",
+                default=os.getenv("OPENAI_API_KEY"),
             )
 
             # Models
             models = dict(llm_cfg.get("models") or {})
             models["embeddings"] = _resolve_placeholder(
-                models.get("embeddings"), fallback_env="LLM_EMBEDDING_MODEL", default="text-embedding-3-small"
+                models.get("embeddings"),
+                fallback_env="LLM_EMBEDDING_MODEL",
+                default="text-embedding-3-small",
             )
-            if models.get("chat") in (None, "") or (isinstance(models.get("chat"), str) and str(models.get("chat")).startswith("${") and str(models.get("chat")).endswith("}")):
+            if models.get("chat") in (None, "") or (
+                isinstance(models.get("chat"), str)
+                and str(models.get("chat")).startswith("${")
+                and str(models.get("chat")).endswith("}")
+            ):
                 env_chat = os.getenv("LLM_CHAT_MODEL")
                 if env_chat:
                     models["chat"] = env_chat

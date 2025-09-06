@@ -14,9 +14,7 @@ from ..errors import (
     RateLimitedError,
     ServerError,
 )
-from ..errors import (
-    TimeoutError as LLMTimeoutError,
-)
+from ..errors import TimeoutError as LLMTimeoutError
 from ..settings import LLMSettings
 from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
@@ -72,7 +70,9 @@ class OllamaEmbeddings(EmbeddingsClient):
                     return [item["embedding"] for item in data.get("data", [])]
                 else:
                     # Determine native endpoint preference: embed | embeddings | auto (default)
-                    native_pref = str(self._provider_options.get("native_endpoint", "auto")).lower()
+                    native_pref = str(
+                        self._provider_options.get("native_endpoint", "auto")
+                    ).lower()
                     prefer_embed = native_pref != "embeddings"
 
                     # Try batch embed first when preferred
@@ -154,12 +154,16 @@ class OllamaEmbeddings(EmbeddingsClient):
 
 
 class OllamaChat(ChatClient):
-    def __init__(self, base_url: str | None, model: str, headers: dict[str, str] | None):
+    def __init__(
+        self, base_url: str | None, model: str, headers: dict[str, str] | None
+    ):
         self._base_url = base_url or "http://localhost:11434"
         self._model = model
         self._headers = headers or {}
 
-    async def chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
+    async def chat(
+        self, messages: list[dict[str, Any]], **kwargs: Any
+    ) -> dict[str, Any]:
         if httpx is None:
             raise NotImplementedError("httpx not available for Ollama chat")
 
@@ -176,6 +180,7 @@ class OllamaChat(ChatClient):
             async with httpx.AsyncClient(timeout=60.0) as client:
                 try:
                     from datetime import UTC, datetime
+
                     started = datetime.now(UTC)
                     resp = await client.post(url, json=payload, headers=self._headers)
                     resp.raise_for_status()
@@ -185,7 +190,9 @@ class OllamaChat(ChatClient):
                     if choices:
                         msg = (choices[0] or {}).get("message") or {}
                         text = msg.get("content", "") or ""
-                    duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
+                    duration_ms = int(
+                        (datetime.now(UTC) - started).total_seconds() * 1000
+                    )
                     logger.info(
                         "LLM request",
                         provider="ollama",
@@ -195,7 +202,12 @@ class OllamaChat(ChatClient):
                         messages=len(messages),
                         latency_ms=duration_ms,
                     )
-                    return {"text": text, "raw": data, "usage": data.get("usage"), "model": data.get("model", self._model)}
+                    return {
+                        "text": text,
+                        "raw": data,
+                        "usage": data.get("usage"),
+                        "model": data.get("model", self._model),
+                    }
                 except httpx.TimeoutException as exc:
                     raise LLMTimeoutError(str(exc))
                 except httpx.HTTPStatusError as exc:
@@ -222,6 +234,7 @@ class OllamaChat(ChatClient):
             async with httpx.AsyncClient(timeout=60.0) as client:
                 try:
                     from datetime import UTC, datetime
+
                     started = datetime.now(UTC)
                     resp = await client.post(url, json=payload, headers=self._headers)
                     resp.raise_for_status()
@@ -230,7 +243,9 @@ class OllamaChat(ChatClient):
                     text = ""
                     if isinstance(data.get("message"), dict):
                         text = data["message"].get("content", "") or ""
-                    duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
+                    duration_ms = int(
+                        (datetime.now(UTC) - started).total_seconds() * 1000
+                    )
                     logger.info(
                         "LLM request",
                         provider="ollama",
@@ -240,7 +255,12 @@ class OllamaChat(ChatClient):
                         messages=len(messages),
                         latency_ms=duration_ms,
                     )
-                    return {"text": text, "raw": data, "usage": None, "model": self._model}
+                    return {
+                        "text": text,
+                        "raw": data,
+                        "usage": None,
+                        "model": self._model,
+                    }
                 except httpx.TimeoutException as exc:
                     raise LLMTimeoutError(str(exc))
                 except httpx.HTTPStatusError as exc:
@@ -267,7 +287,11 @@ class OllamaProvider(LLMProvider):
 
     def embeddings(self) -> EmbeddingsClient:
         model = self._settings.models.get("embeddings", "")
-        timeout = (self._settings.request.timeout_s if self._settings and self._settings.request else 30.0)
+        timeout = (
+            self._settings.request.timeout_s
+            if self._settings and self._settings.request
+            else 30.0
+        )
         return OllamaEmbeddings(
             self._settings.base_url,
             model,

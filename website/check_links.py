@@ -14,7 +14,12 @@ import requests
 
 
 class LinkChecker:
-    def __init__(self, base_url="http://127.0.0.1:3000/website/site/", max_depth=3, check_external=True):
+    def __init__(
+        self,
+        base_url="http://127.0.0.1:3000/website/site/",
+        max_depth=3,
+        check_external=True,
+    ):
         # Preserve a slash-suffixed base for correct joining
         self.base_url = base_url.rstrip("/")
         self.base_url_slash = self.base_url + "/"
@@ -39,13 +44,15 @@ class LinkChecker:
                 # Drop the filename, keep the directory
                 path = path.rsplit("/", 1)[0] or "/"
         # Ensure prefix always starts with "/" and has no trailing slash ("/website/site")
-        self.base_path_prefix = (path if path.startswith("/") else "/" + path).rstrip("/") or "/"
+        self.base_path_prefix = (path if path.startswith("/") else "/" + path).rstrip(
+            "/"
+        ) or "/"
         # Derive site root prefix from the first path segment (e.g., "/site" from "/site/docs")
-        segments = [seg for seg in self.base_path_prefix.split('/') if seg]
+        segments = [seg for seg in self.base_path_prefix.split("/") if seg]
         if segments:
-            self.site_root_prefix = '/' + segments[0]
+            self.site_root_prefix = "/" + segments[0]
         else:
-            self.site_root_prefix = '/'
+            self.site_root_prefix = "/"
 
     def is_internal_url(self, url):
         """Check if URL is internal to our site and within the site path prefix.
@@ -102,21 +109,32 @@ class LinkChecker:
             # Absolute root links -> prefix with site root path (e.g., /docs/ -> /site/docs/)
             if link.startswith("/"):
                 # If the link already includes the full base path prefix, keep as-is
-                if link.startswith(self.base_path_prefix + "/") or link == self.base_path_prefix:
+                if (
+                    link.startswith(self.base_path_prefix + "/")
+                    or link == self.base_path_prefix
+                ):
                     return f"{self.base_scheme}://{self.base_netloc}{link}"
                 # Otherwise, join with the site root prefix so /docs -> /site/docs on local dev
-                if self.site_root_prefix == '/':
+                if self.site_root_prefix == "/":
                     return f"{self.base_scheme}://{self.base_netloc}{link}"
                 return f"{self.base_scheme}://{self.base_netloc}{self.site_root_prefix}{link}"
             # Relative link
-            base_dir = current_url if current_url.endswith('/') else current_url.rsplit('/', 1)[0] + '/'
+            base_dir = (
+                current_url
+                if current_url.endswith("/")
+                else current_url.rsplit("/", 1)[0] + "/"
+            )
             return urljoin(base_dir, link)
 
         # Find all href attributes
         href_pattern = r'href=["\']([^"\']+)["\']'
         for match in re.finditer(href_pattern, sanitized_html):
             link = match.group(1)
-            if link.startswith("javascript:") or link.startswith("mailto:") or link.startswith("tel:"):
+            if (
+                link.startswith("javascript:")
+                or link.startswith("mailto:")
+                or link.startswith("tel:")
+            ):
                 continue
             full_url = join_link(link)
             # Skip dev server injected scripts

@@ -23,8 +23,10 @@ except ImportError:
     # Fallback for when script is run directly
     import sys
     from pathlib import Path
+
     sys.path.insert(0, str(Path(__file__).parent))
     from builder.core import WebsiteBuilder
+
 
 def main():
     """Main entry point."""

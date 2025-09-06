@@ -55,17 +55,21 @@ class AzureOpenAIProvider(LLMProvider):
             }
             if endpoint:
                 kwargs["azure_endpoint"] = endpoint
-            self._client = AzureOpenAI(**{k: v for k, v in kwargs.items() if v is not None})
+            self._client = AzureOpenAI(
+                **{k: v for k, v in kwargs.items() if v is not None}
+            )
 
     def embeddings(self) -> EmbeddingsClient:
         model = self._settings.models.get("embeddings", "")
-        return OpenAIEmbeddings(self._client, model, self._base_host, provider_label="azure_openai")
+        return OpenAIEmbeddings(
+            self._client, model, self._base_host, provider_label="azure_openai"
+        )
 
     def chat(self) -> ChatClient:
         model = self._settings.models.get("chat", "")
-        return OpenAIChat(self._client, model, self._base_host, provider_label="azure_openai")
+        return OpenAIChat(
+            self._client, model, self._base_host, provider_label="azure_openai"
+        )
 
     def tokenizer(self) -> TokenCounter:
         return _OpenAITokenCounter(self._settings.tokenizer)
-
-

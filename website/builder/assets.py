@@ -30,7 +30,7 @@ class AssetManager:
                 ignored = []
                 for file in files:
                     # Ignore Python files and other development files
-                    if file.endswith(('.py', '.pyc', '__pycache__')):
+                    if file.endswith((".py", ".pyc", "__pycache__")):
                         ignored.append(file)
                 return ignored
 

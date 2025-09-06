@@ -46,7 +46,9 @@ class WebsiteBuilder:
         self, markdown_content: str, source_file: str = "", output_file: str = ""
     ) -> str:
         """Convert markdown to HTML with Bootstrap styling."""
-        return self.markdown_processor.markdown_to_html(markdown_content, source_file, output_file)
+        return self.markdown_processor.markdown_to_html(
+            markdown_content, source_file, output_file
+        )
 
     def copy_assets(self) -> None:
         """Copy all website assets to output directory."""
@@ -61,9 +63,13 @@ class WebsiteBuilder:
         """Basic markdown to HTML conversion."""
         return self.markdown_processor.basic_markdown_to_html(markdown_content)
 
-    def convert_markdown_links_to_html(self, markdown_content: str, source_file: str = "", target_dir: str = "") -> str:
+    def convert_markdown_links_to_html(
+        self, markdown_content: str, source_file: str = "", target_dir: str = ""
+    ) -> str:
         """Convert markdown links to HTML format."""
-        return self.markdown_processor.convert_markdown_links_to_html(markdown_content, source_file, target_dir)
+        return self.markdown_processor.convert_markdown_links_to_html(
+            markdown_content, source_file, target_dir
+        )
 
     def add_bootstrap_classes(self, html_content: str) -> str:
         """Add Bootstrap classes to HTML elements."""
@@ -96,15 +102,20 @@ class WebsiteBuilder:
     def _humanize_title(self, name: str) -> str:
         """Convert filename to human-readable title."""
         # Remove file extension and common prefixes
-        title = name.replace('.md', '').replace('README', '').replace('_', ' ').replace('-', ' ')
+        title = (
+            name.replace(".md", "")
+            .replace("README", "")
+            .replace("_", " ")
+            .replace("-", " ")
+        )
 
         # Handle common patterns
         title_mappings = {
-            'cli reference': 'CLI Reference',
-            'api': 'API',
-            'faq': 'FAQ',
-            'toc': 'Table of Contents',
-            'readme': 'Overview',
+            "cli reference": "CLI Reference",
+            "api": "API",
+            "faq": "FAQ",
+            "toc": "Table of Contents",
+            "readme": "Overview",
         }
 
         title_lower = title.lower().strip()
@@ -112,7 +123,7 @@ class WebsiteBuilder:
             return title_mappings[title_lower]
 
         # Capitalize words
-        return ' '.join(word.capitalize() for word in title.split())
+        return " ".join(word.capitalize() for word in title.split())
 
     def generate_project_info(self, **kwargs) -> dict:
         """Generate project information for templates."""
@@ -129,24 +140,41 @@ class WebsiteBuilder:
         # Try to load from pyproject.toml
         try:
             import tomli
+
             with open("pyproject.toml", "rb") as f:
                 pyproject = tomli.load(f)
                 project_section = pyproject.get("project", {})
-                project_info.update({
-                    "name": project_section.get("name", project_info["name"]),
-                    "version": project_section.get("version", project_info["version"]),
-                    "description": project_section.get("description", project_info["description"]),
-                })
+                project_info.update(
+                    {
+                        "name": project_section.get("name", project_info["name"]),
+                        "version": project_section.get(
+                            "version", project_info["version"]
+                        ),
+                        "description": project_section.get(
+                            "description", project_info["description"]
+                        ),
+                    }
+                )
                 # Normalize workspace naming to product name
-                if isinstance(project_info.get("name"), str) and project_info["name"].endswith("-workspace"):
+                if isinstance(project_info.get("name"), str) and project_info[
+                    "name"
+                ].endswith("-workspace"):
                     project_info["name"] = "QDrant Loader"
 
                 # Try to get homepage/repository from pyproject urls
-                urls = project_section.get("urls", {}) if isinstance(project_section, dict) else {}
+                urls = (
+                    project_section.get("urls", {})
+                    if isinstance(project_section, dict)
+                    else {}
+                )
                 homepage = urls.get("Homepage")
-                if homepage and not getattr(self, 'base_url_user_set', False) and not self.base_url:
+                if (
+                    homepage
+                    and not getattr(self, "base_url_user_set", False)
+                    and not self.base_url
+                ):
                     # Set base_url from pyproject if not provided externally
-                    self.base_url = homepage.rstrip('/')
+                    self.base_url = homepage.rstrip("/")
                 repo_url = urls.get("Repository") or urls.get("Source")
                 if repo_url:
                     project_info["github_url"] = repo_url
@@ -160,10 +188,7 @@ class WebsiteBuilder:
 
             # Get git commit hash
             result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                capture_output=True,
-                text=True,
-                check=True
+                ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
             )
             project_info["commit_hash"] = result.stdout.strip()
 
@@ -172,7 +197,7 @@ class WebsiteBuilder:
                 ["git", "log", "-1", "--format=%ci"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             project_info["commit_date"] = result.stdout.strip()
 
@@ -182,6 +207,7 @@ class WebsiteBuilder:
 
         # Add build metadata
         from datetime import datetime
+
         commit_hash = project_info.get("commit_hash", "")
         project_info["commit"] = {
             "hash": commit_hash,
@@ -189,13 +215,13 @@ class WebsiteBuilder:
             "date": project_info.get("commit_date", ""),
         }
         project_info["build"] = {
-            "timestamp": datetime.utcnow().isoformat(timespec='seconds') + 'Z'
+            "timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z"
         }
 
         # Write project info JSON file
         project_info_path = self.output_dir / "project-info.json"
         project_info_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(project_info_path, 'w', encoding='utf-8') as f:
+        with open(project_info_path, "w", encoding="utf-8") as f:
             json.dump(project_info, f, indent=2)
 
         return project_info
@@ -229,31 +255,35 @@ class WebsiteBuilder:
         project_info = self.generate_project_info()
 
         # Calculate base URL for relative paths
-        if canonical_path.count('/') > 0:
-            base_url = '../' * canonical_path.count('/')
+        if canonical_path.count("/") > 0:
+            base_url = "../" * canonical_path.count("/")
         else:
             # Normalize root base URL
             if self.base_url:
-                base_url = self.base_url.rstrip('/') + '/'
+                base_url = self.base_url.rstrip("/") + "/"
             else:
-                base_url = './'
+                base_url = "./"
 
         # Merge extra replacements ensuring defaults for optional placeholders
         extras = dict(extra_replacements)
-        extras.setdefault('additional_head', '')
-        extras.setdefault('additional_scripts', '')
+        extras.setdefault("additional_head", "")
+        extras.setdefault("additional_scripts", "")
 
         replacements = {
-            'page_title': title,
-            'page_description': description,
-            'content': content,
-            'base_url': base_url,
-            'canonical_url': self.base_url.rstrip('/') + '/' + canonical_path if self.base_url else canonical_path,
-            'author': project_info.get('name', 'QDrant Loader'),
-            'version': project_info.get('version', '0.4.0b1'),
-            'project_name': project_info['name'],
-            'project_version': project_info['version'],
-            'project_description': project_info['description'],
+            "page_title": title,
+            "page_description": description,
+            "content": content,
+            "base_url": base_url,
+            "canonical_url": (
+                self.base_url.rstrip("/") + "/" + canonical_path
+                if self.base_url
+                else canonical_path
+            ),
+            "author": project_info.get("name", "QDrant Loader"),
+            "version": project_info.get("version", "0.4.0b1"),
+            "project_name": project_info["name"],
+            "project_version": project_info["version"],
+            "project_description": project_info["description"],
             **extras,
         }
 
@@ -262,7 +292,7 @@ class WebsiteBuilder:
         output_path = self.output_dir / output_filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(final_content)
 
         print(f"📄 Built {output_filename}")
@@ -334,7 +364,9 @@ class WebsiteBuilder:
                 self.build_markdown_page("CONTRIBUTING.md", "docs/CONTRIBUTING.html")
             # License (plain text) rendered via helper
             if Path("LICENSE").exists():
-                self.build_license_page("LICENSE", "docs/LICENSE.html", "License", "License")
+                self.build_license_page(
+                    "LICENSE", "docs/LICENSE.html", "License", "License"
+                )
             # Privacy policy page from template
             try:
                 self.build_page(
@@ -368,18 +400,21 @@ class WebsiteBuilder:
             coverage_path = Path(coverage_artifacts_dir)
             if coverage_path.exists():
                 import shutil
+
                 for item in coverage_path.iterdir():
                     if item.is_file():
                         shutil.copy2(item, coverage_output_dir / item.name)
                     elif item.is_dir():
-                        shutil.copytree(item, coverage_output_dir / item.name, dirs_exist_ok=True)
+                        shutil.copytree(
+                            item, coverage_output_dir / item.name, dirs_exist_ok=True
+                        )
         else:
             # Create styled placeholder coverage index if no artifacts provided
             placeholder_html = (
                 '<section class="py-5"><div class="container">'
                 '<h1 class="display-5 fw-bold text-primary"><i class="bi bi-graph-up me-2"></i>Coverage Reports</h1>'
                 '<div class="alert alert-info mt-4">No coverage artifacts available.</div>'
-                '</div></section>'
+                "</div></section>"
             )
             self.build_page(
                 "base.html",
@@ -423,16 +458,20 @@ class WebsiteBuilder:
         nav_data = {"title": "Documentation", "children": []}
 
         for item in sorted(docs_dir.iterdir()):
-            if item.is_file() and item.suffix == '.md':
-                nav_data["children"].append({
-                    "title": self._humanize_title(item.stem),
-                    "url": f"docs/{item.name}",
-                })
+            if item.is_file() and item.suffix == ".md":
+                nav_data["children"].append(
+                    {
+                        "title": self._humanize_title(item.stem),
+                        "url": f"docs/{item.name}",
+                    }
+                )
             elif item.is_dir():
-                nav_data["children"].append({
-                    "title": self._humanize_title(item.name),
-                    "url": f"docs/{item.name}/",
-                })
+                nav_data["children"].append(
+                    {
+                        "title": self._humanize_title(item.name),
+                        "url": f"docs/{item.name}/",
+                    }
+                )
 
         self.docs_nav_data = nav_data
         return nav_data
@@ -442,13 +481,15 @@ class WebsiteBuilder:
         from datetime import datetime
 
         # Determine base site URL
-        site_base = self.base_url.rstrip('/') if self.base_url else 'https://qdrant-loader.net'
+        site_base = (
+            self.base_url.rstrip("/") if self.base_url else "https://qdrant-loader.net"
+        )
 
         # Get current date for lastmod
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        current_date = datetime.now().strftime("%Y-%m-%d")
 
         # Generate simple sitemap.xml
-        sitemap_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+        sitemap_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>{site_base}/</loc>
@@ -462,43 +503,49 @@ class WebsiteBuilder:
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-</urlset>'''
+</urlset>"""
 
         sitemap_path = self.output_dir / "sitemap.xml"
-        with open(sitemap_path, 'w', encoding='utf-8') as f:
+        with open(sitemap_path, "w", encoding="utf-8") as f:
             f.write(sitemap_content)
         print("📄 Generated sitemap.xml")
 
         # Generate simple robots.txt
-        robots_content = f'''User-agent: *
+        robots_content = f"""User-agent: *
 Allow: /
 
 Sitemap: {self.base_url.rstrip('/') if self.base_url else 'https://example.com'}/sitemap.xml
-'''
+"""
 
         robots_path = self.output_dir / "robots.txt"
-        with open(robots_path, 'w', encoding='utf-8') as f:
-            f.write(robots_content.replace('https://example.com', site_base))
+        with open(robots_path, "w", encoding="utf-8") as f:
+            f.write(robots_content.replace("https://example.com", site_base))
         print("📄 Generated robots.txt")
 
     def generate_robots_file(self) -> None:
         """Generate only robots.txt referencing the sitemap URL."""
-        site_base = self.base_url.rstrip('/') if self.base_url else 'https://qdrant-loader.net'
-        robots_content = f'''User-agent: *
+        site_base = (
+            self.base_url.rstrip("/") if self.base_url else "https://qdrant-loader.net"
+        )
+        robots_content = f"""User-agent: *
 Allow: /
 
 Sitemap: {site_base}/sitemap.xml
-'''
+"""
         robots_path = self.output_dir / "robots.txt"
-        with open(robots_path, 'w', encoding='utf-8') as f:
+        with open(robots_path, "w", encoding="utf-8") as f:
             f.write(robots_content)
         print("📄 Generated robots.txt")
 
-    def generate_dynamic_sitemap(self, date: str = None, pages: list[str] = None) -> str:
+    def generate_dynamic_sitemap(
+        self, date: str = None, pages: list[str] = None
+    ) -> str:
         """Generate dynamic sitemap with custom pages."""
         from datetime import datetime
 
-        base_url = self.base_url.rstrip('/') if self.base_url else 'https://qdrant-loader.net'
+        base_url = (
+            self.base_url.rstrip("/") if self.base_url else "https://qdrant-loader.net"
+        )
 
         # Auto-discover pages if not provided
         if pages is None:
@@ -511,25 +558,27 @@ Sitemap: {site_base}/sitemap.xml
 
         # Use provided date or current date
         if date is None:
-            date = datetime.now().strftime('%Y-%m-%d')
+            date = datetime.now().strftime("%Y-%m-%d")
 
         sitemap_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        sitemap_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        sitemap_content += (
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        )
 
         for page in pages:
-            sitemap_content += '  <url>\n'
-            sitemap_content += f'    <loc>{base_url}/{page}</loc>\n'
-            sitemap_content += f'    <lastmod>{date}</lastmod>\n'
-            sitemap_content += '    <changefreq>weekly</changefreq>\n'
-            sitemap_content += '    <priority>0.8</priority>\n'
-            sitemap_content += '  </url>\n'
+            sitemap_content += "  <url>\n"
+            sitemap_content += f"    <loc>{base_url}/{page}</loc>\n"
+            sitemap_content += f"    <lastmod>{date}</lastmod>\n"
+            sitemap_content += "    <changefreq>weekly</changefreq>\n"
+            sitemap_content += "    <priority>0.8</priority>\n"
+            sitemap_content += "  </url>\n"
 
-        sitemap_content += '</urlset>'
+        sitemap_content += "</urlset>"
 
         # Write sitemap to file
         sitemap_path = self.output_dir / "sitemap.xml"
         sitemap_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(sitemap_path, 'w', encoding='utf-8') as f:
+        with open(sitemap_path, "w", encoding="utf-8") as f:
             f.write(sitemap_content)
         print(f"📄 Generated dynamic sitemap.xml with {len(pages)} pages")
 
@@ -541,16 +590,18 @@ Sitemap: {site_base}/sitemap.xml
         output_path: str,
         title: str = "",
         breadcrumb: str = "",
-        **kwargs
+        **kwargs,
     ) -> None:
         """Build a page from markdown file."""
         markdown_path = Path(markdown_file)
         if not markdown_path.exists():
-            print(f"⚠️  Markdown file not found: {markdown_file}, skipping page generation")
+            print(
+                f"⚠️  Markdown file not found: {markdown_file}, skipping page generation"
+            )
             return
 
         try:
-            with open(markdown_path, encoding='utf-8') as f:
+            with open(markdown_path, encoding="utf-8") as f:
                 markdown_content = f.read()
         except Exception as e:
             print(f"⚠️  Failed to read markdown file {markdown_file}: {e}")
@@ -561,12 +612,18 @@ Sitemap: {site_base}/sitemap.xml
             title = self.extract_title_from_markdown(markdown_content)
 
         # Normalize links in markdown before conversion
-        markdown_content = self.markdown_processor.convert_markdown_links_to_html(markdown_content, str(markdown_path))
+        markdown_content = self.markdown_processor.convert_markdown_links_to_html(
+            markdown_content, str(markdown_path)
+        )
 
         # Convert markdown to HTML
-        html_content = self.markdown_to_html(markdown_content, str(markdown_path), output_path)
+        html_content = self.markdown_to_html(
+            markdown_content, str(markdown_path), output_path
+        )
         # Normalize any remaining HTML hrefs
-        html_content = self.markdown_processor.convert_markdown_links_to_html(html_content, str(markdown_path))
+        html_content = self.markdown_processor.convert_markdown_links_to_html(
+            html_content, str(markdown_path)
+        )
 
         # Build a Table of Contents and wrap in docs layout
         toc_html = self.render_toc(html_content)
@@ -599,7 +656,7 @@ Sitemap: {site_base}/sitemap.xml
             output_path,
             content=wrapped_content,
             breadcrumb=breadcrumb,
-            **kwargs
+            **kwargs,
         )
 
     def build_docs_structure(self) -> dict:
@@ -617,20 +674,22 @@ Sitemap: {site_base}/sitemap.xml
         # Process all markdown files in docs
         for item in sorted(docs_dir.rglob("*.md")):
             relative_path = str(item.relative_to(docs_dir))
-            output_path = relative_path.replace('.md', '.html')
+            output_path = relative_path.replace(".md", ".html")
 
-            structure["children"].append({
-                "title": self._humanize_title(item.stem),
-                "path": relative_path,
-                "url": f"docs/{output_path}",
-            })
+            structure["children"].append(
+                {
+                    "title": self._humanize_title(item.stem),
+                    "path": relative_path,
+                    "url": f"docs/{output_path}",
+                }
+            )
 
             # Build the page from markdown
             try:
                 self.build_markdown_page(
                     str(item),
                     f"docs/{output_path}",
-                    title=self._humanize_title(item.stem)
+                    title=self._humanize_title(item.stem),
                 )
             except Exception as e:
                 print(f"⚠️  Failed to build docs page {item}: {e}")
@@ -652,6 +711,7 @@ Sitemap: {site_base}/sitemap.xml
 
         # Copy all coverage files with proper naming
         import shutil
+
         for item in coverage_path.iterdir():
             # Map directory names to cleaner package names
             dest_name = item.name
@@ -662,10 +722,15 @@ Sitemap: {site_base}/sitemap.xml
                     dest_name = "mcp"
                 elif "htmlcov-website" in item.name:
                     dest_name = "website"
-                elif "htmlcov-core" in item.name or "htmlcov-qdrant-loader-core" in item.name:
+                elif (
+                    "htmlcov-core" in item.name
+                    or "htmlcov-qdrant-loader-core" in item.name
+                ):
                     dest_name = "core"
                 elif "htmlcov" in item.name:
-                    dest_name = item.name.replace("htmlcov-", "").replace("htmlcov_", "")
+                    dest_name = item.name.replace("htmlcov-", "").replace(
+                        "htmlcov_", ""
+                    )
 
             dest_path = coverage_output_dir / dest_name
             try:
@@ -685,11 +750,13 @@ Sitemap: {site_base}/sitemap.xml
             if subdir.is_dir():
                 index_file = subdir / "index.html"
                 if index_file.exists():
-                    reports.append({
-                        "name": subdir.name,
-                        "path": f"{subdir.name}/index.html",
-                        "url": f"coverage/{subdir.name}/index.html",
-                    })
+                    reports.append(
+                        {
+                            "name": subdir.name,
+                            "path": f"{subdir.name}/index.html",
+                            "url": f"coverage/{subdir.name}/index.html",
+                        }
+                    )
 
         # Create main coverage index page using site template when reports exist
         if reports:
@@ -702,7 +769,7 @@ Sitemap: {site_base}/sitemap.xml
 
             for report in reports:
                 if report["name"] == "loader":
-                    index_content += '''
+                    index_content += """
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
@@ -714,9 +781,9 @@ Sitemap: {site_base}/sitemap.xml
                         <a href="loader/" class="btn btn-primary">View Detailed Report</a>
                     </div>
                 </div>
-            </div>'''
+            </div>"""
                 elif report["name"] == "mcp":
-                    index_content += '''
+                    index_content += """
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
@@ -728,9 +795,9 @@ Sitemap: {site_base}/sitemap.xml
                         <a href="mcp/" class="btn btn-success">View Detailed Report</a>
                     </div>
                 </div>
-            </div>'''
+            </div>"""
                 elif report["name"] == "website":
-                    index_content += '''
+                    index_content += """
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
@@ -742,9 +809,9 @@ Sitemap: {site_base}/sitemap.xml
                         <a href="website/" class="btn btn-info">View Detailed Report</a>
                     </div>
                 </div>
-            </div>'''
+            </div>"""
                 elif report["name"] == "core":
-                    index_content += '''
+                    index_content += """
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
@@ -756,7 +823,7 @@ Sitemap: {site_base}/sitemap.xml
                         <a href="core/" class="btn btn-warning">View Detailed Report</a>
                     </div>
                 </div>
-            </div>'''
+            </div>"""
 
             index_content += """
     </div>
@@ -854,19 +921,41 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                     markdown_content = f.read()
 
                 # Normalize links in markdown before conversion
-                normalized_md = self.markdown_processor.convert_markdown_links_to_html(markdown_content)
+                normalized_md = self.markdown_processor.convert_markdown_links_to_html(
+                    markdown_content
+                )
 
-                html_content = self.markdown_to_html(normalized_md, str(readme_path), f"docs/packages/{alias}/README.html")
+                html_content = self.markdown_to_html(
+                    normalized_md,
+                    str(readme_path),
+                    f"docs/packages/{alias}/README.html",
+                )
                 # Normalize any remaining HTML hrefs
-                html_content = self.markdown_processor.convert_markdown_links_to_html(html_content, str(readme_path), f"docs/packages/{alias}/README.html")
+                html_content = self.markdown_processor.convert_markdown_links_to_html(
+                    html_content, str(readme_path), f"docs/packages/{alias}/README.html"
+                )
 
                 # Final hardening for package README links: collapse relative ../../docs to /docs
                 try:
-                    html_content = re.sub(r'href="(?:\.{2}/)+docs/', 'href="/docs/', html_content)
+                    html_content = re.sub(
+                        r'href="(?:\.{2}/)+docs/', 'href="/docs/', html_content
+                    )
                     # Convert README root files and .md links under docs to .html
-                    html_content = re.sub(r'href="(?:\.{2}/)+CONTRIBUTING\.md"', 'href="/docs/CONTRIBUTING.html"', html_content)
-                    html_content = re.sub(r'href="(?:\.{2}/)+LICENSE(\.html)?"', 'href="/docs/LICENSE.html"', html_content)
-                    html_content = re.sub(r'href="(?:\.{2}/)+docs/([^"#]+)\.md(#[^"]*)?"', r'href="/docs/\1.html\2"', html_content)
+                    html_content = re.sub(
+                        r'href="(?:\.{2}/)+CONTRIBUTING\.md"',
+                        'href="/docs/CONTRIBUTING.html"',
+                        html_content,
+                    )
+                    html_content = re.sub(
+                        r'href="(?:\.{2}/)+LICENSE(\.html)?"',
+                        'href="/docs/LICENSE.html"',
+                        html_content,
+                    )
+                    html_content = re.sub(
+                        r'href="(?:\.{2}/)+docs/([^"#]+)\.md(#[^"]*)?"',
+                        r'href="/docs/\1.html\2"',
+                        html_content,
+                    )
                 except Exception:
                     pass
 
@@ -939,17 +1028,19 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                             if docs_dir == site_docs_dir:
                                 # For files in site directory, create/overwrite index.html directly there
                                 index_file = directory / "index.html"
-                                if source_file.suffix == '.html':
+                                if source_file.suffix == ".html":
                                     # Copy HTML file content directly (always overwrite to avoid stale links)
                                     content = source_file.read_text()
                                     index_file.write_text(content)
-                                    print(f"📄 Generated index.html from {source_file.name}")
+                                    print(
+                                        f"📄 Generated index.html from {source_file.name}"
+                                    )
                             else:
                                 # For source files, process through normal build pipeline
                                 relative_dir = directory.relative_to(docs_dir)
                                 output_path = f"docs/{relative_dir}/index.html"
 
-                                if source_file.suffix == '.html':
+                                if source_file.suffix == ".html":
                                     # Copy HTML file content directly
                                     content = source_file.read_text()
                                     self.build_page(
@@ -958,19 +1049,25 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                                         self._humanize_title(directory.name),
                                         f"{self._humanize_title(directory.name)} Documentation",
                                         output_path,
-                                        content=content
+                                        content=content,
                                     )
                                 else:
                                     # Process markdown file
                                     self.build_markdown_page(
                                         str(source_file),
                                         output_path,
-                                        title=self._humanize_title(directory.name)
+                                        title=self._humanize_title(directory.name),
                                     )
                         except Exception as e:
                             print(f"⚠️  Failed to generate index for {directory}: {e}")
 
-    def build_license_page(self, source_file: str = "LICENSE", output_file: str = "license.html", title: str = "License", description: str = "License") -> None:
+    def build_license_page(
+        self,
+        source_file: str = "LICENSE",
+        output_file: str = "license.html",
+        title: str = "License",
+        description: str = "License",
+    ) -> None:
         """Build license page from LICENSE file."""
         license_path = Path(source_file)
         if not license_path.exists():
@@ -978,7 +1075,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
             return
 
         try:
-            with open(license_path, encoding='utf-8') as f:
+            with open(license_path, encoding="utf-8") as f:
                 license_content = f.read()
 
             # Create license page with heading
@@ -995,7 +1092,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                 title,
                 description,
                 output_file,
-                content=html_content
+                content=html_content,
             )
         except Exception as e:
             print(f"⚠️  Failed to build license page: {e}")

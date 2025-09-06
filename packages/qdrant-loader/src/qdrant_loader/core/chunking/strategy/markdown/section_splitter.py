@@ -90,8 +90,6 @@ class SectionMetadata:
         return anchor.strip("-")
 
 
-
-
 class SectionSplitter:
     """Main section splitter that coordinates different splitting strategies."""
 

@@ -7,7 +7,12 @@ def test_engine_reexport_importable():
     mod = import_module("qdrant_loader_mcp_server.search.engine")
 
     # Package exports per search/engine/__init__.py
-    for symbol in ("SearchEngine", "AsyncQdrantClient", "AsyncOpenAI", "HybridSearchEngine"):
+    for symbol in (
+        "SearchEngine",
+        "AsyncQdrantClient",
+        "AsyncOpenAI",
+        "HybridSearchEngine",
+    ):
         assert hasattr(mod, symbol)
 
 
@@ -31,5 +36,3 @@ def test_monolithic_schemas_module_executes():
     schemas_py = Path(pkg.__file__).resolve().parent / "mcp" / "schemas.py"
     globs = runpy.run_path(str(schemas_py))
     assert "MCPSchemas" in globs
-
-

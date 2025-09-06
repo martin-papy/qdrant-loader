@@ -72,17 +72,15 @@ class IntelligenceHandler:
                 relationships.append(
                     {
                         "document_1": str(
-                            rel.get("document_1")
-                            or rel.get("document_1_id")
-                            or ""
+                            rel.get("document_1") or rel.get("document_1_id") or ""
                         ),
                         "document_2": str(
-                            rel.get("document_2")
-                            or rel.get("document_2_id")
-                            or ""
+                            rel.get("document_2") or rel.get("document_2_id") or ""
                         ),
                         "relationship_type": rel.get("relationship_type", ""),
-                        "score": float(rel.get("score", rel.get("confidence_score", 0.0))),
+                        "score": float(
+                            rel.get("score", rel.get("confidence_score", 0.0))
+                        ),
                         "description": rel.get(
                             "description", rel.get("relationship_summary", "")
                         ),
@@ -207,12 +205,20 @@ class IntelligenceHandler:
                 # Normalize access to document fields
                 document = item.get("document") if isinstance(item, dict) else None
                 document_id = (
-                    (document.get("document_id") if isinstance(document, dict) else None)
+                    (
+                        document.get("document_id")
+                        if isinstance(document, dict)
+                        else None
+                    )
                     or (item.get("document_id") if isinstance(item, dict) else None)
                     or ""
                 )
                 title = (
-                    (document.get("source_title") if isinstance(document, dict) else None)
+                    (
+                        document.get("source_title")
+                        if isinstance(document, dict)
+                        else None
+                    )
                     or (item.get("title") if isinstance(item, dict) else None)
                     or "Untitled"
                 )
@@ -223,7 +229,8 @@ class IntelligenceHandler:
                 if isinstance(metric_scores, dict):
                     # Normalize metric keys to strings (Enums -> value) to avoid sort/type errors
                     normalized_metric_keys = [
-                        (getattr(k, "value", None) or str(k)) for k in metric_scores.keys()
+                        (getattr(k, "value", None) or str(k))
+                        for k in metric_scores.keys()
                     ]
                     metrics_used_set.update(normalized_metric_keys)
 
@@ -244,9 +251,15 @@ class IntelligenceHandler:
                         ),
                         "content_preview": (
                             (document.get("text", "")[:200] + "...")
-                            if isinstance(document, dict) and isinstance(document.get("text"), str)
+                            if isinstance(document, dict)
+                            and isinstance(document.get("text"), str)
                             and len(document.get("text")) > 200
-                            else (document.get("text") if isinstance(document, dict) and isinstance(document.get("text"), str) else "")
+                            else (
+                                document.get("text")
+                                if isinstance(document, dict)
+                                and isinstance(document.get("text"), str)
+                                else ""
+                            )
                         ),
                     }
                 )
@@ -259,7 +272,9 @@ class IntelligenceHandler:
                     "similar_found": len(similar_documents),
                     "highest_similarity": highest_similarity,
                     # Ensure metrics are strings for deterministic sorting
-                    "metrics_used": sorted(metrics_used_set) if metrics_used_set else [],
+                    "metrics_used": (
+                        sorted(metrics_used_set) if metrics_used_set else []
+                    ),
                 },
             }
 
@@ -504,7 +519,9 @@ class IntelligenceHandler:
                         score = 1.0
                     text_val = getattr(d, "text", "")
                     content_preview = (
-                        text_val[:200] + "..." if isinstance(text_val, str) and len(text_val) > 200 else (text_val if isinstance(text_val, str) else "")
+                        text_val[:200] + "..."
+                        if isinstance(text_val, str) and len(text_val) > 200
+                        else (text_val if isinstance(text_val, str) else "")
                     )
                     docs_schema.append(
                         {
@@ -519,8 +536,14 @@ class IntelligenceHandler:
                 # Derive theme and keywords
                 centroid_topics = cluster.get("centroid_topics") or []
                 shared_entities = cluster.get("shared_entities") or []
-                theme_str = ", ".join(centroid_topics[:3]) if centroid_topics else (
-                    ", ".join(shared_entities[:3]) if shared_entities else (cluster.get("cluster_summary") or "")
+                theme_str = (
+                    ", ".join(centroid_topics[:3])
+                    if centroid_topics
+                    else (
+                        ", ".join(shared_entities[:3])
+                        if shared_entities
+                        else (cluster.get("cluster_summary") or "")
+                    )
                 )
 
                 # Clamp cohesion_score to [0,1] as required by schema
@@ -538,7 +561,12 @@ class IntelligenceHandler:
                         "cluster_id": str(cluster.get("id", f"cluster_{idx+1}")),
                         "cluster_name": cluster.get("name") or f"Cluster {idx+1}",
                         "cluster_theme": theme_str,
-                        "document_count": int(cluster.get("document_count", len(cluster.get("documents", []) or []))),
+                        "document_count": int(
+                            cluster.get(
+                                "document_count",
+                                len(cluster.get("documents", []) or []),
+                            )
+                        ),
                         "cohesion_score": cohesion,
                         "documents": docs_schema,
                         "cluster_keywords": shared_entities or centroid_topics,
@@ -549,7 +577,9 @@ class IntelligenceHandler:
             meta_src = clustering_results.get("clustering_metadata", {}) or {}
             clustering_metadata = {
                 "total_documents": int(meta_src.get("total_documents", 0)),
-                "clusters_created": int(meta_src.get("clusters_created", len(schema_clusters))),
+                "clusters_created": int(
+                    meta_src.get("clusters_created", len(schema_clusters))
+                ),
                 "strategy": str(meta_src.get("strategy", "unknown")),
             }
             # Optional metadata
@@ -590,7 +620,9 @@ class IntelligenceHandler:
                     or rel.get("id2")
                     or ""
                 )
-                relationship_type = rel.get("relationship_type") or rel.get("type") or "related"
+                relationship_type = (
+                    rel.get("relationship_type") or rel.get("type") or "related"
+                )
                 try:
                     relationship_strength = float(
                         rel.get("relationship_strength")
@@ -674,7 +706,11 @@ class IntelligenceHandler:
             # In the future, this would retrieve stored cluster data and expand it
 
             # Build schema-compliant placeholder payload
-            page_num = (int(offset) // int(limit)) + 1 if isinstance(limit, int) and limit > 0 else 1
+            page_num = (
+                (int(offset) // int(limit)) + 1
+                if isinstance(limit, int) and limit > 0
+                else 1
+            )
             expansion_result = {
                 "cluster_id": str(cluster_id),
                 "cluster_info": {

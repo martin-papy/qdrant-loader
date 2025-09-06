@@ -18,5 +18,3 @@ def test_tiktoken_counter_handles_encode_error(monkeypatch):
         # When tiktoken is missing, constructor sets _encoding=None and falls back
         counter = TiktokenTokenCounter("any")
         assert counter.count("hello") == 5
-
-

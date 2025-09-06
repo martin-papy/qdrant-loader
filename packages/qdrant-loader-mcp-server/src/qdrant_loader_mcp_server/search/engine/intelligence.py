@@ -417,7 +417,9 @@ class IntelligenceOperations:
                     "kickoff",
                 }
                 relaxed_tokens = [t for t in tokens if t.lower() not in stop]
-                relaxed_query = " ".join(relaxed_tokens[:4]) if relaxed_tokens else target_query
+                relaxed_query = (
+                    " ".join(relaxed_tokens[:4]) if relaxed_tokens else target_query
+                )
 
                 if relaxed_query and relaxed_query != target_query:
                     self.logger.info(
@@ -545,8 +547,12 @@ class IntelligenceOperations:
                                 "relationship_type", rec.get("strategy", "related")
                             ),
                             # Preserve essential metadata for downstream formatters
-                            "source_type": getattr(doc, "source_type", rec.get("source_type", "unknown")),
-                            "project_id": getattr(doc, "project_id", rec.get("project_id")),
+                            "source_type": getattr(
+                                doc, "source_type", rec.get("source_type", "unknown")
+                            ),
+                            "project_id": getattr(
+                                doc, "project_id", rec.get("project_id")
+                            ),
                         }
                         transformed_recommendations.append(transformed_rec)
                 else:

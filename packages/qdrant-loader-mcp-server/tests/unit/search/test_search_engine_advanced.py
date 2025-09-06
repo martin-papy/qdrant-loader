@@ -903,9 +903,13 @@ async def test_find_complementary_content_success(
         recs = result["complementary_recommendations"]
         assert isinstance(recs, list) and len(recs) == len(mock_complementary)
         for r in recs:
-            assert {"document_id", "title", "relevance_score", "reason", "strategy"} <= set(
-                r.keys()
-            )
+            assert {
+                "document_id",
+                "title",
+                "relevance_score",
+                "reason",
+                "strategy",
+            } <= set(r.keys())
         # target_document is now a lightweight dict
         assert isinstance(result["target_document"], dict)
         assert (

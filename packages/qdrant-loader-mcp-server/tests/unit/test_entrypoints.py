@@ -26,13 +26,9 @@ def test_package___main___executes_main(monkeypatch):
     def fake_main():
         called["count"] += 1
 
-    monkeypatch.setattr(
-        "qdrant_loader_mcp_server.main.main", fake_main, raising=True
-    )
+    monkeypatch.setattr("qdrant_loader_mcp_server.main.main", fake_main, raising=True)
 
     # Execute the package's __main__ module
     runpy.run_module("qdrant_loader_mcp_server.__main__", run_name="__main__")
 
     assert called["count"] == 1
-
-

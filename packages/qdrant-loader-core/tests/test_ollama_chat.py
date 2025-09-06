@@ -73,7 +73,12 @@ async def test_chat_v1_success(monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "status,exc_name",
-    [(401, "AuthError"), (429, "RateLimitedError"), (400, "InvalidRequestError"), (500, "ServerError")],
+    [
+        (401, "AuthError"),
+        (429, "RateLimitedError"),
+        (400, "InvalidRequestError"),
+        (500, "ServerError"),
+    ],
 )
 async def test_chat_v1_http_status_mappings(monkeypatch, status, exc_name):
     mod = import_module("qdrant_loader_core.llm.providers.ollama")
@@ -90,7 +95,11 @@ async def test_chat_v1_timeout(monkeypatch):
     stub = _stub_httpx()
     monkeypatch.setattr(mod, "httpx", stub)
     # Ensure AsyncClient raises the stub's own TimeoutException type
-    monkeypatch.setattr(stub, "AsyncClient", staticmethod(lambda timeout: _Client(post_exc=stub.TimeoutException("to"))))
+    monkeypatch.setattr(
+        stub,
+        "AsyncClient",
+        staticmethod(lambda timeout: _Client(post_exc=stub.TimeoutException("to"))),
+    )
     chat = mod.OllamaChat("http://localhost:11434/v1", "m", None)
     with pytest.raises(Exception) as ei:
         await chat.chat([{"role": "user", "content": "x"}])
@@ -102,7 +111,11 @@ async def test_chat_v1_http_error(monkeypatch):
     mod = import_module("qdrant_loader_core.llm.providers.ollama")
     stub = _stub_httpx()
     monkeypatch.setattr(mod, "httpx", stub)
-    monkeypatch.setattr(stub, "AsyncClient", staticmethod(lambda timeout: _Client(post_exc=stub.HTTPError("err"))))
+    monkeypatch.setattr(
+        stub,
+        "AsyncClient",
+        staticmethod(lambda timeout: _Client(post_exc=stub.HTTPError("err"))),
+    )
     chat = mod.OllamaChat("http://localhost:11434/v1", "m", None)
     with pytest.raises(Exception) as ei:
         await chat.chat([{"role": "user", "content": "x"}])
@@ -122,7 +135,12 @@ async def test_chat_native_success(monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "status,exc_name",
-    [(401, "AuthError"), (429, "RateLimitedError"), (400, "InvalidRequestError"), (500, "ServerError")],
+    [
+        (401, "AuthError"),
+        (429, "RateLimitedError"),
+        (400, "InvalidRequestError"),
+        (500, "ServerError"),
+    ],
 )
 async def test_chat_native_http_status_mappings(monkeypatch, status, exc_name):
     mod = import_module("qdrant_loader_core.llm.providers.ollama")
@@ -138,7 +156,11 @@ async def test_chat_native_timeout(monkeypatch):
     mod = import_module("qdrant_loader_core.llm.providers.ollama")
     stub = _stub_httpx()
     monkeypatch.setattr(mod, "httpx", stub)
-    monkeypatch.setattr(stub, "AsyncClient", staticmethod(lambda timeout: _Client(post_exc=stub.TimeoutException("to"))))
+    monkeypatch.setattr(
+        stub,
+        "AsyncClient",
+        staticmethod(lambda timeout: _Client(post_exc=stub.TimeoutException("to"))),
+    )
     chat = mod.OllamaChat("http://localhost:11434", "m", None)
     with pytest.raises(Exception) as ei:
         await chat.chat([{"role": "user", "content": "x"}])
@@ -150,10 +172,12 @@ async def test_chat_native_http_error(monkeypatch):
     mod = import_module("qdrant_loader_core.llm.providers.ollama")
     stub = _stub_httpx()
     monkeypatch.setattr(mod, "httpx", stub)
-    monkeypatch.setattr(stub, "AsyncClient", staticmethod(lambda timeout: _Client(post_exc=stub.HTTPError("err"))))
+    monkeypatch.setattr(
+        stub,
+        "AsyncClient",
+        staticmethod(lambda timeout: _Client(post_exc=stub.HTTPError("err"))),
+    )
     chat = mod.OllamaChat("http://localhost:11434", "m", None)
     with pytest.raises(Exception) as ei:
         await chat.chat([{"role": "user", "content": "x"}])
     assert ei.value.__class__.__name__ == "ServerError"
-
-
