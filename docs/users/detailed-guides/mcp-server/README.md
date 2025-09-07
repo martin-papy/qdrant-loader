@@ -25,7 +25,7 @@ The MCP Server acts as a bridge between your AI tools and your QDrant Loader kno
 
 - **QDrant Loader** installed and configured with documents ingested
 - **AI Development Tool** that supports MCP (Cursor, Claude Desktop, etc.)
-- **OpenAI API Key** for semantic search capabilities
+- **LLM API Key** for semantic search capabilities (OpenAI, Azure OpenAI, or Ollama)
 
 ### 2. Install MCP Server
 
@@ -50,8 +50,9 @@ Add to your MCP servers configuration:
   "args": [],
   "env": {
     "QDRANT_URL": "http://localhost:6333",
-    "OPENAI_API_KEY": "your-openai-api-key",
-    "QDRANT_COLLECTION_NAME": "documents"
+    "QDRANT_COLLECTION_NAME": "documents",
+    "LLM_API_KEY": "your-openai-api-key",
+    "OPENAI_API_KEY": "your-openai-api-key"
   }
 }
 ```
@@ -248,6 +249,15 @@ This gives you a complete foundation for implementing notifications effectively.
 ```bash
 # Required Configuration
 QDRANT_URL=http://localhost:6333
+
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=your-openai-api-key
 
 # Optional Configuration
@@ -305,7 +315,7 @@ curl http://localhost:6333/health
 
 ```bash
 # Verify documents are ingested
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Check collection exists
 curl http://localhost:6333/collections/documents

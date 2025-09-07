@@ -51,10 +51,15 @@ global:
     url: "http://localhost:6333"
     api_key: null # Optional for Qdrant Cloud
     collection_name: "my_documents" # Shared by all projects
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    vector_size: 1536
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   docs-project:
@@ -92,7 +97,14 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-qdrant-cloud-key # Optional
 
-# Required - OpenAI API
+# Required - LLM Provider (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=your-openai-api-key
 
 # Optional - Source credentials
@@ -125,8 +137,11 @@ qdrant-loader ingest --workspace . --project docs-project
 # Process specific source type across all projects
 qdrant-loader ingest --workspace . --source-type git
 
-# Process specific source within a project
-qdrant-loader ingest --workspace . --project docs-project --source docs-repo
+# Process specific source type from specific project
+qdrant-loader ingest --workspace . --project docs-project --source-type git
+
+# Process specific source from specific project
+qdrant-loader ingest --workspace . --project docs-project --source-type git --source docs-repo
 
 # Force processing of all documents (bypass change detection)
 qdrant-loader ingest --workspace . --force
@@ -138,23 +153,8 @@ qdrant-loader ingest --workspace . --force
 # Show current configuration
 qdrant-loader config --workspace .
 
-# List all projects
-qdrant-loader project list --workspace .
-
-# Show project status
-qdrant-loader project status --workspace .
-
-# Show status for specific project
-qdrant-loader project status --workspace . --project-id docs-project
-
-# Validate project configurations
-qdrant-loader project validate --workspace .
-
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id docs-project
-
-# Output in JSON format
-qdrant-loader project list --workspace . --format json
+# Note: Project-specific commands are not currently available in the CLI
+# The config command shows all configured projects and their status
 ```
 
 ## 📁 Project Management
@@ -168,26 +168,15 @@ Each project in the configuration has:
 - **description**: Brief description of the project's purpose
 - **sources**: Configuration for data sources (git, confluence, jira, etc.)
 
-### Project Commands
+### Project Management via Configuration
 
 ```bash
-# List all configured projects
-qdrant-loader project list --workspace .
+# View all configured projects and their settings
+qdrant-loader config --workspace .
 
-# Show detailed project information
-qdrant-loader project status --workspace .
-
-# Show status for specific project
-qdrant-loader project status --workspace . --project-id docs-project
-
-# Validate project configurations
-qdrant-loader project validate --workspace .
-
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id docs-project
-
-# Output in JSON format
-qdrant-loader project list --workspace . --format json
+# Note: Dedicated project management commands (list, status, validate) 
+# are not currently implemented in the CLI. Project information is 
+# displayed through the config command.
 ```
 
 ### Project Isolation
@@ -301,20 +290,25 @@ sources:
 
 ```yaml
 global:
-  # Chunking configuration
-  chunking:
+  # Processing configuration
+  processing:
     chunk_size: 1500
     chunk_overlap: 200
   
-  # Embedding configuration
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    vector_size: 1536
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
+  # LLM configuration (new unified approach)
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      batch_size: 100
+      timeout_s: 30
+      max_retries: 3
+    embeddings:
+      vector_size: 1536
   
   # File conversion settings
   file_conversion:
@@ -323,7 +317,7 @@ global:
     markitdown:
       enable_llm_descriptions: false
       llm_model: "gpt-4o"
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
 ```
 
 ### State Management
@@ -387,6 +381,7 @@ The MCP server uses environment variables for configuration and does not current
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_API_KEY": "your-api-key",
         "QDRANT_COLLECTION_NAME": "my_documents",
+        "LLM_API_KEY": "your-openai-key",
         "OPENAI_API_KEY": "your-openai-key",
         "MCP_DISABLE_CONSOLE_LOGGING": "true"
       }
@@ -402,7 +397,8 @@ The MCP server requires these environment variables:
 - **QDRANT_URL**: URL of your QDrant instance (required)
 - **QDRANT_API_KEY**: API key for QDrant authentication (optional)
 - **QDRANT_COLLECTION_NAME**: Name of the collection to use (default: "documents")
-- **OPENAI_API_KEY**: OpenAI API key for embeddings (required)
+- **LLM_API_KEY**: LLM API key for embeddings (required, new unified approach)
+- **OPENAI_API_KEY**: OpenAI API key for embeddings (legacy support, still required if LLM_API_KEY not set)
 - **MCP_DISABLE_CONSOLE_LOGGING**: Set to "true" to disable console logging (recommended for Cursor)
 - **MCP_LOG_LEVEL**: Logging level (optional, default: "INFO")
 - **MCP_LOG_FILE**: Log file path (optional)
@@ -430,7 +426,7 @@ Workspace mode support for the MCP server is planned for future releases, which 
 - [ ] **Configure projects** with your data sources
 - [ ] **Initialize collection** with `qdrant-loader init --workspace .`
 - [ ] **Ingest data** with `qdrant-loader ingest --workspace .`
-- [ ] **Verify setup** with `qdrant-loader project list --workspace .`
+- [ ] **Verify setup** with `qdrant-loader config --workspace .`
 - [ ] **Test search** through MCP server integration
 
 ## 🔗 Related Documentation

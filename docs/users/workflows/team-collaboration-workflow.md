@@ -72,8 +72,11 @@ global:
     collection_name: "team_collaboration"
   embedding:
     endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
     batch_size: 100
     vector_size: 1536
     tokenizer: "cl100k_base"
@@ -89,7 +92,7 @@ global:
       enable_llm_descriptions: false
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
   state_management:
     database_path: "${STATE_DB_PATH}"
     table_prefix: "qdrant_loader_"
@@ -274,7 +277,8 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your_qdrant_api_key
 QDRANT_COLLECTION_NAME=team_collaboration
-OPENAI_API_KEY=your_openai_api_key
+LLM_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key  # Legacy support
 
 CONFLUENCE_URL=https://company.atlassian.net
 CONFLUENCE_EMAIL=your_email@company.com
@@ -331,7 +335,7 @@ generate_team_knowledge_summary() {
     echo "Generating knowledge summary for $team team..."
     
     # Get project status to understand available knowledge
-    local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "${team}-team" --format json 2>/dev/null || echo "[]")
+    local project_status=$(qdrant-loader config --workspace "$WORKSPACE_DIR" --project-id "${team}-team" --format json 2>/dev/null || echo "[]")
     
     cat > "$output_dir/knowledge-summary.md" << EOF
 # $team Team Knowledge Summary
@@ -503,6 +507,7 @@ setup_ai_assistant_access() {
       "env": {
         "QDRANT_URL": "${QDRANT_URL}",
         "QDRANT_API_KEY": "${QDRANT_API_KEY}",
+        "LLM_API_KEY": "${LLM_API_KEY}",
         "OPENAI_API_KEY": "${OPENAI_API_KEY}"
       }
     }
@@ -519,6 +524,7 @@ EOF
       "env": {
         "QDRANT_URL": "${QDRANT_URL}",
         "QDRANT_API_KEY": "${QDRANT_API_KEY}",
+        "LLM_API_KEY": "${LLM_API_KEY}",
         "OPENAI_API_KEY": "${OPENAI_API_KEY}"
       }
     }
@@ -740,10 +746,10 @@ qdrant-loader ingest --workspace .
 qdrant-loader ingest --workspace . --project product-team
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 #### 3.2 Weekly Team Operations
@@ -773,7 +779,7 @@ qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project design-team
 # Check status of all projects
 echo ""
 echo "Project status summary:"
-qdrant-loader project --workspace "$WORKSPACE_DIR" status
+qdrant-loader config --workspace "$WORKSPACE_DIR"
 
 echo ""
 echo "✅ Weekly team knowledge synchronization completed!"
@@ -796,11 +802,11 @@ mkdir -p "$REVIEW_DIR/$(date +%Y-%m)"
 
 # Generate project status report
 echo "Generating project status report..."
-qdrant-loader project --workspace "$WORKSPACE_DIR" status --format json > "$REVIEW_DIR/$(date +%Y-%m)/project-status.json"
+qdrant-loader config --workspace "$WORKSPACE_DIR" --format json > "$REVIEW_DIR/$(date +%Y-%m)/project-status.json"
 
 # List all projects
 echo "Generating project list..."
-qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json > "$REVIEW_DIR/$(date +%Y-%m)/project-list.json"
+qdrant-loader config --workspace "$WORKSPACE_DIR" --format json > "$REVIEW_DIR/$(date +%Y-%m)/project-list.json"
 
 # Create summary report
 cat > "$REVIEW_DIR/$(date +%Y-%m)/monthly-review.md" << EOF
@@ -809,13 +815,13 @@ cat > "$REVIEW_DIR/$(date +%Y-%m)/monthly-review.md" << EOF
 ## Project Overview
 
 ### Active Projects
-$(qdrant-loader project --workspace "$WORKSPACE_DIR" list | grep -E "^│" | head -n -1 | tail -n +2 || echo "No projects found")
+$(qdrant-loader config --workspace "$WORKSPACE_DIR" | grep -E "^│" | head -n -1 | tail -n +2 || echo "No projects found")
 
 ### Project Status
-$(qdrant-loader project --workspace "$WORKSPACE_DIR" status)
+$(qdrant-loader config --workspace "$WORKSPACE_DIR")
 
 ## Key Metrics
-- **Total Projects**: $(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq 'length' 2>/dev/null || echo "0")
+- **Total Projects**: $(qdrant-loader config --workspace "$WORKSPACE_DIR" --format json | jq 'length' 2>/dev/null || echo "0")
 - **Review Date**: $(date +%Y-%m-%d)
 - **Review Period**: $(date +%B\ %Y)
 
@@ -850,7 +856,7 @@ echo "Monthly review completed: $REVIEW_DIR/$(date +%Y-%m)/monthly-review.md"
 ./scripts/weekly-team-sync.sh
 
 # Check system status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Weekly Team Operations
@@ -863,7 +869,7 @@ qdrant-loader project status --workspace .
 qdrant-loader ingest --workspace . --project engineering-team
 
 # Validate all configurations
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Monthly Reviews
@@ -873,10 +879,10 @@ qdrant-loader project validate --workspace .
 ./scripts/monthly-knowledge-review.sh
 
 # Check project health
-qdrant-loader project status --workspace . --format json
+qdrant-loader config --workspace . --format json
 
 # List all available projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 🔧 Troubleshooting
@@ -887,7 +893,7 @@ qdrant-loader project list --workspace .
 
 ```bash
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Validate configuration
 qdrant-loader config --workspace .
@@ -906,7 +912,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 
 # Check specific project
-qdrant-loader project status --workspace . --project-id team-name
+qdrant-loader config --workspace . --project-id team-name
 ```
 
 #### Issue: Onboarding package creation fails
@@ -916,11 +922,12 @@ qdrant-loader project status --workspace . --project-id team-name
 qdrant-loader config --workspace .
 
 # Verify project exists
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Check environment variables
 echo "QDRANT_URL: $QDRANT_URL"
-echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."
+echo "LLM_API_KEY: ${LLM_API_KEY:0:10}..."
+echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."  # Legacy
 ```
 
 ## 📋 Best Practices

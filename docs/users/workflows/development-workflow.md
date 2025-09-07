@@ -41,7 +41,7 @@ graph TD
 - **Git repository** with documentation
 - **CI/CD platform** (GitHub Actions, GitLab CI, etc.)
 - **QDrant instance** (local or cloud)
-- **OpenAI API key** for embeddings
+- **LLM API key** for embeddings (OpenAI, Azure OpenAI, or Ollama)
 - **Development IDE** (Cursor, Windsurf, VS Code)
 
 ### Repository Structure
@@ -87,12 +87,17 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "dev_docs"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    vector_size: 1536
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      batch_size: 100
+    embeddings:
+      vector_size: 1536
     tokenizer: "cl100k_base"
     max_tokens_per_request: 8000
     max_tokens_per_chunk: 8000
@@ -213,7 +218,17 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-qdrant-api-key
 QDRANT_COLLECTION_NAME=dev_docs
+
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=your-openai-api-key
+
 GITHUB_TOKEN=your-github-token  # Optional for private repos
 STATE_DB_PATH=./workspace_state.db
 
@@ -232,7 +247,7 @@ pip install qdrant-loader
 qdrant-loader config --workspace .
 
 # Validate projects
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 #### 2.2 Initial Data Load
@@ -245,7 +260,7 @@ qdrant-loader init --workspace .
 qdrant-loader ingest --workspace .
 
 # Check status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Start MCP server for development
 mcp-qdrant-loader
@@ -336,7 +351,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Validate projects
         run: |
-          qdrant-loader project validate --workspace .
+          qdrant-loader config --workspace .
 
   update-docs:
     needs: validate-config
@@ -369,7 +384,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Verify update
         run: |
-          qdrant-loader project status --workspace .
+          qdrant-loader config --workspace .
 
   test-search:
     needs: update-docs
@@ -417,7 +432,7 @@ validate-config:
   script:
     - pip install qdrant-loader
     - qdrant-loader config --workspace .
-    - qdrant-loader project validate --workspace .
+    - qdrant-loader config --workspace .
   only:
     changes:
       - docs/**/*
@@ -433,7 +448,7 @@ update-documentation:
     - pip install qdrant-loader
     - qdrant-loader init --workspace . --force
     - qdrant-loader ingest --workspace .
-    - qdrant-loader project status --workspace .
+    - qdrant-loader config --workspace .
   only:
     - main
   environment:
@@ -485,7 +500,7 @@ echo "✅ Configuration is valid"
 
 # Validate projects
 echo "Validating projects..."
-if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
+if ! qdrant-loader config --workspace "$WORKSPACE_DIR"; then
     echo "❌ Project validation failed"
     exit 1
 fi
@@ -501,7 +516,7 @@ qdrant-loader ingest --workspace "$WORKSPACE_DIR"
 
 # Check status
 echo "Checking project status..."
-qdrant-loader project --workspace "$WORKSPACE_DIR" status
+qdrant-loader config --workspace "$WORKSPACE_DIR"
 
 echo ""
 echo "✅ Development documentation setup completed!"
@@ -542,7 +557,7 @@ fi
 # Show updated status
 echo ""
 echo "Update completed. Current status:"
-qdrant-loader project --workspace "$WORKSPACE_DIR" status
+qdrant-loader config --workspace "$WORKSPACE_DIR"
 
 echo ""
 echo "✅ Documentation update completed!"
@@ -570,7 +585,7 @@ fi
 
 # Check projects
 echo "2. Checking projects..."
-if qdrant-loader project --workspace "$WORKSPACE_DIR" validate >/dev/null 2>&1; then
+if qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
     echo "   ✅ All projects are valid"
 else
     echo "   ❌ Project validation failed"
@@ -579,7 +594,7 @@ fi
 
 # Check project status
 echo "3. Checking project status..."
-project_count=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+project_count=$(qdrant-loader config --workspace "$WORKSPACE_DIR" --format json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
 if [ "$project_count" -gt 0 ]; then
     echo "   ✅ Found $project_count projects"
 else
@@ -600,7 +615,7 @@ echo "Health check completed!"
 # Show current status
 echo ""
 echo "Current project status:"
-qdrant-loader project --workspace "$WORKSPACE_DIR" status
+qdrant-loader config --workspace "$WORKSPACE_DIR"
 ```
 
 ### Step 5: IDE Integration
@@ -709,20 +724,20 @@ echo "4. The QDrant Loader tools will be available in Claude Desktop"
 ./scripts/health-check.sh
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Project-Specific Operations
 
 ```bash
 # List all projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Get detailed status for specific project
-qdrant-loader project status --workspace . --project-id documentation
+qdrant-loader config --workspace . --project-id documentation
 
 # Validate specific project
-qdrant-loader project validate --workspace . --project-id code-docs
+qdrant-loader config --workspace . --project-id code-docs
 
 # Update only documentation project
 qdrant-loader ingest --workspace . --project documentation
@@ -755,7 +770,7 @@ qdrant-loader ingest --workspace . --source-type localfile
 qdrant-loader config --workspace .
 
 # Validate projects
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Check environment variables
 echo "QDRANT_URL: $QDRANT_URL"
@@ -785,7 +800,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Performance Optimization
@@ -798,7 +813,7 @@ qdrant-loader config --workspace .
 qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Check project statistics
-qdrant-loader project status --workspace . --format json
+qdrant-loader config --workspace . --format json
 ```
 
 ## 📋 Best Practices

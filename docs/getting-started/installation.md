@@ -4,12 +4,13 @@ This guide walks you through installing QDrant Loader and its MCP server on your
 
 ## 📋 Overview
 
-QDrant Loader consists of two main packages:
+QDrant Loader consists of three complementary packages:
 
-- **`qdrant-loader`** - Core data ingestion and processing tool
+- **`qdrant-loader`** - Main data ingestion and processing tool
+- **`qdrant-loader-core`** - Shared core library with LLM abstraction (automatically installed as dependency)
 - **`qdrant-loader-mcp-server`** - Model Context Protocol server for AI tool integration
 
-Both packages can be installed independently, but most users will want both for the complete experience.
+The core library is automatically installed as a dependency. Most users will want both the main package and MCP server for the complete experience.
 
 ## 🔧 Prerequisites
 
@@ -47,13 +48,23 @@ docker run -p 6333:6333 -p 6334:6334 \
 
 Follow the [QDrant installation guide](https://qdrant.tech/documentation/guides/installation/) for your platform.
 
-#### OpenAI API Access
+#### LLM API Access
 
-QDrant Loader uses OpenAI for embeddings generation.
+QDrant Loader supports multiple LLM providers for embeddings generation:
+
+**OpenAI (Recommended)**:
 
 1. Create an account at [OpenAI](https://platform.openai.com/)
 2. Generate an API key
 3. Ensure you have sufficient credits/quota
+
+**Alternative Providers**:
+
+- **Azure OpenAI**: Enterprise-grade OpenAI through Microsoft Azure
+- **Ollama**: Local LLM hosting for privacy and cost control
+- **OpenAI-compatible**: Any service with OpenAI-compatible API endpoints
+
+Choose the provider that best fits your security, cost, and performance requirements.
 
 ### Development Tools (Optional)
 
@@ -103,12 +114,27 @@ mcp-qdrant-loader --version
 pip install qdrant-loader qdrant-loader-mcp-server
 ```
 
-#### Install With Extras
+#### Install With LLM Provider Support
+
+**Important**: QDrant Loader Core requires specific dependencies for each LLM provider.
 
 ```bash
-# Install core with extras and the MCP server
+# Install with all LLM providers (recommended)
 pip install "qdrant-loader[all]" qdrant-loader-mcp-server
+
+# OR install with specific LLM provider support
+pip install "qdrant-loader[openai]" qdrant-loader-mcp-server  # OpenAI/Azure OpenAI
+pip install "qdrant-loader[ollama]" qdrant-loader-mcp-server  # Ollama support
+
+# For multiple providers
+pip install "qdrant-loader[openai,ollama]" qdrant-loader-mcp-server
 ```
+
+**LLM Provider Dependencies**:
+
+- `[openai]` - Required for OpenAI, Azure OpenAI, and OpenAI-compatible providers
+- `[ollama]` - Required for Ollama local LLM hosting
+- `[all]` - Includes all LLM provider dependencies (recommended)
 
 ### Method 2: Development Installation
 
@@ -123,7 +149,12 @@ cd qdrant-loader
 python -m venv venv
 source venv/bin/activate # On Windows: venv\Scripts\activate
 
-# Install in development mode
+# Install all development dependencies from root (recommended)
+# This installs all three packages with proper dependencies
+pip install -e .[dev]
+
+# OR install packages individually (manual dependency management)
+pip install -e "packages/qdrant-loader-core[dev,openai,ollama]"  # Core with all LLM providers
 pip install -e packages/qdrant-loader[dev]
 pip install -e packages/qdrant-loader-mcp-server[dev]
 
@@ -266,11 +297,8 @@ qdrant-loader --version
 # Check version
 qdrant-loader --version
 
-# Check help
+# Check help and available commands
 qdrant-loader --help
-
-# Test configuration display
-qdrant-loader config
 ```
 
 ### Test MCP Server Installation
@@ -279,27 +307,37 @@ qdrant-loader config
 # Check version
 mcp-qdrant-loader --version
 
-# Test server startup (Ctrl+C to stop)
-mcp-qdrant-loader
-
 # Check help for available options
 mcp-qdrant-loader --help
+
+# Test server startup (requires configuration - Ctrl+C to stop)
+# Note: This will fail without proper QDrant and LLM configuration
+# mcp-qdrant-loader
 ```
 
 ### Test Integration
 
-```bash
-# Test QDrant connection and basic functionality
-qdrant-loader project status
+**Note**: These commands require proper configuration (see Configuration Setup section below).
 
-# For basic testing, you would typically:
-# 1. Set up a workspace with config.yaml and .env
-# 2. Initialize the collection:
+```bash
+# After setting up config.yaml and .env files:
+
+# Test basic workspace functionality
+qdrant-loader config --workspace .
+
+# Initialize collection (requires QDrant running and configured)
 qdrant-loader init --workspace .
 
-# 3. Run ingestion:
-qdrant-loader ingest --workspace .
+# Test project status (requires initialized workspace)
+qdrant-loader config --workspace .
 ```
+
+**Prerequisites for integration testing**:
+
+1. QDrant database running and accessible
+2. LLM API key configured
+3. Workspace directory with `config.yaml` and `.env` files
+4. See [Quick Start Guide](./quick-start.md) for complete setup example
 
 ## 🔧 Configuration Setup
 
@@ -322,11 +360,14 @@ Create a `.env` file or set environment variables:
 ```bash
 # Required
 export QDRANT_URL="http://localhost:6333"
-export OPENAI_API_KEY="your-openai-api-key"
+export LLM_API_KEY="your-llm-api-key"
 
 # Optional
 export QDRANT_API_KEY="your-qdrant-api-key" # For QDrant Cloud
 export QDRANT_COLLECTION_NAME="documents"
+
+# Legacy (still supported)
+export OPENAI_API_KEY="your-openai-api-key"
 ```
 
 ### Configuration File
@@ -335,22 +376,37 @@ Create `config.yaml` in your workspace or `~/.qdrant-loader/config.yaml`:
 
 ```yaml
 # Basic configuration
-qdrant:
-  url: "${QDRANT_URL}"
-  collection_name: "${QDRANT_COLLECTION_NAME}"
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
-openai:
-  api_key: "${OPENAI_API_KEY}"
-  model: "text-embedding-3-small"
-
-# Data sources
-sources:
-  git:
-    enabled: true
-  confluence:
-    enabled: false
-  localfile:
-    enabled: true
+# Project configuration
+projects:
+  my-project:
+    project_id: "my-project"
+    display_name: "My Project"
+    description: "Basic project setup"
+    sources:
+      git:
+        my-repo:
+          base_url: "https://github.com/your-org/your-repo.git"
+          branch: "main"
+          include_paths: ["**/*.md"]
+      localfile:
+        local-docs:
+          base_url: "file://./docs"
+          include_paths: ["**/*.md"]
 ```
 
 ## 🔧 Troubleshooting Installation
@@ -425,21 +481,41 @@ docker run -p 6333:6333 qdrant/qdrant
 qdrant-loader config
 ```
 
-#### OpenAI API Issues
+#### Missing LLM Dependencies
 
-**Problem**: OpenAI API authentication errors
+**Problem**: `ModuleNotFoundError: No module named 'openai'` or similar LLM provider errors
 
 **Solution**:
 
 ```bash
-# Check API key is set
+# Install missing LLM provider dependencies
+pip install "qdrant-loader[openai]"  # For OpenAI/Azure OpenAI
+pip install "qdrant-loader[ollama]"  # For Ollama
+pip install "qdrant-loader[all]"     # For all providers (recommended)
+
+# For development installations
+pip install -e "packages/qdrant-loader-core[openai,ollama]"
+```
+
+#### LLM API Issues
+
+**Problem**: LLM API authentication errors
+
+**Solution**:
+
+```bash
+# Check API keys are set
+echo $LLM_API_KEY
 echo $OPENAI_API_KEY
 
-# Test API key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+# Test API key (OpenAI example)
+curl -H "Authorization: Bearer $LLM_API_KEY" \
   https://api.openai.com/v1/models
 
-# Set API key
+# Set API key (new unified approach)
+export LLM_API_KEY="your-actual-api-key"
+
+# Or legacy approach
 export OPENAI_API_KEY="your-actual-api-key"
 ```
 
@@ -473,6 +549,13 @@ pip install --upgrade qdrant-loader qdrant-loader-mcp-server
 # For development installations
 cd qdrant-loader
 git pull origin main
+
+# Update all packages from root (recommended)
+# This ensures all three packages are updated with proper dependencies
+pip install -e .[dev]
+
+# OR update packages individually (manual dependency management)
+pip install -e "packages/qdrant-loader-core[dev,openai,ollama]"  # Core with all LLM providers
 pip install -e packages/qdrant-loader[dev]
 pip install -e packages/qdrant-loader-mcp-server[dev]
 ```
@@ -482,7 +565,7 @@ pip install -e packages/qdrant-loader-mcp-server[dev]
 After successful installation:
 
 1. **[Quick Start Guide](./quick-start.md)** - Get up and running in 5 minutes
-2. **Core Concepts** - Key concepts are summarized inline in Getting Started
+2. **[Core Concepts](./README.md#-core-concepts)** - Key concepts explained
 3. **[Basic Configuration](./basic-configuration.md)** - Set up your first data sources
 4. **[User Guides](../users/)** - Explore detailed feature documentation
 
@@ -490,7 +573,7 @@ After successful installation:
 
 - [ ] **Python 3.12+** installed and accessible
 - [ ] **QDrant database** running (Docker, Cloud, or local)
-- [ ] **OpenAI API key** obtained and configured
+- [ ] **LLM API key** obtained and configured (OpenAI, Azure OpenAI, Ollama, or compatible)
 - [ ] **qdrant-loader** package installed
 - [ ] **qdrant-loader-mcp-server** package installed
 - [ ] **Installation verified** with version commands

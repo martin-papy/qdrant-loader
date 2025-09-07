@@ -90,7 +90,7 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       
       # API key for LLM service (required when enable_llm_descriptions is true)
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
 
 projects:
   my-project:
@@ -218,7 +218,7 @@ global:
       enable_llm_descriptions: true
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
 
 projects:
   research:
@@ -244,7 +244,7 @@ global:
     markitdown:
       enable_llm_descriptions: true
       llm_model: "gpt-4o"
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
 
 projects:
   multimedia:
@@ -300,8 +300,8 @@ qdrant-loader init --workspace .
 # Test ingestion with file conversion enabled
 qdrant-loader ingest --workspace . --project my-project
 
-# Check project status
-qdrant-loader project status --workspace . --project-id my-project
+# Check configuration and project status
+qdrant-loader config --workspace .
 
 # Enable debug logging to see conversion details
 qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
@@ -310,14 +310,11 @@ qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 ### Validate Configuration
 
 ```bash
-# Validate project configuration
-qdrant-loader project validate --workspace . --project-id my-project
-
-# Check all projects
-qdrant-loader project list --workspace .
-
-# View current configuration
+# Validate configuration (includes all projects)
 qdrant-loader config --workspace .
+
+# Display configuration with debug logging
+qdrant-loader config --workspace . --log-level DEBUG
 ```
 
 ## 🔧 Troubleshooting
@@ -367,6 +364,8 @@ global:
 1. **Check API key**:
 
 ```bash
+echo $LLM_API_KEY
+# Or check legacy variable
 echo $OPENAI_API_KEY
 ```
 
@@ -377,13 +376,13 @@ global:
   file_conversion:
     markitdown:
       enable_llm_descriptions: true
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
 ```
 
 1. **Test API access**:
 
 ```bash
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+curl -H "Authorization: Bearer $LLM_API_KEY" \
   https://api.openai.com/v1/models
 ```
 
@@ -455,11 +454,8 @@ pip list | grep -E "(markitdown|tesseract|whisper)"
 ### Check Processing Status
 
 ```bash
-# View project status
-qdrant-loader project status --workspace .
-
-# Check specific project
-qdrant-loader project status --workspace . --project-id my-project
+# View configuration and project status
+qdrant-loader config --workspace .
 
 # Monitor with debug logging
 qdrant-loader ingest --workspace . --log-level DEBUG --project my-project

@@ -313,13 +313,13 @@ qdrant-loader init --workspace .
 qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 
 # List all configured projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Validate project configuration
-qdrant-loader project validate --project-id my-project
+qdrant-loader config --workspace .
 ```
 
 ### Debug Confluence Processing
@@ -506,13 +506,13 @@ curl -u "email:token" \
 
 ```bash
 # View project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Check specific project
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Configuration Validation
@@ -522,7 +522,7 @@ qdrant-loader project list --workspace .
 qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader project validate
+qdrant-loader config --workspace .
 ```
 
 ## 🔄 Best Practices

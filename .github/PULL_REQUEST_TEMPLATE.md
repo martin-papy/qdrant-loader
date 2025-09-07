@@ -1,3 +1,5 @@
+# Pull Request
+
 ## Summary
 
 Describe the change in 1–2 sentences.
@@ -30,4 +32,3 @@ If UI/docs visuals changed.
 - [ ] Tests pass (`pytest -v`)
 - [ ] Linting passes (ruff/mypy if applicable)
 - [ ] Documentation updated (if applicable)
-

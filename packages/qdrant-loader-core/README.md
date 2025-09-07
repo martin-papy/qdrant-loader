@@ -45,7 +45,7 @@ global:
   llm:
     provider: "openai"            # openai | azure_openai | ollama | openai_compat
     base_url: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
+    api_key: "${LLM_API_KEY}"
     models:
       embeddings: "text-embedding-3-small"
       chat: "gpt-4o-mini"
@@ -60,7 +60,7 @@ global_config = {
     "llm": {
         "provider": "openai",
         "base_url": "https://api.openai.com/v1",
-        "api_key": "${OPENAI_API_KEY}",
+        "api_key": "${LLM_API_KEY}",
         "models": {"embeddings": "text-embedding-3-small", "chat": "gpt-4o-mini"},
     }
 }
