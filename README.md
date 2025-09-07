@@ -148,7 +148,7 @@ pip install qdrant-loader-mcp-server  # MCP server only
 6. **Start the MCP server**
 
    ```bash
-   mcp-qdrant-loader
+   mcp-qdrant-loader --env /path/tp/your/.env
    ```
 
 ## 🔧 Integration with Cursor
