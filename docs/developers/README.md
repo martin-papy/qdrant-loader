@@ -125,7 +125,7 @@ Understanding the data flow is crucial for development:
    - Metadata extraction and enrichment
 
 3. **Embedding Phase**
-   - Text content converted to embeddings via OpenAI
+   - Text content converted to embeddings via configurable LLM providers (OpenAI, Azure OpenAI, Ollama)
    - Batch processing for efficiency
    - Error handling and retries
    - Progress tracking and metrics
@@ -321,9 +321,9 @@ qdrant-loader ingest --workspace .
 qdrant-loader config --workspace .
 
 # Project management
-qdrant-loader project list --workspace .
-qdrant-loader project status --workspace .
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
+qdrant-loader config --workspace .
+qdrant-loader config --workspace .
 
 # Start MCP server
 mcp-qdrant-loader
@@ -363,8 +363,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "my_collection"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   - project_id: "docs"

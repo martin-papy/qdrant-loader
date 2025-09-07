@@ -146,24 +146,33 @@ env | grep QDRANT
 **Diagnostic Steps:**
 
 ```bash
-# Check OpenAI API key
-echo $OPENAI_API_KEY | wc -c  # Should be around 51 characters
-echo $OPENAI_API_KEY | grep -E "^sk-"  # Should start with sk-
+# Check LLM API key (new unified approach)
+echo $LLM_API_KEY | wc -c  # Should be around 51 characters for OpenAI
+echo $LLM_API_KEY | grep -E "^sk-"  # Should start with sk- for OpenAI
 
-# Test OpenAI API directly
+# Check legacy OpenAI API key (still supported)
+echo $OPENAI_API_KEY | wc -c
+echo $OPENAI_API_KEY | grep -E "^sk-"
+
+# Test LLM API directly
+curl -H "Authorization: Bearer $LLM_API_KEY" \
+  "https://api.openai.com/v1/models"
+
+# Test legacy OpenAI API (still supported)
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
   "https://api.openai.com/v1/models"
 
 # Check API usage and limits
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+curl -H "Authorization: Bearer $LLM_API_KEY" \
   "https://api.openai.com/v1/usage"
 ```
 
 **Solutions:**
 
 ```bash
-# Verify API key is set correctly
-export OPENAI_API_KEY="sk-your-actual-key-here"
+# Verify API key is set correctly (new unified approach)
+export LLM_API_KEY="sk-your-actual-key-here"
+export OPENAI_API_KEY="sk-your-actual-key-here"  # Legacy support
 
 # Check configuration
 qdrant-loader config --workspace .
@@ -292,9 +301,17 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     timeout: 120
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-    timeout: 60
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      timeout_s: 60
+    embeddings:
+      vector_size: 1536
 ```
 
 ### Issue: DNS resolution problems
@@ -585,13 +602,13 @@ echo "✅ Connection recovery completed"
 
 ```bash
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Test configuration
 qdrant-loader config --workspace .
 
 # Validate projects
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Monitor system resources
 top -p $(pgrep -f qdrant-loader)
@@ -615,7 +632,7 @@ qdrant-loader config --workspace .
 
 ```bash
 # 1. Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # 2. Check environment variables
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
@@ -628,7 +645,7 @@ curl -s "https://api.openai.com/v1/models"
 qdrant-loader ingest --workspace . --log-level DEBUG --project test-project
 
 # 5. Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 🔗 Related Documentation

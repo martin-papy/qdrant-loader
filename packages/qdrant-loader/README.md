@@ -99,7 +99,14 @@ QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=my_docs
 QDRANT_API_KEY=your_api_key  # Required for QDrant Cloud
 
-# Embedding Configuration
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your_openai_key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=your_openai_key
 
 # State Management
@@ -117,12 +124,17 @@ global_config:
     chunk_size: 1500
     chunk_overlap: 200
   
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    vector_size: 1536
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      batch_size: 100
+    embeddings:
+      vector_size: 1536
   
   file_conversion:
     max_file_size: 52428800  # 50MB
@@ -181,7 +193,8 @@ qdrant-loader project --workspace . status
 | `QDRANT_URL` | QDrant instance URL | `http://localhost:6333` | Yes |
 | `QDRANT_API_KEY` | QDrant API key | None | Cloud only |
 | `QDRANT_COLLECTION_NAME` | Collection name | `documents` | Yes |
-| `OPENAI_API_KEY` | OpenAI API key | None | Yes |
+| `LLM_API_KEY` | LLM API key (unified) | None | Yes |
+| `OPENAI_API_KEY` | OpenAI API key (legacy) | None | Legacy |
 | `STATE_DB_PATH` | State database path | `./state.db` | Yes |
 
 ### Source-Specific Variables

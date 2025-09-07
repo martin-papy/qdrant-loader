@@ -29,6 +29,11 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 4. **Complementary Content Discovery** - Find related and supporting content **(Available)**
 5. **Document Clustering** - Group documents by similarity and relationships **(Available)**
 
+### 📄 Document Expansion Tools
+
+1. **Expand Document** - Get detailed document information and context **(Available)**
+2. **Expand Cluster** - Explore document clusters with detailed analysis **(Available)**
+
 ## 🔍 Enhanced Semantic Search
 
 ### Intelligent Query Understanding
@@ -445,6 +450,90 @@ Document Clusters Created:
 - Good coverage across implementation lifecycle
 ```
 
+## 📄 Document Expansion Tools Reference
+
+### Expand Document (`expand_document`)
+
+Get detailed information and context for a specific document, including metadata, relationships, and content analysis.
+
+#### Expand Document Parameters
+
+```json
+{
+  "name": "expand_document",
+  "arguments": {
+    "document_id": "string",  // Required: Document identifier
+    "include_relationships": true,  // Include related documents
+    "include_metadata": true,  // Include document metadata
+    "include_content_summary": true  // Include content analysis
+  }
+}
+```
+
+#### Expand Document Example
+
+```text
+Query: Get detailed information about document "api-auth-guide"
+
+🔍 Expand Document Results:
+📄 API Authentication Guide
+├── 📊 Metadata: Created 2024-01-15, Updated 2024-03-10
+├── 🏷️ Tags: authentication, security, API, OAuth
+├── 🔗 Related Documents: 
+│   ├── OAuth Implementation Guide
+│   ├── Security Best Practices
+│   └── API Rate Limiting
+├── 📈 Content Analysis:
+│   ├── Primary Topics: OAuth 2.0, JWT tokens, API keys
+│   ├── Code Examples: 5 implementation snippets
+│   └── External References: 3 official documentation links
+└── 🎯 Usage Context: Referenced in 12 other documents
+```
+
+### Expand Cluster (`expand_cluster`)
+
+Explore document clusters with detailed analysis, showing how documents are grouped and their relationships.
+
+#### Expand Cluster Parameters
+
+```json
+{
+  "name": "expand_cluster",
+  "arguments": {
+    "cluster_id": "string",  // Required: Cluster identifier
+    "include_document_details": true,  // Include individual document info
+    "include_cluster_metrics": true,  // Include clustering statistics
+    "max_documents": 20  // Maximum documents to show in cluster
+  }
+}
+```
+
+#### Expand Cluster Example
+
+```text
+Query: Expand cluster "authentication-docs"
+
+🔍 Cluster Expansion Results:
+📊 Authentication Documentation Cluster
+├── 🎯 Cluster Metrics:
+│   ├── Cohesion Score: 0.87 (High)
+│   ├── Total Documents: 15
+│   └── Primary Topics: OAuth, JWT, API Security
+├── 📄 Core Documents:
+│   ├── [1] OAuth 2.0 Implementation Guide (Score: 0.95)
+│   ├── [2] JWT Token Management (Score: 0.91)
+│   ├── [3] API Key Security Best Practices (Score: 0.88)
+│   └── [4] Multi-Factor Authentication Setup (Score: 0.85)
+├── 🔗 Cluster Relationships:
+│   ├── Related to: "Security Policies" cluster
+│   ├── Overlaps with: "API Documentation" cluster
+│   └── Supports: "Development Workflows" cluster
+└── 💡 Insights:
+    ├── Most Referenced: OAuth 2.0 Implementation Guide
+    ├── Recent Updates: 3 documents updated this month
+    └── Knowledge Gaps: Missing mobile authentication patterns
+```
+
 ## 🎯 Advanced Search Strategies
 
 ### Multi-Tool Workflow Examples
@@ -522,7 +611,8 @@ The MCP server supports these configuration options:
 ```bash
 # Required Configuration
 QDRANT_URL=http://localhost:6333
-OPENAI_API_KEY=your-openai-api-key
+LLM_API_KEY=your-openai-api-key
+OPENAI_API_KEY=your-openai-api-key  # Legacy support
 
 # Optional Configuration
 QDRANT_COLLECTION_NAME=documents  # Default: "documents"

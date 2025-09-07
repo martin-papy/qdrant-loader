@@ -68,8 +68,11 @@ global:
     collection_name: "content_hub"
   embedding:
     endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
     batch_size: 100
     vector_size: 1536
     tokenizer: "cl100k_base"
@@ -85,7 +88,7 @@ global:
       enable_llm_descriptions: false
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "${OPENAI_API_KEY}"
+      llm_api_key: "${LLM_API_KEY}"
   state_management:
     database_path: "${STATE_DB_PATH}"
     table_prefix: "qdrant_loader_"
@@ -207,7 +210,8 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your_qdrant_api_key
 QDRANT_COLLECTION_NAME=content_hub
-OPENAI_API_KEY=your_openai_api_key
+LLM_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key  # Legacy support
 
 CONFLUENCE_URL=https://company.atlassian.net
 CONFLUENCE_EMAIL=your_email@company.com
@@ -511,7 +515,7 @@ validate_configuration() {
 # Function to validate projects
 validate_projects() {
     echo "Validating project configurations..."
-    if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
+    if ! qdrant-loader config --workspace "$WORKSPACE_DIR"; then
         echo "❌ Project validation failed"
         return 1
     fi
@@ -563,7 +567,7 @@ publish_project() {
     echo "Publishing project: $project_id"
     
     # Validate specific project
-    if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$project_id"; then
+    if ! qdrant-loader config --workspace "$WORKSPACE_DIR" --project-id "$project_id"; then
         echo "❌ Project validation failed for: $project_id"
         return 1
     fi
@@ -580,11 +584,11 @@ get_project_status() {
     
     # List all projects
     echo "Available projects:"
-    qdrant-loader project --workspace "$WORKSPACE_DIR" list
+    qdrant-loader config --workspace "$WORKSPACE_DIR"
     
     echo ""
     echo "Project status:"
-    qdrant-loader project --workspace "$WORKSPACE_DIR" status
+    qdrant-loader config --workspace "$WORKSPACE_DIR"
 }
 
 # Function to run content quality checks
@@ -695,10 +699,11 @@ jobs:
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Legacy support
       - name: Validate projects
         run: |
-          qdrant-loader project validate --workspace .
+          qdrant-loader config --workspace .
 
   deploy-staging:
     needs: quality-check
@@ -721,21 +726,23 @@ jobs:
         env:
           QDRANT_URL: ${{ secrets.STAGING_QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.STAGING_QDRANT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Legacy support
       - name: Ingest content
         run: |
           qdrant-loader ingest --workspace .
         env:
           QDRANT_URL: ${{ secrets.STAGING_QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.STAGING_QDRANT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Legacy support
           CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }}
           CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }}
           CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Verify deployment
         run: |
-          qdrant-loader project status --workspace .
+          qdrant-loader config --workspace .
 
   deploy-production:
     needs: deploy-staging
@@ -758,21 +765,23 @@ jobs:
         env:
           QDRANT_URL: ${{ secrets.PRODUCTION_QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.PRODUCTION_QDRANT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Legacy support
       - name: Ingest content
         run: |
           qdrant-loader ingest --workspace .
         env:
           QDRANT_URL: ${{ secrets.PRODUCTION_QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.PRODUCTION_QDRANT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Legacy support
           CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }}
           CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }}
           CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Verify production deployment
         run: |
-          qdrant-loader project status --workspace .
+          qdrant-loader config --workspace .
 ```
 
 ### Step 5: Content Monitoring and Maintenance
@@ -807,7 +816,7 @@ check_workspace_health() {
     fi
     
     # Check project configurations
-    if qdrant-loader project --workspace "$WORKSPACE_DIR" validate >/dev/null 2>&1; then
+    if qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
         log "INFO" "✅ All projects are valid"
     else
         log "ERROR" "❌ Project validation failed"
@@ -825,7 +834,7 @@ generate_content_report() {
     mkdir -p "$(dirname "$report_file")"
     
     # Get project status
-    local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --format json 2>/dev/null || echo "[]")
+    local project_status=$(qdrant-loader config --workspace "$WORKSPACE_DIR" --format json 2>/dev/null || echo "[]")
     
     # Create report
     cat > "$report_file" << EOF
@@ -929,8 +938,11 @@ global:
     collection_name: "content_staging"
   embedding:
     endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
 
 projects:
   documentation:
@@ -951,8 +963,11 @@ global:
     collection_name: "content_production"
   embedding:
     endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
 
 projects:
   documentation:
@@ -980,12 +995,12 @@ get_project_stats() {
     echo "==================="
     
     # List all projects with status
-    qdrant-loader project --workspace "$WORKSPACE_DIR" list
+    qdrant-loader config --workspace "$WORKSPACE_DIR"
     
     echo ""
     echo "Detailed Status:"
     echo "================"
-    qdrant-loader project --workspace "$WORKSPACE_DIR" status
+    qdrant-loader config --workspace "$WORKSPACE_DIR"
 }
 
 # Function to generate usage report
@@ -994,7 +1009,7 @@ generate_usage_report() {
     mkdir -p "$(dirname "$output_file")"
     
     # Get project status in JSON format
-    local project_data=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --format json 2>/dev/null || echo "[]")
+    local project_data=$(qdrant-loader config --workspace "$WORKSPACE_DIR" --format json 2>/dev/null || echo "[]")
     
     # Create usage report
     cat > "$output_file" << EOF
@@ -1062,7 +1077,7 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 qdrant-loader config --workspace .
 
 # Validate project configurations
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### 3. Initialize and Ingest
@@ -1075,7 +1090,7 @@ qdrant-loader init --workspace .
 qdrant-loader ingest --workspace .
 
 # Check status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### 4. Set Up MCP Server

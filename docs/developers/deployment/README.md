@@ -61,8 +61,13 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
   state_management:
     state_db_path: "./data/state.db"
 
@@ -80,7 +85,8 @@ EOF
 cat > .env << EOF
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=documents
-OPENAI_API_KEY=your-openai-key
+LLM_API_KEY=your-openai-key
+OPENAI_API_KEY=your-openai-key  # Legacy support
 REPO_TOKEN=your-github-token
 EOF
 # Initialize and start
@@ -192,8 +198,9 @@ cat > /opt/qdrant-loader/.env << EOF
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=documents
 QDRANT_API_KEY=your-api-key
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-api-key
+# LLM Configuration
+LLM_API_KEY=your-openai-api-key
+OPENAI_API_KEY=your-openai-api-key  # Legacy support
 # Data Source Credentials
 REPO_TOKEN=your-github-token
 CONFLUENCE_TOKEN=your-confluence-token
@@ -214,8 +221,13 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
   state_management:
     state_db_path: "${STATE_DB_PATH}"
   chunking:
@@ -387,9 +399,9 @@ df -h
 
 ```bash
 # Check project status
-qdrant-loader project --workspace /opt/qdrant-loader/config list
-# Check project status with JSON output
-qdrant-loader project --workspace /opt/qdrant-loader/config status --format json
+qdrant-loader config --workspace /opt/qdrant-loader/config
+# Check configuration and project status
+qdrant-loader config --workspace /opt/qdrant-loader/config
 # Monitor system services
 systemctl status qdrant-loader
 systemctl status mcp-qdrant-loader

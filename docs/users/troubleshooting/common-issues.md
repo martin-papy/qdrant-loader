@@ -115,10 +115,10 @@ pip install qdrant-loader
 qdrant-loader config --workspace .
 
 # Validate project configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Test with debug logging
 qdrant-loader ingest --workspace . --log-level DEBUG
@@ -158,14 +158,18 @@ projects:
 ```bash
 # Check credentials
 echo $QDRANT_API_KEY
-echo $OPENAI_API_KEY
+echo $LLM_API_KEY
+echo $OPENAI_API_KEY  # Legacy support
 echo $CONFLUENCE_TOKEN
 echo $JIRA_TOKEN
 
 # Test QDrant connection
 curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/health"
 
-# Test OpenAI API
+# Test LLM API (new unified approach)
+curl -H "Authorization: Bearer $LLM_API_KEY" "https://api.openai.com/v1/models"
+
+# Test legacy OpenAI API (still supported)
 curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
 ```
 
@@ -227,7 +231,7 @@ qdrant-loader config --workspace . | grep -A 5 exclude_paths
 qdrant-loader config --workspace .
 
 # Review project configuration for duplicate sources
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Reinitialize collection to clean duplicates
 qdrant-loader init --workspace . --force
@@ -240,7 +244,7 @@ qdrant-loader ingest --workspace .
 
 **Symptoms:**
 
-- `qdrant-loader project validate` fails
+- `qdrant-loader config` shows validation errors
 - YAML parsing errors
 - Missing required fields
 
@@ -251,13 +255,13 @@ qdrant-loader ingest --workspace .
 python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
 # Validate project configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Check current configuration
 qdrant-loader config --workspace .
 
 # Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 **Common Configuration Problems:**
@@ -283,7 +287,8 @@ env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 
 # Set missing variables
 export QDRANT_API_KEY="your-key-here"
-export OPENAI_API_KEY="your-key-here"
+export LLM_API_KEY="your-key-here"
+export OPENAI_API_KEY="your-key-here"  # Legacy support
 ```
 
 1. **Invalid URLs:**
@@ -308,7 +313,8 @@ global:
 ```bash
 # Check environment variables
 echo $QDRANT_API_KEY
-echo $OPENAI_API_KEY
+echo $LLM_API_KEY
+echo $OPENAI_API_KEY  # Legacy support
 
 # Load from .env file
 export $(cat .env | xargs)
@@ -319,6 +325,53 @@ ls -la .env
 # Verify configuration loads environment variables
 qdrant-loader config --workspace .
 ```
+
+### Issue: LLM Configuration Migration (v0.7.1+)
+
+**Symptoms:**
+
+- Deprecation warnings about `global.embedding.*`
+- Configuration validation errors
+- "Legacy configuration fields detected" warnings
+
+**Solutions:**
+
+```bash
+# Check current configuration for legacy fields
+qdrant-loader config --workspace . | grep -E "(embedding|openai):"
+
+# Update configuration to new LLM syntax
+# OLD (deprecated):
+# global:
+#   embedding:
+#     api_key: "${OPENAI_API_KEY}"
+#     model: "text-embedding-3-small"
+
+# NEW (recommended):
+# global:
+#   llm:
+#     provider: "openai"
+#     base_url: "https://api.openai.com/v1"
+#     api_key: "${LLM_API_KEY}"
+#     models:
+#       embeddings: "text-embedding-3-small"
+#       chat: "gpt-4o-mini"
+#     embeddings:
+#       vector_size: 1536
+
+# Validate updated configuration
+qdrant-loader config --workspace .
+```
+
+**Migration Checklist:**
+
+- [ ] Replace `global.embedding.*` with `global.llm.*`
+- [ ] Add `provider` field (openai, azure_openai, ollama)
+- [ ] Add `base_url` field for API endpoint
+- [ ] Update `models` structure (embeddings, chat)
+- [ ] Add `embeddings.vector_size` field
+- [ ] Update environment variables to use `LLM_API_KEY`
+- [ ] Test configuration with `qdrant-loader config --workspace .`
 
 ### Issue: Project configuration errors
 
@@ -332,13 +385,13 @@ qdrant-loader config --workspace .
 
 ```bash
 # List all configured projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 
 # Check project configuration structure
 qdrant-loader config --workspace . | grep -A 20 projects
@@ -409,7 +462,7 @@ tail -f ~/.qdrant-loader/logs/mcp-server.log
 qdrant-loader config --workspace .
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Ensure data is loaded
 qdrant-loader ingest --workspace .
@@ -435,11 +488,11 @@ pip uninstall qdrant-loader qdrant-loader-mcp-server
 pip install qdrant-loader qdrant-loader-mcp-server
 
 # 3. Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # 4. Test basic functionality
 qdrant-loader config --workspace .
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # 5. Reinitialize and reload data
 qdrant-loader init --workspace . --force
@@ -452,7 +505,7 @@ If you've lost data or corrupted your collection:
 
 ```bash
 # Check current project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Reinitialize collection
 qdrant-loader init --workspace . --force
@@ -461,7 +514,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 
 # Verify data is loaded
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 📞 Getting Help
@@ -495,8 +548,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   test-project:
@@ -569,7 +629,7 @@ What actually happened
 ```bash
 # List the exact commands you ran
 qdrant-loader config --workspace .
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ```text

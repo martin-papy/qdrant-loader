@@ -16,7 +16,7 @@ QDrant Loader is a comprehensive toolkit that bridges the gap between your scatt
 
 ## 🚀 How It Works
 
-QDrant Loader consists of two main components working together:
+QDrant Loader consists of three integrated packages working together:
 
 ### 1. 🔄 Data Ingestion Engine
 
@@ -24,23 +24,43 @@ The **QDrant Loader** package collects and processes content from multiple sourc
 
 ```text
 Your Content Sources → QDrant Loader → Vector Database
-├── Git repositories ├── File conversion ├── Searchable vectors
-├── Confluence pages ├── Smart chunking ├── Metadata extraction
-├── JIRA tickets ├── Change detection ├── Incremental updates
-├── Documentation sites └── Embedding creation └── Optimized storage
-└── Local files
+
+Input Sources:           Processing:              Output:
+├── Git repositories    ├── File conversion      ├── Searchable vectors
+├── Confluence pages    ├── Smart chunking       ├── Metadata extraction
+├── JIRA tickets        ├── Change detection     ├── Incremental updates
+├── Documentation sites ├── Embedding creation   ├── Optimized storage
+└── Local files         └── Content processing   └── Vector database
 ```
 
-### 2. 🔌 AI Integration Layer
+### 2. 🧠 Core Library
+
+The **QDrant Loader Core** provides shared functionality and LLM abstraction:
+
+```text
+Shared Services → Core Library → All Packages
+
+LLM Providers:           Core APIs:               Benefits:
+├── OpenAI              ├── Provider-agnostic    ├── Unified configuration
+├── Azure OpenAI        ├── Embeddings & chat    ├── Error handling
+├── Ollama              ├── Logging & security   ├── Type safety
+├── OpenAI-compatible   ├── Async operations     ├── Reusable components
+└── Configuration       └── Error normalization  └── Consistent interface
+```
+
+### 3. 🔌 AI Integration Layer
 
 The **MCP Server** provides intelligent search capabilities to AI development tools:
 
 ```text
 AI Development Tools ← MCP Server ← Vector Database
-├── Cursor IDE ├── Semantic search ├── Your processed content
-├── Windsurf ├── Hierarchy-aware ├── Rich metadata
-├── GitHub Copilot ├── Attachment-focused ├── Relationship mapping
-└── Claude Desktop └── Real-time responses └── Context preservation
+
+AI Tools:               Search Types:            Data Features:
+├── Cursor IDE          ├── Semantic search      ├── Your processed content
+├── Windsurf            ├── Hierarchy-aware      ├── Rich metadata
+├── GitHub Copilot      ├── Attachment-focused   ├── Relationship mapping
+├── Claude Desktop      ├── Real-time responses  ├── Context preservation
+└── Other MCP tools     └── Cross-document       └── Streaming results
 ```
 
 ## 🎯 Perfect Use Cases
@@ -108,6 +128,7 @@ AI Development Tools ← MCP Server ← Vector Database
 - **Smart chunking**: Optimal text segmentation for better search results
 - **Metadata extraction**: Rich context including authors, dates, and relationships
 - **Change detection**: Efficient incremental updates without full reprocessing
+- **Flexible LLM support**: Works with OpenAI, Azure OpenAI, Ollama, and OpenAI-compatible providers
 
 ### 🔍 Advanced Search Capabilities
 
@@ -159,7 +180,7 @@ AI Development Tools ← MCP Server ← Vector Database
 
 Now that you understand what QDrant Loader can do for you, let's get you set up:
 
-- **Next**: Core Concepts - Summarized inline in Getting Started
+- **Next**: [Core Concepts](./README.md#-core-concepts) - Key concepts explained
 - **Quick path**: [Quick Start Guide](./quick-start.md) - Get running in 5 minutes
 - **Detailed path**: [Installation Guide](./installation.md) - Complete setup instructions
 

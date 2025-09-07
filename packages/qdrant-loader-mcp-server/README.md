@@ -91,7 +91,8 @@ pip install qdrant-loader qdrant-loader-mcp-server
 # Required environment variables
 export QDRANT_URL="http://localhost:6333"
 export QDRANT_API_KEY="your_api_key"  # Required for QDrant Cloud
-export OPENAI_API_KEY="your_openai_key"
+export LLM_API_KEY="your_openai_key"
+export OPENAI_API_KEY="your_openai_key"  # Legacy support
 
 # Optional configuration
 export QDRANT_COLLECTION_NAME="documents"  # Default collection name
@@ -129,7 +130,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 | `QDRANT_URL` | QDrant instance URL | `http://localhost:6333` | Yes |
 | `QDRANT_API_KEY` | QDrant API key | None | Cloud only |
 | `QDRANT_COLLECTION_NAME` | Collection name | `documents` | No |
-| `OPENAI_API_KEY` | OpenAI API key for embeddings | None | Yes |
+| `LLM_API_KEY` | LLM API key for embeddings | None | Yes |
+| `OPENAI_API_KEY` | OpenAI API key (legacy) | None | No |
 | `MCP_LOG_LEVEL` | Logging level | `INFO` | No |
 | `MCP_LOG_FILE` | Log file path | None | No |
 | `MCP_DISABLE_CONSOLE_LOGGING` | Disable console output | `false` | **Yes for Cursor** |
@@ -154,7 +156,8 @@ Add to your `.cursor/mcp.json`:
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_API_KEY": "your_qdrant_api_key",
-        "OPENAI_API_KEY": "sk-proj-your_openai_api_key",
+        "LLM_API_KEY": "sk-proj-your_openai_api_key",
+        "OPENAI_API_KEY": "sk-proj-your_openai_api_key",  // Legacy support
         "QDRANT_COLLECTION_NAME": "your_collection",
         "MCP_LOG_LEVEL": "INFO",
         "MCP_LOG_FILE": "/path/to/logs/mcp.log",
@@ -177,7 +180,8 @@ Similar configuration in Windsurf's MCP settings:
         "command": "/path/to/venv/bin/mcp-qdrant-loader",
         "env": {
           "QDRANT_URL": "http://localhost:6333",
-          "OPENAI_API_KEY": "your_openai_key",
+          "LLM_API_KEY": "your_openai_key",
+          "OPENAI_API_KEY": "your_openai_key",  // Legacy support
           "MCP_DISABLE_CONSOLE_LOGGING": "true"
         }
       }
@@ -197,7 +201,8 @@ Add to Claude Desktop's configuration:
       "command": "/path/to/venv/bin/mcp-qdrant-loader",
       "env": {
         "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your_openai_key"
+        "LLM_API_KEY": "your_openai_key",
+        "OPENAI_API_KEY": "your_openai_key"  // Legacy support
       }
     }
   }
