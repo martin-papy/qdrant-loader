@@ -131,12 +131,14 @@ class TestWebsiteBuilderMarkdown:
         # Test code blocks
         markdown = "```python\nprint('hello')\n```"
         html = builder.basic_markdown_to_html(markdown)
-        assert 'class="bg-dark text-light p-3 rounded"' in html
+        assert 'class="code-block-wrapper"' in html
+        assert 'class="code-block"' in html
+        assert 'class="language-python"' in html
 
         # Test inline code
         markdown = "Use `pip install` to install"
         html = builder.basic_markdown_to_html(markdown)
-        assert 'class="bg-light text-dark px-2 py-1 rounded"' in html
+        assert 'class="inline-code"' in html
 
     def test_basic_markdown_to_html_links(self):
         """Test basic markdown link conversion."""
