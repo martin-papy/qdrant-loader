@@ -57,9 +57,13 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "[collection-name]"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
 
 projects:
   [project-id]:
@@ -300,9 +304,9 @@ QDrant Loader provides these commands:
 | `init` | Initialize QDrant collection | `qdrant-loader init --workspace . [--force]` |
 | `ingest` | Process and load data | `qdrant-loader ingest --workspace . [--project PROJECT]` |
 | `config` | Display configuration | `qdrant-loader config --workspace .` |
-| `project list` | List projects | `qdrant-loader project list --workspace . [--format json]` |
-| `project status` | Show project status | `qdrant-loader project status --workspace . [--project-id PROJECT]` |
-| `project validate` | Validate projects | `qdrant-loader project validate --workspace . [--project-id PROJECT]` |
+| `project list` | List projects | `qdrant-loader config --workspace . [--format json]` |
+| `project status` | Show project status | `qdrant-loader config --workspace . [--project-id PROJECT]` |
+| `project validate` | Validate projects | `qdrant-loader config --workspace . [--project-id PROJECT]` |
 
 ### Global Options
 

@@ -25,8 +25,8 @@ iostat -x 1
 free -h
 
 # Check project status and validation
-qdrant-loader project status --workspace .
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
+qdrant-loader config --workspace .
 
 # Monitor QDrant instance health
 curl -s "$QDRANT_URL/health"
@@ -44,7 +44,7 @@ nethogs
 time qdrant-loader ingest --workspace . --project my-project
 
 # Test configuration validation
-time qdrant-loader project validate --workspace . --project-id my-project
+time qdrant-loader config --workspace . --project-id my-project
 
 # Monitor file processing
 find ./docs -type f -name "*.md" -exec wc -c {} + | sort -n
@@ -70,10 +70,10 @@ find ./docs -type f -name "*.md" -exec wc -c {} + | sort -n
 find ./docs -type f | wc -l
 
 # Validate project configuration
-qdrant-loader project validate --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 
 # Check project status
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 **Optimization Solutions:**
@@ -233,7 +233,7 @@ ps aux | grep qdrant-loader
 free -h
 
 # Check project configuration for memory-intensive settings
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 **Solutions:**
@@ -326,12 +326,12 @@ projects:
 
 ```bash
 # Process multiple projects efficiently
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 qdrant-loader ingest --workspace . --project project1
 qdrant-loader ingest --workspace . --project project2
 
 # Validate configuration before processing
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Configuration Optimization
@@ -343,8 +343,12 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
   file_conversion:
     max_file_size: 5242880  # 5MB - balance between size and processing time
     conversion_timeout: 30
@@ -448,8 +452,12 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
   file_conversion:
     max_file_size: 5242880
     conversion_timeout: 30
@@ -587,8 +595,8 @@ pkill -f qdrant-loader
 sync && echo 3 > /proc/sys/vm/drop_caches
 
 # 4. Restart with minimal configuration
-qdrant-loader project validate --workspace .
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Performance Recovery
@@ -600,14 +608,14 @@ df -h
 free -h
 
 # 2. Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # 3. Restart processing with smaller scope
 qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace . --project small-project
 
 # 4. Monitor progress
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 📈 Performance Monitoring
@@ -622,11 +630,11 @@ df -h
 iostat -x 1
 
 # Check project status
-qdrant-loader project status --workspace .
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
+qdrant-loader config --workspace .
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Performance Testing

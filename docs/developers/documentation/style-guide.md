@@ -139,9 +139,13 @@ global:
     url: "http://localhost:6333"
     collection_name: "my_documents"
     api_key: "${QDRANT_API_KEY}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
   chunking:
     chunk_size: 1500
     chunk_overlap: 200
@@ -261,7 +265,7 @@ Use consistent formatting for different types of callouts:
 1. Configure your workspace with `config.yaml` and `.env`
 2. Run the initialization: `qdrant-loader init --workspace .`
 3. Run the ingestion: `qdrant-loader ingest --workspace .`
-4. Verify with project status: `qdrant-loader project status --workspace .`
+4. Verify with project status: `qdrant-loader config --workspace .`
 
 **Expected Outcome**: 150 documents indexed with embeddings generated.
 ```

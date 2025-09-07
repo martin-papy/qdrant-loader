@@ -462,7 +462,7 @@ cp docs/users/detailed-guides/data-sources/git-repositories.md \
 qdrant-loader init --workspace .
 qdrant-loader ingest --workspace .
 qdrant-loader config --workspace .
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Find references to a feature
 grep -r "feature_name" docs/ --include="*.md"
@@ -492,10 +492,8 @@ qdrant-loader init [--force]
 qdrant-loader ingest [--project PROJECT] [--source-type TYPE] [--source SOURCE]
 qdrant-loader config
 
-# Project management
-qdrant-loader project list [--format json]
-qdrant-loader project status [--project-id PROJECT] [--format json]
-qdrant-loader project validate [--project-id PROJECT]
+# Project information (via config command)
+qdrant-loader config --workspace . # Shows all project information and validation
 
 # Global options
 --workspace PATH     # Workspace directory

@@ -109,7 +109,7 @@ Comprehensive reference for all error messages with exact solutions.
 qdrant-loader config --workspace .
 
 # 2. Validate project configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # 3. Check system resources
 free -h
@@ -146,13 +146,13 @@ ls -la config.yaml .env
 qdrant-loader config --workspace .
 
 # List all projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Test with debug logging
 qdrant-loader config --workspace . --log-level DEBUG
@@ -268,10 +268,10 @@ docker ps | grep qdrant  # If using Docker
 qdrant-loader config --workspace .
 
 # Project validation
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Project status check
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Debug mode for detailed logging
 qdrant-loader ingest --workspace . --log-level DEBUG
@@ -283,10 +283,10 @@ qdrant-loader ingest --workspace . --log-level DEBUG
 
 ```bash
 # Regular configuration validation
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Check project status regularly
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Monitor system resources
 watch -n 30 'free -h && df -h'
@@ -298,14 +298,14 @@ watch -n 30 'free -h && df -h'
 
    ```bash
    # Daily configuration validation script
-   qdrant-loader project validate --workspace . >> daily-health.log 2>&1
+   qdrant-loader config --workspace . >> daily-health.log 2>&1
    ```
 
 2. **Configuration Validation**
 
    ```bash
    # Validate before deployment
-   qdrant-loader project validate --workspace .
+   qdrant-loader config --workspace .
    ```
 
 3. **System Monitoring**
@@ -348,9 +348,9 @@ watch -n 30 'free -h && df -h'
    ```bash
    # Collect configuration and status information
    qdrant-loader config --workspace . > diagnostics.txt
-   qdrant-loader project list --workspace . >> diagnostics.txt
-   qdrant-loader project status --workspace . >> diagnostics.txt
-   qdrant-loader project validate --workspace . >> diagnostics.txt 2>&1
+   qdrant-loader config --workspace . >> diagnostics.txt
+   qdrant-loader config --workspace . >> diagnostics.txt
+   qdrant-loader config --workspace . >> diagnostics.txt 2>&1
    ```
 
 4. **Provide clear details**:
@@ -386,8 +386,8 @@ watch -n 30 'free -h && df -h'
 # Test QDrant connection
 curl -v "$QDRANT_URL/health"
 
-# Test OpenAI API
-curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
+# Test LLM API
+curl -H "Authorization: Bearer $LLM_API_KEY" "https://api.openai.com/v1/models"
 
 # Check environment variables
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
@@ -408,7 +408,7 @@ top
 ps aux | grep qdrant-loader
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Use debug logging for performance analysis
 qdrant-loader ingest --workspace . --log-level DEBUG --profile
@@ -421,7 +421,7 @@ qdrant-loader ingest --workspace . --log-level DEBUG --profile
 ls -la /path/to/docs
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Check project configuration
 qdrant-loader config --workspace .
@@ -437,13 +437,13 @@ qdrant-loader ingest --workspace . --log-level DEBUG
 qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # List configured projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Check specific project
-qdrant-loader project status --workspace . --project-id PROJECT_ID
+qdrant-loader config --workspace . --project-id PROJECT_ID
 ```
 
 ---

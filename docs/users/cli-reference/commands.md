@@ -10,8 +10,7 @@ QDrant Loader provides a focused command-line interface for data ingestion and m
 
 ```text
 📊 Data Management - init, ingest
-🔧 Configuration - config
-📁 Project Management - project list, project status, project validate
+🔧 Configuration - config (includes project information)
 ```
 
 ## 📊 Data Management Commands
@@ -182,140 +181,58 @@ qdrant-loader config --workspace .
 qdrant-loader config --config test-config.yaml --env test.env
 ```
 
-## 📁 Project Management Commands
+## 📁 Project Information (via Config Command)
 
-### `qdrant-loader project list`
+> **Note**: Dedicated project management commands (`project list`, `project status`, `project validate`) are not currently available in the CLI. All project information is accessible through the `config` command.
 
-List all configured projects in the workspace.
+### Project Information Display
 
-#### Basic List Usage
+The `qdrant-loader config` command displays comprehensive project information including:
 
-```bash
-# List all projects
-qdrant-loader project list --workspace .
-
-# List projects with specific configuration
-qdrant-loader project list --config config.yaml --env .env
-```
-
-#### List Output Formats
+#### Basic Project Information Usage
 
 ```bash
-# List projects in table format (default)
-qdrant-loader project list --workspace .
+# Display all projects and their configuration
+qdrant-loader config --workspace .
 
-# List projects in JSON format
-qdrant-loader project list --workspace . --format json
-
-# List projects in JSON format for scripting
-qdrant-loader project list --workspace . --format json | jq '.[] | .project_id'
+# Display configuration with specific files
+qdrant-loader config --config config.yaml --env .env
 ```
 
-#### Options for List Command
+#### Project Information Included
 
-- `--workspace PATH` - Workspace directory containing config.yaml and .env files
-- `--config PATH` - Path to configuration file
-- `--env PATH` - Path to environment file
-- `--format [table|json]` - Output format (table, json)
+The config command shows:
 
-#### Project Information
-
-The list command shows:
-
-- **Project ID** - Unique identifier for the project
-- **Display Name** - Human-readable project name
+- **Project ID** - Unique identifier for each project
+- **Display Name** - Human-readable project name  
 - **Description** - Project description
 - **Collection** - QDrant collection name used
-- **Sources** - Number of configured data sources
+- **Sources** - Configured data sources for each project
+- **Configuration Status** - Validation results for each project
 
-### `qdrant-loader project status`
+#### Configuration Validation
 
-Show project status including configuration and statistics.
-
-#### Basic Status Usage
-
-```bash
-# Show status for all projects
-qdrant-loader project status --workspace .
-
-# Show status for specific project
-qdrant-loader project status --workspace . --project-id my-project
-```
-
-#### Status Output Formats
+The `config` command automatically validates all project configurations:
 
 ```bash
-# Show status in table format (default)
-qdrant-loader project status --workspace .
+# Validate all project configurations
+qdrant-loader config --workspace .
 
-# Show status in JSON format
-qdrant-loader project status --workspace . --format json
-
-# Show status for specific project in JSON
-qdrant-loader project status --workspace . --project-id my-project --format json
+# Validate with debug output for troubleshooting
+qdrant-loader config --workspace . --log-level DEBUG
 ```
 
-#### Options for Status Command
+#### Validation Checks Performed
 
-- `--workspace PATH` - Workspace directory containing config.yaml and .env files
-- `--config PATH` - Path to configuration file
-- `--env PATH` - Path to environment file
-- `--project-id TEXT` - Specific project ID to check status for
-- `--format [table|json]` - Output format (table, json)
-
-#### Status Information
-
-The status command shows:
-
-- **Project ID** - Unique identifier
-- **Display Name** - Human-readable name
-- **Description** - Project description
-- **Collection** - QDrant collection name
-- **Sources** - Number of configured sources
-- **Documents** - Document count (when available)
-- **Latest Ingestion** - Last ingestion timestamp (when available)
-
-### `qdrant-loader project validate`
-
-Validate project configurations for correctness.
-
-#### Basic Validation Usage
-
-```bash
-# Validate all projects
-qdrant-loader project validate --workspace .
-
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
-```
-
-#### Validation Process
-
-```bash
-# Validate all projects
-qdrant-loader project validate --workspace .
-
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
-```
-
-#### Options for Validate Command
-
-- `--workspace PATH` - Workspace directory containing config.yaml and .env files
-- `--config PATH` - Path to configuration file
-- `--env PATH` - Path to environment file
-- `--project-id TEXT` - Specific project ID to validate
-
-#### Validation Checks
-
-The validate command checks:
+The config command validates:
 
 - **Configuration syntax** - YAML structure and required fields
-- **Source configurations** - Required fields for each source type
+- **Source configurations** - Required fields for each source type  
 - **Project structure** - Valid project definitions
 - **Collection names** - Valid QDrant collection naming
+- **Environment variables** - Required variables are set
 
-## 🔧 Common Options
+## ⚙️ Common Options
 
 Most commands support these common options:
 
@@ -339,8 +256,7 @@ Most commands support these common options:
 # Get help
 qdrant-loader --help # General help
 qdrant-loader init --help # Command-specific help
-qdrant-loader project --help # Project command help
-qdrant-loader project list --help # Subcommand help
+qdrant-loader config --help # Configuration command help
 
 # Get version
 qdrant-loader --version # Show version information
@@ -362,7 +278,7 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 # Edit config.yaml and .env with your settings
 
 # 4. Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # 5. Initialize collection
 qdrant-loader init --workspace .
@@ -375,16 +291,16 @@ qdrant-loader ingest --workspace .
 
 ```bash
 # Check project configuration
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Validate before processing
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Process with debug logging
 qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Production Workflow

@@ -26,7 +26,14 @@ QDrant Loader uses environment variables for all credential management. Environm
 # .env - Secure environment file (chmod 600)
 # Never commit this file to version control
 
-# OpenAI API Key (Required)
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-openai-api-key
 
 # QDrant Configuration
@@ -87,10 +94,10 @@ test_connections() {
 validate_config() {
   echo "Validating QDrant Loader configuration..."
   
-  # Validate workspace configuration
-  qdrant-loader project validate --workspace .
+  # Display configuration (project validate command not available)
+  qdrant-loader config --workspace .
   if [ $? -eq 0 ]; then
-    echo "✅ Configuration valid"
+    echo "✅ Configuration accessible"
   else
     echo "❌ Configuration validation failed"
     exit 1
@@ -170,6 +177,7 @@ The MCP server uses environment variables for configuration. For Cursor integrat
       "env": {
         "QDRANT_URL": "https://your-qdrant-cluster.qdrant.io",
         "QDRANT_API_KEY": "your-secure-api-key",
+        "LLM_API_KEY": "sk-your-secure-openai-key",
         "OPENAI_API_KEY": "sk-your-secure-openai-key",
         "QDRANT_COLLECTION_NAME": "documents",
         "MCP_LOG_LEVEL": "INFO",
@@ -204,7 +212,7 @@ jira:
     requests_per_minute: 60 # Configurable rate limit
 ```
 
-The rate limiting is implemented in the embedding service and Jira connector. OpenAI rate limiting is not user-configurable, while Jira rate limiting can be adjusted per project.
+The rate limiting is implemented in the LLM service and Jira connector. LLM provider rate limiting is configurable via the `global.llm.rate_limits` section, while Jira rate limiting can be adjusted per project.
 
 ## 📊 Data Protection
 
@@ -265,7 +273,7 @@ touch .env config.yaml
 chmod 600 .env config.yaml
 
 # Run in workspace mode
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 qdrant-loader ingest --workspace .
 ```
 
@@ -324,6 +332,8 @@ chmod 600 config.yaml
 ```bash
 # Development security considerations
 # 1. Use separate API keys for development
+LLM_API_KEY=sk-dev-your-development-key
+# Legacy (still supported)
 OPENAI_API_KEY=sk-dev-your-development-key
 
 # 2. Use test data collections in config.yaml
@@ -342,6 +352,8 @@ MCP_LOG_LEVEL=DEBUG
 
 ```bash
 # .env - Minimal secure configuration
+LLM_API_KEY=sk-your-openai-api-key
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-openai-api-key
 ```
 
@@ -351,10 +363,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   default-project:
@@ -367,6 +384,8 @@ projects:
 
 ```bash
 # .env - Production secure configuration
+LLM_API_KEY=sk-your-production-openai-key
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-production-openai-key
 QDRANT_API_KEY=your-production-qdrant-api-key
 
@@ -394,12 +413,17 @@ global:
     url: "https://your-qdrant-cluster.qdrant.io"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "production_documents"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
   state_management:
-    database_path: "/secure/path/state.db"
+    database_path: "/secure/path/data/qdrant-loader.db"
 
 projects:
   knowledge-base:
@@ -446,7 +470,7 @@ projects:
 - [ ] **Service accounts** created with minimal permissions
 - [ ] **Secrets** excluded from version control (.env in .gitignore)
 - [ ] **API key formats** validated with validation scripts
-- [ ] **Configuration** validated using `qdrant-loader project validate`
+- [ ] **Configuration** validated using `qdrant-loader config`
 - [ ] **Workspace mode** used for production deployments
 - [ ] **MCP server logging** configured properly for AI IDE integration
 
@@ -465,7 +489,7 @@ projects:
 - [ ] **API usage** monitored for unexpected spikes or rate limit violations
 - [ ] **Access reviews** conducted for service accounts and API tokens
 - [ ] **Security updates** applied to QDrant Loader and Python dependencies
-- [ ] **Configuration drift** monitored using `qdrant-loader project validate`
+- [ ] **Configuration drift** monitored using `qdrant-loader config`
 - [ ] **Documentation** kept current with actual implementation
 - [ ] **Backup and recovery** procedures tested for workspace data
 

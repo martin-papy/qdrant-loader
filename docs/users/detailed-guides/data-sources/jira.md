@@ -55,8 +55,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   my-project:
@@ -78,8 +85,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   my-project:
@@ -121,8 +135,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   my-project:
@@ -189,8 +210,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "dev-docs"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   development:
@@ -227,8 +255,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "product-docs"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   product:
@@ -259,8 +294,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "support-docs"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   support:
@@ -300,13 +342,13 @@ qdrant-loader config --workspace .
 
 ```bash
 # Validate project configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # List all projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Process JIRA Data
@@ -439,13 +481,13 @@ curl -u "email:token" \
 
 ```bash
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Check specific project
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Performance Optimization

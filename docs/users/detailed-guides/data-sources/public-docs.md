@@ -375,13 +375,13 @@ qdrant-loader init --workspace .
 qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader project --workspace . --project-id my-project
+qdrant-loader config --workspace .
 
 # List all configured projects
-qdrant-loader project --workspace .
+qdrant-loader config --workspace .
 
 # Validate project configuration
-qdrant-loader project --workspace . --project-id my-project
+qdrant-loader config --workspace .
 ```
 
 ### Debug Public Documentation Processing
@@ -560,13 +560,13 @@ curl -s "https://example.com" | grep -i javascript
 
 ```bash
 # View project status
-qdrant-loader project --workspace .
+qdrant-loader config --workspace .
 
 # Check specific project
-qdrant-loader project --workspace . --project-id my-project
+qdrant-loader config --workspace .
 
 # List all projects
-qdrant-loader project --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### Configuration Management
@@ -576,7 +576,7 @@ qdrant-loader project --workspace .
 qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader project --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 🔄 Best Practices

@@ -20,7 +20,7 @@ Before starting, ensure you have:
 
 - [ ] **QDrant Loader installed** - See [Installation Guide](./installation.md)
 - [ ] **QDrant database running** (Docker, Cloud, or local)
-- [ ] **OpenAI API key** ready
+- [ ] **LLM API key** ready (OpenAI, Azure OpenAI, Ollama, or OpenAI-compatible)
 - [ ] **Basic terminal/command line** familiarity
 
 ## 🚀 Step 1: Initial Configuration
@@ -37,8 +37,15 @@ cd my-qdrant-workspace
 # Create .env file with your credentials
 cat > .env << EOF
 QDRANT_URL=http://localhost:6333
-OPENAI_API_KEY=your-openai-api-key-here
 QDRANT_COLLECTION_NAME=quickstart
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-openai-api-key-here
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+# Legacy (still supported)
+OPENAI_API_KEY=your-openai-api-key-here
 EOF
 ```
 
@@ -56,7 +63,7 @@ qdrant-loader init --workspace .
 
 ```bash
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 # Expected output shows project configuration and connection status
 ```
 
@@ -91,6 +98,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   quickstart:
@@ -122,6 +138,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   quickstart:
@@ -168,6 +193,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   quickstart:
@@ -195,10 +229,10 @@ qdrant-loader ingest --workspace .
 
 ```bash
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # List configured projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 🤖 Step 3: Set Up MCP Server
@@ -235,8 +269,10 @@ The MCP server communicates via JSON-RPC over stdio. It doesn't have traditional
   "args": [],
   "env": {
     "QDRANT_URL": "http://localhost:6333",
+    "QDRANT_COLLECTION_NAME": "quickstart",
+    "LLM_API_KEY": "your-llm-api-key-here",
     "OPENAI_API_KEY": "your-openai-api-key-here",
-    "QDRANT_COLLECTION_NAME": "quickstart"
+    "MCP_DISABLE_CONSOLE_LOGGING": "true"
   }
 }
 ```
@@ -337,24 +373,29 @@ curl http://localhost:6333/health
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 # Verify connection
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
-#### OpenAI API Errors
+#### LLM API Errors
 
-**Problem**: `OpenAI API authentication failed`
+**Problem**: `LLM API authentication failed` or `OpenAI API authentication failed`
 
 **Solution**:
 
 ```bash
-# Check API key
+# Check API keys
+echo $LLM_API_KEY
 echo $OPENAI_API_KEY
 
-# Test API key directly
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+# Test API key directly (OpenAI example)
+curl -H "Authorization: Bearer $LLM_API_KEY" \
   https://api.openai.com/v1/models
 
 # Update .env file with correct key
+# For new configuration:
+LLM_API_KEY=your-actual-api-key
+# For legacy configuration:
+OPENAI_API_KEY=your-actual-api-key
 ```
 
 #### No Documents Found
@@ -400,10 +441,10 @@ mcp-qdrant-loader
 
 ```bash
 # Verify documents are ingested
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Check collection status
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 
 # Re-ingest if needed
 qdrant-loader ingest --workspace . --log-level DEBUG
@@ -414,7 +455,7 @@ qdrant-loader ingest --workspace . --log-level DEBUG
 If you encounter issues:
 
 1. **Check logs**: `qdrant-loader ingest --workspace . --log-level DEBUG`
-2. **Verify setup**: `qdrant-loader project status --workspace .`
+2. **Verify setup**: `qdrant-loader config --workspace .`
 3. **Search issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
 4. **Ask for help**: [GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
 
