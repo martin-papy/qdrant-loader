@@ -374,20 +374,97 @@
 </section>
 
 <script>
-    // Load test status if available
-    fetch('test-results/status.json')
-        .then(response => response.json())
-        .then(data => {
-            const statusClass = data.overall_status === 'success' ? 'status-success' : 'status-failure';
-            const statusText = data.overall_status === 'success' ? 'All tests passing' : 'Some tests failing';
-
-            document.getElementById('coverage-summary').innerHTML =
+    // Load coverage data from multiple packages and calculate overall status
+    async function loadCoverageStatus() {
+        const coverageEndpoints = [
+            'coverage/loader/status.json',
+            'coverage/mcp/status.json', 
+            'coverage/website/status.json',
+            'coverage/core/status.json'
+        ];
+        
+        let totalCoverage = 0;
+        let packageCount = 0;
+        let hasData = false;
+        
+        for (const endpoint of coverageEndpoints) {
+            try {
+                const response = await fetch(endpoint);
+                if (response.ok) {
+                    const data = await response.json();
+                    const coverage = calculatePackageCoverage(data);
+                    if (coverage !== null) {
+                        totalCoverage += coverage;
+                        packageCount++;
+                        hasData = true;
+                    }
+                }
+            } catch (error) {
+                // Silently continue if coverage data is not available
+                console.debug(`Coverage data not available for ${endpoint}`);
+            }
+        }
+        
+        const coverageSummaryElement = document.getElementById('coverage-summary');
+        if (!coverageSummaryElement) return;
+        
+        if (hasData && packageCount > 0) {
+            const avgCoverage = Math.round(totalCoverage / packageCount);
+            let statusClass, statusText;
+            
+            if (avgCoverage >= 80) {
+                statusClass = 'status-success';
+                statusText = `Excellent coverage (${avgCoverage}%)`;
+            } else if (avgCoverage >= 60) {
+                statusClass = 'status-success';
+                statusText = `Good coverage (${avgCoverage}%)`;
+            } else {
+                statusClass = 'status-failure';
+                statusText = `Coverage needs improvement (${avgCoverage}%)`;
+            }
+            
+            coverageSummaryElement.innerHTML =
                 `<span class="status-indicator ${statusClass}"></span>${statusText}. ` +
-                document.getElementById('coverage-summary').innerHTML;
-        })
-        .catch(() => {
-            document.getElementById('coverage-summary').innerHTML =
-                '<span class="status-indicator status-unknown"></span>Test status unknown. ' +
-                document.getElementById('coverage-summary').innerHTML;
-        });
+                'Comprehensive test coverage reports for all packages with detailed analysis.';
+        } else {
+            // No coverage data available (e.g., local development)
+            coverageSummaryElement.innerHTML =
+                'Comprehensive test coverage reports for all packages with detailed analysis.';
+        }
+    }
+    
+    function calculatePackageCoverage(statusData) {
+        try {
+            let totalStatements = 0;
+            let totalMissing = 0;
+            
+            // Parse the coverage status.json format
+            if (statusData.files) {
+                for (const fileKey in statusData.files) {
+                    const file = statusData.files[fileKey];
+                    if (file.index && file.index.nums) {
+                        totalStatements += file.index.nums.n_statements || 0;
+                        totalMissing += file.index.nums.n_missing || 0;
+                    }
+                }
+            }
+            
+            // Fallback to totals if available
+            if (totalStatements === 0 && statusData.totals) {
+                totalStatements = statusData.totals.n_statements || statusData.totals.num_statements || 0;
+                totalMissing = statusData.totals.n_missing || (statusData.totals.num_statements - statusData.totals.covered_lines) || 0;
+            }
+            
+            if (totalStatements > 0) {
+                const covered = Math.max(0, totalStatements - totalMissing);
+                return Math.round((covered / totalStatements) * 100);
+            }
+        } catch (error) {
+            console.debug('Error calculating coverage:', error);
+        }
+        return null;
+    }
+    
+    // Load coverage status when page loads
+    document.addEventListener('DOMContentLoaded', loadCoverageStatus);
 </script>
