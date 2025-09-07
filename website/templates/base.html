@@ -99,8 +99,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
-    <!-- Prism.js for code highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
 
     <style>
         :root {
@@ -221,6 +219,252 @@
 
         body.clickio-cmp-in-scope .clickio-cmp-settings-display {
             display: inherit !important;
+        }
+
+        /* Documentation-specific styles */
+        .toc {
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .toc h3 {
+            margin-top: 0 !important;
+            font-size: 1.1rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .toc .list-group-item {
+            border: none;
+            padding: 0.25rem 0;
+            background: transparent;
+        }
+
+        .toc .list-group-item a {
+            color: #495057;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .toc .list-group-item a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Code block improvements - Clean and crisp */
+        .code-block-wrapper {
+            background-color: #1e1e1e;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            border: 1px solid #333333;
+        }
+
+        .code-block, pre.code-block {
+            background-color: #1e1e1e !important;
+            color: #d4d4d4 !important;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: auto;
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+            font-weight: 400 !important;
+            text-rendering: optimizeLegibility !important;
+        }
+
+        .code-block code, pre.code-block code {
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            font-size: 13px !important;
+            color: #d4d4d4 !important;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+            font-weight: 400 !important;
+            text-rendering: optimizeLegibility !important;
+        }
+
+        /* Clean, high-contrast syntax highlighting */
+        .code-block * {
+            background: none !important;
+            font-weight: 400 !important;
+        }
+
+        /* Default text color */
+        .code-block {
+            color: #d4d4d4 !important;
+        }
+
+        /* Comments - muted gray */
+        .code-block .c1, 
+        .code-block .c {
+            color: #7c7c7c !important;
+        }
+
+        /* Strings - clean green */
+        .code-block .s2, 
+        .code-block .s, 
+        .code-block .s1 {
+            color: #98d982 !important;
+        }
+
+        /* Keywords - clean blue */
+        .code-block .k, 
+        .code-block .kn, 
+        .code-block .kd {
+            color: #79b6f2 !important;
+        }
+
+        /* Variables/Names - clean yellow */
+        .code-block .nv,
+        .code-block .nx {
+            color: #f7ca88 !important;
+        }
+
+        /* Numbers - clean orange */
+        .code-block .m, 
+        .code-block .mf, 
+        .code-block .mi {
+            color: #f99157 !important;
+        }
+
+        /* Operators - white */
+        .code-block .o, 
+        .code-block .ow {
+            color: #d4d4d4 !important;
+        }
+
+        /* Punctuation - white */
+        .code-block .p {
+            color: #d4d4d4 !important;
+        }
+
+        /* Tags/Properties (for YAML/JSON) - clean cyan */
+        .code-block .nt, 
+        .code-block .na {
+            color: #6fc2ef !important;
+        }
+
+        /* Whitespace - inherit */
+        .code-block .w {
+            color: inherit !important;
+        }
+
+        /* Inline code styling */
+        .inline-code, code.inline-code {
+            background-color: #f1f3f4 !important;
+            color: #d63384 !important;
+            padding: 0.125rem 0.25rem !important;
+            border-radius: 0.25rem !important;
+            font-size: 0.875em !important;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        /* Fallback for any remaining code elements */
+        code:not(.inline-code):not(.code-block code) {
+            background-color: #f1f3f4;
+            color: #d63384;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        /* Improve list styling in content */
+        .col-lg-9 ul.list-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .col-lg-9 .list-group-item {
+            border-left: 3px solid var(--primary-color);
+            border-top: none;
+            border-right: none;
+            border-bottom: 1px solid #e9ecef;
+            background-color: #f8f9fa;
+            margin-bottom: 0.25rem;
+            border-radius: 0.25rem;
+        }
+
+        /* Simple numbered list styling */
+        .col-lg-9 ol.list-group-numbered {
+            padding-left: 0;
+            margin-bottom: 2rem;
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .col-lg-9 ol.list-group-numbered .list-group-item {
+            counter-increment: step-counter;
+            position: relative;
+            padding: 15px 20px 15px 60px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .col-lg-9 ol.list-group-numbered .list-group-item::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--primary-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Regular ordered lists */
+        .col-lg-9 ol:not(.list-group-numbered) {
+            padding-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .col-lg-9 ol:not(.list-group-numbered) li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 991.98px) {
+            .toc {
+                margin-bottom: 2rem;
+            }
+        }
+
+        /* Ensure proper spacing for documentation content */
+        .col-lg-9 h1, .col-lg-9 h2, .col-lg-9 h3, .col-lg-9 h4, .col-lg-9 h5, .col-lg-9 h6 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .col-lg-9 h1:first-child {
+            margin-top: 0;
+        }
+
+        .col-lg-9 p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        /* Badge styling improvements */
+        .col-lg-9 img[alt*="PyPI"], 
+        .col-lg-9 img[alt*="License"], 
+        .col-lg-9 img[alt*="Coverage"],
+        .col-lg-9 img[alt*="CodeRabbit"] {
+            margin: 0.125rem;
+            display: inline-block;
         }
     </style>
 
@@ -414,9 +658,51 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Prism.js for code highlighting (autoloader) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js" integrity="sha384-MXybTpajaBV0AkcBaCPT4KIvo0FzoCiWXgcihYsw4FUkEz0Pv3JGV6tk2G8vJtDc" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js" integrity="sha384-Uq05+JLko69eOiPr39ta9bh7kld5PKZoU+fF7g0EXTAriEollhZ+DrN8Q/Oi8J2Q" crossorigin="anonymous"></script>
+    
+    <!-- Simple syntax highlighting -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simple syntax highlighting for common languages
+            const codeBlocks = document.querySelectorAll('.code-block code');
+            
+            codeBlocks.forEach(function(block) {
+                const language = block.className.match(/language-(\w+)/);
+                if (language) {
+                    highlightCode(block, language[1]);
+                }
+            });
+            
+            function highlightCode(block, lang) {
+                let content = block.innerHTML;
+                
+                if (lang === 'bash' || lang === 'sh') {
+                    // Bash highlighting
+                    content = content
+                        .replace(/(#[^\n]*)/g, '<span class="c1">$1</span>') // Comments
+                        .replace(/\b(cd|mkdir|pip|install|qdrant-loader|mcp-qdrant-loader|init|ingest)\b/g, '<span class="k">$1</span>') // Commands
+                        .replace(/([A-Z_]+)=/g, '<span class="nv">$1</span>=') // Environment variables
+                        .replace(/(--[\w-]+)/g, '<span class="na">$1</span>'); // Flags
+                } else if (lang === 'yaml') {
+                    // YAML highlighting
+                    content = content
+                        .replace(/(#[^\n]*)/g, '<span class="c1">$1</span>') // Comments
+                        .replace(/^(\s*)([a-zA-Z_][\w-]*)\s*:/gm, '$1<span class="nt">$2</span>:') // Keys
+                        .replace(/:\s*"([^"]*)"/g, ': <span class="s2">"$1"</span>') // Quoted strings
+                        .replace(/:\s*'([^']*)'/g, ': <span class="s1">\'$1\'</span>') // Single quoted strings
+                        .replace(/:\s*(\d+)/g, ': <span class="m">$1</span>'); // Numbers
+                } else if (lang === 'json') {
+                    // JSON highlighting
+                    content = content
+                        .replace(/"([^"]+)":/g, '<span class="nt">"$1"</span>:') // Keys
+                        .replace(/:\s*"([^"]*)"/g, ': <span class="s2">"$1"</span>') // String values
+                        .replace(/:\s*(\d+)/g, ': <span class="m">$1</span>') // Numbers
+                        .replace(/:\s*(true|false|null)/g, ': <span class="k">$1</span>'); // Booleans/null
+                }
+                
+                block.innerHTML = content;
+            }
+        });
+    </script>
 
     <script>
         // Load project information

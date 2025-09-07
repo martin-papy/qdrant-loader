@@ -32,10 +32,20 @@ class MarkdownProcessor:
                     "footnotes",
                     "md_in_html",
                     "sane_lists",
-                ]
+                ],
+                extension_configs={
+                    'codehilite': {
+                        'css_class': 'codehilite',
+                        'use_pygments': False,  # Use simple highlighting without Pygments
+                        'guess_lang': True,
+                    }
+                }
             )
             html = md.convert(markdown_content)
 
+            # Fix any remaining malformed code blocks
+            html = self.fix_malformed_code_blocks(html)
+            
             # Add Bootstrap classes
             html = self.add_bootstrap_classes(html)
 
@@ -163,6 +173,80 @@ class MarkdownProcessor:
         # Apply Bootstrap classes and heading IDs
         return html
 
+    def fix_malformed_code_blocks(self, html_content: str) -> str:
+        """Fix code blocks that weren't properly converted by markdown."""
+        
+        # Fix single-line code snippets that should be code blocks
+        # Convert paragraphs with inline code containing bash commands to proper code blocks
+        html_content = re.sub(
+            r'<p><code class="inline-code">(bash|sh)\s*\n\s*([^<]+)</code></p>',
+            r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-\1">\2</code></pre></div>',
+            html_content
+        )
+        
+        # Fix paragraphs with bash/shell commands (with or without language prefix)
+        html_content = re.sub(
+            r'<p><code class="inline-code">(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|qdrant-loader|mcp-)[^<]*)</code></p>',
+            r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-bash">\1</code></pre></div>',
+            html_content
+        )
+        
+        # Also handle cases where there's no class attribute
+        html_content = re.sub(
+            r'<p><code>(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|qdrant-loader|mcp-)[^<]*)</code></p>',
+            r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-bash">\1</code></pre></div>',
+            html_content
+        )
+        
+        # Clean up stray <p> tags inside code blocks
+        html_content = re.sub(
+            r'(<code[^>]*>.*?)</p>\s*<p>(.*?</code>)',
+            r'\1\n\2',
+            html_content,
+            flags=re.DOTALL
+        )
+        
+        # Fix paragraphs that contain triple backticks (malformed code blocks)
+        def fix_code_block(match):
+            content = match.group(1)
+            # Extract language if present
+            lines = content.split('\n')
+            first_line = lines[0].strip()
+            if first_line.startswith('```'):
+                language = first_line[3:].strip()
+                code_content = '\n'.join(lines[1:])
+                # Remove trailing ``` if present
+                if code_content.endswith('```'):
+                    code_content = code_content[:-3].rstrip()
+                return f'<div class="code-block-wrapper"><pre class="code-block"><code class="language-{language}">{code_content}</code></pre></div>'
+            return match.group(0)
+        
+        # Match paragraphs containing code blocks
+        html_content = re.sub(
+            r'<p>(```[^`]*```)</p>',
+            fix_code_block,
+            html_content,
+            flags=re.DOTALL
+        )
+        
+        # Handle multi-paragraph code blocks
+        html_content = re.sub(
+            r'<p>```(\w+)\s*</p>\s*<p>(.*?)</p>\s*<p>```</p>',
+            r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-\1">\2</code></pre></div>',
+            html_content,
+            flags=re.DOTALL
+        )
+        
+        # Handle code blocks split across multiple paragraphs
+        html_content = re.sub(
+            r'<p>```(\w+)?\s*(.*?)\s*```</p>',
+            lambda m: f'<div class="code-block-wrapper"><pre class="code-block"><code class="language-{m.group(1) or ""}">{m.group(2)}</code></pre></div>',
+            html_content,
+            flags=re.DOTALL
+        )
+        
+        return html_content
+
     def ensure_heading_ids(self, html_content: str) -> str:
         """Ensure all headings have IDs for anchor links."""
 
@@ -221,20 +305,48 @@ class MarkdownProcessor:
             r"<h6([^>]*)>", r'<h6\1 class="h6 fw-semibold mt-2 mb-1">', html_content
         )
 
-        # Add Bootstrap code block classes
+        # Add Bootstrap code block classes - clean approach
+        # First handle codehilite divs
         html_content = re.sub(
             r'<div class="codehilite">',
-            '<div class="bg-dark text-light p-3 rounded">',
+            '<div class="code-block-wrapper">',
             html_content,
         )
+        
+        # Handle standalone pre blocks (not already in wrappers)
         html_content = re.sub(
-            r"<pre>", '<pre class="bg-dark text-light p-3 rounded">', html_content
+            r'(?<!<div class="code-block-wrapper">)<pre>',
+            '<div class="code-block-wrapper"><pre class="code-block">',
+            html_content
+        )
+        
+        # Add code-block class to pre tags that don't have it
+        html_content = re.sub(
+            r'<pre(?![^>]*class="code-block")([^>]*)>',
+            r'<pre class="code-block"\1>',
+            html_content
+        )
+        
+        # Close wrapper divs only for pre blocks that we wrapped
+        html_content = re.sub(
+            r'(<div class="code-block-wrapper"><pre class="code-block"[^>]*>.*?)</pre>(?!</div>)',
+            r'\1</pre></div>',
+            html_content,
+            flags=re.DOTALL
         )
         # Add Bootstrap inline code classes
+        # First handle code blocks, then inline code
         html_content = re.sub(
             r"<code>",
-            '<code class="bg-light text-dark px-2 py-1 rounded">',
+            '<code class="inline-code">',
             html_content,
+        )
+        # Override inline-code class for code inside pre blocks
+        html_content = re.sub(
+            r'(<pre[^>]*>.*?)<code class="inline-code">',
+            r'\1<code>',
+            html_content,
+            flags=re.DOTALL
         )
 
         # Add Bootstrap link classes
