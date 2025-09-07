@@ -24,7 +24,7 @@ QDrant Loader is a data ingestion and retrieval system that collects content fro
 
 ## 📦 Packages
 
-This monorepo contains two complementary packages:
+This monorepo contains three complementary packages:
 
 ### 🔄 [QDrant Loader](./packages/qdrant-loader/)
 
@@ -36,12 +36,26 @@ Collects and vectorizes content from multiple sources into QDrant vector databas
 
 - **Multi-source connectors**: Git, Confluence (Cloud & Data Center), JIRA (Cloud & Data Center), Public Docs, Local Files
 - **File conversion**: PDF, Office docs (Word, Excel, PowerPoint), images, audio, EPUB, ZIP, and more using MarkItDown
-- **Smart chunking**: Intelligent document processing with metadata extraction and hierarchical context
+- **Smart chunking**: Modular chunking strategies with intelligent document processing and hierarchical context
 - **Incremental updates**: Change detection and efficient synchronization
 - **Multi-project support**: Organize sources into projects with shared collections
-- **Flexible embeddings**: OpenAI, local models, and custom endpoints
+- **Provider-agnostic LLM**: OpenAI, Azure OpenAI, Ollama, and custom endpoints with unified configuration
 
-### 🔌 [QDrant Loader MCP Server](./docs/packages/mcp-server/)
+### ⚙️ [QDrant Loader Core](./packages/qdrant-loader-core/)
+
+Core library and LLM abstraction layer
+
+Provides the foundational components and provider-agnostic LLM interface used by other packages.
+
+**Key Features:**
+
+- **LLM Provider Abstraction**: Unified interface for OpenAI, Azure OpenAI, Ollama, and custom endpoints
+- **Configuration Management**: Centralized settings and validation for LLM providers
+- **Rate Limiting**: Built-in rate limiting and request management
+- **Error Handling**: Robust error handling and retry mechanisms
+- **Logging**: Structured logging with configurable levels
+
+### 🔌 [QDrant Loader MCP Server](./packages/qdrant-loader-mcp-server/)
 
 AI development integration layer
 
@@ -49,11 +63,11 @@ Model Context Protocol server providing search capabilities to AI development to
 
 **Key Features:**
 
-- **MCP protocol compliance**: Integration with Cursor, Windsurf, and Claude Desktop
-- **Advanced search tools**: Semantic search, hierarchy-aware search, and attachment discovery
-- **Cross-document intelligence**: Document similarity, clustering, and relationship analysis
-- **Confluence support**: Understanding of page hierarchies and attachment relationships
-- **Real-time processing**: Efficient search with result streaming
+- **MCP Protocol 2025-06-18**: Latest protocol compliance with dual transport support (stdio + HTTP)
+- **Advanced search tools**: Semantic search, hierarchy-aware search, attachment discovery, and conflict detection
+- **Cross-document intelligence**: Document similarity, clustering, relationship analysis, and knowledge graphs
+- **Streaming capabilities**: Server-Sent Events (SSE) for real-time search results
+- **Production-ready**: HTTP transport with security, session management, and health checks
 
 ## 🚀 Quick Start
 
@@ -89,8 +103,12 @@ pip install qdrant-loader-mcp-server  # MCP server only
    QDRANT_URL=http://localhost:6333
    QDRANT_COLLECTION_NAME=my_docs
 
-   # Embeddings provider
+   # LLM provider (new unified configuration)
    OPENAI_API_KEY=your_openai_key
+   LLM_PROVIDER=openai
+   LLM_BASE_URL=https://api.openai.com/v1
+   LLM_EMBEDDING_MODEL=text-embedding-3-small
+   LLM_CHAT_MODEL=gpt-4o-mini
    ```
 
 4. **Configure data sources** (edit `config.yaml`)
@@ -100,9 +118,15 @@ pip install qdrant-loader-mcp-server  # MCP server only
      qdrant:
        url: "http://localhost:6333"
        collection_name: "my_docs"
-     embedding:
-       model: "text-embedding-3-small"
+     llm:
+       provider: "openai"
+       base_url: "https://api.openai.com/v1"
        api_key: "${OPENAI_API_KEY}"
+       models:
+         embeddings: "text-embedding-3-small"
+         chat: "gpt-4o-mini"
+       embeddings:
+         vector_size: 1536
 
    projects:
      my-project:
@@ -146,6 +170,19 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 }
 ```
 
+**Alternative: Use configuration file** (recommended for complex setups):
+
+```json
+{
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "/path/to/venv/bin/mcp-qdrant-loader",
+      "args": ["--config", "/path/to/your/config.yaml", "--env", "/path/to/your/.env"]
+    }
+  }
+}
+```
+
 **Example queries in Cursor:**
 
 - _"Find documentation about authentication in our API"_
@@ -168,11 +205,19 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
-## 🔄 Migration note (LLM configuration)
+## ⚠️ Migration Guide (v0.7.1+)
 
-- LLM settings have moved from legacy `global.embedding.*` to the unified, provider-agnostic `global.llm.*` block.
-- Legacy fields are still supported but emit deprecation warnings and will be removed in a future release.
-- See: [Configuration File Reference](./docs/users/configuration/config-file-reference.md) and [Environment Variables](./docs/users/configuration/environment-variables.md).
+### LLM Configuration Migration Required
+
+- **New unified configuration**: `global.llm.*` replaces legacy `global.embedding.*` and `file_conversion.markitdown.*`
+- **Provider-agnostic**: Now supports OpenAI, Azure OpenAI, Ollama, and custom endpoints
+- **Legacy support**: Old configuration still works but shows deprecation warnings
+- **Action required**: Update your `config.yaml` to use the new syntax (see examples above)
+
+### Migration Resources
+
+- [Configuration File Reference](./docs/users/configuration/config-file-reference.md) - Complete new schema
+- [Environment Variables](./docs/users/configuration/environment-variables.md) - Updated variable names
 
 ### 🛠️ Developer Resources
 
@@ -198,6 +243,8 @@ python -m venv venv
 source venv/bin/activate
 
 # Install packages in development mode
+pip install -e ".[dev]"
+pip install -e "packages/qdrant-loader-core[dev,openai,ollama]"
 pip install -e "packages/qdrant-loader[dev]"
 pip install -e "packages/qdrant-loader-mcp-server[dev]"
 ```

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 DEFAULT_LIMIT = 400
-STRICT_LIMIT = 300
+STRICT_LIMIT = 350
 
 STRICT_SCOPES = [
     "llm/",

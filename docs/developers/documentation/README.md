@@ -66,7 +66,8 @@ pip install qdrant-loader
 
 # Configure your environment
 export QDRANT_URL="http://localhost:6333"
-export OPENAI_API_KEY="your-api-key"
+export LLM_API_KEY="your-api-key"
+export OPENAI_API_KEY="your-api-key"  # Legacy support
 
 # Initialize workspace
 qdrant-loader init --workspace .

@@ -19,7 +19,7 @@ QDrant Loader uses this priority order (highest to lowest):
 
 ```text
 1. Command-line arguments (--workspace, --config, --env)
-2. Environment variables (QDRANT_URL, OPENAI_API_KEY, etc.)
+2. Environment variables (QDRANT_URL, LLM_API_KEY, etc.)
 3. Configuration file (config.yaml)
 4. Default values (built-in defaults)
 ```
@@ -47,7 +47,13 @@ cat > .env << EOF
 # Required - QDrant Database
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=my_documents
-# Required - OpenAI API
+# Required - LLM Provider (new unified configuration)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+# Legacy (still supported)
 OPENAI_API_KEY=your-openai-api-key
 # Optional - QDrant Cloud (if using cloud)
 QDRANT_API_KEY=your-qdrant-cloud-api-key
@@ -65,9 +71,15 @@ global:
     url: "\${QDRANT_URL}"
     api_key: "\${QDRANT_API_KEY}"
     collection_name: "\${QDRANT_COLLECTION_NAME}"
-  openai:
-    api_key: "\${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "\${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 # Project definitions
 projects:
@@ -96,7 +108,7 @@ qdrant-loader init --workspace .
 # Display current configuration
 qdrant-loader config --workspace .
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## ⚙️ Advanced Setup (Multi-Project Configuration)
@@ -117,13 +129,19 @@ global:
     collection_name: "${QDRANT_COLLECTION_NAME}"
     timeout: 30
   
-  # OpenAI Configuration
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
-    batch_size: 100
-    max_retries: 3
-    timeout: 30
+  # LLM Configuration (new unified approach)
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      timeout_s: 30
+      max_retries: 3
+    embeddings:
+      vector_size: 1536
   
   # Processing Configuration
   processing:
@@ -223,9 +241,9 @@ projects:
 # Display current configuration
 qdrant-loader config --workspace .
 # Check project status and validate connections
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 # List all configured projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 🎯 Common Configuration Scenarios
@@ -239,8 +257,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "personal_knowledge"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
   processing:
     chunk_size: 800
 
@@ -280,9 +305,17 @@ projects:
 ```yaml
 global:
   qdrant:
+    url: "${QDRANT_URL}"
     collection_name: "team_docs"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 projects:
   team-docs:
@@ -325,7 +358,17 @@ projects:
 ```yaml
 global:
   qdrant:
+    url: "${QDRANT_URL}"
     collection_name: "dev_docs"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
   processing:
     chunk_size: 1200
     max_file_size: 104857600  # 100MB
@@ -381,6 +424,13 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-qdrant-cloud-api-key
 QDRANT_COLLECTION_NAME=my_documents
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-openai-api-key
 # Git authentication
 GITHUB_TOKEN=ghp_your-github-token
@@ -406,8 +456,13 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"  # Reference environment variable
-  openai:
-    api_key: "${OPENAI_API_KEY}"  # Reference environment variable
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"  # Reference environment variable
+    models:
+      embeddings: "${LLM_EMBEDDING_MODEL}"
+      chat: "${LLM_CHAT_MODEL}"
 
 projects:
   example:
@@ -508,8 +563,11 @@ global:
     chunk_size: 1500  # Larger chunks for better context
     chunk_overlap: 400  # More overlap for continuity
     max_file_size: 104857600  # 100MB (maximum allowed)
-  openai:
-    batch_size: 200  # Larger batches for efficiency
+  llm:
+    request:
+      batch_size: 200  # Larger batches for efficiency
+      timeout_s: 60
+      max_retries: 3
 ```
 
 ### For Fast Ingestion
@@ -519,10 +577,11 @@ global:
   processing:
     chunk_size: 800  # Smaller chunks process faster
     chunk_overlap: 100  # Less overlap for speed
-  openai:
-    batch_size: 500  # Maximum batch size
-    max_retries: 1  # Fewer retries for speed
-    timeout: 10  # Shorter timeout
+  llm:
+    request:
+      batch_size: 500  # Maximum batch size
+      max_retries: 1  # Fewer retries for speed
+      timeout_s: 10  # Shorter timeout
 ```
 
 ### For Memory Efficiency
@@ -532,8 +591,10 @@ global:
   processing:
     chunk_size: 500  # Smaller chunks use less memory
     max_file_size: 10485760  # 10MB
-  openai:
-    batch_size: 50  # Smaller batches
+  llm:
+    request:
+      batch_size: 50  # Smaller batches
+      timeout_s: 30
 ```
 
 ## ✅ Configuration Validation
@@ -544,11 +605,11 @@ global:
 # Display current configuration
 qdrant-loader config --workspace .
 # Check project status and connections
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 # List all projects
-qdrant-loader project list --workspace .
+qdrant-loader config --workspace .
 # Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 ### Common Configuration Issues
@@ -568,14 +629,17 @@ python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
 #### 2. Missing Environment Variables
 
-**Error**: `KeyError: 'OPENAI_API_KEY'`
+**Error**: `KeyError: 'LLM_API_KEY'` or `KeyError: 'OPENAI_API_KEY'`
 **Solution**:
 
 ```bash
 # Check environment variables
 env | grep QDRANT
+env | grep LLM_
 env | grep OPENAI
-# Set missing variables
+# Set missing variables (new unified approach)
+export LLM_API_KEY="your-key-here"
+# Or legacy approach
 export OPENAI_API_KEY="your-key-here"
 ```
 
@@ -587,7 +651,8 @@ export OPENAI_API_KEY="your-key-here"
 ```bash
 # Test QDrant connection
 curl http://localhost:6333/health
-# Check configurationqdrant-loader config --workspace .
+# Check configuration
+qdrant-loader config --workspace .
 ```
 
 #### 4. Invalid Project Structure
@@ -613,7 +678,7 @@ projects:
 - [ ] **Environment variables** set for all credentials
 - [ ] **Configuration file** created with multi-project structure
 - [ ] **QDrant connection** tested successfully
-- [ ] **OpenAI API** key configured and tested
+- [ ] **LLM provider** configured and tested (OpenAI, Azure OpenAI, Ollama, etc.)
 - [ ] **Projects** defined with appropriate sources
 - [ ] **File permissions** secured (600 for .env files)
 - [ ] **Workspace structure** created if using workspace mode
@@ -625,7 +690,7 @@ projects:
 
 With your configuration complete:
 
-1. **Core Concepts** - Summarized inline in Getting Started
+1. **[Core Concepts](./README.md#-core-concepts)** - Key concepts explained
 2. **[User Guides](../users/)** - Explore specific features and workflows
 3. **[Data Source Guides](../users/detailed-guides/data-sources/)** - Configure specific connectors
 4. **[MCP Server Setup](../users/detailed-guides/mcp-server/)** - Set up AI tool integration

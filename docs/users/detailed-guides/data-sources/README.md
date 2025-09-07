@@ -181,8 +181,15 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
 
 # Project configurations
 projects:
@@ -249,7 +256,14 @@ export QDRANT_URL="https://your-qdrant-instance.com"
 export QDRANT_API_KEY="your-qdrant-api-key"
 export QDRANT_COLLECTION_NAME="documents"
 
-# OpenAI configuration
+# LLM configuration
+export LLM_PROVIDER="openai"
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_API_KEY="sk-your-openai-api-key"
+export LLM_EMBEDDING_MODEL="text-embedding-3-small"
+export LLM_CHAT_MODEL="gpt-4o-mini"
+
+# Legacy OpenAI support (for backward compatibility)
 export OPENAI_API_KEY="sk-your-openai-api-key"
 
 # Git authentication
@@ -442,23 +456,16 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-### Project Management
+### Configuration and Project Information
+
+> **Note**: Dedicated project management commands are not currently available. All project information is accessible through the `config` command.
 
 ```bash
-# List all configured projects
-qdrant-loader project list --workspace .
+# Display all configuration and project information
+qdrant-loader config --workspace .
 
-# Show project status
-qdrant-loader project status --workspace .
-
-# Show specific project status
-qdrant-loader project status --workspace . --project-id my-project
-
-# Validate project configurations
-qdrant-loader project validate --workspace .
-
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
+# Display configuration with debug logging
+qdrant-loader config --workspace . --log-level DEBUG
 ```
 
 ### Selective Processing
@@ -482,15 +489,11 @@ qdrant-loader ingest --workspace . --project my-project --source-type git --sour
 ### Configuration Validation
 
 ```bash
-# Validate all project configurations
-qdrant-loader project validate --workspace .
+# Validate configuration (includes all projects)
+qdrant-loader config --workspace .
 
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
-
-# Show configuration in JSON format
-qdrant-loader project list --workspace . --format json
-qdrant-loader project status --workspace . --format json
+# Display configuration with debug logging
+qdrant-loader config --workspace . --log-level DEBUG
 ```
 
 ### Performance Optimization
@@ -581,7 +584,7 @@ projects:
 1. Check include_paths and exclude_paths patterns
 2. Verify source permissions and access
 3. Use verbose logging: `--log-level DEBUG`
-4. Validate configuration with `project validate`
+4. Validate configuration with `qdrant-loader config`
 
 ### Getting Help
 
@@ -590,14 +593,14 @@ projects:
 qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Check configuration syntax
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
-# View project information
-qdrant-loader project status --workspace .
+# View configuration and project information
+qdrant-loader config --workspace .
 
 # Show help for commands
 qdrant-loader --help
-qdrant-loader project --help
+qdrant-loader config --help
 qdrant-loader ingest --help
 ```
 

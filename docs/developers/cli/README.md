@@ -23,8 +23,7 @@ qdrant-loader [GLOBAL_OPTIONS] [COMMAND] [COMMAND_OPTIONS]
 Commands:
   init         Initialize QDrant collection
   ingest       Ingest data from configured sources
-  config       Display current configuration
-  project      Project management commands (list, status, validate)
+  config       Display current configuration (includes project information)
 
 Global Options:
   --log-level LEVEL    Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -117,47 +116,35 @@ qdrant-loader --config config.yaml --env .env config
 qdrant-loader --log-level DEBUG --workspace . config
 ```
 
-### `project` - Project Management
+### `config` - Configuration and Project Information
 
-Manage QDrant Loader projects and their status.
-
-#### `project list` - List Projects
+Display current configuration including all project information and validation.
 
 ```bash
-qdrant-loader project [GLOBAL_OPTIONS] list [OPTIONS]
-Options: --format FORMAT Output format (table, json) --help Show help for this command
+qdrant-loader [GLOBAL_OPTIONS] config
+Options: --help Show help for this command
 ```
 
-#### `project status` - Project Status
-
-```bash
-qdrant-loader project [GLOBAL_OPTIONS] status [OPTIONS]
-Options: --project-id ID Specific project ID to check --format FORMAT Output format (table, json) --help Show help for this command
-```
-
-#### `project validate` - Validate Project
-
-```bash
-qdrant-loader project [GLOBAL_OPTIONS] validate [OPTIONS]
-Options: --project-id ID Project ID to validate --help Show help for this command
-```
+> **Note**: Dedicated project management commands (`project list`, `project status`, `project validate`) are not currently available. All project information is accessible through the `config` command.
 
 **Examples:**
 
 ```bash
-# List all projects
-qdrant-loader project list --workspace .
-# List projects in JSON format
-qdrant-loader project list --workspace . --format json
-# Check status of all projects
-qdrant-loader project status --workspace .
-# Check status of specific project
-qdrant-loader project status --workspace . --project-id my-project
-# Validate all project configurations
-qdrant-loader project validate --workspace .
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
+# Display all configuration and project information
+qdrant-loader config --workspace .
+# Display configuration with debug logging
+qdrant-loader --log-level DEBUG config --workspace .
+# Traditional mode
+qdrant-loader --config config.yaml --env .env config
 ```
+
+**Information Displayed:**
+
+- Project configurations and validation status
+- Source configurations for each project
+- Environment variable validation
+- QDrant collection settings
+- LLM provider configuration
 
 ## 🤖 MCP Server CLI
 
@@ -292,7 +279,7 @@ if ! qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
 fi
 # Validate projects
 log "Validating projects..."
-if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
+if ! qdrant-loader config --workspace "$WORKSPACE_DIR"; then
   log "ERROR: Project validation failed"; exit 2
 fi
 # Initialize collection
@@ -303,7 +290,7 @@ log "Starting data ingestion..."
 qdrant-loader --log-level "$LOG_LEVEL" --workspace "$WORKSPACE_DIR" ingest
 # Check final status
 log "Checking project status..."
-qdrant-loader project --workspace "$WORKSPACE_DIR" status
+qdrant-loader config --workspace "$WORKSPACE_DIR"
 log "Automation completed successfully"
 ```
 
@@ -317,15 +304,15 @@ PROJECT_ID="${2:-}"
 if [ -n "$PROJECT_ID" ]; then
   echo "Processing project: $PROJECT_ID"
   # Validate specific project
-  qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$PROJECT_ID"
+  qdrant-loader config --workspace "$WORKSPACE_DIR" --project-id "$PROJECT_ID"
   # Process specific project
   qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$PROJECT_ID"
   # Check project status
-  qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$PROJECT_ID"
+  qdrant-loader config --workspace "$WORKSPACE_DIR" --project-id "$PROJECT_ID"
 else
   echo "Processing all projects"
   # Get list of projects
-  PROJECTS=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq -r '.[].project_id')
+  PROJECTS=$(qdrant-loader config --workspace "$WORKSPACE_DIR" --format json | jq -r '.[].project_id')
   for project in $PROJECTS; do
     echo "Processing project: $project"
     qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$project"
@@ -341,9 +328,9 @@ fi
 # Check configuration syntax
 qdrant-loader config --workspace .
 # Validate all projects
-qdrant-loader project validate --workspace .
-# Validate specific project with debug output
-qdrant-loader --log-level DEBUG project --workspace . validate --project-id my-project
+qdrant-loader config --workspace .
+# Display configuration with debug output (includes project validation)
+qdrant-loader --log-level DEBUG config --workspace .
 ```
 
 #### Debug Commands
@@ -352,9 +339,9 @@ qdrant-loader --log-level DEBUG project --workspace . validate --project-id my-p
 # Show current configuration with debug logging
 qdrant-loader --log-level DEBUG --workspace . config
 # List all projects with detailed output
-qdrant-loader project list --workspace . --format json
-# Check specific project status with JSON output
-qdrant-loader project status --workspace . --project-id my-project --format json
+qdrant-loader config --workspace . --format json
+# Display configuration (includes all project information)
+qdrant-loader config --workspace .
 # Run ingestion with debug logging and profiling
 qdrant-loader --log-level DEBUG --workspace . ingest --profile
 ```
@@ -378,7 +365,7 @@ test_config() {
     echo "❌ Configuration is invalid"; return 1
   fi
   # Test project validation
-  if qdrant-loader project --workspace "$workspace_dir" validate; then
+  if qdrant-loader config --workspace "$WORKSPACE_DIR"; then
     echo "✅ All projects are valid"
   else
     echo "❌ Project validation failed"; return 1
@@ -409,8 +396,8 @@ echo "Testing ingestion..."
 qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$TEST_PROJECT"
 # Test project commands
 echo "Testing project commands..."
-qdrant-loader project --workspace "$WORKSPACE_DIR" list
-qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$TEST_PROJECT"
+qdrant-loader config --workspace "$WORKSPACE_DIR"
+qdrant-loader config --workspace "$WORKSPACE_DIR" --project-id "$TEST_PROJECT"
 # Cleanup
 rm -rf "$WORKSPACE_DIR"
 echo "✅ Integration test completed"

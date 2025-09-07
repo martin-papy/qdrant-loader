@@ -7,8 +7,8 @@ QDrant Loader provides a comprehensive command-line interface for managing data 
 The `qdrant-loader` command is your primary interface for:
 
 - **Data ingestion** - Loading content from configured sources
-- **Configuration management** - Viewing and validating settings
-- **Project management** - Managing multi-project configurations
+- **Configuration management** - Viewing and validating settings (includes project information)
+- **Collection management** - Initializing QDrant collections
 - **Troubleshooting** - Debugging and testing configurations
 
 ## 🚀 Quick Reference
@@ -22,11 +22,8 @@ qdrant-loader init --workspace .
 # Load data from all configured sources
 qdrant-loader ingest --workspace .
 
-# View configuration
+# View configuration and project information
 qdrant-loader config --workspace .
-
-# List all projects
-qdrant-loader project list --workspace .
 
 # Get help
 qdrant-loader --help
@@ -48,11 +45,8 @@ qdrant-loader --help
 Complete reference for all available commands:
 
 - **`init`** - Initialize QDrant collection and workspace
-- **`ingest`** - Process and load data from sources
-- **`config`** - View current configuration
-- **`project list`** - List all configured projects
-- **`project status`** - Show project status and statistics
-- **`project validate`** - Validate project configurations
+- **`ingest`** - Process and load data from sources  
+- **`config`** - View current configuration (includes all project information and validation)
 
 ### 🤖 Scripting and Automation (coming later)
 
@@ -84,21 +78,21 @@ qdrant-loader init --workspace .
 # 5. Load data
 qdrant-loader ingest --workspace .
 
-# 6. Check project status
-qdrant-loader project status --workspace .
+# 6. Check configuration and project status
+qdrant-loader config --workspace .
 ```
 
 ### Development Workflow
 
 ```bash
-# Validate project configurations
-qdrant-loader project validate --workspace .
+# Validate configuration (includes all projects)
+qdrant-loader config --workspace .
 
 # Process with verbose logging
 qdrant-loader ingest --workspace . --log-level DEBUG
 
-# Check project list
-qdrant-loader project list --workspace .
+# Check configuration and project information
+qdrant-loader config --workspace .
 ```
 
 ### Production Workflow
@@ -178,35 +172,18 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-### Project Management
+### Configuration and Project Information
+
+> **Note**: Dedicated project management commands (`project list`, `project status`, `project validate`) are not currently available. All project information is accessible through the `config` command.
 
 ```bash
-# List all projects
-qdrant-loader project list --workspace .
-
-# List projects in JSON format
-qdrant-loader project list --workspace . --format json
-
-# Show status for all projects
-qdrant-loader project status --workspace .
-
-# Show status for specific project
-qdrant-loader project status --workspace . --project-id my-project
-
-# Validate all project configurations
-qdrant-loader project validate --workspace .
-
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
-```
-
-### Configuration Management
-
-```bash
-# View current configuration
+# Display all configuration and project information
 qdrant-loader config --workspace .
 
-# View configuration with specific files
+# Display configuration with debug logging
+qdrant-loader config --workspace . --log-level DEBUG
+
+# Use specific configuration files
 qdrant-loader config --config custom-config.yaml --env custom.env
 ```
 
@@ -220,8 +197,10 @@ QDRANT_URL=http://prod-qdrant:6333 \
 QDRANT_COLLECTION_NAME=prod_docs \
 qdrant-loader ingest --workspace .
 
-# Use different OpenAI API key
-OPENAI_API_KEY=sk-proj-production-key \
+# Use different LLM configuration
+LLM_PROVIDER=openai \
+LLM_API_KEY=sk-proj-production-key \
+LLM_EMBEDDING_MODEL=text-embedding-3-small \
 qdrant-loader ingest --workspace .
 ```
 
@@ -242,7 +221,7 @@ find /data/workspaces -maxdepth 1 -type d | xargs -I {} -P 4 qdrant-loader inges
 
 ```bash
 # Only process if configuration changed
-if [ config.yaml -nt state.db ]; then
+if [ config.yaml -nt data/qdrant-loader.db ]; then
   qdrant-loader ingest --workspace .
 fi
 
@@ -256,7 +235,7 @@ fi
 
 ```bash
 # Robust processing with error handling
-if ! qdrant-loader project validate --workspace .; then
+if ! qdrant-loader config --workspace .; then
   echo "Configuration validation failed"
   exit 1
 fi
@@ -301,14 +280,11 @@ qdrant-loader ingest --workspace . --profile
 ### Configuration Validation
 
 ```bash
-# Validate all project configurations
-qdrant-loader project validate --workspace .
+# Validate configuration (includes all projects)
+qdrant-loader config --workspace .
 
-# Validate specific project
-qdrant-loader project validate --workspace . --project-id my-project
-
-# Check project status
-qdrant-loader project status --workspace . --format json
+# Display configuration with debug logging
+qdrant-loader config --workspace . --log-level DEBUG
 ```
 
 ## 🔄 Exit Codes
@@ -329,7 +305,7 @@ QDrant Loader uses standard exit codes:
 #!/bin/bash
 
 # Check exit codes and handle errors
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 case $? in
   0) echo "Configuration valid" ;;
   2) echo "Configuration error"; exit 1 ;;
@@ -351,14 +327,10 @@ fi
 
 ```bash
 # Human-readable output (default)
-qdrant-loader project list --workspace .
-
-# JSON output for scripting
-qdrant-loader project list --workspace . --format json
-qdrant-loader project status --workspace . --format json
-
-# Configuration output
 qdrant-loader config --workspace .
+
+# Configuration with debug information
+qdrant-loader config --workspace . --log-level DEBUG
 ```
 
 ### Logging Output
@@ -382,17 +354,17 @@ qdrant-loader ingest --workspace . --log-level WARNING
 # Useful aliases
 alias ql='qdrant-loader --workspace .'
 alias qli='qdrant-loader ingest --workspace .'
-alias qlp='qdrant-loader project --workspace .'
+alias qlp='qdrant-loader config --workspace .'
 alias qlc='qdrant-loader config --workspace .'
 
 # Useful functions
 function ql-quick() {
-  qdrant-loader project validate --workspace . && \
+  qdrant-loader config --workspace . && \
   qdrant-loader ingest --workspace .
 }
 
 function ql-status() {
-  qdrant-loader project status --workspace .
+  qdrant-loader config --workspace .
 }
 ```
 
@@ -410,9 +382,9 @@ function ql-status() {
 qdrant-loader --help
 
 # Command-specific help
+qdrant-loader init --help
 qdrant-loader ingest --help
-qdrant-loader project --help
-qdrant-loader project list --help
+qdrant-loader config --help
 ```
 
 ### Community Support

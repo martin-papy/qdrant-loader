@@ -48,7 +48,7 @@ ping your-qdrant-instance.com
 telnet your-qdrant-instance.com 6333
 
 # Validate project configuration
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 **Configuration Fix:**
@@ -90,7 +90,7 @@ ss -tlnp | grep 6333
 systemctl status qdrant  # If installed as service
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### `TimeoutError: Connection timeout after 30 seconds`
@@ -157,7 +157,7 @@ curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/collections"
 export QDRANT_API_KEY="your-actual-api-key"
 
 # Validate configuration
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 **Configuration Fix:**
@@ -189,24 +189,31 @@ OpenAIError: Incorrect API key provided: sk-***
 
 ```bash
 # Verify API key format (should start with sk-)
+echo $LLM_API_KEY | grep -E "^sk-"
+# Or check legacy variable
 echo $OPENAI_API_KEY | grep -E "^sk-"
 
-# Test OpenAI API
-curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
+# Test LLM API
+curl -H "Authorization: Bearer $LLM_API_KEY" "https://api.openai.com/v1/models"
 
 # Check account status
-curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/usage"
+curl -H "Authorization: Bearer $LLM_API_KEY" "https://api.openai.com/v1/usage"
 
 # Validate configuration
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 **Configuration Fix:**
 
 ```yaml
 global:
-  openai:
-    api_key: "${OPENAI_API_KEY}"   # Ensure this environment variable is set correctly
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"   # Ensure this environment variable is set correctly
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
 ```
 
 ### `ConfluenceAuthError: 401 Unauthorized`
@@ -240,7 +247,7 @@ curl -u "$CONFLUENCE_EMAIL:$CONFLUENCE_TOKEN" \
   "$CONFLUENCE_URL/rest/api/user/current"
 
 # Validate project configuration
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 **Configuration Fix:**
@@ -283,10 +290,10 @@ ls -la /path/to/docs
 find /path/to/docs -name "*.md" | head -10
 
 # Check project configuration
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 
 # Validate configuration
-qdrant-loader project validate --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 **Configuration Fix:**
@@ -375,22 +382,26 @@ EmbeddingError: Failed to generate embeddings for chunk: Rate limit exceeded
 
 ```bash
 # Check API usage
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+curl -H "Authorization: Bearer $LLM_API_KEY" \
   "https://api.openai.com/v1/usage"
 
 # Process smaller batches
 qdrant-loader ingest --workspace . --project small-project
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 **Configuration Fix:**
 
 ```yaml
 global:
-  openai:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
   file_conversion:
     max_file_size: 2097152  # 2MB - smaller files for rate limiting
     conversion_timeout: 30
@@ -428,7 +439,7 @@ sed -n '15p' config.yaml
 yamllint config.yaml
 
 # Validate with QDrant Loader
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### `ValidationError: Missing required field 'qdrant.url'`
@@ -458,7 +469,7 @@ export QDRANT_API_KEY="your-api-key"
 export QDRANT_COLLECTION_NAME="your-collection"
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 **Configuration Fix:**
@@ -470,8 +481,12 @@ global:
     url: "${QDRANT_URL}"                    # Required
     api_key: "${QDRANT_API_KEY}"           # Required
     collection_name: "${QDRANT_COLLECTION_NAME}"  # Required
-  openai:
-    api_key: "${OPENAI_API_KEY}"           # Required
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"           # Required
 ```
 
 ### `EnvironmentError: Environment variable not found`
@@ -505,7 +520,7 @@ echo $QDRANT_API_KEY
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA|REPO)"
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 💾 Memory and Resource Errors
@@ -621,7 +636,7 @@ sudo journalctl --vacuum-time=7d
 export TMPDIR="/path/to/larger/disk"
 
 # Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 📁 File System Errors
@@ -657,7 +672,7 @@ ls -ld /path/to/docs
 find / -name "docs" -type d 2>/dev/null
 
 # Validate project configuration
-qdrant-loader project status --workspace . --project-id my-project
+qdrant-loader config --workspace . --project-id my-project
 ```
 
 ### `PermissionError: Permission denied`
@@ -689,7 +704,7 @@ ls -la /restricted/docs
 chown -R $USER:$USER /restricted/docs
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### `EncodingError: Unable to decode file`
@@ -771,7 +786,7 @@ nslookup invalid-host.com 8.8.8.8
 ping 8.8.8.8
 
 # Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 **Configuration Fix:**
@@ -818,7 +833,7 @@ sudo ntpdate -s time.nist.gov
 export PYTHONHTTPSVERIFY=0
 
 # Test configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ### `ProxyError: Cannot connect to proxy`
@@ -853,7 +868,7 @@ export NO_PROXY="localhost,127.0.0.1,.local"
 env | grep -i proxy
 
 # Test configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 ```
 
 ## 📊 Error Code Reference
@@ -898,10 +913,10 @@ df -h
 free -h
 
 # 2. Validate configuration
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # 3. Check project status
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # 4. Restart with minimal configuration
 qdrant-loader init --workspace . --force
@@ -912,13 +927,13 @@ qdrant-loader ingest --workspace . --project small-project
 
 ```bash
 # Pre-flight checks
-qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 
 # Configuration validation
 qdrant-loader config --workspace .
 
 # Check project status before processing
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
 
 # Monitor system resources
 htop

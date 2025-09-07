@@ -17,7 +17,7 @@ QDrant Loader supports YAML configuration files for managing settings in a struc
 global:
   # Global settings for all projects
   qdrant: {}
-  embedding: {}
+  llm: {}
   chunking: {}
   state_management: {}
   file_conversion: {}
@@ -330,8 +330,21 @@ global:
 
 **Required Fields:**
 
-- `endpoint` - API endpoint URL
-- `api_key` - API key (use environment variable)
+- `provider` - LLM provider (openai, azure_openai, ollama, openai_compat)
+- `base_url` - API endpoint URL
+- `models.embeddings` - Embedding model name
+- `models.chat` - Chat model name (optional, for LLM-enabled features)
+
+**Optional Fields:**
+
+- `api_key` - API key (use environment variable, required for most providers)
+- `api_version` - API version (required for azure_openai)
+- `headers` - Custom HTTP headers
+- `tokenizer` - Tokenizer for token counting (cl100k_base, none)
+- `request` - Request policy settings (timeout, retries, backoff)
+- `rate_limits` - Rate limiting configuration (rpm, tpm, concurrency)
+- `embeddings.vector_size` - Vector dimension size
+- `provider_options` - Provider-specific options
 
 #### Chunking Configuration
 
@@ -668,30 +681,22 @@ qdrant-loader --config /path/to/config.yaml --env /path/to/.env ingest
 #### Validate Configuration
 
 ```bash
-# Display current configuration
+# Display current configuration (shows all projects and their status)
 qdrant-loader config --workspace .
 
-# Validate project configurations
-qdrant-loader project validate --workspace .
-
-# Check project status
-qdrant-loader project status --workspace .
-
-# List all projects
-qdrant-loader project list --workspace .
+# Note: Dedicated project management commands (list, status, validate) 
+# are not currently implemented. All project information is displayed 
+# through the config command.
 ```
 
 #### Project Management
 
 ```bash
-# List all configured projects
-qdrant-loader project list --workspace .
+# View all configured projects and their information
+qdrant-loader config --workspace .
 
-# Show project status
-qdrant-loader project status --workspace .
-
-# Show status for specific project
-qdrant-loader project status --workspace . --project-id my-project
+# Note: Project-specific filtering (--project-id) is not currently 
+# supported in the CLI. All project information is shown together.
 ```
 
 ## 📋 Environment Variables
@@ -706,11 +711,18 @@ QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=documents
 QDRANT_API_KEY=your_api_key # Optional: for QDrant Cloud
 
-# Embedding Configuration
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your_openai_key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported but deprecated)
 OPENAI_API_KEY=your_openai_key
 
 # State Management
-STATE_DB_PATH=./state.db
+STATE_DB_PATH=./data/qdrant-loader.db
 ```
 
 ### Source-Specific Environment Variables
@@ -737,10 +749,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
   state_management:
     database_path: "${STATE_DB_PATH}"
 
@@ -768,10 +785,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
   chunking:
     chunk_size: 1500
     chunk_overlap: 200
@@ -882,14 +904,14 @@ projects:
 
 ## 📋 Configuration Checklist
 
-- [ ] **Global configuration** completed (qdrant, embedding, state_management)
+- [ ] **Global configuration** completed (qdrant, llm, state_management)
 - [ ] **Environment variables** configured in `.env` file
 - [ ] **Project definitions** created with unique project IDs
 - [ ] **Data source credentials** configured for your sources
 - [ ] **Required fields** provided (Git token, Confluence email/token, etc.)
 - [ ] **File conversion settings** configured if processing non-text files
-- [ ] **Configuration validated** with `qdrant-loader project validate`
-- [ ] **Projects listed** with `qdrant-loader project list`
+- [ ] **Configuration displayed** with `qdrant-loader config`
+- [ ] **Projects reviewed** in config output
 - [ ] **File permissions** set appropriately (chmod 600 for sensitive configs)
 - [ ] **Version control** configured (exclude `.env` files)
 

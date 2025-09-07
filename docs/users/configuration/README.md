@@ -16,7 +16,7 @@ QDrant Loader uses a combination of configuration files and environment variable
 your-workspace/
 ├── config.yaml # Main configuration file
 ├── .env # Environment variables
-├── state.db # Processing state (auto-generated)
+├── data/qdrant-loader.db # Processing state (auto-generated)
 └── logs/ # Log files (optional)
 ```
 
@@ -35,7 +35,14 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 Edit `.env` file:
 
 ```bash
-# Required - OpenAI Configuration
+# Required - LLM Provider Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your_openai_api_key_here
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Required - QDrant Configuration
@@ -65,10 +72,16 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-  chunking:
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
+  processing:
     chunk_size: 1500
     chunk_overlap: 200
 
@@ -130,11 +143,20 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 50
-  chunking:
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      batch_size: 50
+      timeout_s: 30
+      max_retries: 3
+    embeddings:
+      vector_size: 1536
+  processing:
     chunk_size: 800
     chunk_overlap: 150
 
@@ -198,10 +220,16 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-  chunking:
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
+  processing:
     chunk_size: 1200
     chunk_overlap: 300
   file_conversion:
@@ -247,11 +275,20 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 20 # Slower processing for large files
-  chunking:
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      batch_size: 20  # Slower processing for large files
+      timeout_s: 60
+      max_retries: 3
+    embeddings:
+      vector_size: 1536
+  processing:
     chunk_size: 1500
     chunk_overlap: 400
   file_conversion:
@@ -299,11 +336,20 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-  chunking:
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    request:
+      batch_size: 100
+      timeout_s: 30
+      max_retries: 3
+    embeddings:
+      vector_size: 1536
+  processing:
     chunk_size: 1500
     chunk_overlap: 200
 
@@ -368,6 +414,13 @@ projects:
 QDRANT_URL=https://qdrant-cluster.company.com
 QDRANT_API_KEY=your_enterprise_api_key
 QDRANT_COLLECTION_NAME=enterprise_knowledge
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-proj-enterprise_key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+# Legacy (still supported)
 OPENAI_API_KEY=sk-proj-enterprise_key
 LOG_LEVEL=INFO
 LOG_FILE=/var/log/qdrant-loader/app.log
@@ -379,17 +432,11 @@ STATE_DB_PATH=/data/qdrant-loader/state.db
 ### Validate Configuration
 
 ```bash
-# Display current configuration
+# Display configuration and project information
 qdrant-loader config --workspace .
 
-# Validate project configurations
-qdrant-loader project validate --workspace .
-
-# Check project status
-qdrant-loader project status --workspace .
-
-# List all projects
-qdrant-loader project list --workspace .
+# Note: Dedicated project commands (list, status, validate) are not 
+# currently available. All information is shown via config command.
 ```
 
 ### Common Validation Errors
@@ -400,7 +447,9 @@ qdrant-loader project list --workspace .
 # Error: Missing QDRANT_URL
 export QDRANT_URL=http://localhost:6333
 
-# Error: Missing OPENAI_API_KEY
+# Error: Missing LLM API key (new unified approach)
+export LLM_API_KEY=your_openai_api_key
+# Or legacy approach
 export OPENAI_API_KEY=your_openai_api_key
 
 # Error: Missing collection name
@@ -450,9 +499,11 @@ cp .env.prod .env
 ### 2. Secure Credential Management
 
 ```bash
-# Use environment variables for sensitive data
-export OPENAI_API_KEY=$(cat /secure/openai-key.txt)
+# Use environment variables for sensitive data (new unified approach)
+export LLM_API_KEY=$(cat /secure/openai-key.txt)
 export CONFLUENCE_TOKEN=$(vault kv get -field=token secret/confluence)
+# Legacy approach (still supported)
+export OPENAI_API_KEY=$(cat /secure/openai-key.txt)
 
 # Never commit credentials to version control
 echo ".env" >> .gitignore
@@ -477,8 +528,8 @@ max_concurrent_requests: 5
 ### 4. Monitoring and Logging
 
 ```bash
-# Monitor project status
-qdrant-loader project status --workspace .
+# Monitor configuration and project status
+qdrant-loader config --workspace .
 
 # Use debug logging for troubleshooting
 qdrant-loader config --log-level DEBUG --workspace .
@@ -494,11 +545,20 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    model: "${EMBEDDING_MODEL:-text-embedding-3-small}"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: ${BATCH_SIZE:-50}
-  chunking:
+  llm:
+    provider: "${LLM_PROVIDER:-openai}"
+    base_url: "${LLM_BASE_URL:-https://api.openai.com/v1}"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "${LLM_EMBEDDING_MODEL:-text-embedding-3-small}"
+      chat: "${LLM_CHAT_MODEL:-gpt-4o-mini}"
+    request:
+      batch_size: ${BATCH_SIZE:-50}
+      timeout_s: ${TIMEOUT_S:-30}
+      max_retries: ${MAX_RETRIES:-3}
+    embeddings:
+      vector_size: ${VECTOR_SIZE:-1536}
+  processing:
     chunk_size: ${CHUNK_SIZE:-1500}
     chunk_overlap: ${CHUNK_OVERLAP:-200}
 
@@ -526,8 +586,15 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    api_key: "${OPENAI_API_KEY}"
+  llm:
+    provider: "${LLM_PROVIDER:-openai}"
+    base_url: "${LLM_BASE_URL:-https://api.openai.com/v1}"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "${LLM_EMBEDDING_MODEL:-text-embedding-3-small}"
+      chat: "${LLM_CHAT_MODEL:-gpt-4o-mini}"
+    embeddings:
+      vector_size: ${VECTOR_SIZE:-1536}
   file_conversion:
     max_file_size: ${MAX_FILE_SIZE:-52428800} # 50MB default
 
@@ -560,9 +627,16 @@ global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  embedding:
-    api_key: "${OPENAI_API_KEY}"
-  chunking:
+  llm:
+    provider: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "text-embedding-3-small"
+      chat: "gpt-4o-mini"
+    embeddings:
+      vector_size: 1536
+  processing:
     chunk_size: 1500
     chunk_overlap: 200
 
@@ -584,22 +658,13 @@ projects:
 ### Configuration Testing Workflow
 
 ```bash
-# 1. Display current configuration
+# 1. Display current configuration (includes all projects and status)
 qdrant-loader config --workspace .
 
-# 2. Validate project configurations
-qdrant-loader project validate --workspace .
-
-# 3. List all projects
-qdrant-loader project list --workspace .
-
-# 4. Check project status
-qdrant-loader project status --workspace .
-
-# 5. Initialize QDrant collection
+# 2. Initialize QDrant collection
 qdrant-loader init --workspace .
 
-# 6. Process data
+# 3. Process data
 qdrant-loader ingest --workspace .
 ```
 
@@ -609,8 +674,8 @@ qdrant-loader ingest --workspace .
 # Monitor resource usage during processing
 top -p $(pgrep -f qdrant-loader)
 
-# Check project status
-qdrant-loader project status --workspace .
+# Check configuration and project status
+qdrant-loader config --workspace .
 
 # Measure processing time
 time qdrant-loader ingest --workspace .

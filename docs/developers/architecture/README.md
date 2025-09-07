@@ -88,14 +88,14 @@ QDrant Loader is built on several key architectural principles:
 - **Data Connectors** - Fetch content from various data sources using BaseConnector interface
 - **File Converters** - Convert files to text using MarkItDown library
 - **Content Processors** - Chunk text, extract metadata, and prepare for vectorization
-- **Embedding Service** - Generate embeddings using OpenAI API
+- **LLM Service** - Generate embeddings using configurable LLM providers (OpenAI, Azure OpenAI, Ollama)
 - **State Manager** - SQLite-based tracking of processing state and incremental updates
 - **QDrant Manager** - Manage vector storage and collection operations
 
 #### 3. **External Services**
 
 - **QDrant Database** - Vector storage and similarity search
-- **OpenAI API** - Embedding generation (text-embedding-3-small)
+- **LLM APIs** - Embedding generation via provider-agnostic interface (OpenAI, Azure OpenAI, Ollama)
 - **Data Sources** - Git repositories, Confluence, JIRA, local files, web content
 
 ## 🔧 Core Components
@@ -176,17 +176,18 @@ Refactoring highlights (Large Files):
 - Markdown strategy split into `splitters/{base,standard,excel,fallback}.py` with facade `section_splitter.py`.
 - Code strategy modularized (`parser/*`, `metadata/*`, `processor/*`); orchestrators remain thin.
 
-### Embedding Service
+### LLM Service
 
-**Purpose**: Generate embeddings using OpenAI API
+**Purpose**: Generate embeddings using configurable LLM providers
 
 **Key Features**:
 
-- OpenAI API integration (text-embedding-3-small)
+- Provider-agnostic interface (OpenAI, Azure OpenAI, Ollama)
+- Configurable embedding models (text-embedding-3-small, text-embedding-ada-002, etc.)
 - Batch processing for efficiency
 - Error handling and retries
-- Configurable embedding models
 - Rate limiting compliance
+- Unified configuration via `global.llm.*`
 
 ### State Manager
 
@@ -412,7 +413,7 @@ class ConfluenceConnector(BaseConnector):
 - **Credential management** - Environment variables and secure configuration
 - **State isolation** - Project-based data separation
 - **Access control** - Per-source authentication
-- **Local processing** - No data sent to external services except for embeddings
+- **Local processing** - No data sent to external services except for LLM embedding generation
 
 ## 📚 Related Documentation
 

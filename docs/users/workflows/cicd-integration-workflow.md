@@ -61,8 +61,9 @@ QDRANT_URL=your_qdrant_instance_url
 QDRANT_API_KEY=your_qdrant_api_key
 QDRANT_COLLECTION_NAME=your_test_collection_name
 
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
+# LLM Configuration
+LLM_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key  # Legacy support
 
 # Optional: Data Source Credentials
 REPO_TOKEN=your_github_token
@@ -123,6 +124,7 @@ jobs:
           # Configure with GitHub secrets
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
+          sed -i "s|LLM_API_KEY=.*|LLM_API_KEY=${{ secrets.LLM_API_KEY }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
       - name: Run tests with coverage
         run: |
@@ -469,7 +471,8 @@ on:
 # Required secrets in GitHub repository settings
 QDRANT_URL=your_qdrant_instance
 QDRANT_API_KEY=your_api_key
-OPENAI_API_KEY=your_openai_key
+LLM_API_KEY=your_openai_key
+OPENAI_API_KEY=your_openai_key  # Legacy support
 
 # Optional data source credentials
 CONFLUENCE_TOKEN=your_confluence_token
@@ -510,7 +513,8 @@ projects:
 QDRANT_URL=placeholder
 QDRANT_API_KEY=placeholder
 QDRANT_COLLECTION_NAME=placeholder
-OPENAI_API_KEY=placeholder
+LLM_API_KEY=placeholder
+OPENAI_API_KEY=placeholder  # Legacy support
 STATE_DB_PATH=:memory:
 
 # Optional data sources
@@ -625,9 +629,9 @@ gh api repos/:owner/:repo/pages
 
 ```bash
 # Local testing with actual CLI commands
-qdrant-loader project validate --workspace .
 qdrant-loader config --workspace .
-qdrant-loader project status --workspace .
+qdrant-loader config --workspace .
+qdrant-loader config --workspace .
 
 # Check workflow artifacts
 gh run download <run-id> --name coverage-loader-<run-id>

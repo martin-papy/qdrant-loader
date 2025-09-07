@@ -254,7 +254,14 @@ sources:
 
 ```bash
 # .env - Basic configuration for MCP server
-# Required for MCP server
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-openai-api-key
 
 # QDrant configuration (defaults shown)
@@ -272,7 +279,14 @@ MCP_LOG_LEVEL=INFO
 
 ```bash
 # .env.development - Development environment
-# Core requirements
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-dev-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-dev-openai-api-key
 
 # QDrant (local development)
@@ -284,7 +298,7 @@ MCP_LOG_LEVEL=DEBUG
 MCP_LOG_FILE=./logs/mcp-dev.log
 
 # Config file substitution variables (examples)
-STATE_DB_PATH=:memory:
+STATE_DB_PATH=./data/qdrant-loader.db
 REPO_TOKEN=ghp_your-github-token
 CONFLUENCE_URL=https://company.atlassian.net
 CONFLUENCE_TOKEN=your-confluence-token
@@ -298,7 +312,14 @@ JIRA_EMAIL=dev@company.com
 
 ```bash
 # .env.production - Production environment
-# Core requirements
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-prod-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-prod-openai-api-key
 
 # QDrant (production)
@@ -312,7 +333,7 @@ MCP_LOG_FILE=/var/log/qdrant-loader/mcp.log
 MCP_DISABLE_CONSOLE_LOGGING=true
 
 # Config file substitution variables
-STATE_DB_PATH=/var/lib/qdrant-loader/state.db
+STATE_DB_PATH=/var/lib/qdrant-loader/data/qdrant-loader.db
 REPO_TOKEN=ghp_your-production-github-token
 CONFLUENCE_URL=https://company.atlassian.net
 CONFLUENCE_TOKEN=your-confluence-api-token
@@ -362,12 +383,17 @@ env $(xargs < .env.production) qdrant-loader config --workspace .
 #### Check Required Variables for MCP Server
 
 ```bash
-# Check if MCP server variables are set
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "Error: OPENAI_API_KEY not set (required for MCP server)"
+# Check if MCP server variables are set (new unified approach)
+if [ -z "$LLM_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
+  echo "Error: LLM_API_KEY or OPENAI_API_KEY not set (required for MCP server)"
   exit 1
 fi
-echo "✅ OPENAI_API_KEY is set"
+
+if [ -n "$LLM_API_KEY" ]; then
+  echo "✅ LLM_API_KEY is set (new unified approach)"
+elif [ -n "$OPENAI_API_KEY" ]; then
+  echo "✅ OPENAI_API_KEY is set (legacy support)"
+fi
 
 # Optional variables with defaults
 echo "QDRANT_URL: ${QDRANT_URL:-http://localhost:6333 (default)}"
@@ -383,12 +409,16 @@ echo "MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO (default)}"
 
 echo "=== Core Variables (directly used by code) ==="
 
-# Required for MCP server
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "❌ OPENAI_API_KEY is not set (required for MCP server)"
+# Required for MCP server (new unified approach)
+if [ -z "$LLM_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
+  echo "❌ LLM_API_KEY or OPENAI_API_KEY is not set (required for MCP server)"
   exit 1
-else
-  echo "✅ OPENAI_API_KEY is set"
+fi
+
+if [ -n "$LLM_API_KEY" ]; then
+  echo "✅ LLM_API_KEY is set (new unified approach)"
+elif [ -n "$OPENAI_API_KEY" ]; then
+  echo "✅ OPENAI_API_KEY is set (legacy support)"
 fi
 
 # Optional with defaults
@@ -423,7 +453,12 @@ echo "Environment validation complete!"
 
 ### For MCP Server Usage
 
-- [ ] **OPENAI_API_KEY** set (required)
+- [ ] **LLM_API_KEY** or **OPENAI_API_KEY** set (required)
+- [ ] **LLM_PROVIDER** configured (recommended: openai, ollama, openai_compat)
+- [ ] **LLM_BASE_URL** set (required for custom endpoints)
+- [ ] **LLM_EMBEDDING_MODEL** set (recommended)
+- [ ] **LLM_CHAT_MODEL** set (recommended)
+- [ ] **LLM_VECTOR_SIZE** configured (recommended, defaults to 1536)
 - [ ] **QDRANT_URL** configured (optional, defaults to localhost)
 - [ ] **QDRANT_COLLECTION_NAME** set (optional, defaults to "documents")
 - [ ] **MCP logging variables** configured if needed

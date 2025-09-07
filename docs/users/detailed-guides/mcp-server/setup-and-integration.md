@@ -15,7 +15,7 @@ The QDrant Loader MCP Server integrates with popular AI development tools throug
 
 ### 🚀 Advanced Search Capabilities
 
-The MCP server provides **8 powerful search tools**:
+The MCP server provides **10 powerful search tools**:
 
 #### Core Search Tools
 
@@ -31,13 +31,18 @@ The MCP server provides **8 powerful search tools**:
 - **🧩 Complementary Content** - Discover related and supporting materials
 - **📊 Document Clustering** - Group documents by content and relationships
 
+#### Document Expansion Tools
+
+- **📄 Expand Document** - Get detailed document information and context
+- **🔍 Expand Cluster** - Explore document clusters with detailed analysis
+
 ### What You'll Achieve
 
 After completing this guide, you'll have:
 
 - ✅ **MCP Server running** and accessible to your AI tool
 - ✅ **AI tool configured** to use your knowledge base with advanced search
-- ✅ **All 8 search capabilities** working in your development environment
+- ✅ **All 10 search capabilities** working in your development environment
 - ✅ **Cross-document intelligence** for analyzing document relationships
 - ✅ **Optimized performance** for your specific use case
 
@@ -50,7 +55,7 @@ Before starting, ensure you have:
 - **QDrant Loader** installed and configured
 - **QDrant database** running (local or cloud)
 - **Documents ingested** into your QDrant collection with semantic metadata
-- **OpenAI API key** for embeddings
+- **LLM API key** for embeddings (OpenAI, Azure OpenAI, or Ollama)
 - **AI development tool** installed
 
 ### Verification Steps
@@ -105,6 +110,15 @@ Create a `.env` file with your configuration:
 # .env file
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=documents
+
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-openai-api-key
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
 OPENAI_API_KEY=sk-your-openai-api-key
 
 # Optional: QDrant Cloud
@@ -115,6 +129,39 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 ```
 
 > **💡 Pro Tip**: `MCP_DISABLE_CONSOLE_LOGGING=true` significantly improves performance and prevents console spam in AI tools.
+
+## 🚀 Transport Modes (v0.6.0+)
+
+The QDrant Loader MCP Server supports **dual transport architecture** with MCP Protocol 2025-06-18 compliance:
+
+### 📡 Stdio Transport (Default)
+
+- **Best for**: Most AI tools (Cursor, Windsurf, Claude Desktop)
+- **Connection**: Direct subprocess communication
+- **Performance**: Fastest, lowest latency
+- **Setup**: Automatic (no additional configuration needed)
+
+### 🌐 HTTP Transport (Production)
+
+- **Best for**: Web-based clients, multiple concurrent connections
+- **Connection**: HTTP with Server-Sent Events (SSE) streaming
+- **Features**: Session management, health checks, CORS support
+- **Security**: Origin validation, localhost binding, DNS rebinding protection
+
+### Choosing Transport Mode
+
+```bash
+# Stdio mode (default) - for most AI tools
+mcp-qdrant-loader
+
+# HTTP mode - for web clients or production deployment
+mcp-qdrant-loader --transport http --port 8080
+
+# Check available transport options
+mcp-qdrant-loader --help
+```
+
+> **📝 Note**: Most AI tools (including Cursor) work best with stdio transport. Use HTTP transport for custom integrations or web-based clients.
 
 ## 🎨 Cursor IDE
 
@@ -158,8 +205,9 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
      "args": [],
      "env": {
        "QDRANT_URL": "http://localhost:6333",
-       "OPENAI_API_KEY": "your-openai-api-key",
        "QDRANT_COLLECTION_NAME": "documents",
+       "LLM_API_KEY": "your-openai-api-key",
+       "OPENAI_API_KEY": "your-openai-api-key",
        "MCP_DISABLE_CONSOLE_LOGGING": "true"
      }
    }
@@ -192,8 +240,9 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
          "args": [],
          "env": {
            "QDRANT_URL": "http://localhost:6333",
-           "OPENAI_API_KEY": "your-openai-api-key",
            "QDRANT_COLLECTION_NAME": "documents",
+           "LLM_API_KEY": "your-openai-api-key",
+           "OPENAI_API_KEY": "your-openai-api-key",
            "MCP_DISABLE_CONSOLE_LOGGING": "true"
          }
        }
@@ -517,7 +566,16 @@ Example: "Cluster our microservices documentation by related topics"
 ```bash
 # Required Configuration
 QDRANT_URL=http://localhost:6333  # QDrant instance URL
-OPENAI_API_KEY=sk-your-openai-api-key  # OpenAI API key for embeddings
+
+# LLM Configuration (new unified approach)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-your-openai-api-key  # LLM API key for embeddings
+LLM_EMBEDDING_MODEL=text-embedding-3-small
+LLM_CHAT_MODEL=gpt-4o-mini
+
+# Legacy (still supported)
+OPENAI_API_KEY=sk-your-openai-api-key
 
 # Optional Configuration
 QDRANT_COLLECTION_NAME=documents  # Collection name (default: "documents")
@@ -601,16 +659,18 @@ qdrant-loader status
 **Solutions**:
 
 ```bash
-# Check environment variable
+# Check environment variables
+echo $LLM_API_KEY
 echo $OPENAI_API_KEY
 
 # Test API key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+curl -H "Authorization: Bearer $LLM_API_KEY" \
   https://api.openai.com/v1/models
 
-# Set in configuration
+# Set in configuration (new approach)
 {
   "env": {
+    "LLM_API_KEY": "sk-your-actual-api-key",
     "OPENAI_API_KEY": "sk-your-actual-api-key"
   }
 }
@@ -808,7 +868,7 @@ The MCP server provides these search capabilities:
 
 **Your AI development tool is now enhanced with intelligent search capabilities!** 🚀
 
-With the MCP server properly configured, your AI tool can access and search your knowledge base using **8 powerful search tools**, providing contextual answers, navigating document relationships, detecting conflicts, and analyzing content to support your development workflow. The system provides semantic understanding and cross-document intelligence that goes far beyond simple keyword matching, making your development process more informed and efficient! ✨
+With the MCP server properly configured, your AI tool can access and search your knowledge base using **10 powerful search tools**, providing contextual answers, navigating document relationships, detecting conflicts, and analyzing content to support your development workflow. The system provides semantic understanding and cross-document intelligence that goes far beyond simple keyword matching, making your development process more informed and efficient! ✨
 
 ## 📚 Related Documentation
 
