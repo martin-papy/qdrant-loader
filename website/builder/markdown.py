@@ -626,11 +626,40 @@ class MarkdownProcessor:
         if not headings:
             return ""
 
-        toc_html = '<div class="toc"><h3>Table of Contents</h3><ul>'
+        toc_html = '<div class="toc"><h3>Table of Contents</h3>'
+        
+        # Build hierarchical structure
+        current_level = 0
+        open_lists = 0
+        
         for tag, heading_id, text in headings:
             level = int(tag[1])  # Extract number from h1, h2, etc.
-            indent = "  " * (level - 1)
-            toc_html += f'{indent}<li><a href="#{heading_id}">{text}</a></li>\n'
-        toc_html += "</ul></div>"
+            
+            # Handle level changes
+            if level > current_level:
+                # Open new nested lists for deeper levels
+                while current_level < level:
+                    if current_level == 0:
+                        toc_html += '<ul>'
+                    else:
+                        toc_html += '<ul>'
+                    open_lists += 1
+                    current_level += 1
+            elif level < current_level:
+                # Close lists for shallower levels
+                while current_level > level:
+                    toc_html += '</ul>'
+                    open_lists -= 1
+                    current_level -= 1
+            
+            # Add the current heading
+            toc_html += f'<li><a href="#{heading_id}">{text}</a></li>\n'
+        
+        # Close all remaining open lists
+        while open_lists > 0:
+            toc_html += '</ul>'
+            open_lists -= 1
+            
+        toc_html += '</div>'
 
         return toc_html

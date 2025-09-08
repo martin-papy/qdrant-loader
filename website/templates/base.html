@@ -110,6 +110,11 @@
             --info-color: #4299e1;
         }
 
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 6rem; /* Account for sticky header height */
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
@@ -250,6 +255,52 @@
 
         .toc .list-group-item a:hover {
             color: var(--primary-color);
+        }
+
+        /* Hierarchical TOC styling */
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .toc ul ul {
+            padding-left: 1.2rem;
+            margin-top: 0.25rem;
+        }
+
+        .toc li {
+            margin-bottom: 0.25rem;
+        }
+
+        .toc li a {
+            color: #495057;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: block;
+            padding: 0.125rem 0;
+            transition: color 0.2s ease;
+        }
+
+        .toc li a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Different font weights for different heading levels */
+        .toc > ul > li > a {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .toc ul ul li a {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .toc ul ul ul li a {
+            font-weight: 400;
+            font-size: 0.8rem;
+            opacity: 0.9;
         }
 
         /* Code block improvements - Clean and crisp */
