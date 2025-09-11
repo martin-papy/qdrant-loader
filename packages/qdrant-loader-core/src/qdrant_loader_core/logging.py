@@ -368,17 +368,11 @@ class LoggingConfig:
         if cls._file_handler is not None:
             try:
                 root_logger.removeHandler(cls._file_handler)
-                try:
-                    cls._file_handler.close()
-                except Exception:
-                    pass
+                cls._file_handler.close()
             except Exception:
                 pass
-            finally:
-                cls._installed_handlers = [
-                    h for h in cls._installed_handlers if h is not cls._file_handler
-                ]
-                cls._file_handler = None
+            cls._installed_handlers = [h for h in cls._installed_handlers if h is not cls._file_handler]
+            cls._file_handler = None
 
         # Add new file handler if requested
         if file:
@@ -392,14 +386,5 @@ class LoggingConfig:
 
         # Update current config tuple if available
         if cls._current_config is not None:
-            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = (
-                cls._current_config
-            )
-            cls._current_config = (
-                level,
-                fmt,
-                file,
-                clean_output,
-                suppress_qdrant_warnings,
-                disable_console,
-            )
+            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
+            cls._current_config = (level, fmt, file, clean_output, suppress_qdrant_warnings, disable_console)
