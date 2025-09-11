@@ -55,11 +55,16 @@ def _setup_logging(log_level: str, transport: str | None = None) -> None:
                 # Only switch file target (none in stdio; may be env provided)
                 LoggingConfig.reconfigure(file=os.getenv("MCP_LOG_FILE"))  # type: ignore[attr-defined]
             else:
-                LoggingConfig.setup(level=level, format=("json" if disable_console_logging else "console"))
+                LoggingConfig.setup(
+                    level=level,
+                    format=("json" if disable_console_logging else "console"),
+                )
         else:
             # Force replace handlers on older versions
             logging.getLogger().handlers = []
-            LoggingConfig.setup(level=level, format=("json" if disable_console_logging else "console"))
+            LoggingConfig.setup(
+                level=level, format=("json" if disable_console_logging else "console")
+            )
     except Exception as e:
         print(f"Failed to setup logging: {e}", file=sys.stderr)
 

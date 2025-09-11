@@ -39,6 +39,7 @@ from .workspace import WorkspaceConfig
 # Load environment variables from .env file
 load_dotenv(override=False)
 
+
 def _get_logger():
     return LoggingConfig.get_logger(__name__)
 
@@ -379,7 +380,9 @@ class Settings(BaseSettings):
             # Step 1: Load environment variables first
             if env_path is not None:
                 # Custom env file specified - load only this file
-                _get_logger().debug("Loading custom environment file", path=str(env_path))
+                _get_logger().debug(
+                    "Loading custom environment file", path=str(env_path)
+                )
                 if not env_path.exists():
                     raise FileNotFoundError(f"Environment file not found: {env_path}")
                 load_dotenv(env_path, override=True)

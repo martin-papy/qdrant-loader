@@ -154,7 +154,9 @@ def get_workspace_env_override(workspace_config: WorkspaceConfig) -> dict[str, s
         "STATE_DB_PATH": str(workspace_config.database_path),
     }
 
-    _get_logger().debug("Generated workspace environment overrides", overrides=overrides)
+    _get_logger().debug(
+        "Generated workspace environment overrides", overrides=overrides
+    )
     return overrides
 
 

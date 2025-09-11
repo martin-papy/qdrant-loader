@@ -6,27 +6,26 @@ def test_redaction_filter_masks_and_marks(caplog):
     caplog.set_level(logging.INFO)
 
     logging_mod = import_module("qdrant_loader_core.logging")
-    LoggingConfig = logging_mod.LoggingConfig
     RedactionFilter = logging_mod.RedactionFilter
 
     # Keep root handlers to restore after test to avoid side-effects
     root = logging.getLogger()
     prev_handlers = list(root.handlers)
-    
+
     # Create a custom handler that captures messages after redaction
     captured_messages = []
-    
+
     class TestHandler(logging.Handler):
         def emit(self, record):
             # Format the record to get the final message
             msg = self.format(record)
             captured_messages.append(msg)
-    
+
     try:
         # Clear existing handlers and add our test handler with redaction filter
         for h in list(root.handlers):
             root.removeHandler(h)
-        
+
         test_handler = TestHandler()
         test_handler.setLevel(logging.INFO)
         test_handler.addFilter(RedactionFilter())
@@ -41,13 +40,18 @@ def test_redaction_filter_masks_and_marks(caplog):
         logger.info("arg test %s", "sk-ABCDEFGH")
 
         # Redaction marker should appear at least once
-        assert any("***REDACTED***" in m for m in captured_messages), f"Messages: {captured_messages}"
+        assert any(
+            "***REDACTED***" in m for m in captured_messages
+        ), f"Messages: {captured_messages}"
         # Original secrets should not appear
-        assert all("sk-ABCDEFGHIJKLMN" not in m for m in captured_messages), f"Messages: {captured_messages}"
+        assert all(
+            "sk-ABCDEFGHIJKLMN" not in m for m in captured_messages
+        ), f"Messages: {captured_messages}"
         # Mask should keep first/last 2 chars for long secrets.
         # Depending on exact pattern matched, the visible context may be key or value.
         assert any(
-            ("sk***REDACTED***MN" in m) or ("ap***REDACTED***MN" in m) for m in captured_messages
+            ("sk***REDACTED***MN" in m) or ("ap***REDACTED***MN" in m)
+            for m in captured_messages
         ), f"Messages: {captured_messages}"
     finally:
         # Restore handlers

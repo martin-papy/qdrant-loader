@@ -44,12 +44,16 @@ async def run_init_command(
                 if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
                     LoggingConfig.reconfigure(file="qdrant-loader.log")  # type: ignore[attr-defined]
                 else:
-                    LoggingConfig.setup(level=log_level, format="console", file="qdrant-loader.log")
+                    LoggingConfig.setup(
+                        level=log_level, format="console", file="qdrant-loader.log"
+                    )
             else:
                 import logging as _py_logging
 
                 _py_logging.getLogger().handlers = []
-                LoggingConfig.setup(level=log_level, format="console", file="qdrant-loader.log")
+                LoggingConfig.setup(
+                    level=log_level, format="console", file="qdrant-loader.log"
+                )
             logger = LoggingConfig.get_logger(__name__)
 
             # Check for updates (non-blocking semantics preserved by immediate return)
