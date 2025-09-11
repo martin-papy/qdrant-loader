@@ -193,14 +193,17 @@ class LoggingConfig:
     _initialized = False
     _installed_handlers: list[logging.Handler] = []
     _file_handler: logging.FileHandler | None = None
-    _current_config: tuple[
-        str,  # level
-        str,  # format
-        str | None,  # file
-        bool,  # clean_output
-        bool,  # suppress_qdrant_warnings
-        bool,  # disable_console
-    ] | None = None
+    _current_config: (
+        tuple[
+            str,  # level
+            str,  # format
+            str | None,  # file
+            bool,  # clean_output
+            bool,  # suppress_qdrant_warnings
+            bool,  # disable_console
+        ]
+        | None
+    ) = None
 
     @classmethod
     def setup(
@@ -389,5 +392,14 @@ class LoggingConfig:
 
         # Update current config tuple if available
         if cls._current_config is not None:
-            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
-            cls._current_config = (level, fmt, file, clean_output, suppress_qdrant_warnings, disable_console)
+            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = (
+                cls._current_config
+            )
+            cls._current_config = (
+                level,
+                fmt,
+                file,
+                clean_output,
+                suppress_qdrant_warnings,
+                disable_console,
+            )

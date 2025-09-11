@@ -268,8 +268,8 @@ class TestCreateWorkspaceStructure:
             workspace_path = Path(temp_dir) / "new_workspace"
 
             with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
-            mock_logger = Mock()
-            mock_get_logger.return_value = mock_logger
+                mock_logger = Mock()
+                mock_get_logger.return_value = mock_logger
                 create_workspace_structure(workspace_path)
 
                 # Verify directories were created

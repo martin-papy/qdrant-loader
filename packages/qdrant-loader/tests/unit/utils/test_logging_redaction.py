@@ -10,19 +10,19 @@ def test_logging_redacts_sensitive_fields(caplog):
 
     # Create a custom handler to capture redacted messages
     captured_messages = []
-    
+
     class TestHandler(logging.Handler):
         def emit(self, record):
             # Format the record to get the final message after redaction
             msg = self.format(record)
             captured_messages.append(msg)
-    
+
     # Add our test handler to the root logger
     root_logger = logging.getLogger()
     test_handler = TestHandler()
     test_handler.setLevel(logging.DEBUG)
     root_logger.addHandler(test_handler)
-    
+
     try:
         logger.info(
             "config_dump",
@@ -53,19 +53,19 @@ def test_stdlib_logs_are_redacted(caplog):
 
     # Create a custom handler to capture redacted messages
     captured_messages = []
-    
+
     class TestHandler(logging.Handler):
         def emit(self, record):
             # Format the record to get the final message after redaction
             msg = self.format(record)
             captured_messages.append(msg)
-    
+
     # Add our test handler to the root logger
     root_logger = logging.getLogger()
     test_handler = TestHandler()
     test_handler.setLevel(logging.DEBUG)
     root_logger.addHandler(test_handler)
-    
+
     try:
         logger.info(
             "Sending token=%s and api_key=%s",

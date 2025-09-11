@@ -200,8 +200,10 @@ def test_logging_config_suppress_qdrant_warnings():
 
         # Check if qdrant_client logger was accessed (either directly or via core)
         # The implementation may delegate to core logging which handles this
-        logger_calls = [call[0][0] for call in mock_get_logger.call_args_list if call[0]]
-        
+        logger_calls = [
+            call[0][0] for call in mock_get_logger.call_args_list if call[0]
+        ]
+
         # If core logging is available, it handles qdrant suppression internally
         # If not, the fallback should add the filter
         if "qdrant_client" in logger_calls:

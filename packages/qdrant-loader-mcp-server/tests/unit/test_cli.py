@@ -107,7 +107,7 @@ class TestLoggingSetup:
         # Mock that LoggingConfig is not initialized and has no reconfigure method
         mock_logging_config._initialized = False
         mock_logging_config.reconfigure = None
-        
+
         _setup_logging("DEBUG")
 
         mock_logging_config.setup.assert_called_once_with(
@@ -121,7 +121,7 @@ class TestLoggingSetup:
         # Mock that LoggingConfig is not initialized and has no reconfigure method
         mock_logging_config._initialized = False
         mock_logging_config.reconfigure = None
-        
+
         _setup_logging("INFO")
 
         mock_logging_config.setup.assert_called_once_with(level="INFO", format="json")
@@ -133,7 +133,7 @@ class TestLoggingSetup:
         # Mock that LoggingConfig is not initialized and has no reconfigure method
         mock_logging_config._initialized = False
         mock_logging_config.reconfigure = None
-        
+
         _setup_logging("WARNING")
 
         mock_logging_config.setup.assert_called_once_with(
