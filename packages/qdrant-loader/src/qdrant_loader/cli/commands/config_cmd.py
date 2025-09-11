@@ -17,15 +17,19 @@ def run_config_command(
     try:
         # Maintain test expectation: log via workspace-logger as before
         workspace_config = _setup_workspace_impl(workspace) if workspace else None
-        LoggingConfig.setup(
-            level=log_level,
-            format="console",
-            file=(
-                str(workspace_config.logs_path)
-                if workspace_config
-                else "qdrant-loader.log"
-            ),
+        log_file = (
+            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
         )
+        if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
+            if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
+                LoggingConfig.reconfigure(file=log_file)  # type: ignore[attr-defined]
+            else:
+                LoggingConfig.setup(level=log_level, format="console", file=log_file)
+        else:
+            import logging as _py_logging
+
+            _py_logging.getLogger().handlers = []
+            LoggingConfig.setup(level=log_level, format="console", file=log_file)
 
         echo("Current Configuration:")
         output = _run_show_config(workspace, config, env, log_level)

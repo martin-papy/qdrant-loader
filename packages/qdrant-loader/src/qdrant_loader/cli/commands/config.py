@@ -36,11 +36,37 @@ def run_show_config(
         if workspace:
             workspace_config = _setup_workspace_impl(workspace)
 
-        # Setup logging with workspace support
+        # Setup/reconfigure logging once with workspace support
         log_file = (
             str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
         )
-        LoggingConfig.setup(level=log_level, format="console", file=log_file)
+        if getattr(LoggingConfig, "reconfigure", None):  # Core supports reconfigure
+            if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
+                LoggingConfig.reconfigure(file=log_file)  # type: ignore[attr-defined]
+            else:
+                LoggingConfig.setup(level=log_level, format="console", file=log_file)
+        else:
+            # Compatibility path when running with an older core: clear root handlers
+            # to avoid duplicates, then perform a full setup once.
+            import logging as _py_logging
+
+            _py_logging.getLogger().handlers = []
+            LoggingConfig.setup(level=log_level, format="console", file=log_file)
+
+        # Emit a single set of workspace-related info logs (no duplicates)
+        if workspace_config:
+            logger = LoggingConfig.get_logger(__name__)
+            logger.info(
+                "Using workspace", workspace=str(workspace_config.workspace_path)
+            )
+            if getattr(workspace_config, "env_path", None):
+                logger.info(
+                    "Environment file found", env_path=str(workspace_config.env_path)
+                )
+            if getattr(workspace_config, "config_path", None):
+                logger.info(
+                    "Config file found", config_path=str(workspace_config.config_path)
+                )
 
         # Load configuration (skip validation to avoid directory prompts)
         _load_config_with_workspace(workspace_config, config, env, skip_validation=True)
