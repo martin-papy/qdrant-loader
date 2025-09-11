@@ -104,6 +104,10 @@ class TestLoggingSetup:
     @patch.dict(os.environ, {}, clear=True)
     def test_setup_logging_console_enabled(self, mock_logging_config):
         """Test logging setup with console logging enabled."""
+        # Mock that LoggingConfig is not initialized and has no reconfigure method
+        mock_logging_config._initialized = False
+        mock_logging_config.reconfigure = None
+
         _setup_logging("DEBUG")
 
         mock_logging_config.setup.assert_called_once_with(
@@ -114,6 +118,10 @@ class TestLoggingSetup:
     @patch.dict(os.environ, {"MCP_DISABLE_CONSOLE_LOGGING": "true"})
     def test_setup_logging_console_disabled(self, mock_logging_config):
         """Test logging setup with console logging disabled."""
+        # Mock that LoggingConfig is not initialized and has no reconfigure method
+        mock_logging_config._initialized = False
+        mock_logging_config.reconfigure = None
+
         _setup_logging("INFO")
 
         mock_logging_config.setup.assert_called_once_with(level="INFO", format="json")
@@ -122,6 +130,10 @@ class TestLoggingSetup:
     @patch.dict(os.environ, {"MCP_DISABLE_CONSOLE_LOGGING": "TRUE"})
     def test_setup_logging_console_disabled_case_insensitive(self, mock_logging_config):
         """Test logging setup with case insensitive console logging disable."""
+        # Mock that LoggingConfig is not initialized and has no reconfigure method
+        mock_logging_config._initialized = False
+        mock_logging_config.reconfigure = None
+
         _setup_logging("WARNING")
 
         mock_logging_config.setup.assert_called_once_with(
@@ -132,6 +144,9 @@ class TestLoggingSetup:
     @patch("builtins.print")
     def test_setup_logging_exception_handling(self, mock_print, mock_logging_config):
         """Test logging setup exception handling."""
+        # Mock that LoggingConfig is not initialized and has no reconfigure method
+        mock_logging_config._initialized = False
+        mock_logging_config.reconfigure = None
         mock_logging_config.setup.side_effect = Exception("Logging error")
 
         _setup_logging("ERROR")

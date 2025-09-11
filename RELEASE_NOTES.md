@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 0.7.3 - Sept 11, 2025
+
+### Logging System Fixes
+
+- **Fixed logging duplication**: Resolved CLI commands printing each log message 2-4 times due to multiple handler setup calls
+- **Unified logging architecture**: Centralized logging configuration across all packages with idempotent setup and new `reconfigure()` method
+
 ## Version 0.7.2 - Sept 05, 2025
 
 ### Release Process Enhancements

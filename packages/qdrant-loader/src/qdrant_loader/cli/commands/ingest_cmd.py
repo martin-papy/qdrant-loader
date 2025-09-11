@@ -45,11 +45,20 @@ async def run_ingest_command(
         if workspace:
             workspace_config = _setup_workspace_impl(workspace)
 
-        # Setup logging with workspace support
+        # Setup/reconfigure logging with workspace support
         log_file = (
             str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
         )
-        LoggingConfig.setup(level=log_level, format="console", file=log_file)
+        if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
+            if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
+                LoggingConfig.reconfigure(file=log_file)  # type: ignore[attr-defined]
+            else:
+                LoggingConfig.setup(level=log_level, format="console", file=log_file)
+        else:
+            import logging as _py_logging
+
+            _py_logging.getLogger().handlers = []
+            LoggingConfig.setup(level=log_level, format="console", file=log_file)
 
         # Load configuration
         _load_config_with_workspace(workspace_config, config, env)

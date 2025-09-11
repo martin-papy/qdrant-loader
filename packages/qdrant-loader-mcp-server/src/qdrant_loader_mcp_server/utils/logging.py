@@ -130,3 +130,33 @@ class LoggingConfig:
         if not cls._initialized:
             cls.setup()
         return structlog.get_logger(name)
+
+    @classmethod
+    def reconfigure(cls, *, file: str | None = None) -> None:
+        """Lightweight file reconfiguration for MCP server wrapper.
+
+        If core logging is present and supports reconfigure, delegate to it.
+        Otherwise, force-replace root handlers with a new file handler (and keep stderr
+        if console is enabled via env).
+        """
+        disable_console_logging = (
+            os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
+        )
+
+        if CoreLoggingConfig is not None and hasattr(CoreLoggingConfig, "reconfigure"):
+            CoreLoggingConfig.reconfigure(file=file)  # type: ignore
+        else:
+            handlers: list[logging.Handler] = []
+            if not disable_console_logging:
+                stderr_handler = logging.StreamHandler(sys.stderr)
+                stderr_handler.setFormatter(logging.Formatter("%(message)s"))
+                handlers.append(stderr_handler)
+            if file:
+                file_handler = logging.FileHandler(file)
+                file_handler.setFormatter(CleanFormatter("%(message)s"))
+                handlers.append(file_handler)
+            logging.basicConfig(level=getattr(logging, (cls._current_config or ("INFO",))[0]), handlers=handlers, force=True)  # type: ignore
+
+        if cls._current_config is not None:
+            level, fmt, _, suppress = cls._current_config
+            cls._current_config = (level, fmt, file, suppress)

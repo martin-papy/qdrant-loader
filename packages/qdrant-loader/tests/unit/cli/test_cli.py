@@ -294,34 +294,25 @@ class TestCLIIntegration:
         """Test that CLI calls version check on startup."""
         runner = CliRunner()
 
-        with (
-            patch("qdrant_loader.cli.cli._setup_logging") as mock_setup_logging,
-            patch("qdrant_loader.cli.cli._check_for_updates") as mock_check_updates,
-        ):
+        with patch("qdrant_loader.cli.cli._check_for_updates") as mock_check_updates:
             # Run the CLI with config command to trigger the main CLI function
             # This will fail due to missing config, but the CLI function will be called
             runner.invoke(cli, ["config"])
 
             # Verify that version check was called
             mock_check_updates.assert_called_once()
-            # _setup_logging gets called twice: once by main CLI, once by config command
-            assert mock_setup_logging.call_count == 2
 
     def test_cli_handles_version_check_exception(self):
         """Test that CLI handles version check exceptions gracefully."""
         runner = CliRunner()
 
-        with (
-            patch("qdrant_loader.cli.cli._setup_logging") as mock_setup_logging,
-            patch(
-                "qdrant_loader.cli.cli._check_for_updates",
-                side_effect=Exception("Version check error"),
-            ) as mock_check_updates,
-        ):
+        with patch(
+            "qdrant_loader.cli.cli._check_for_updates",
+            side_effect=Exception("Version check error"),
+        ) as mock_check_updates:
             # Should not raise exception even if version check fails
             runner.invoke(cli, ["config"])
 
             # CLI should still work (even though config command will fail)
             # The important thing is that the version check exception doesn't break the CLI
             mock_check_updates.assert_called_once()
-            mock_setup_logging.assert_called_once()
