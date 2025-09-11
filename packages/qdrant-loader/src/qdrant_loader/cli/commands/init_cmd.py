@@ -39,10 +39,17 @@ async def run_init_command(
             # Validate flag combinations
             validate_workspace_flags(workspace, config, env)
 
-            # Setup logging first (workspace-aware later)
-            LoggingConfig.setup(
-                level=log_level, format="console", file="qdrant-loader.log"
-            )
+            # Setup logging first (workspace-aware later). Use core reconfigure if available.
+            if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
+                if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
+                    LoggingConfig.reconfigure(file="qdrant-loader.log")  # type: ignore[attr-defined]
+                else:
+                    LoggingConfig.setup(level=log_level, format="console", file="qdrant-loader.log")
+            else:
+                import logging as _py_logging
+
+                _py_logging.getLogger().handlers = []
+                LoggingConfig.setup(level=log_level, format="console", file="qdrant-loader.log")
             logger = LoggingConfig.get_logger(__name__)
 
             # Check for updates (non-blocking semantics preserved by immediate return)
@@ -76,7 +83,13 @@ async def run_init_command(
                 if workspace_config
                 else "qdrant-loader.log"
             )
-            LoggingConfig.setup(level=log_level, format="console", file=log_file)
+            if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
+                LoggingConfig.reconfigure(file=log_file)  # type: ignore[attr-defined]
+            else:
+                import logging as _py_logging
+
+                _py_logging.getLogger().handlers = []
+                LoggingConfig.setup(level=log_level, format="console", file=log_file)
 
             # Load configuration
             _load_config_with_workspace(workspace_config, config, env)
