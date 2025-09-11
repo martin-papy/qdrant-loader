@@ -39,8 +39,8 @@ from .workspace import WorkspaceConfig
 # Load environment variables from .env file
 load_dotenv(override=False)
 
-# Get logger without initializing it
-logger = LoggingConfig.get_logger(__name__)
+def _get_logger():
+    return LoggingConfig.get_logger(__name__)
 
 
 # Lazy import function for connector configs
@@ -139,7 +139,7 @@ def initialize_config(
     global _global_settings
     try:
         # Proceed with initialization
-        logger.debug(
+        _get_logger().debug(
             "Initializing configuration",
             yaml_path=str(yaml_path),
             env_path=str(env_path) if env_path else None,
@@ -147,10 +147,10 @@ def initialize_config(
         _global_settings = Settings.from_yaml(
             yaml_path, env_path=env_path, skip_validation=skip_validation
         )
-        logger.debug("Successfully initialized configuration")
+        _get_logger().debug("Successfully initialized configuration")
 
     except Exception as e:
-        logger.error(
+        _get_logger().error(
             "Failed to initialize configuration", error=str(e), yaml_path=str(yaml_path)
         )
         raise
@@ -167,7 +167,7 @@ def initialize_config_with_workspace(
     """
     global _global_settings
     try:
-        logger.debug(
+        _get_logger().debug(
             "Initializing configuration with workspace",
             workspace=str(workspace_config.workspace_path),
             config_path=str(workspace_config.config_path),
@@ -193,7 +193,7 @@ def initialize_config_with_workspace(
             and original_db_path != ":memory:"
             and original_db_path != workspace_db_path
         ):
-            logger.warning(
+            _get_logger().warning(
                 "Database path in config.yaml is ignored in workspace mode",
                 config_database_path=original_db_path,
                 workspace_database_path=workspace_db_path,
@@ -204,18 +204,18 @@ def initialize_config_with_workspace(
             workspace_db_path
         )
 
-        logger.debug(
+        _get_logger().debug(
             "Set workspace database path",
             database_path=workspace_db_path,
         )
 
-        logger.debug(
+        _get_logger().debug(
             "Successfully initialized configuration with workspace",
             workspace=str(workspace_config.workspace_path),
         )
 
     except Exception as e:
-        logger.error(
+        _get_logger().error(
             "Failed to initialize configuration with workspace",
             error=str(e),
             workspace=str(workspace_config.workspace_path),
@@ -243,7 +243,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")  # type: ignore
     def validate_source_configs(self) -> "Settings":
         """Validate that required configuration is present for configured sources."""
-        logger.debug("Validating source configurations")
+        _get_logger().debug("Validating source configurations")
 
         # Validate that qdrant configuration is present in global config
         if not self.global_config.qdrant:
@@ -263,7 +263,7 @@ class Settings(BaseSettings):
         # Note: Source validation is now handled at the project level
         # Each project's sources are validated when the project is processed
 
-        logger.debug("Source configuration validation successful")
+        _get_logger().debug("Source configuration validation successful")
         return self
 
     @property
@@ -341,7 +341,7 @@ class Settings(BaseSettings):
                     # Only warn about missing variables that are commonly required
                     # Skip STATE_DB_PATH as it's often overridden in workspace mode
                     if var_name not in ["STATE_DB_PATH"]:
-                        logger.warning(
+                        _get_logger().warning(
                             "Environment variable not found", variable=var_name
                         )
                     continue
@@ -374,18 +374,18 @@ class Settings(BaseSettings):
         Returns:
             Settings: Loaded configuration.
         """
-        logger.debug("Loading configuration from YAML", path=str(config_path))
+        _get_logger().debug("Loading configuration from YAML", path=str(config_path))
         try:
             # Step 1: Load environment variables first
             if env_path is not None:
                 # Custom env file specified - load only this file
-                logger.debug("Loading custom environment file", path=str(env_path))
+                _get_logger().debug("Loading custom environment file", path=str(env_path))
                 if not env_path.exists():
                     raise FileNotFoundError(f"Environment file not found: {env_path}")
                 load_dotenv(env_path, override=True)
             else:
                 # Load default .env file if it exists
-                logger.debug("Loading default environment variables")
+                _get_logger().debug("Loading default environment variables")
                 load_dotenv(override=False)
 
             # Step 2: Load YAML config
@@ -393,7 +393,7 @@ class Settings(BaseSettings):
                 config_data = yaml.safe_load(f)
 
             # Step 3: Process all environment variables in config using substitution
-            logger.debug("Processing environment variables in configuration")
+            _get_logger().debug("Processing environment variables in configuration")
             config_data = cls._substitute_env_vars(config_data)
 
             # Step 4: Use multi-project parser to parse configuration
@@ -407,17 +407,17 @@ class Settings(BaseSettings):
                 projects_config=parsed_config.projects_config,
             )
 
-            logger.debug("Successfully created Settings instance")
+            _get_logger().debug("Successfully created Settings instance")
             return settings
 
         except yaml.YAMLError as e:
-            logger.error("Failed to parse YAML configuration", error=str(e))
+            _get_logger().error("Failed to parse YAML configuration", error=str(e))
             raise
         except ValidationError as e:
-            logger.error("Configuration validation failed", error=str(e))
+            _get_logger().error("Configuration validation failed", error=str(e))
             raise
         except Exception as e:
-            logger.error("Unexpected error loading configuration", error=str(e))
+            _get_logger().error("Unexpected error loading configuration", error=str(e))
             raise
 
     def to_dict(self) -> dict:

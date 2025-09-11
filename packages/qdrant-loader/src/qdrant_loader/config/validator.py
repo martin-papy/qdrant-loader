@@ -9,7 +9,9 @@ from typing import Any
 
 from ..utils.logging import LoggingConfig
 
-logger = LoggingConfig.get_logger(__name__)
+
+def _get_logger():
+    return LoggingConfig.get_logger(__name__)
 
 
 class ConfigValidator:
@@ -28,7 +30,7 @@ class ConfigValidator:
         Raises:
             ValueError: If configuration structure is invalid
         """
-        logger.debug("Validating configuration structure")
+        _get_logger().debug("Validating configuration structure")
 
         # Check for required sections
         if not isinstance(config_data, dict):
@@ -45,7 +47,7 @@ class ConfigValidator:
         if "global" in config_data:
             self._validate_global_section(config_data["global"])
 
-        logger.debug("Configuration structure validation completed")
+        _get_logger().debug("Configuration structure validation completed")
 
     def _validate_projects_section(self, projects_data: Any) -> None:
         """Validate the projects section.
@@ -154,7 +156,7 @@ class ConfigValidator:
         # Allow empty sources section for testing purposes
         # In production, users would typically have at least one source configured
         if not sources_data:
-            logger.debug(
+            _get_logger().debug(
                 "Sources section is empty - this is allowed but no data will be ingested"
             )
             return
@@ -233,7 +235,7 @@ class ConfigValidator:
         # Check for reserved project IDs
         reserved_ids = {"default", "global", "admin", "system"}
         if project_id.lower() in reserved_ids:
-            logger.warning(
+            _get_logger().warning(
                 f"Project ID '{project_id}' is reserved and may cause conflicts"
             )
 

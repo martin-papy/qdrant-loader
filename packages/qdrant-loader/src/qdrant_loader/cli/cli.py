@@ -72,13 +72,6 @@ def _check_for_updates() -> None:
 
 def _setup_workspace(workspace_path: Path):
     workspace_config = _setup_workspace_impl(workspace_path)
-    # Re-log via this module's logger to satisfy tests patching _get_logger
-    lg = _get_logger()
-    lg.info("Using workspace", workspace=str(workspace_config.workspace_path))
-    if getattr(workspace_config, "env_path", None):
-        lg.info("Environment file found", env_path=str(workspace_config.env_path))
-    if getattr(workspace_config, "config_path", None):
-        lg.info("Config file found", config_path=str(workspace_config.config_path))
     return workspace_config
 
 
@@ -97,9 +90,6 @@ def _setup_workspace(workspace_path: Path):
 )
 def cli(log_level: str = "INFO") -> None:
     """QDrant Loader CLI."""
-    # Initialize basic logging configuration before other operations.
-    _setup_logging(log_level)
-
     # Check for available updates in background without blocking CLI startup.
     _check_for_updates()
 
@@ -403,10 +393,6 @@ def config(
 ):
     """Display current configuration."""
     try:
-        # Maintain test expectation: call _setup_logging again for the command
-        workspace_config = _setup_workspace(workspace) if workspace else None
-        _setup_logging(log_level, workspace_config)
-
         echo("Current Configuration:")
         from qdrant_loader.cli.commands.config import (
             run_show_config as _run_show_config,
