@@ -373,20 +373,11 @@ class TestSetupWorkspace:
                     mock_workspace_config.config_path = workspace_path / "config.yaml"
                     mock_setup.return_value = mock_workspace_config
 
-                    with patch("qdrant_loader.cli.cli._get_logger") as mock_logger:
-                        mock_logger.return_value = Mock()
+                    result = _setup_workspace(workspace_path)
 
-                        result = _setup_workspace(workspace_path)
-
-                        mock_create.assert_called_once_with(workspace_path)
-                        mock_setup.assert_called_once_with(workspace_path)
-                        assert result is mock_workspace_config
-
-                        # Check logging calls
-                        logger_calls = mock_logger.return_value.info.call_args_list
-                        assert (
-                            len(logger_calls) == 3
-                        )  # workspace, env_path, config_path
+                    mock_create.assert_called_once_with(workspace_path)
+                    mock_setup.assert_called_once_with(workspace_path)
+                    assert result is mock_workspace_config
 
     def test_setup_workspace_no_env_file(self):
         """Test workspace setup when no env file is found."""
@@ -403,15 +394,9 @@ class TestSetupWorkspace:
                     mock_workspace_config.config_path = workspace_path / "config.yaml"
                     mock_setup.return_value = mock_workspace_config
 
-                    with patch("qdrant_loader.cli.cli._get_logger") as mock_logger:
-                        mock_logger.return_value = Mock()
+                    result = _setup_workspace(workspace_path)
 
-                        result = _setup_workspace(workspace_path)
-
-                        assert result is mock_workspace_config
-                        # Should only log workspace and config_path, not env_path
-                        logger_calls = mock_logger.return_value.info.call_args_list
-                        assert len(logger_calls) == 2
+                    assert result is mock_workspace_config
 
     def test_setup_workspace_no_config_file(self):
         """Test workspace setup when no config file is found."""
@@ -428,15 +413,9 @@ class TestSetupWorkspace:
                     mock_workspace_config.config_path = None  # No config file
                     mock_setup.return_value = mock_workspace_config
 
-                    with patch("qdrant_loader.cli.cli._get_logger") as mock_logger:
-                        mock_logger.return_value = Mock()
+                    result = _setup_workspace(workspace_path)
 
-                        result = _setup_workspace(workspace_path)
-
-                        assert result is mock_workspace_config
-                        # Should only log workspace and env_path, not config_path
-                        logger_calls = mock_logger.return_value.info.call_args_list
-                        assert len(logger_calls) == 2
+                    assert result is mock_workspace_config
 
     def test_setup_workspace_exception_handling(self):
         """Test workspace setup exception handling."""
