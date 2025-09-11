@@ -23,16 +23,6 @@ def setup_workspace(workspace_path: Path):
 
         create_workspace_structure(workspace_path)
         workspace_config = _setup(workspace_path)
-        logger = LoggingConfig.get_logger(__name__)
-        logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
-        if workspace_config.env_path:
-            logger.info(
-                "Environment file found", env_path=str(workspace_config.env_path)
-            )
-        if workspace_config.config_path:
-            logger.info(
-                "Config file found", config_path=str(workspace_config.config_path)
-            )
         return workspace_config
     except ValueError as e:
         raise ClickException(str(e)) from e

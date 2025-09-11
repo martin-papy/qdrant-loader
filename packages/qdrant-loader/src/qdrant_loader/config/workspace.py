@@ -6,7 +6,9 @@ from pathlib import Path
 
 from qdrant_loader.utils.logging import LoggingConfig
 
-logger = LoggingConfig.get_logger(__name__)
+
+def _get_logger():
+    return LoggingConfig.get_logger(__name__)
 
 
 @dataclass
@@ -46,7 +48,7 @@ class WorkspaceConfig:
                 f"Cannot write to workspace directory: {self.workspace_path}"
             )
 
-        logger.debug(
+        _get_logger().debug(
             "Workspace configuration validated", workspace=str(self.workspace_path)
         )
 
@@ -63,7 +65,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
     Raises:
         ValueError: If workspace validation fails
     """
-    logger.debug("Setting up workspace", path=str(workspace_path))
+    _get_logger().debug("Setting up workspace", path=str(workspace_path))
 
     # Resolve to absolute path
     workspace_path = workspace_path.resolve()
@@ -89,7 +91,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
         database_path=database_path,
     )
 
-    logger.debug("Workspace setup completed", workspace=str(workspace_path))
+    _get_logger().debug("Workspace setup completed", workspace=str(workspace_path))
     return workspace_config
 
 
@@ -106,7 +108,7 @@ def validate_workspace(workspace_path: Path) -> bool:
         setup_workspace(workspace_path)
         return True
     except ValueError as e:
-        logger.debug(
+        _get_logger().debug(
             "Workspace validation failed", path=str(workspace_path), error=str(e)
         )
         return False
@@ -121,7 +123,7 @@ def create_workspace_structure(workspace_path: Path) -> None:
     Raises:
         OSError: If directory creation fails
     """
-    logger.debug("Creating workspace structure", path=str(workspace_path))
+    _get_logger().debug("Creating workspace structure", path=str(workspace_path))
 
     # Create workspace directory if it doesn't exist
     workspace_path.mkdir(parents=True, exist_ok=True)
@@ -136,7 +138,7 @@ def create_workspace_structure(workspace_path: Path) -> None:
     data_dir = workspace_path / "data"
     data_dir.mkdir(exist_ok=True)
 
-    logger.debug("Workspace structure created", workspace=str(workspace_path))
+    _get_logger().debug("Workspace structure created", workspace=str(workspace_path))
 
 
 def get_workspace_env_override(workspace_config: WorkspaceConfig) -> dict[str, str]:
@@ -152,7 +154,7 @@ def get_workspace_env_override(workspace_config: WorkspaceConfig) -> dict[str, s
         "STATE_DB_PATH": str(workspace_config.database_path),
     }
 
-    logger.debug("Generated workspace environment overrides", overrides=overrides)
+    _get_logger().debug("Generated workspace environment overrides", overrides=overrides)
     return overrides
 
 
@@ -180,4 +182,4 @@ def validate_workspace_flags(
                 "Cannot use --workspace with --env flag. Use either workspace mode or individual file flags."
             )
 
-        logger.debug("Workspace flag validation passed")
+        _get_logger().debug("Workspace flag validation passed")

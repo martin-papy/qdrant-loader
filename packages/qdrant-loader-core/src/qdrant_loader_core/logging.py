@@ -191,6 +191,16 @@ class LoggingConfig:
     """Core logging setup with structlog + stdlib redaction and filters."""
 
     _initialized = False
+    _installed_handlers: list[logging.Handler] = []
+    _file_handler: logging.FileHandler | None = None
+    _current_config: tuple[
+        str,  # level
+        str,  # format
+        str | None,  # file
+        bool,  # clean_output
+        bool,  # suppress_qdrant_warnings
+        bool,  # disable_console
+    ] | None = None
 
     @classmethod
     def setup(
@@ -214,8 +224,51 @@ class LoggingConfig:
         except AttributeError:
             raise ValueError(f"Invalid log level: {level}") from None
 
+        # Short-circuit when configuration is unchanged
+        current_tuple = (
+            level.upper(),
+            format,
+            file,
+            bool(clean_output),
+            bool(suppress_qdrant_warnings),
+            bool(disable_console),
+        )
+        if cls._initialized and cls._current_config == current_tuple:
+            return
+
         # Reset structlog defaults but preserve existing stdlib handlers (e.g., pytest caplog)
         structlog.reset_defaults()
+
+        # Remove any handlers previously added by this class, and also clear
+        # any pre-existing root handlers that may cause duplicated outputs.
+        # We keep this conservative by only touching the root logger.
+        root_logger = logging.getLogger()
+        # First remove our previously installed handlers
+        for h in list(cls._installed_handlers):
+            try:
+                root_logger.removeHandler(h)
+                if isinstance(h, logging.FileHandler):
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        cls._installed_handlers.clear()
+
+        # Then remove any remaining handlers on the root logger (e.g., added by
+        # earlier setup calls or third-parties) to avoid duplicate emissions.
+        # This is safe for CLI usage; tests relying on caplog attach to non-root loggers.
+        for h in list(root_logger.handlers):
+            try:
+                root_logger.removeHandler(h)
+                if isinstance(h, logging.FileHandler):
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
         handlers: list[logging.Handler] = []
 
@@ -247,10 +300,15 @@ class LoggingConfig:
             handlers.append(file_handler)
 
         # Attach our handlers without removing existing ones (so pytest caplog keeps working)
-        root_logger = logging.getLogger()
         root_logger.setLevel(numeric_level)
         for h in handlers:
             root_logger.addHandler(h)
+        # Track handlers we installed to avoid duplicates on re-setup
+        cls._installed_handlers.extend(handlers)
+        # Track file handler for lightweight reconfiguration
+        cls._file_handler = next(
+            (h for h in handlers if isinstance(h, logging.FileHandler)), None
+        )
 
         # Add global filters so captured logs (e.g., pytest caplog) are also redacted
         # Avoid duplicate filters if setup() is called multiple times
@@ -287,9 +345,58 @@ class LoggingConfig:
         )
 
         cls._initialized = True
+        cls._current_config = current_tuple
 
     @classmethod
     def get_logger(cls, name: str | None = None) -> structlog.BoundLogger:
         if not cls._initialized:
             cls.setup()
         return structlog.get_logger(name)
+
+    @classmethod
+    def reconfigure(cls, *, file: str | None = None) -> None:
+        """Lightweight reconfiguration for file destination.
+
+        Replaces only the file handler while keeping console handlers and
+        structlog processors intact.
+        """
+        root_logger = logging.getLogger()
+        # Remove existing file handler if present
+        if cls._file_handler is not None:
+            try:
+                root_logger.removeHandler(cls._file_handler)
+                try:
+                    cls._file_handler.close()
+                except Exception:
+                    pass
+            except Exception:
+                pass
+            finally:
+                cls._installed_handlers = [
+                    h for h in cls._installed_handlers if h is not cls._file_handler
+                ]
+                cls._file_handler = None
+
+        # Add new file handler if requested
+        if file:
+            fh = logging.FileHandler(file)
+            fh.setFormatter(CleanFormatter("%(message)s"))
+            fh.addFilter(ApplicationFilter())
+            fh.addFilter(RedactionFilter())
+            root_logger.addHandler(fh)
+            cls._installed_handlers.append(fh)
+            cls._file_handler = fh
+
+        # Update current config tuple if available
+        if cls._current_config is not None:
+            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = (
+                cls._current_config
+            )
+            cls._current_config = (
+                level,
+                fmt,
+                file,
+                clean_output,
+                suppress_qdrant_warnings,
+                disable_console,
+            )

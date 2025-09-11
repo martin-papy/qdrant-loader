@@ -14,7 +14,9 @@ from .models import ParsedConfig, ProjectConfig, ProjectsConfig
 from .sources import SourcesConfig
 from .validator import ConfigValidator
 
-logger = LoggingConfig.get_logger(__name__)
+
+def _get_logger():
+    return LoggingConfig.get_logger(__name__)
 
 
 class MultiProjectConfigParser:
@@ -43,7 +45,7 @@ class MultiProjectConfigParser:
         Raises:
             ValidationError: If configuration is invalid
         """
-        logger.debug("Starting configuration parsing")
+        _get_logger().debug("Starting configuration parsing")
 
         # Validate configuration structure
         self.validator.validate_structure(config_data)
@@ -56,7 +58,7 @@ class MultiProjectConfigParser:
         # Parse projects
         projects_config = self._parse_projects(config_data, global_config)
 
-        logger.debug(
+        _get_logger().debug(
             "Configuration parsing completed",
             project_count=len(projects_config.projects),
         )
@@ -81,7 +83,7 @@ class MultiProjectConfigParser:
         try:
             return GlobalConfig(**global_data, skip_validation=skip_validation)
         except ValidationError as e:
-            logger.error("Failed to parse global configuration", error=str(e))
+            _get_logger().error("Failed to parse global configuration", error=str(e))
             raise
 
     def _parse_projects(
@@ -105,7 +107,7 @@ class MultiProjectConfigParser:
                 project_id, project_data, global_config
             )
             projects_config.add_project(project_config)
-            logger.debug("Parsed project configuration", project_id=project_id)
+            _get_logger().debug("Parsed project configuration", project_id=project_id)
 
         return projects_config
 
