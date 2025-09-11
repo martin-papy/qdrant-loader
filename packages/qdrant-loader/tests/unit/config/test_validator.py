@@ -1,6 +1,6 @@
 """Tests for the ConfigValidator class."""
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from qdrant_loader.config.validator import ConfigValidator
@@ -44,7 +44,9 @@ class TestConfigValidator:
 
     def test_validate_structure_success(self, validator, valid_config):
         """Test successful structure validation."""
-        with patch("qdrant_loader.config.validator.logger") as mock_logger:
+        with patch("qdrant_loader.config.validator._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             validator.validate_structure(valid_config)
             mock_logger.debug.assert_called()
 
@@ -208,7 +210,9 @@ class TestConfigValidator:
 
     def test_validate_sources_section_empty(self, validator):
         """Test sources section validation with empty dict."""
-        with patch("qdrant_loader.config.validator.logger") as mock_logger:
+        with patch("qdrant_loader.config.validator._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             validator._validate_sources_section({})
             mock_logger.debug.assert_called_with(
                 "Sources section is empty - this is allowed but no data will be ingested"
@@ -298,7 +302,9 @@ class TestConfigValidator:
 
     def test_validate_project_id_reserved_id(self, validator):
         """Test project ID validation with reserved ID."""
-        with patch("qdrant_loader.config.validator.logger") as mock_logger:
+        with patch("qdrant_loader.config.validator._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             validator._validate_project_id("default")
             mock_logger.warning.assert_called_with(
                 "Project ID 'default' is reserved and may cause conflicts"
@@ -306,7 +312,9 @@ class TestConfigValidator:
 
     def test_validate_project_id_reserved_id_case_insensitive(self, validator):
         """Test project ID validation with reserved ID (case insensitive)."""
-        with patch("qdrant_loader.config.validator.logger") as mock_logger:
+        with patch("qdrant_loader.config.validator._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             validator._validate_project_id("GLOBAL")
             mock_logger.warning.assert_called_with(
                 "Project ID 'GLOBAL' is reserved and may cause conflicts"

@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from qdrant_loader.config.workspace import (
@@ -49,7 +49,9 @@ class TestWorkspaceConfig:
 
     def test_workspace_config_initialization(self, valid_workspace_config_data):
         """Test WorkspaceConfig initialization with valid data."""
-        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
+        with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             config = WorkspaceConfig(**valid_workspace_config_data)
 
             assert config.workspace_path.is_absolute()
@@ -149,7 +151,9 @@ class TestSetupWorkspace:
 
     def test_setup_workspace_success(self, temp_workspace):
         """Test successful workspace setup."""
-        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
+        with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             config = setup_workspace(temp_workspace)
 
             assert isinstance(config, WorkspaceConfig)
@@ -235,7 +239,9 @@ class TestValidateWorkspace:
         """Test workspace validation with invalid workspace."""
         nonexistent_path = Path("/nonexistent/workspace")
 
-        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
+        with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             result = validate_workspace(nonexistent_path)
 
             assert result is False
@@ -261,7 +267,9 @@ class TestCreateWorkspaceStructure:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "new_workspace"
 
-            with patch("qdrant_loader.config.workspace.logger") as mock_logger:
+            with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
                 create_workspace_structure(workspace_path)
 
                 # Verify directories were created
@@ -322,7 +330,9 @@ class TestGetWorkspaceEnvOverride:
                 database_path=database_path,
             )
 
-        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
+        with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             overrides = get_workspace_env_override(config)
 
             expected = {
@@ -362,7 +372,9 @@ class TestValidateWorkspaceFlags:
 
     def test_validate_workspace_flags_no_conflicts(self):
         """Test workspace flag validation with no conflicts."""
-        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
+        with patch("qdrant_loader.config.workspace._get_logger") as mock_get_logger:
+            mock_logger = Mock()
+            mock_get_logger.return_value = mock_logger
             # Test with only workspace
             validate_workspace_flags(
                 workspace=Path("/workspace"), config=None, env=None
