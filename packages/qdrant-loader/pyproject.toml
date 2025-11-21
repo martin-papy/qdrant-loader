@@ -59,6 +59,7 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "faiss-cpu>=1.7.4",
     "psutil>=5.9.0",
+    "prometheus-client>=0.19.0",
     "tree-sitter-languages>=1.10.0",
     "tree-sitter<0.21",
     "markitdown[all]>=0.1.3",
