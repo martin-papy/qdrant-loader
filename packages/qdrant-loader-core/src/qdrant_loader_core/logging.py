@@ -357,13 +357,57 @@ class LoggingConfig:
         return structlog.get_logger(name)
 
     @classmethod
-    def reconfigure(cls, *, file: str | None = None) -> None:
-        """Lightweight reconfiguration for file destination.
+    def reconfigure(cls, *, file: str | None = None, level: str | None = None) -> None:
+        """Lightweight reconfiguration for file destination and optionally log level.
 
         Replaces only the file handler while keeping console handlers and
-        structlog processors intact.
+        structlog processors intact. Optionally updates the log level.
+
+        Args:
+            file: Path to log file (optional)
+            level: New log level (optional, e.g., "DEBUG", "INFO")
         """
         root_logger = logging.getLogger()
+
+        # Update log level if provided
+        if level is not None:
+            try:
+                numeric_level = getattr(logging, level.upper())
+                root_logger.setLevel(numeric_level)
+
+                # Update structlog wrapper to use new level
+                if cls._current_config is not None:
+                    _, fmt, current_file, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
+
+                    # Choose timestamp format and final renderer
+                    if clean_output and fmt == "console":
+                        ts_fmt = "%H:%M:%S"
+                        final_renderer = structlog.dev.ConsoleRenderer(colors=True)
+                    else:
+                        ts_fmt = "iso"
+                        final_renderer = (
+                            structlog.processors.JSONRenderer()
+                            if fmt == "json"
+                            else structlog.dev.ConsoleRenderer(colors=True)
+                        )
+
+                    # Reconfigure structlog with new level
+                    structlog.configure(
+                        processors=[
+                            structlog.stdlib.filter_by_level,
+                            structlog.stdlib.add_logger_name,
+                            structlog.stdlib.add_log_level,
+                            structlog.processors.TimeStamper(fmt=ts_fmt),
+                            _redact_processor,
+                            final_renderer,
+                        ],
+                        wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
+                        logger_factory=LoggerFactory(),
+                        cache_logger_on_first_use=False,
+                    )
+            except AttributeError:
+                raise ValueError(f"Invalid log level: {level}") from None
+
         # Remove existing file handler if present
         if cls._file_handler is not None:
             try:
@@ -386,5 +430,6 @@ class LoggingConfig:
 
         # Update current config tuple if available
         if cls._current_config is not None:
-            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
-            cls._current_config = (level, fmt, file, clean_output, suppress_qdrant_warnings, disable_console)
+            old_level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
+            new_level = level.upper() if level is not None else old_level
+            cls._current_config = (new_level, fmt, file, clean_output, suppress_qdrant_warnings, disable_console)

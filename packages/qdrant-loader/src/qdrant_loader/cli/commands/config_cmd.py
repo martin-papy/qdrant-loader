@@ -22,7 +22,7 @@ def run_config_command(
         )
         if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
             if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
-                LoggingConfig.reconfigure(file=log_file)  # type: ignore[attr-defined]
+                LoggingConfig.reconfigure(file=log_file, level=log_level)  # type: ignore[attr-defined]
             else:
                 LoggingConfig.setup(level=log_level, format="console", file=log_file)
         else:
