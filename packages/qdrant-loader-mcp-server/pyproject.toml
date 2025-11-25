@@ -44,10 +44,6 @@ dependencies = [
     "qdrant-loader-core[openai]==0.7.3",
 ]
 
-[project.optional-dependencies]
-nlp = [
-    "spacy>=3.7.0",
-]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
