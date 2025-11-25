@@ -69,13 +69,14 @@ def _setup_logging(log_level: str, transport: str | None = None) -> None:
         print(f"Failed to setup logging: {e}", file=sys.stderr)
 
 
-async def read_stdin():
-    """Read from stdin asynchronously."""
-    loop = asyncio.get_running_loop()
-    reader = asyncio.StreamReader()
-    protocol = asyncio.StreamReaderProtocol(reader)
-    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
-    return reader
+async def read_stdin_lines():
+    """Cross-platform async generator that yields lines from stdin."""
+    loop = asyncio.get_event_loop()
+    while True:
+        line = await loop.run_in_executor(None, sys.stdin.readline)
+        if not line:  # EOF
+            break
+        yield line
 
 
 async def shutdown(
@@ -282,28 +283,15 @@ async def handle_stdio(config: Config, log_level: str):
             logger.error("Failed to initialize search engine", exc_info=True)
             raise RuntimeError("Failed to initialize search engine") from e
 
-        reader = await read_stdin()
         if not disable_console_logging:
             logger.info("Server ready to handle requests")
 
-        while True:
+        async for line in read_stdin_lines():
             try:
-                # Read a line from stdin
-                if not disable_console_logging:
-                    logger.debug("Waiting for input...")
-                try:
-                    line = await reader.readline()
-                    if not line:
-                        if not disable_console_logging:
-                            logger.warning("No input received, breaking")
-                        break
-                except asyncio.CancelledError:
-                    if not disable_console_logging:
-                        logger.info("Read operation cancelled during shutdown")
-                    break
+                raw_input = line.strip()
+                if not raw_input:
+                    continue
 
-                # Log the raw input
-                raw_input = line.decode().strip()
                 if not disable_console_logging:
                     logger.debug("Received raw input", raw_input=raw_input)
 
@@ -543,7 +531,16 @@ def cli(
                 shutdown_task = loop.create_task(shutdown(loop, shutdown_event))
 
         for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, signal_handler)
+            try:
+                loop.add_signal_handler(sig, signal_handler)
+            except (NotImplementedError, AttributeError) as e:
+                try:
+                    logger = LoggingConfig.get_logger(__name__)
+                    logger.debug(
+                        f"Signal handler not supported: {e}; continuing without it."
+                    )
+                except Exception:
+                    pass
 
         # Start the appropriate transport handler
         if transport.lower() == "stdio":
