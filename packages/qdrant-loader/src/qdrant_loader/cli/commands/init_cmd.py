@@ -88,7 +88,7 @@ async def run_init_command(
                 else "qdrant-loader.log"
             )
             if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
-                LoggingConfig.reconfigure(file=log_file)  # type: ignore[attr-defined]
+                LoggingConfig.reconfigure(file=log_file, level=log_level)  # type: ignore[attr-defined]
             else:
                 import logging as _py_logging
 
