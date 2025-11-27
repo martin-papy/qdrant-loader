@@ -10,7 +10,7 @@ STRICT_SCOPES = [
 ]
 
 EXEMPTIONS = {
-    # add exemptions if needed later
+    "logging.py": 410,  # Core logging infrastructure with structured logging support
 }
 
 
