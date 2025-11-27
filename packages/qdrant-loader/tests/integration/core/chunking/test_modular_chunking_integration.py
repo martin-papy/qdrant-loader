@@ -7,6 +7,7 @@ without mocks, testing the full integration of all components.
 from unittest.mock import Mock
 
 import pytest
+
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking.strategy.default.text_document_parser import (
     TextDocumentParser,

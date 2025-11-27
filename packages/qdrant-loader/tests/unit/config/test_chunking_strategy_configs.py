@@ -1,6 +1,7 @@
 """Tests for chunking strategy configuration validation and behavior."""
 
 import pytest
+
 from qdrant_loader.config.chunking import (
     ChunkingConfig,
     CodeStrategyConfig,

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.chunking.strategy import MarkdownChunkingStrategy

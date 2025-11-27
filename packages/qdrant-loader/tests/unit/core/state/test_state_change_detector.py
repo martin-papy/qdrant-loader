@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
+
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.exceptions import InvalidDocumentStateError

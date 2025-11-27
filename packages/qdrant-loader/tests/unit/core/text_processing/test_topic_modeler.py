@@ -3,6 +3,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.core.text_processing.topic_modeler import TopicModeler
 
 

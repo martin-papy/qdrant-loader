@@ -162,8 +162,8 @@ class TestRealEndToEndPhase2_3:
             }
             mock_scroll_results.append(mock_point)
 
-        # scroll method returns tuple: (list_of_points, next_page_offset)
-        mock_client.scroll.return_value = (mock_scroll_results, None)
+        # scroll method returns tuple: (list_of_points, next_page_offset) - must be async
+        mock_client.scroll = AsyncMock(return_value=(mock_scroll_results, None))
 
         return mock_client
 

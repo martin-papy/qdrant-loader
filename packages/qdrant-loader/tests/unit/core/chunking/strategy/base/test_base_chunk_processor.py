@@ -4,6 +4,7 @@ from datetime import datetime
 from unittest.mock import Mock
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base.chunk_processor import BaseChunkProcessor
 from qdrant_loader.core.document import Document

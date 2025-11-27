@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
+
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.state_manager import StateManager

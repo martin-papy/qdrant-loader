@@ -2,6 +2,7 @@
 
 import pytest
 from pydantic import ValidationError
+
 from qdrant_loader.config.parser import MultiProjectConfigParser
 from qdrant_loader.config.validator import ConfigValidator
 

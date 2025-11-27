@@ -2,6 +2,7 @@
 
 import pytest
 from pydantic import HttpUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.publicdocs.config import (
     PublicDocsSourceConfig,

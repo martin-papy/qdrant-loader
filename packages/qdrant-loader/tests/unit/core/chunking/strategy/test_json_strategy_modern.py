@@ -4,6 +4,7 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.json_strategy import JSONChunkingStrategy
 from qdrant_loader.core.document import Document

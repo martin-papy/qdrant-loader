@@ -3,6 +3,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.core.chunking.strategy.markdown.markdown_strategy import (
     MarkdownChunkingStrategy,
 )

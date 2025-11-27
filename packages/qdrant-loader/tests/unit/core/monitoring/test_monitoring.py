@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from qdrant_loader.core.monitoring.ingestion_metrics import (
     BatchMetrics,
     ConversionMetrics,

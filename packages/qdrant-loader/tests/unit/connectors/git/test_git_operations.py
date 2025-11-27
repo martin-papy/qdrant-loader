@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from git.exc import GitCommandError
+
 from qdrant_loader.connectors.git.operations import GitOperations
 
 

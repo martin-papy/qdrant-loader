@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
 from qdrant_loader.connectors.shared.http.policy import (
     aiohttp_request_with_policy,
     request_with_policy,

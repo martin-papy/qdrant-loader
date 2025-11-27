@@ -6,6 +6,7 @@ import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from qdrant_loader.core.monitoring.resource_monitor import monitor_resources
 
 

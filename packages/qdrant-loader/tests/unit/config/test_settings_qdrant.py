@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+
 from qdrant_loader.config import Settings
 
 

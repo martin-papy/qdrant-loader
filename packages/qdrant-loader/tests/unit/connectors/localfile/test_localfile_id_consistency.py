@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from pydantic import AnyUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.localfile import LocalFileConnector
 from qdrant_loader.connectors.localfile.config import LocalFileConfig

@@ -3,6 +3,7 @@
 import re
 
 import pytest
+
 from qdrant_loader.core.chunking.strategy.base.metadata_extractor import (
     BaseMetadataExtractor,
 )

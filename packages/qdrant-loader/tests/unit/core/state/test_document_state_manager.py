@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from qdrant_loader.core.state.document_state_manager import DocumentStateManager
 from qdrant_loader.core.state.state_change_detector import DocumentState
 

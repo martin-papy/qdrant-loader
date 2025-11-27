@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from qdrant_loader.config import get_settings, initialize_config
 
 

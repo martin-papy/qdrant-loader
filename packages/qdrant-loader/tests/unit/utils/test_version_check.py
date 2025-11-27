@@ -3,6 +3,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.utils.version_check import (
     VersionChecker,
     check_version_async,

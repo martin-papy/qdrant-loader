@@ -4,6 +4,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+
 from qdrant_loader.cli.project_commands import (
     _get_project_document_count,
     _get_project_latest_ingestion,

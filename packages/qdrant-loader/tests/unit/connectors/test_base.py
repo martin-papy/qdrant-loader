@@ -3,6 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
 

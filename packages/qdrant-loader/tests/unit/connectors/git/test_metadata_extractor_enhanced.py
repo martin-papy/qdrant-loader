@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import git
 import pytest
 from pydantic import HttpUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor

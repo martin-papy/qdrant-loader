@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 from dotenv import load_dotenv
+
 from qdrant_loader.config import get_settings, initialize_config
 
 # Add src to sys.path for package imports in tests

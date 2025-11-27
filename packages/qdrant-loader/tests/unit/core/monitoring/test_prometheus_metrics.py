@@ -5,6 +5,7 @@ import time
 from unittest.mock import Mock, patch
 
 from prometheus_client import REGISTRY
+
 from qdrant_loader.core.monitoring import prometheus_metrics
 
 

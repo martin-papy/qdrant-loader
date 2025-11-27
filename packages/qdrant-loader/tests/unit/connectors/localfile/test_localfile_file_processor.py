@@ -5,6 +5,7 @@ import tempfile
 from unittest.mock import Mock, patch
 
 from pydantic import AnyUrl
+
 from qdrant_loader.connectors.localfile.config import LocalFileConfig
 from qdrant_loader.connectors.localfile.file_processor import LocalFileFileProcessor
 
