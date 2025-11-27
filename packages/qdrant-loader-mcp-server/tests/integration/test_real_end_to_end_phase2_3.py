@@ -147,8 +147,8 @@ class TestRealEndToEndPhase2_3:
             }
             mock_results.append(mock_result)
 
-        # Mock search method
-        mock_client.search.return_value = mock_results
+        # Mock search method - must be async since real code uses await
+        mock_client.search = AsyncMock(return_value=mock_results)
 
         # Mock scroll method for BM25 keyword search (returns all documents for corpus)
         mock_scroll_results = []
