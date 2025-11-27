@@ -149,7 +149,7 @@ class TestFileProcessor:
         test_file = os.path.join(temp_dir, "unreadable.md")
         with open(test_file, "w") as f:
             f.write("test")
-        
+
         # Mock os.access to simulate unreadable file
         with patch("os.access", return_value=False):
             assert processor.should_process_file(test_file) is False

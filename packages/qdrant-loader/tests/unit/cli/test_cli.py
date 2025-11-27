@@ -145,7 +145,7 @@ class TestCreateDatabaseDirectory:
             with patch("qdrant_loader.cli.cli._create_db_dir_helper") as mock_helper:
                 # Force helper to raise exception
                 mock_helper.side_effect = OSError("Permission denied")
-                
+
                 with pytest.raises(ClickException, match="Failed to create directory"):
                     _create_database_directory(test_path)
 

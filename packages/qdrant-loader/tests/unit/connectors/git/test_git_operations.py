@@ -440,7 +440,6 @@ class TestListFiles:
         result = git_operations.list_files()
 
         # Use os.path.join for expected paths to match OS-specific separators
-        import os
         expected = [
             os.path.join("/fake/repo/path", "file1.txt"),
             os.path.join("/fake/repo/path", "file2.py"),

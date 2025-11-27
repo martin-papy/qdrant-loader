@@ -175,6 +175,7 @@ projects:
 
         # Normalize paths for comparison (handles Windows short paths)
         from pathlib import Path
+
         assert Path(actual_path).resolve() == Path(expected_path).resolve()
         assert actual_path.endswith("qdrant-loader.db")
         # Check using resolved paths to handle short vs long path names

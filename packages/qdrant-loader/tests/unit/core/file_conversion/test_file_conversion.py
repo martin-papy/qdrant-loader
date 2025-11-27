@@ -101,7 +101,7 @@ class TestFileDetector:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
             try:
                 mime_type, extension = self.detector.detect_file_type(tmp_path)
                 assert mime_type == "application/pdf"
@@ -117,7 +117,7 @@ class TestFileDetector:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
             try:
                 info = self.detector.get_file_type_info(tmp_path)
 
@@ -142,7 +142,7 @@ class TestFileDetector:
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             tmp_file.write(b"fake content")
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
             try:
                 mime_type, extension = self.detector.detect_file_type(tmp_path)
                 assert mime_type == "application/pdf"
@@ -151,7 +151,7 @@ class TestFileDetector:
                 try:
                     os.unlink(tmp_path)
                 except (OSError, PermissionError):
-                        pass
+                    pass
 
 
 class TestFileConversionConfig:
@@ -330,7 +330,7 @@ class TestFileConverter:
             # Write small amount of data
             tmp_file.write(b"x" * 1024)  # 1KB
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
 
             try:
                 # Should not raise exception
@@ -339,7 +339,7 @@ class TestFileConverter:
                 try:
                     os.unlink(tmp_path)
                 except (OSError, PermissionError):
-                        pass
+                    pass
 
     def test_validate_file_size_too_large(self):
         """Test file size validation with oversized file."""
@@ -351,7 +351,7 @@ class TestFileConverter:
             # Write 2KB of data
             tmp_file.write(b"x" * 2048)
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
             try:
                 with pytest.raises(FileSizeExceededError) as exc_info:
                     converter._validate_file(tmp_path)
@@ -363,7 +363,7 @@ class TestFileConverter:
                 try:
                     os.unlink(tmp_path)
                 except (OSError, PermissionError):
-                        pass
+                    pass
 
     def test_validate_file_not_found(self):
         """Test file validation with non-existent file."""
@@ -376,18 +376,18 @@ class TestFileConverter:
     def test_validate_file_not_readable(self):
         """Test file validation with unreadable file."""
         import sys
-        
+
         # Skip on Windows - chmod doesn't work the same way
         if sys.platform == "win32":
             pytest.skip("File permission tests not reliable on Windows")
-            
+
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"test content")
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
             try:
                 # Remove read permissions
-                os.chmod(tmp_file.name, 0o000)
+                os.chmod(tmp_path, 0o000)
 
                 with pytest.raises(FileAccessError) as exc_info:
                     self.converter._validate_file(tmp_path)
@@ -407,7 +407,7 @@ class TestFileConverter:
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_file:
             tmp_file.write(b"test content")
             tmp_file.flush()
-            tmp_path=tmp_file.name
+            tmp_path = tmp_file.name
             try:
                 with pytest.raises(UnsupportedFileTypeError) as exc_info:
                     self.converter._validate_file(tmp_path)
@@ -417,8 +417,7 @@ class TestFileConverter:
                 try:
                     os.unlink(tmp_path)
                 except (OSError, PermissionError):
-                        pass
-
+                    pass
 
     def test_convert_file_success(self):
         """Test successful file conversion."""
@@ -448,7 +447,7 @@ class TestFileConverter:
                     try:
                         os.unlink(tmp_path)
                     except (OSError, PermissionError):
-                            pass
+                        pass
 
     def test_convert_file_markitdown_error(self):
         """Test file conversion with MarkItDown error."""
@@ -464,7 +463,7 @@ class TestFileConverter:
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
                 tmp_file.write(b"fake pdf content")
                 tmp_file.flush()
-                tmp_path=tmp_file.name
+                tmp_path = tmp_file.name
                 try:
                     with pytest.raises(MarkItDownError) as exc_info:
                         self.converter.convert_file(tmp_path)
@@ -475,7 +474,7 @@ class TestFileConverter:
                     try:
                         os.unlink(tmp_path)
                     except (OSError, PermissionError):
-                            pass
+                        pass
 
     def test_convert_file_not_found(self):
         """Test file conversion with non-existent file."""
@@ -493,9 +492,7 @@ class TestFileConverter:
             tmp_path = tmp_file.name
             try:
                 error_msg = Exception("Test conversion error")
-                result = self.converter.create_fallback_document(
-                    tmp_path, error_msg
-                )
+                result = self.converter.create_fallback_document(tmp_path, error_msg)
 
                 assert isinstance(result, str)
                 assert "Conversion Status" in result
@@ -506,7 +503,7 @@ class TestFileConverter:
                 try:
                     os.unlink(tmp_path)
                 except (OSError, PermissionError):
-                        pass
+                    pass
 
 
 class TestFileConversionExceptions:

@@ -85,7 +85,11 @@ class GitMetadataExtractor:
         return {
             "file_type": file_type,
             "file_name": file_name,
-            "file_directory": os.path.dirname(rel_path) if not os.path.isabs(rel_path) else os.path.dirname(file_path),
+            "file_directory": (
+                os.path.dirname(rel_path)
+                if not os.path.isabs(rel_path)
+                else os.path.dirname(file_path)
+            ),
             "file_encoding": file_encoding,
             "line_count": line_count,
             "word_count": word_count,

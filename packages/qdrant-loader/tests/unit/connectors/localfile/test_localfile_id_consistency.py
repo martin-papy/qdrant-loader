@@ -141,7 +141,7 @@ class TestLocalFileIdConsistency:
     async def test_document_id_consistency_with_symlinks(self, temp_dir):
         """Test that document IDs remain consistent when accessing files through symlinks."""
         import sys
-        
+
         # Create a symlink to the temp directory
         symlink_dir = Path(temp_dir).parent / "symlink_test"
         if symlink_dir.exists():

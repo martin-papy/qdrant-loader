@@ -178,9 +178,7 @@ class TestFileConversionIntegration:
             # File is now closed, safe to process and delete
             try:
                 is_convertible = self.detector.is_supported_for_conversion(tmp_path)
-                assert (
-                    is_convertible == should_be_convertible
-                ), f"Failed for {filename}"
+                assert is_convertible == should_be_convertible, f"Failed for {filename}"
             finally:
                 try:
                     os.unlink(tmp_path)

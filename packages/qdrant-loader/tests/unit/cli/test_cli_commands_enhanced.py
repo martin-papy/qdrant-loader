@@ -96,8 +96,10 @@ class TestCreateDatabaseDirectory:
         with patch("click.confirm", return_value=True):
             with patch("qdrant_loader.cli.cli._get_logger") as mock_logger:
                 mock_logger.return_value = Mock()
-                
-                with patch("qdrant_loader.cli.cli._create_db_dir_helper") as mock_helper:
+
+                with patch(
+                    "qdrant_loader.cli.cli._create_db_dir_helper"
+                ) as mock_helper:
                     # Force helper to raise exception
                     mock_helper.side_effect = OSError("Permission denied")
 

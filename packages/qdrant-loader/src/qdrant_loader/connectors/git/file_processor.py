@@ -69,9 +69,15 @@ class FileProcessor:
             try:
                 rel_path = os.path.relpath(file_path, self.temp_dir)
             except ValueError:
-                # Fallback to using file_path as-is if relative path cannot be computed
-                rel_path = file_path
-            
+                # Cannot calculate relative path (e.g., cross-drive on Windows)
+                # Skip this file as we cannot reliably apply include/exclude patterns
+                self.logger.warning(
+                    "Skipping file on different drive - cannot apply patterns",
+                    file_path=file_path,
+                    base_path=self.temp_dir,
+                )
+                return False
+
             # Normalize path separators to forward slashes for consistent matching
             rel_path = rel_path.replace("\\", "/")
             self.logger.debug(f"Relative path: {rel_path}")

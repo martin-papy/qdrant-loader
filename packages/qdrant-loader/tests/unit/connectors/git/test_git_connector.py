@@ -3,6 +3,7 @@ Tests for the Git connector implementation.
 """
 
 import os
+import tempfile
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -42,7 +43,6 @@ class TestGitConnector:
     @pytest.fixture
     def mock_git_ops(self, mock_repo, mock_config):
         """Fixture creating mock Git operations."""
-        import tempfile
         git_ops = MagicMock(spec=GitOperations)
         git_ops.repo = mock_repo
         git_ops.clone.return_value = None

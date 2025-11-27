@@ -142,7 +142,10 @@ class TestPublicDocsTitleExtraction:
         """
 
         # Should still extract title despite malformed HTML
-        # BeautifulSoup may return the full text content or extract partial title
+        # BeautifulSoup may extract different content depending on parsing mode
         title = connector._extract_title(malformed_html)
-        # Check if title contains expected values (malformed HTML parsing varies)
-        assert any(expected in title for expected in ["Malformed Title", "Malformed H1", "Untitled Document"])
+        # Exact match required - BeautifulSoup handles malformed HTML deterministically
+        allowed_titles = ["Malformed Title", "Malformed H1", "Untitled Document"]
+        assert (
+            title in allowed_titles
+        ), f"Expected title to be one of {allowed_titles}, but got: {title!r}"

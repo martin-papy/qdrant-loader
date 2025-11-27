@@ -65,13 +65,13 @@ def test_stdlib_logs_are_redacted(caplog):
     root_logger = logging.getLogger()
     test_handler = TestHandler()
     test_handler.setLevel(logging.DEBUG)
-    
-    # Get formatter from existing handlers to ensure redaction is applied
+
+    # Get formatter from existing handlers to ensure consistent formatting
     if root_logger.handlers:
         formatter = root_logger.handlers[0].formatter
         if formatter:
             test_handler.setFormatter(formatter)
-    
+
     root_logger.addHandler(test_handler)
 
     try:
