@@ -252,7 +252,7 @@ class TestPhase12SimpleIntegration:
 
         print("✅ Performance targets met!")
         print(f"🎯 Initialization: {avg_init_time:.2f}ms < 100ms target")
-        print(f"🎯 Generation: {avg_generation_time:.2f}ms < 500ms target")
+        print(f"🎯 Generation: {avg_generation_time:.2f}ms < 800ms target")
 
     def test_end_to_end_real_workflow(self, real_spacy_analyzer, sample_search_results):
         """Test complete end-to-end workflow with real components."""
