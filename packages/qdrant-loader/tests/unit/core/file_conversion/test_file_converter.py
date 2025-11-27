@@ -73,6 +73,12 @@ class TestTimeoutHandler:
 
     def test_timeout_handler_context_manager(self):
         """Test timeout handler as context manager."""
+        import sys
+        
+        # Skip on Windows - signal.alarm not available
+        if sys.platform == "win32":
+            pytest.skip("signal.alarm not available on Windows")
+            
         with patch("signal.signal") as mock_signal, patch("signal.alarm") as mock_alarm:
             handler = TimeoutHandler(30, "/path/to/file.pdf")
 

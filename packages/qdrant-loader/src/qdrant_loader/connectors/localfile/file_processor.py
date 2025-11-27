@@ -54,7 +54,15 @@ class LocalFileFileProcessor:
                 self.logger.debug(f"Skipping {file_path}: file is not readable")
                 return False
 
-            rel_path = os.path.relpath(file_path, self.base_path)
+            # Handle cross-drive paths on Windows
+            try:
+                rel_path = os.path.relpath(file_path, self.base_path)
+            except ValueError:
+                rel_path = file_path
+            
+            # Normalize path separators to forward slashes for consistent matching
+            rel_path = rel_path.replace("\\", "/")
+            
             file_basename = os.path.basename(rel_path)
             if file_basename.startswith("."):
                 self.logger.debug(
