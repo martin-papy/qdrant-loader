@@ -3,7 +3,6 @@
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.default_strategy import (
     DefaultChunkingStrategy,

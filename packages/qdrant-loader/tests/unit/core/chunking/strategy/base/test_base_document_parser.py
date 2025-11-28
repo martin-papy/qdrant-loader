@@ -1,7 +1,6 @@
 """Unit tests for BaseDocumentParser."""
 
 import pytest
-
 from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser
 
 

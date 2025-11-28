@@ -200,11 +200,15 @@ class TestRealEndToEndPhase2_3:
         # Replace only external dependencies with mocks, keep all internal logic real
         search_engine.hybrid_search.qdrant_client = mock_qdrant_client
         search_engine.hybrid_search.openai_client = mock_openai_client
-        
+
         # Also mock the qdrant_client in vector_search_service if it exists
-        if hasattr(search_engine.hybrid_search, 'vector_search_service'):
-            search_engine.hybrid_search.vector_search_service.qdrant_client = mock_qdrant_client
-            search_engine.hybrid_search.vector_search_service.openai_client = mock_openai_client
+        if hasattr(search_engine.hybrid_search, "vector_search_service"):
+            search_engine.hybrid_search.vector_search_service.qdrant_client = (
+                mock_qdrant_client
+            )
+            search_engine.hybrid_search.vector_search_service.openai_client = (
+                mock_openai_client
+            )
 
         return search_engine
 

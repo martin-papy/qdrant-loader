@@ -5,7 +5,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.config.workspace import (
     WorkspaceConfig,
     create_workspace_structure,

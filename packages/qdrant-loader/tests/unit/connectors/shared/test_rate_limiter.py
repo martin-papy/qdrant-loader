@@ -3,7 +3,6 @@ from __future__ import annotations
 import time
 
 import pytest
-
 from qdrant_loader.connectors.shared.http.rate_limit import RateLimiter
 
 

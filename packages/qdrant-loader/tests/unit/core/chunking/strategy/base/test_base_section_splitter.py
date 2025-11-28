@@ -3,7 +3,6 @@
 from unittest.mock import Mock
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base.section_splitter import (
     BaseSectionSplitter,

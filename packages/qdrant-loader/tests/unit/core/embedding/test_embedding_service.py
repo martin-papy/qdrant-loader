@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService

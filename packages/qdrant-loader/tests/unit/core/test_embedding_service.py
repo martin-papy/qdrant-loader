@@ -3,7 +3,6 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 from qdrant_loader.core.embedding_service import EmbeddingService
 
 

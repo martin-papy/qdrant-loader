@@ -4,7 +4,6 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline
 from qdrant_loader.core.pipeline.workers.upsert_worker import PipelineResult

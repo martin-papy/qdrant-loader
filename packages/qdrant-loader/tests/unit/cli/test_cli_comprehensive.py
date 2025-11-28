@@ -3,7 +3,6 @@
 from unittest.mock import Mock, patch
 
 from click.testing import CliRunner
-
 from qdrant_loader.cli.cli import (
     _check_for_updates,
     _get_logger,

@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 import yaml
 from bs4 import XMLParsedAsHTMLWarning
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 from qdrant_loader.connectors.publicdocs.connector import PublicDocsConnector

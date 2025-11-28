@@ -64,8 +64,10 @@ class GitMetadataExtractor:
         try:
             rel_path = os.path.relpath(file_path, self.config.temp_dir)
         except ValueError:
-            # Fallback to absolute path if relative path cannot be computed
-            rel_path = file_path
+            raise ValueError(
+                f"Cannot compute relative path for {file_path} from {self.config.temp_dir}. "
+                "Files on different drives should be filtered during file processing."
+            )
         file_type = os.path.splitext(rel_path)[1]
         file_name = os.path.basename(rel_path)
         file_encoding = self._detect_encoding(content)

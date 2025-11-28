@@ -4,7 +4,6 @@ from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline

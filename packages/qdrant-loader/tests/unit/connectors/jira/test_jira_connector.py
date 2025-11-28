@@ -5,8 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import HttpUrl
-from requests.exceptions import HTTPError
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
 from qdrant_loader.connectors.jira.connector import JiraConnector
@@ -14,6 +12,7 @@ from qdrant_loader.connectors.jira.models import (
     JiraIssue,
 )
 from qdrant_loader.core.document import Document
+from requests.exceptions import HTTPError
 
 
 @pytest.fixture

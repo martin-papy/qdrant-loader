@@ -2,13 +2,13 @@
 Unit tests for the file converter.
 """
 
-import signal, sys
+import signal
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.file_conversion.conversion_config import (
     FileConversionConfig,
     MarkItDownConfig,
@@ -73,8 +73,7 @@ class TestTimeoutHandler:
         assert handler.old_handler is None
 
     @pytest.mark.skipif(
-        sys.platform == "win32",
-        reason="signal.alarm not available on Windows"
+        sys.platform == "win32", reason="signal.alarm not available on Windows"
     )
     def test_timeout_handler_context_manager(self):
         """Test timeout handler as context manager."""

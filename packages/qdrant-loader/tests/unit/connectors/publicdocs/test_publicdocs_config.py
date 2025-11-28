@@ -1,7 +1,6 @@
 """Tests for the publicdocs config module."""
 
 import pytest
-
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 
 

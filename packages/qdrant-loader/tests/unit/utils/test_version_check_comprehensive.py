@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, Mock, mock_open, patch
 from urllib.error import HTTPError, URLError
 
 from packaging.version import InvalidVersion
-
 from qdrant_loader.utils.version_check import VersionChecker, check_version_async
 
 

@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import pytest
 from pydantic import HttpUrl
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.file_processor import FileProcessor

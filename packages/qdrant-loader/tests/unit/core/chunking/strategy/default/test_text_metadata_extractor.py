@@ -1,7 +1,6 @@
 """Tests for TextMetadataExtractor."""
 
 import pytest
-
 from qdrant_loader.core.chunking.strategy.default.text_metadata_extractor import (
     TextMetadataExtractor,
 )

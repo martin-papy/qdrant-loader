@@ -1,12 +1,12 @@
 """Tests for file conversion infrastructure."""
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-import sys
-import pytest
 
+import pytest
 from qdrant_loader.core.file_conversion import (
     ConnectorFileConversionConfig,
     ConversionTimeoutError,

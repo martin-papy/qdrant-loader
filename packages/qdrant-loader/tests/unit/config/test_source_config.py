@@ -1,7 +1,6 @@
 """Tests for source configuration with file conversion settings."""
 
 from pydantic import AnyUrl
-
 from qdrant_loader.config.source_config import SourceConfig
 
 

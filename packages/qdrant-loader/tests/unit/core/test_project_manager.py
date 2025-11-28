@@ -6,12 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pydantic import AnyUrl
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.core.project_manager import ProjectContext, ProjectManager
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.fixture

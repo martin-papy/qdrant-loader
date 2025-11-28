@@ -8,7 +8,6 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
-
 from qdrant_loader.cli.cli import (
     _create_database_directory,
     _get_logger,

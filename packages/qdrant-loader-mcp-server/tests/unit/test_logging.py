@@ -1,8 +1,8 @@
 """Tests for logging utilities."""
 
-import shutil
 import logging
 import os
+import shutil
 import tempfile
 from unittest.mock import MagicMock, patch
 

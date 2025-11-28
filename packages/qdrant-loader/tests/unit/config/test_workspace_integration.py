@@ -5,7 +5,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from qdrant_loader.config import get_settings, initialize_config_with_workspace
 from qdrant_loader.config.workspace import setup_workspace
 
@@ -174,7 +173,7 @@ projects:
         expected_path = str(workspace_config.database_path)
         actual_path = settings.state_db_path
 
-         # Normalize paths for comparison (handles Windows paths consistently)
+        # Normalize paths for comparison (handles Windows paths consistently)
         assert Path(actual_path).resolve() == Path(expected_path).resolve()
         assert actual_path.endswith("qdrant-loader.db")
         # Check using resolved paths to handle short vs long path names
