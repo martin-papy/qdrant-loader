@@ -1,5 +1,6 @@
 """Tests for logging utilities."""
 
+import shutil
 import logging
 import os
 import tempfile
@@ -145,7 +146,6 @@ def test_logging_config_setup_with_env_variables():
     finally:
         # Close all logging handlers before cleanup (Windows compatibility)
         logging.shutdown()
-        import shutil
 
         try:
             shutil.rmtree(tmp_dir, ignore_errors=True)

@@ -174,9 +174,7 @@ projects:
         expected_path = str(workspace_config.database_path)
         actual_path = settings.state_db_path
 
-        # Normalize paths for comparison (handles Windows short paths)
-        from pathlib import Path
-
+         # Normalize paths for comparison (handles Windows paths consistently)
         assert Path(actual_path).resolve() == Path(expected_path).resolve()
         assert actual_path.endswith("qdrant-loader.db")
         # Check using resolved paths to handle short vs long path names

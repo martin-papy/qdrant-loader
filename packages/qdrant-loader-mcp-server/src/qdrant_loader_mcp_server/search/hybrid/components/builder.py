@@ -30,16 +30,8 @@ def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
                     if isinstance(maybe_llm, dict) and maybe_llm:
                         # Make a shallow copy so we can safely overlay defaults/env
                         llm_cfg = dict(maybe_llm)
-        except Exception as cfg_err:
+        except Exception:
             # Non-fatal: fall through to env-only defaults
-            if logger is not None:
-                try:
-                    logger.debug(
-                        "Failed to load config file, using env-only mode",
-                        error=str(cfg_err),
-                    )
-                except Exception:
-                    pass
             llm_cfg = None
 
         # 2) If no file config present, construct from environment (legacy behavior)
@@ -120,23 +112,7 @@ def _create_llm_provider_from_env(logger: Any | None = None) -> Any | None:
             llm_cfg.setdefault("embeddings", {})
 
         llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
-        provider = create_provider(llm_settings)
-
-        # Log provider creation result for debugging
-        if logger is not None:
-            try:
-                provider_type = type(provider).__name__
-                logger.info(
-                    "LLM provider created",
-                    provider_type=provider_type,
-                    provider_name=llm_cfg.get("provider"),
-                    has_api_key=bool(llm_cfg.get("api_key")),
-                    base_url=llm_cfg.get("base_url"),
-                )
-            except Exception:
-                pass
-
-        return provider
+        return create_provider(llm_settings)
     except ImportError:
         # Attempt monorepo-relative import by adding sibling core package to sys.path
         try:

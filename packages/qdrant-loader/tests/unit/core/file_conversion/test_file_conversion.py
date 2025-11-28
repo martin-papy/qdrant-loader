@@ -4,7 +4,7 @@ import os
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-
+import sys
 import pytest
 
 from qdrant_loader.core.file_conversion import (
@@ -376,7 +376,6 @@ class TestFileConverter:
 
     def test_validate_file_not_readable(self):
         """Test file validation with unreadable file."""
-        import sys
 
         # Skip on Windows - chmod doesn't work the same way
         if sys.platform == "win32":

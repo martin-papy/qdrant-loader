@@ -2,7 +2,7 @@
 Unit tests for the file converter.
 """
 
-import signal
+import signal, sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -72,14 +72,12 @@ class TestTimeoutHandler:
         assert handler.file_path == "/path/to/file.pdf"
         assert handler.old_handler is None
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="signal.alarm not available on Windows"
+    )
     def test_timeout_handler_context_manager(self):
         """Test timeout handler as context manager."""
-        import sys
-
-        # Skip on Windows - signal.alarm not available
-        if sys.platform == "win32":
-            pytest.skip("signal.alarm not available on Windows")
-
         with patch("signal.signal") as mock_signal, patch("signal.alarm") as mock_alarm:
             handler = TimeoutHandler(30, "/path/to/file.pdf")
 
