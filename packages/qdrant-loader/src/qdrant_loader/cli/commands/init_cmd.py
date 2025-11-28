@@ -42,7 +42,7 @@ async def run_init_command(
             # Setup logging first (workspace-aware later). Use core reconfigure if available.
             if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
                 if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
-                    LoggingConfig.reconfigure(file="qdrant-loader.log")  # type: ignore[attr-defined]
+                    LoggingConfig.reconfigure(file="qdrant-loader.log", level=log_level)  # type: ignore[attr-defined]
                 else:
                     LoggingConfig.setup(
                         level=log_level, format="console", file="qdrant-loader.log"

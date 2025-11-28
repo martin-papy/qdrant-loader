@@ -377,7 +377,7 @@ class LoggingConfig:
 
                 # Update structlog wrapper to use new level
                 if cls._current_config is not None:
-                    _, fmt, current_file, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
+                    _, fmt, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
 
                     # Choose timestamp format and final renderer
                     if clean_output and fmt == "console":
