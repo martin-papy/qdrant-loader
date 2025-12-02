@@ -123,7 +123,12 @@ Final paragraph with special characters: éñüñøß
         # Test with different file paths and encodings
         test_cases = [
             (os.path.join(base_config.temp_dir, "path", "to", "document.md"), content),
-            (os.path.join(base_config.temp_dir, "nested", "deep", "folder", "file.txt"), content),
+            (
+                os.path.join(
+                    base_config.temp_dir, "nested", "deep", "folder", "file.txt"
+                ),
+                content,
+            ),
             (os.path.join(base_config.temp_dir, "simple.py"), content),
         ]
 
@@ -163,9 +168,7 @@ Final paragraph with special characters: éñüñøß
 
         # Content with only whitespace
         file_path = os.path.join(base_config.temp_dir, "test", "whitespace.md")
-        metadata = extractor._extract_file_metadata(
-            file_path, "   \n\n  \t  \n"
-        )
+        metadata = extractor._extract_file_metadata(file_path, "   \n\n  \t  \n")
         assert metadata["line_count"] == 4
         assert metadata["word_count"] == 0
 
