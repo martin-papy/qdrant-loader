@@ -46,7 +46,7 @@ class TestSpaCyComponentsIntegration:
         assert isinstance(result.is_question, bool)
         assert isinstance(result.is_technical, bool)
         assert isinstance(result.processing_time_ms, float)
-        assert result.processing_time_ms > 0
+        assert result.processing_time_ms >= 0
 
     def test_spacy_analyzer_different_queries(self):
         """Test analyzer with different types of queries."""

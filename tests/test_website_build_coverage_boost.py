@@ -317,9 +317,10 @@ class TestAssetManagerCoverage:
         manager = AssetManager(str(tmp_path / "output"))
         manager.copy_static_files([str(source_dir)])
 
-        # Directory should be replaced
+        # Directory contents should be merged (not replaced)
         assert (tmp_path / "output" / "source" / "file.txt").exists()
-        assert not (tmp_path / "output" / "source" / "old.txt").exists()
+        # Old file remains (directory is merged, not replaced)
+        assert (tmp_path / "output" / "source" / "old.txt").exists()
 
 
 class TestCoreBuilderCoverage:

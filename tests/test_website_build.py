@@ -28,7 +28,7 @@ class TestWebsiteBuildSystem:
         build_script = Path("website/build.py")
 
         # Try to compile the script to check syntax
-        with open(build_script) as f:
+        with open(build_script, encoding="utf-8") as f:
             source = f.read()
 
         try:
@@ -61,7 +61,7 @@ class TestWebsiteBuildSystem:
     def test_base_template_structure(self):
         """Test that the base template has required placeholders."""
         base_template = Path("website/templates/base.html")
-        content = base_template.read_text()
+        content = base_template.read_text(encoding="utf-8")
 
         required_placeholders = [
             "{{ page_title }}",
@@ -88,7 +88,7 @@ class TestWebsiteBuildSystem:
         """Test that the favicon generation script has valid syntax."""
         favicon_script = Path("website/assets/generate_favicons.py")
 
-        with open(favicon_script) as f:
+        with open(favicon_script, encoding="utf-8") as f:
             source = f.read()
 
         try:
