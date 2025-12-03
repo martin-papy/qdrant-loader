@@ -66,11 +66,17 @@ class ConversionMetrics:
     successful_conversions: int = 0
     failed_conversions: int = 0
     total_conversion_time: float = 0.0
-    average_conversion_time: float = 0.0
     attachments_processed: int = 0
     conversion_methods: dict[str, int] = field(default_factory=dict)
     file_types_processed: dict[str, int] = field(default_factory=dict)
     error_types: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def average_conversion_time(self) -> float:
+        """Calculate average conversion time, avoiding division by zero."""
+        if self.total_files_processed == 0:
+            return 0.0
+        return self.total_conversion_time / self.total_files_processed
 
 
 class IngestionMonitor:
@@ -311,13 +317,6 @@ class IngestionMonitor:
                 )
 
         self.conversion_metrics.total_conversion_time += conversion_time
-
-        # Update average conversion time
-        if self.conversion_metrics.total_files_processed > 0:
-            self.conversion_metrics.average_conversion_time = (
-                self.conversion_metrics.total_conversion_time
-                / self.conversion_metrics.total_files_processed
-            )
 
         # Track conversion methods
         if conversion_method:

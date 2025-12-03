@@ -3,6 +3,7 @@ Tests for the Git connector implementation.
 """
 
 import os
+import tempfile
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -40,12 +41,17 @@ class TestGitConnector:
         return repo
 
     @pytest.fixture
-    def mock_git_ops(self, mock_repo):
+    def mock_git_ops(self, mock_repo, mock_config):
         """Fixture creating mock Git operations."""
         git_ops = MagicMock(spec=GitOperations)
         git_ops.repo = mock_repo
         git_ops.clone.return_value = None
-        git_ops.list_files.return_value = ["/tmp/test.md", "/tmp/test.txt"]
+        # Use paths in temp_dir to avoid cross-drive issues on Windows
+        temp_dir = mock_config.temp_dir or tempfile.gettempdir()
+        git_ops.list_files.return_value = [
+            os.path.join(temp_dir, "test.md"),
+            os.path.join(temp_dir, "test.txt"),
+        ]
         git_ops.get_file_content.return_value = "Test content"
         git_ops.get_last_commit_date.return_value = datetime.now()
         git_ops.get_first_commit_date.return_value = datetime.now()

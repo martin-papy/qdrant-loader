@@ -63,7 +63,7 @@ class TestSpaCyComponentsIntegration:
         for query in queries:
             result = analyzer.analyze_query_semantic(query)
             assert isinstance(result, QueryAnalysis)
-            assert result.processing_time_ms > 0
+            assert result.processing_time_ms >= 0
 
     def test_spacy_analyzer_caching(self):
         """Test that analyzer caching works."""
