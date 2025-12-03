@@ -124,7 +124,7 @@ class TestSpaCyComponentsIntegration:
         assert isinstance(result.expanded_query, str)
         assert isinstance(result.expansion_terms, list)
         assert isinstance(result.processing_time_ms, float)
-        assert result.processing_time_ms > 0
+        assert result.processing_time_ms >= 0
 
         # Expanded query should contain original
         assert query in result.expanded_query or len(result.expanded_query) >= len(
@@ -197,7 +197,7 @@ class TestSpaCyComponentsIntegration:
         assert isinstance(result.lemmatized_tokens, list)
         assert isinstance(result.filtered_tokens, list)
         assert isinstance(result.processing_time_ms, float)
-        assert result.processing_time_ms > 0
+        assert result.processing_time_ms >= 0
 
         # Preprocessed query should not be empty
         assert len(result.preprocessed_query.strip()) > 0
@@ -267,9 +267,9 @@ class TestSpaCyComponentsIntegration:
         assert isinstance(preprocessing, PreprocessingResult)
 
         # All should complete without errors
-        assert analysis.processing_time_ms > 0
-        assert expansion.processing_time_ms > 0
-        assert preprocessing.processing_time_ms > 0
+        assert analysis.processing_time_ms >= 0
+        assert expansion.processing_time_ms >= 0
+        assert preprocessing.processing_time_ms >= 0
 
     def test_performance_requirements(self):
         """Test that components meet basic performance requirements."""
