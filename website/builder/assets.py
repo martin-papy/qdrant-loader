@@ -58,49 +58,23 @@ class AssetManager:
     def copy_static_files(self, static_files: list[str]) -> None:
         """Copy multiple static files."""
         for file_path in static_files:
-            # Check for colon syntax (source:dest)
-            # Need to handle Windows paths like C:\\path\\file.txt:dest/path
-            # Strategy: find the last colon that isn't preceded by exactly one character (drive letter)
-            source_path = None
-            dest_path = None
-            
-            # Find all colon positions
-            colon_indices = [i for i, c in enumerate(file_path) if c == ":"]
-            
-            # Check if we have a source:dest pattern
-            # Windows drive letter pattern: position 1 is colon and position 0 is alpha
-            has_dest = False
-            if len(colon_indices) > 0:
-                # Check from the end for a colon that represents source:dest delimiter
-                for colon_idx in reversed(colon_indices):
-                    # If this colon is not at position 1 (not a drive letter)
-                    # or if there are chars before it (not start of path)
-                    if colon_idx != 1:
-                        # This could be a source:dest delimiter
-                        source = file_path[:colon_idx]
-                        dest = file_path[colon_idx+1:]
-                        # Verify source looks like a valid path (has path separators or is just a filename)
-                        if "\\" in source or "/" in source or "." in source:
-                            source_path = Path(source)
-                            dest_path = self.output_dir / dest
-                            has_dest = True
-                            break
-            
-            if not has_dest:
-                source_path = Path(file_path)
+            source_path = Path(file_path)
+
+            if ":" in file_path:
+                source, dest = file_path.split(":", 1)
+                source_path = Path(source)
+                dest_path = self.output_dir / dest
+            else:
+                # Copy to same relative path
                 dest_path = self.output_dir / source_path.name
 
             # Handle directories and files differently
             if source_path.exists():
                 if source_path.is_dir():
                     # Copy directory
-                    dest_path.mkdir(parents=True, exist_ok=True)
-                    for item in source_path.rglob("*"):
-                        if item.is_file():
-                            rel_path = item.relative_to(source_path)
-                            target = dest_path / rel_path
-                            target.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(item, target)
+                    if dest_path.exists():
+                        shutil.rmtree(dest_path)
+                    shutil.copytree(source_path, dest_path)
                     print(f"📁 Directory copied: {source_path} -> {dest_path}")
                 else:
                     # Copy file
