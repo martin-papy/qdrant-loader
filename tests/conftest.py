@@ -113,7 +113,17 @@ def temp_workspace():
     temp_dir = tempfile.mkdtemp()
     workspace = Path(temp_dir)
     yield workspace
-    shutil.rmtree(temp_dir)
+    # Improved cleanup for Windows - retry with delays
+    import time
+    for attempt in range(3):
+        try:
+            shutil.rmtree(temp_dir)
+            break
+        except (PermissionError, OSError):
+            if attempt < 2:
+                time.sleep(0.1)
+            # Ignore cleanup errors on final attempt
+            pass
 
 
 @pytest.fixture

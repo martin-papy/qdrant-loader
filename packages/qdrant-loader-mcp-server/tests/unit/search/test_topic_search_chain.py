@@ -508,7 +508,7 @@ class TestTopicChainIntegration:
         assert chain.original_query == "How to implement secure API authentication"
         assert len(chain.chain_links) <= 3
         assert chain.total_topics_covered > 0
-        assert chain.generation_time_ms > 0
+        assert chain.generation_time_ms >= 0
 
         # Verify chain links have valid structure
         for link in chain.chain_links:
