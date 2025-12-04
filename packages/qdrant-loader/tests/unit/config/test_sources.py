@@ -28,6 +28,7 @@ class TestSourcesConfig:
                 "confluence",
                 "jira",
                 "localfile",
+                "sharepoint",
             ] and isinstance(field_value, dict):
                 processed_data[field_name] = config._convert_source_configs(
                     field_name, field_value
@@ -171,3 +172,4 @@ class TestSourcesConfig:
         assert "confluence" in result
         assert "jira" in result
         assert "localfile" in result
+        assert "sharepoint" in result

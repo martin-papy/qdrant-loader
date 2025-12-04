@@ -5,6 +5,8 @@ from typing import Optional, List
 from enum import Enum
 import os
 from qdrant_loader.config.source_config import SourceConfig
+import re
+ENV_PATTERN = re.compile(r"^\$\{(.+)\}$")
 
 
 class SharePointAuthMethod(str, Enum):
@@ -75,12 +77,30 @@ class SharePointConfig(SourceConfig):
 
 
     @model_validator(mode="after")
-    def load_env_secret(self):
+    def load_env_client_secret(self):
         if (
             self.authentication_method == SharePointAuthMethod.CLIENT_CREDENTIALS
             and not self.client_secret
         ):
             self.client_secret = os.getenv("SHAREPOINT_CLIENT_SECRET")
+        return self
+    
+    @model_validator(mode="after")
+    def load_env_client_id(self):
+        if (
+            self.authentication_method == SharePointAuthMethod.CLIENT_CREDENTIALS
+            and not self.client_id
+        ):
+            self.client_id = os.getenv("SHAREPOINT_CLIENT_ID")
+        return self
+    
+    @model_validator(mode="after")
+    def load_env_tenant_id(self):
+        if (
+            self.authentication_method == SharePointAuthMethod.CLIENT_CREDENTIALS
+            and not self.tenant_id
+        ):
+            self.tenant_id = os.getenv("SHAREPOINT_TENANT_ID")
         return self
 
     @model_validator(mode="after")
@@ -100,3 +120,13 @@ class SharePointConfig(SourceConfig):
                 raise ValueError("password is required for USER_CREDENTIALS")
 
         return self
+    
+    @model_validator(mode="before")
+    def expand_env_vars(cls, values):
+        for key, val in values.items():
+            if isinstance(val, str):
+                match = ENV_PATTERN.match(val)
+                if match:
+                    env_key = match.group(1)
+                    values[key] = os.getenv(env_key, val)
+        return values
