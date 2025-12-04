@@ -73,6 +73,19 @@ class Settings(BaseModel):
     JIRA_TOKEN: str
     JIRA_EMAIL: str
 
+    # SharePoint configuration
+    SHAREPOINT_RELATIVE_URL: str
+    SHAREPOINT_AUTHENTICATION_METHOD: str = "client_credentials"
+    SHAREPOINT_TENANT_ID: str | None = None
+    SHAREPOINT_CLIENT_ID: str | None = None
+    SHAREPOINT_CLIENT_SECRET: str | None = None
+    SHAREPOINT_DOCUMENT_LIBRARIES: str | None = None
+    SHAREPOINT_LISTS: str | None = None
+    SHAREPOINT_FILE_EXTENSIONS: str | None = None
+    SHAREPOINT_EXCLUDE_PATHS: str | None = None
+    SHAREPOINT_INCLUDE_CONTENT_TYPES: str | None = None
+    SHAREPOINT_REQUESTS_PER_MINUTE: int = 60
+
     # Global configuration
     global_config: GlobalConfig = Field(
         default_factory=GlobalConfig, description="Global configuration settings"
