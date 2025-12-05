@@ -122,9 +122,14 @@ Final paragraph with special characters: éñüñøß
 
         # Test with different file paths and encodings
         test_cases = [
-            ("/path/to/document.md", content),
-            ("/nested/deep/folder/file.txt", content),
-            ("simple.py", content),
+            (os.path.join(base_config.temp_dir, "path", "to", "document.md"), content),
+            (
+                os.path.join(
+                    base_config.temp_dir, "nested", "deep", "folder", "file.txt"
+                ),
+                content,
+            ),
+            (os.path.join(base_config.temp_dir, "simple.py"), content),
         ]
 
         for file_path, test_content in test_cases:
@@ -145,7 +150,8 @@ Final paragraph with special characters: éñüñøß
         extractor = GitMetadataExtractor(base_config)
 
         # Empty content
-        metadata = extractor._extract_file_metadata("/test/empty.md", "")
+        file_path = os.path.join(base_config.temp_dir, "test", "empty.md")
+        metadata = extractor._extract_file_metadata(file_path, "")
         assert metadata["line_count"] == 0
         assert metadata["word_count"] == 0
         assert metadata["file_size"] == 0
@@ -154,15 +160,15 @@ Final paragraph with special characters: éñüñøß
         assert metadata["has_links"] is False
 
         # Single character content
-        metadata = extractor._extract_file_metadata("/test/char.txt", "x")
+        file_path = os.path.join(base_config.temp_dir, "test", "char.txt")
+        metadata = extractor._extract_file_metadata(file_path, "x")
         assert metadata["line_count"] == 1
         assert metadata["word_count"] == 1
         assert metadata["file_size"] == 1
 
         # Content with only whitespace
-        metadata = extractor._extract_file_metadata(
-            "/test/whitespace.md", "   \n\n  \t  \n"
-        )
+        file_path = os.path.join(base_config.temp_dir, "test", "whitespace.md")
+        metadata = extractor._extract_file_metadata(file_path, "   \n\n  \t  \n")
         assert metadata["line_count"] == 4
         assert metadata["word_count"] == 0
 
@@ -196,7 +202,8 @@ Final paragraph with special characters: éñüñøß
 
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(base_config)
-            metadata = extractor._extract_repo_metadata("/test/file.md")
+            file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+            metadata = extractor._extract_repo_metadata(file_path)
 
             assert metadata["repository_name"] == "repo"
             assert metadata["repository_owner"] == "test"
@@ -214,7 +221,8 @@ Final paragraph with special characters: éñüñøß
 
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(gitlab_config)
-            metadata = extractor._extract_repo_metadata("/test/file.md")
+            file_path = os.path.join(gitlab_config.temp_dir, "test", "file.md")
+            metadata = extractor._extract_repo_metadata(file_path)
 
             assert metadata["repository_name"] == "project"
             assert metadata["repository_owner"] == "group"
@@ -233,7 +241,8 @@ Final paragraph with special characters: éñüñøß
 
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(azure_config)
-            metadata = extractor._extract_repo_metadata("/test/file.md")
+            file_path = os.path.join(azure_config.temp_dir, "test", "file.md")
+            metadata = extractor._extract_repo_metadata(file_path)
 
             assert metadata["repository_name"] == "repo"
             assert metadata["repository_owner"] == "org"
@@ -248,7 +257,8 @@ Final paragraph with special characters: éñüñøß
 
         # Test with invalid Git repository
         with patch("git.Repo", side_effect=git.InvalidGitRepositoryError):
-            metadata = extractor._extract_repo_metadata("/test/file.md")
+            file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+            metadata = extractor._extract_repo_metadata(file_path)
             assert metadata == {}
 
         # Test with empty config - avoid mutating shared fixture by creating a copy
@@ -262,7 +272,8 @@ Final paragraph with special characters: éñüñøß
             temp_dir=base_config.temp_dir,
         )
         extractor2 = GitMetadataExtractor(local_config)
-        metadata = extractor2._extract_repo_metadata("/test/file.md")
+        file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+        metadata = extractor2._extract_repo_metadata(file_path)
         assert metadata == {}
 
     def test_extract_git_metadata_comprehensive(self, base_config):
@@ -286,7 +297,8 @@ Final paragraph with special characters: éñüñøß
 
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(base_config)
-            metadata = extractor._extract_git_metadata("/test/file.md")
+            file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+            metadata = extractor._extract_git_metadata(file_path)
 
             assert metadata["last_commit_date"] == "2024-01-15T14:30:00+00:00"
             assert metadata["last_commit_author"] == "Alice Developer"
@@ -306,7 +318,8 @@ Final paragraph with special characters: éñüñøß
 
         for exception in exceptions_to_test:
             with patch("git.Repo", side_effect=exception):
-                metadata = extractor._extract_git_metadata("/test/file.md")
+                file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+                metadata = extractor._extract_git_metadata(file_path)
                 assert metadata == {}
 
     def test_extract_structure_metadata_complex(self, base_config):
@@ -466,7 +479,8 @@ Instructions here.
         mock_config.has_section.return_value = False
         mock_repo.config_reader.return_value = mock_config
 
-        description = extractor._get_repo_description(mock_repo, "/test/file.md")
+        file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+        description = extractor._get_repo_description(mock_repo, file_path)
         assert (
             "This is a test repository for demonstrating functionality" in description
         )
@@ -483,7 +497,8 @@ Instructions here.
         mock_config.get_value.return_value = ""
         mock_repo.config_reader.return_value = mock_config
 
-        description = extractor._get_repo_description(mock_repo, "/test/file.md")
+        file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+        description = extractor._get_repo_description(mock_repo, file_path)
         assert description == ""
 
     def test_detect_encoding_edge_cases(self, base_config):
@@ -574,7 +589,8 @@ if __name__ == "__main__":
 
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(base_config)
-            metadata = extractor.extract_all_metadata("/test/script.py", content)
+            file_path = os.path.join(base_config.temp_dir, "test", "script.py")
+            metadata = extractor.extract_all_metadata(file_path, content)
 
             # Should have file and git metadata, but no structure metadata
             assert "file_type" in metadata
@@ -590,8 +606,8 @@ if __name__ == "__main__":
                 "qdrant_loader.connectors.git.metadata_extractor.logger"
             ) as mock_logger:
                 extractor = GitMetadataExtractor(base_config)
-
-                metadata = extractor.extract_all_metadata("/test/file.md", "# Test")
+                file_path = os.path.join(base_config.temp_dir, "test", "file.md")
+                metadata = extractor.extract_all_metadata(file_path, "# Test")
 
                 # Verify logging calls were made
                 mock_logger.debug.assert_called()

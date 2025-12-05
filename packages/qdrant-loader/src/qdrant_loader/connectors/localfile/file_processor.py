@@ -54,7 +54,22 @@ class LocalFileFileProcessor:
                 self.logger.debug(f"Skipping {file_path}: file is not readable")
                 return False
 
-            rel_path = os.path.relpath(file_path, self.base_path)
+            # Handle cross-drive paths on Windows
+            try:
+                rel_path = os.path.relpath(file_path, self.base_path)
+            except ValueError:
+                # Cannot calculate relative path (e.g., cross-drive on Windows)
+                # Skip this file as we cannot reliably apply include/exclude patterns
+                self.logger.warning(
+                    "Skipping file on different drive - cannot apply patterns",
+                    file_path=file_path,
+                    base_path=self.base_path,
+                )
+                return False
+
+            # Normalize path separators to forward slashes for consistent matching
+            rel_path = rel_path.replace("\\", "/")
+
             file_basename = os.path.basename(rel_path)
             if file_basename.startswith("."):
                 self.logger.debug(

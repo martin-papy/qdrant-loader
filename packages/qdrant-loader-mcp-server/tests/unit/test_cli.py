@@ -12,7 +12,7 @@ from qdrant_loader_mcp_server.cli import (
     _setup_logging,
     cli,
     handle_stdio,
-    read_stdin,
+    read_stdin_lines,
     shutdown,
 )
 from qdrant_loader_mcp_server.utils import get_version
@@ -160,25 +160,32 @@ class TestAsyncFunctions:
     """Test async utility functions."""
 
     @pytest.mark.asyncio
-    async def test_read_stdin(self):
-        """Test stdin reading functionality."""
+    async def test_read_stdin_lines(self):
+        """Test stdin reading functionality as async generator."""
         with (
-            patch("asyncio.get_running_loop") as mock_get_loop,
-            patch("asyncio.StreamReader") as mock_reader,
-            patch("asyncio.StreamReaderProtocol") as mock_protocol,
+            patch("asyncio.get_event_loop") as mock_get_loop,
+            patch("sys.stdin"),
         ):
-
             mock_loop = AsyncMock()
             mock_get_loop.return_value = mock_loop
-            mock_reader_instance = MagicMock()
-            mock_reader.return_value = mock_reader_instance
-            mock_protocol_instance = MagicMock()
-            mock_protocol.return_value = mock_protocol_instance
 
-            result = await read_stdin()
+            # Mock readline to return lines then EOF
+            mock_loop.run_in_executor = AsyncMock(
+                side_effect=[
+                    "line1\n",
+                    "line2\n",
+                    "",  # EOF
+                ]
+            )
 
-            assert result == mock_reader_instance
-            mock_loop.connect_read_pipe.assert_called_once()
+            lines = []
+            async for line in read_stdin_lines():
+                lines.append(line)
+
+            assert len(lines) == 2
+            assert lines[0] == "line1\n"
+            assert lines[1] == "line2\n"
+            assert mock_loop.run_in_executor.call_count == 3
 
     @pytest.mark.asyncio
     async def test_shutdown(self):
@@ -286,6 +293,11 @@ class TestStdioHandler:
     @pytest.mark.asyncio
     async def test_handle_stdio_json_parse_error(self):
         """Test stdio handler with JSON parse error."""
+
+        async def mock_stdin_lines():
+            """Mock async generator for invalid JSON."""
+            yield "invalid json\n"
+
         with (
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
             patch(
@@ -293,7 +305,10 @@ class TestStdioHandler:
             ) as mock_search_engine_class,
             patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
             patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
+            patch(
+                "qdrant_loader_mcp_server.cli.read_stdin_lines",
+                return_value=mock_stdin_lines(),
+            ),
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
         ):
@@ -306,13 +321,6 @@ class TestStdioHandler:
             mock_search_engine.initialize = AsyncMock()
             mock_search_engine.cleanup = AsyncMock()
             mock_search_engine_class.return_value = mock_search_engine
-
-            # Mock reader with invalid JSON
-            mock_reader = MagicMock()
-            mock_reader.readline = AsyncMock(
-                side_effect=[b"invalid json\n", b""]  # Invalid JSON  # EOF
-            )
-            mock_read_stdin.return_value = mock_reader
 
             mock_config = MagicMock()
 
@@ -328,6 +336,11 @@ class TestStdioHandler:
     @pytest.mark.asyncio
     async def test_handle_stdio_invalid_request_format(self):
         """Test stdio handler with invalid request format."""
+
+        async def mock_stdin_lines():
+            """Mock async generator for non-object JSON."""
+            yield '"not an object"\n'
+
         with (
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
             patch(
@@ -335,7 +348,10 @@ class TestStdioHandler:
             ) as mock_search_engine_class,
             patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
             patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
+            patch(
+                "qdrant_loader_mcp_server.cli.read_stdin_lines",
+                return_value=mock_stdin_lines(),
+            ),
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
         ):
@@ -348,16 +364,6 @@ class TestStdioHandler:
             mock_search_engine.initialize = AsyncMock()
             mock_search_engine.cleanup = AsyncMock()
             mock_search_engine_class.return_value = mock_search_engine
-
-            # Mock reader with non-object JSON
-            mock_reader = MagicMock()
-            mock_reader.readline = AsyncMock(
-                side_effect=[
-                    b'"not an object"\n',  # Valid JSON but not an object
-                    b"",  # EOF
-                ]
-            )
-            mock_read_stdin.return_value = mock_reader
 
             mock_config = MagicMock()
 
@@ -373,6 +379,12 @@ class TestStdioHandler:
     @pytest.mark.asyncio
     async def test_handle_stdio_invalid_jsonrpc_version(self):
         """Test stdio handler with invalid JSON-RPC version."""
+        invalid_request = {"jsonrpc": "1.0", "method": "test", "id": 1}
+
+        async def mock_stdin_lines():
+            """Mock async generator for invalid JSON-RPC version."""
+            yield json.dumps(invalid_request) + "\n"
+
         with (
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
             patch(
@@ -380,7 +392,10 @@ class TestStdioHandler:
             ) as mock_search_engine_class,
             patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
             patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
+            patch(
+                "qdrant_loader_mcp_server.cli.read_stdin_lines",
+                return_value=mock_stdin_lines(),
+            ),
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
         ):
@@ -393,14 +408,6 @@ class TestStdioHandler:
             mock_search_engine.initialize = AsyncMock()
             mock_search_engine.cleanup = AsyncMock()
             mock_search_engine_class.return_value = mock_search_engine
-
-            # Mock reader with invalid JSON-RPC version
-            invalid_request = {"jsonrpc": "1.0", "method": "test", "id": 1}
-            mock_reader = MagicMock()
-            mock_reader.readline = AsyncMock(
-                side_effect=[json.dumps(invalid_request).encode() + b"\n", b""]  # EOF
-            )
-            mock_read_stdin.return_value = mock_reader
 
             mock_config = MagicMock()
 
@@ -416,6 +423,12 @@ class TestStdioHandler:
     @pytest.mark.asyncio
     async def test_handle_stdio_successful_request(self):
         """Test stdio handler with successful request processing."""
+        valid_request = {"jsonrpc": "2.0", "method": "tools/list", "id": 1}
+
+        async def mock_stdin_lines():
+            """Mock async generator for valid request."""
+            yield json.dumps(valid_request) + "\n"
+
         with (
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
             patch(
@@ -423,7 +436,10 @@ class TestStdioHandler:
             ) as mock_search_engine_class,
             patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
             patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
-            patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
+            patch(
+                "qdrant_loader_mcp_server.cli.read_stdin_lines",
+                return_value=mock_stdin_lines(),
+            ),
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
         ):
@@ -443,14 +459,6 @@ class TestStdioHandler:
                 return_value={"jsonrpc": "2.0", "id": 1, "result": "success"}
             )
             mock_mcp_handler_class.return_value = mock_mcp_handler
-
-            # Mock reader with valid request
-            valid_request = {"jsonrpc": "2.0", "method": "tools/list", "id": 1}
-            mock_reader = MagicMock()
-            mock_reader.readline = AsyncMock(
-                side_effect=[json.dumps(valid_request).encode() + b"\n", b""]  # EOF
-            )
-            mock_read_stdin.return_value = mock_reader
 
             mock_config = MagicMock()
 

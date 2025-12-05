@@ -147,8 +147,8 @@ class TestRealEndToEndPhase2_3:
             }
             mock_results.append(mock_result)
 
-        # Mock search method
-        mock_client.search.return_value = mock_results
+        # Mock search method - must be async since real code uses await
+        mock_client.search = AsyncMock(return_value=mock_results)
 
         # Mock scroll method for BM25 keyword search (returns all documents for corpus)
         mock_scroll_results = []
@@ -162,8 +162,8 @@ class TestRealEndToEndPhase2_3:
             }
             mock_scroll_results.append(mock_point)
 
-        # scroll method returns tuple: (list_of_points, next_page_offset)
-        mock_client.scroll.return_value = (mock_scroll_results, None)
+        # scroll method returns tuple: (list_of_points, next_page_offset) - must be async
+        mock_client.scroll = AsyncMock(return_value=(mock_scroll_results, None))
 
         return mock_client
 
@@ -200,6 +200,15 @@ class TestRealEndToEndPhase2_3:
         # Replace only external dependencies with mocks, keep all internal logic real
         search_engine.hybrid_search.qdrant_client = mock_qdrant_client
         search_engine.hybrid_search.openai_client = mock_openai_client
+
+        # Also mock the qdrant_client in vector_search_service if it exists
+        if hasattr(search_engine.hybrid_search, "vector_search_service"):
+            search_engine.hybrid_search.vector_search_service.qdrant_client = (
+                mock_qdrant_client
+            )
+            search_engine.hybrid_search.vector_search_service.openai_client = (
+                mock_openai_client
+            )
 
         return search_engine
 
