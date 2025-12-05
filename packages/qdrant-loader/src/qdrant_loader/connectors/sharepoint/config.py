@@ -6,11 +6,13 @@ from enum import Enum
 import os
 from qdrant_loader.config.source_config import SourceConfig
 import re
+
 ENV_PATTERN = re.compile(r"^\$\{(.+)\}$")
 
 
 class SharePointAuthMethod(str, Enum):
     """SharePoint authentication methods."""
+
     CLIENT_CREDENTIALS = "client_credentials"
     USER_CREDENTIALS = "user_credentials"
 
@@ -18,10 +20,7 @@ class SharePointAuthMethod(str, Enum):
 class SharePointConfig(SourceConfig):
     """Configuration for a SharePoint repository with Azure AD authentication."""
 
-    relative_url: str = Field(
-        ...,
-        description="Site relative URL"
-    )
+    relative_url: str = Field(..., description="Site relative URL")
 
     # Authentication
     authentication_method: SharePointAuthMethod = Field(
@@ -30,26 +29,23 @@ class SharePointConfig(SourceConfig):
 
     # Azure AD App Authentication (CLIENT_CREDENTIALS)
     tenant_id: Optional[str] = Field(
-        default=None,
-        description="Azure AD tenant ID - required for CLIENT_CREDENTIALS"
+        default=None, description="Azure AD tenant ID - required for CLIENT_CREDENTIALS"
     )
     client_id: Optional[str] = Field(
         default=None,
-        description="Azure AD Application (Client) ID - Required for CLIENT_CREDENTIALS"
+        description="Azure AD Application (Client) ID - Required for CLIENT_CREDENTIALS",
     )
     client_secret: Optional[str] = Field(
         default=None,
-        description="Azure AD Client Secret - Required for CLIENT_CREDENTIALS"
+        description="Azure AD Client Secret - Required for CLIENT_CREDENTIALS",
     )
 
     # User Authentication (For development/testing only)
     username: Optional[str] = Field(
-        default=None,
-        description="SharePoint username - Required for USER_CREDENTIALS"
+        default=None, description="SharePoint username - Required for USER_CREDENTIALS"
     )
     password: Optional[str] = Field(
-        default=None,
-        description="SharePoint password - Required for USER_CREDENTIALS"
+        default=None, description="SharePoint password - Required for USER_CREDENTIALS"
     )
 
     document_libraries: List[str] = Field(default_factory=list)
@@ -65,16 +61,12 @@ class SharePointConfig(SourceConfig):
 
     # Rate limiting
     requests_per_minute: int = Field(
-        default=60,
-        description="Maximum API requests per minute",
-        ge=1,
-        le=600
+        default=60, description="Maximum API requests per minute", ge=1, le=600
     )
 
     @field_validator("file_extensions", mode="after")
     def normalize_extensions(cls, v):
         return [ft.lstrip(".").lower().strip() for ft in v] if v else []
-
 
     @model_validator(mode="after")
     def load_env_client_secret(self):
@@ -84,7 +76,7 @@ class SharePointConfig(SourceConfig):
         ):
             self.client_secret = os.getenv("SHAREPOINT_CLIENT_SECRET")
         return self
-    
+
     @model_validator(mode="after")
     def load_env_client_id(self):
         if (
@@ -93,7 +85,7 @@ class SharePointConfig(SourceConfig):
         ):
             self.client_id = os.getenv("SHAREPOINT_CLIENT_ID")
         return self
-    
+
     @model_validator(mode="after")
     def load_env_tenant_id(self):
         if (
@@ -120,7 +112,7 @@ class SharePointConfig(SourceConfig):
                 raise ValueError("password is required for USER_CREDENTIALS")
 
         return self
-    
+
     @model_validator(mode="before")
     def expand_env_vars(cls, values):
         for key, val in values.items():

@@ -66,12 +66,14 @@ class PublicDocsConfig(TypedDict):
     path_pattern: str
     exclude_paths: list[str]
 
+
 class SharePointConfig(TypedDict):
     """Configuration for Sharepoint documentation sources."""
-    base_url: str                  
-    relative_url: str                 
 
-    authentication_method: str  
+    base_url: str
+    relative_url: str
+
+    authentication_method: str
 
     tenant_id: Optional[str]
     client_id: Optional[str]
@@ -79,6 +81,7 @@ class SharePointConfig(TypedDict):
 
     username: Optional[str]
     password: Optional[str]
+
 
 class SourcesConfigDict(TypedDict):
     """Configuration for all sources."""
