@@ -173,9 +173,11 @@ projects:
         expected_path = str(workspace_config.database_path)
         actual_path = settings.state_db_path
 
-        assert actual_path == expected_path
+        # Normalize paths for comparison (handles Windows paths consistently)
+        assert Path(actual_path).resolve() == Path(expected_path).resolve()
         assert actual_path.endswith("qdrant-loader.db")
-        assert str(temp_workspace) in actual_path
+        # Check using resolved paths to handle short vs long path names
+        assert Path(temp_workspace).resolve() in Path(actual_path).resolve().parents
 
     def test_workspace_configuration_validation(self, temp_workspace):
         """Test workspace configuration validation."""

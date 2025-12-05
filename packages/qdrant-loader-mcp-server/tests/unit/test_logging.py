@@ -2,6 +2,7 @@
 
 import logging
 import os
+import shutil
 import tempfile
 from unittest.mock import MagicMock, patch
 
@@ -94,31 +95,39 @@ def test_logging_config_setup_basic():
 
 
 def test_logging_config_setup_with_file():
-    """Test logging configuration with file output."""
+    """Test logging configuration with file."""
     LoggingConfig._initialized = False
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        try:
-            # Set environment variable to match expected level
-            with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INFO"}, clear=False):
-                LoggingConfig.setup(level="INFO", format="json", file=tmp_file.name)
+        tmp_file_name = tmp_file.name
 
-            assert LoggingConfig._initialized is True
-            assert LoggingConfig._current_config == (
-                "INFO",
-                "json",
-                tmp_file.name,
-                True,
-            )
-        finally:
-            os.unlink(tmp_file.name)
+    try:
+        # Set environment variable to match expected level
+        with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INFO"}, clear=False):
+            LoggingConfig.setup(level="INFO", format="json", file=tmp_file_name)
+
+        assert LoggingConfig._initialized is True
+        assert LoggingConfig._current_config == (
+            "INFO",
+            "json",
+            tmp_file_name,
+            True,
+        )
+    finally:
+        # Close all logging handlers before deleting file (Windows compatibility)
+        logging.shutdown()
+        try:
+            os.unlink(tmp_file_name)
+        except Exception:
+            pass
 
 
 def test_logging_config_setup_with_env_variables():
     """Test logging configuration with environment variables."""
     LoggingConfig._initialized = False
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    tmp_dir = tempfile.mkdtemp()
+    try:
         log_file = os.path.join(tmp_dir, "test.log")
 
         with patch.dict(
@@ -134,6 +143,14 @@ def test_logging_config_setup_with_env_variables():
             assert LoggingConfig._initialized is True
             # Check that log file was created
             assert os.path.exists(log_file)
+    finally:
+        # Close all logging handlers before cleanup (Windows compatibility)
+        logging.shutdown()
+
+        try:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        except Exception:
+            pass
 
 
 def test_logging_config_setup_disabled_console():

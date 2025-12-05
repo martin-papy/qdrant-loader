@@ -44,7 +44,9 @@ def test_redact_effective_config():
     assert red["derived"]["openai"]["api_key"] == "***REDACTED***"
 
 
-def test_load_config_env_only(monkeypatch):
+def test_load_config_env_only(monkeypatch, tmp_path):
+    # Change to a temporary directory to avoid finding config.yaml in the project root
+    monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("MCP_CONFIG", raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "secret")
