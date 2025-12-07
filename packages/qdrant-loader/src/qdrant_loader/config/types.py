@@ -6,7 +6,7 @@ for configuration data structures.
 """
 
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, TypedDict, Optional
 
 
 class SourceType(str, Enum):
@@ -17,6 +17,7 @@ class SourceType(str, Enum):
     CONFLUENCE = "confluence"
     JIRA = "jira"
     LOCALFILE = "localfile"
+    SHAREPOINT = "sharepoint"
 
 
 class GitConfig(TypedDict):
@@ -66,6 +67,22 @@ class PublicDocsConfig(TypedDict):
     exclude_paths: list[str]
 
 
+class SharePointConfig(TypedDict):
+    """Configuration for Sharepoint documentation sources."""
+
+    base_url: str
+    relative_url: str
+
+    authentication_method: str
+
+    tenant_id: Optional[str]
+    client_id: Optional[str]
+    client_secret: Optional[str]
+
+    username: Optional[str]
+    password: Optional[str]
+
+
 class SourcesConfigDict(TypedDict):
     """Configuration for all sources."""
 
@@ -73,6 +90,7 @@ class SourcesConfigDict(TypedDict):
     git: dict[str, GitConfig]
     confluence: dict[str, ConfluenceConfig]
     jira: dict[str, JiraConfig]
+    sharepoint: dict[str, SharePointConfig]
 
 
 class SemanticAnalysisConfigDict(TypedDict):

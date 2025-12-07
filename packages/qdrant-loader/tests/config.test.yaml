@@ -196,3 +196,15 @@ projects:
           process_attachments: true                 # Whether to process issue attachments
           token: "${JIRA_TOKEN}"                    # JIRA API token
           email: "${JIRA_EMAIL}"                    # JIRA user email
+
+      # SHAREPOINT document source 
+      sharepoint:
+        intranet:
+          source: "intranet"
+          source_type: "sharepoint"
+          base_url: "https://company.sharepoint.com"
+          relative_url: "/sites/team"
+          authentication_method: "client_credentials"
+          client_id: "${SHAREPOINT_CLIENT_ID}"
+          client_secret: "${SHAREPOINT_CLIENT_SECRET}"
+          tenant_id: "${SHAREPOINT_TENANT_ID}"

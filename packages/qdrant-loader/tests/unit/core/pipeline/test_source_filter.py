@@ -53,6 +53,14 @@ class TestSourceFilter:
 
         config.localfile = {"docs": localfile_source}
 
+        # Add SharePoint sources
+        sharepoint_source = MagicMock(spec=SourceConfig)
+        sharepoint_source.source_type = "sharepoint"
+        sharepoint_source.source = "sites"
+        sharepoint_source.name = "sites"
+
+        config.localfile = {"sites": sharepoint_source}
+
         return config
 
     def test_no_filters_returns_original(self, sample_sources_config):
