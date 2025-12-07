@@ -99,6 +99,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = None
         filtered_config.publicdocs = None
         filtered_config.localfile = None
+        filtered_config.sharepoint = None
 
         # Setup mock pipeline result
         mock_result = Mock()
@@ -179,6 +180,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = None
         filtered_config.publicdocs = None
         filtered_config.localfile = None
+        filtered_config.sharepoint = None
 
         mock_documents = [Mock(spec=Document, id="doc1")]
 
@@ -228,6 +230,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = None
         filtered_config.publicdocs = None
         filtered_config.localfile = None
+        filtered_config.sharepoint = None
 
         self.source_filter.filter_sources.return_value = filtered_config
 
@@ -248,6 +251,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = None
         filtered_config.publicdocs = None
         filtered_config.localfile = None
+        filtered_config.sharepoint = None
 
         # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
@@ -315,6 +319,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = ["jira_source"]
         filtered_config.publicdocs = ["publicdocs_source"]
         filtered_config.localfile = ["localfile_source"]
+        filtered_config.sharepoint = None
 
         # Setup mock documents for each source type
         confluence_docs = [Mock(spec=Document, id="confluence_doc")]
@@ -354,6 +359,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = None
         filtered_config.publicdocs = None
         filtered_config.localfile = None
+        filtered_config.sharepoint = None
 
         # Setup mock documents
         confluence_docs = [Mock(spec=Document, id="confluence_doc")]
@@ -384,6 +390,7 @@ class TestPipelineOrchestrator:
         filtered_config.jira = None
         filtered_config.publicdocs = None
         filtered_config.localfile = None
+        filtered_config.sharepoint = None
 
         # Execute
         result = await self.orchestrator._collect_documents_from_sources(

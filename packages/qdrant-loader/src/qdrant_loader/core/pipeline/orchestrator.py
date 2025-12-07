@@ -6,6 +6,7 @@ from qdrant_loader.connectors.git import GitConnector
 from qdrant_loader.connectors.jira import JiraConnector
 from qdrant_loader.connectors.localfile import LocalFileConnector
 from qdrant_loader.connectors.publicdocs import PublicDocsConnector
+from qdrant_loader.connectors.sharepoint import SharePointConnector
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
@@ -120,6 +121,7 @@ class PipelineOrchestrator:
                     filtered_config.jira,
                     filtered_config.publicdocs,
                     filtered_config.localfile,
+                    filtered_config.sharepoint,
                 ]
             ):
                 raise ValueError(f"No sources found for type '{source_type}'")
@@ -246,6 +248,12 @@ class PipelineOrchestrator:
                 filtered_config.localfile, LocalFileConnector, "LocalFile"
             )
             documents.extend(localfile_docs)
+
+        if filtered_config.sharepoint:
+            sharepoint_docs = await self.components.source_processor.process_source_type(
+                filtered_config.sharepoint, SharePointConnector, "SharePoint"
+            )
+            documents.extend(sharepoint_docs)
 
         # Inject project metadata into documents if project context is available
         if project_id and self.project_manager:

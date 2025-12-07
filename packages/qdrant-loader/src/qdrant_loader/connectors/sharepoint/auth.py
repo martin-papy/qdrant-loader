@@ -1,53 +1,171 @@
-import requests
-from .config import SharePointConfig, SharePointAuthMethod
+"""SharePoint authentication using Microsoft Graph API.
 
-class SharePointAuth:
-    def __init__(self, config: SharePointConfig):
-        self.config = config
-        self.token = None
-        self.auth = None
+This module provides function-based authentication using GraphClient from
+office365-rest-python-client library.
 
-        if config.authentication_method == SharePointAuthMethod.CLIENT_CREDENTIALS:
-            self._authenticate_client_credentials()
-        else:
-            self._authenticate_user_credentials()
+Authentication Methods:
+- CLIENT_CREDENTIALS: GraphClient(tenant=tenant).with_client_secret(client_id, client_secret)
+- USER_CREDENTIALS: GraphClient(tenant=tenant).with_username_and_password(client_id, username, password)
 
-    def _authenticate_client_credentials(self):
-        base = None
-        if getattr(self.config, "base_url", None):
-            base = str(self.config.base_url)
-        elif getattr(self.config, "relative_url", None) and str(self.config.relative_url).startswith("http"):
-            base = str(self.config.relative_url)
+Note: Office365-REST-Python-Client handles token refresh automatically.
 
-        if not base:
-            raise ValueError("SharePointConfig.base_url (or a full relative_url) is required to build the resource scope for client credentials")
+Reference:
+- examples/auth/with_client_secret.py
+- examples/auth/with_user_creds.py
+"""
 
-        token_url = f"https://login.microsoftonline.com/{self.config.tenant_id}/oauth2/v2.0/token"
-        scope = f"{base.rstrip('/')}/.default"
+from office365.graph_client import GraphClient
 
-        payload = {
-            "grant_type": "client_credentials",
-            "client_id": self.config.client_id,
-            "client_secret": self.config.client_secret,
-            "scope": scope,
+from qdrant_loader.connectors.sharepoint.config import (
+    SharePointAuthMethod,
+    SharePointConfig,
+)
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
+
+
+class SharePointAuthError(Exception):
+    """Authentication error for SharePoint."""
+
+    pass
+
+
+def create_graph_client(config: SharePointConfig) -> GraphClient:
+    """Create authenticated GraphClient for Microsoft Graph API.
+
+    Uses built-in authentication methods from office365-rest-python-client:
+    - CLIENT_CREDENTIALS: GraphClient(tenant=tenant).with_client_secret(client_id, client_secret)
+    - USER_CREDENTIALS: GraphClient(tenant=tenant).with_username_and_password(client_id, username, password)
+
+    Note: Office365-REST-Python-Client handles token refresh automatically.
+
+    Args:
+        config: SharePoint configuration
+
+    Returns:
+        Authenticated GraphClient
+
+    Raises:
+        SharePointAuthError: If authentication fails
+    """
+    if not config.tenant_id:
+        raise SharePointAuthError("tenant_id is required for authentication")
+
+    if config.auth_method == SharePointAuthMethod.CLIENT_CREDENTIALS:
+        if not config.client_id or not config.client_secret:
+            raise SharePointAuthError(
+                "client_id and client_secret required for client_credentials auth"
+            )
+
+        # Built-in method from office365-rest-python-client
+        # Reference: examples/auth/with_client_secret.py
+        client = GraphClient(tenant=config.tenant_id).with_client_secret(
+            config.client_id, config.client_secret
+        )
+
+    elif config.auth_method == SharePointAuthMethod.USER_CREDENTIALS:
+        if not config.client_id or not config.username or not config.password:
+            raise SharePointAuthError(
+                "client_id, username and password required for user_credentials auth"
+            )
+
+        # Built-in method from office365-rest-python-client
+        # Reference: examples/auth/with_user_creds.py
+        # Note: ROPC flow - does NOT work with MFA-enabled accounts
+        client = GraphClient(tenant=config.tenant_id).with_username_and_password(
+            config.client_id, config.username, config.password
+        )
+
+    else:
+        raise SharePointAuthError(f"Unsupported auth method: {config.auth_method}")
+
+    logger.debug(
+        "GraphClient created",
+        auth_method=config.auth_method.value,
+        tenant_id=config.tenant_id,
+    )
+
+    return client
+
+
+def validate_connection(client: GraphClient) -> dict:
+    """Validate connection by fetching root site info.
+
+    Args:
+        client: Authenticated GraphClient
+
+    Returns:
+        Dict with site info (display_name, web_url)
+
+    Raises:
+        SharePointAuthError: If validation fails
+    """
+    try:
+        # Get root site to validate connection
+        root_site = client.sites.root.get().execute_query()
+
+        # Site object properties may vary - use safe access
+        # Possible attributes: display_name, displayName, name, web_url, webUrl
+        display_name = (
+            getattr(root_site, "display_name", None)
+            or getattr(root_site, "displayName", None)
+            or getattr(root_site, "name", None)
+            or "Unknown"
+        )
+
+        web_url = (
+            getattr(root_site, "web_url", None)
+            or getattr(root_site, "webUrl", None)
+            or str(root_site)
+            or ""
+        )
+
+        site_info = {
+            "display_name": display_name,
+            "web_url": web_url,
         }
 
-        r = requests.post(token_url, data=payload)
-        r.raise_for_status()
-        self.token = r.json().get("access_token")
+        logger.info(
+            "SharePoint connection validated",
+            site_name=site_info["display_name"],
+            site_url=site_info["web_url"],
+        )
 
-    def _authenticate_user_credentials(self):
-        try:
-            from requests_ntlm import HttpNtlmAuth
-        except Exception:
-            raise RuntimeError("requests_ntlm is required for user credentials auth. Install with: pip install requests_ntlm")
+        return site_info
 
-        self.auth = HttpNtlmAuth(self.config.username, self.config.password)
+    except SharePointAuthError:
+        # Re-raise our own errors without wrapping
+        raise
+    except Exception as e:
+        error_str = str(e).lower()
+        if "401" in error_str or "unauthorized" in error_str:
+            raise SharePointAuthError(
+                "Authentication failed - invalid credentials"
+            ) from e
+        elif "403" in error_str or "forbidden" in error_str:
+            raise SharePointAuthError("Access denied - check permissions") from e
+        elif "404" in error_str:
+            raise SharePointAuthError("Site not found - check tenant_id") from e
+        else:
+            raise SharePointAuthError(f"Connection validation failed: {e}") from e
 
-    def get_headers(self):
-        if self.token:
-            return {
-                "Authorization": f"Bearer {self.token}",
-                "Accept": "application/json;odata=verbose",
-            }
-        return {"Accept": "application/json;odata=verbose"}
+
+def get_site_by_url(client: GraphClient, host: str, site_path: str):
+    """Get SharePoint site by URL.
+
+    Args:
+        client: Authenticated GraphClient
+        host: SharePoint host (e.g., "company.sharepoint.com")
+        site_path: Site relative path (e.g., "/sites/mysite")
+
+    Returns:
+        Site object
+
+    Example:
+        site = get_site_by_url(client, "company.sharepoint.com", "/sites/mysite")
+    """
+    # Format: host:/path - as documented in Microsoft Graph API
+    site_url = f"{host}:{site_path}"
+    site = client.sites.get_by_url(site_url).execute_query()
+    return site

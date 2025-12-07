@@ -1,6 +1,6 @@
 """Configuration management for the application."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 
 class SemanticAnalysisConfig(BaseModel):
@@ -74,11 +74,11 @@ class Settings(BaseModel):
     JIRA_EMAIL: str
 
     # SharePoint configuration
-    SHAREPOINT_RELATIVE_URL: str
+    SHAREPOINT_RELATIVE_URL: str | None = None
     SHAREPOINT_AUTHENTICATION_METHOD: str = "client_credentials"
     SHAREPOINT_TENANT_ID: str | None = None
     SHAREPOINT_CLIENT_ID: str | None = None
-    SHAREPOINT_CLIENT_SECRET: str | None = None
+    SHAREPOINT_CLIENT_SECRET: SecretStr | None = None
     SHAREPOINT_DOCUMENT_LIBRARIES: str | None = None
     SHAREPOINT_LISTS: str | None = None
     SHAREPOINT_FILE_EXTENSIONS: str | None = None

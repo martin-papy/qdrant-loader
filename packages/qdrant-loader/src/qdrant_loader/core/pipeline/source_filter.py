@@ -49,6 +49,10 @@ class SourceFilter:
                 filtered_config.localfile = self._filter_by_name(
                     sources_config.localfile, source
                 )
+            elif source_type_lower == "sharepoint" and sources_config.sharepoint:
+                filtered_config.sharepoint = self._filter_by_name(
+                    sources_config.sharepoint, source
+                )
         else:
             # No source type filter, but filter by name across all types
             if sources_config.git:
@@ -66,6 +70,10 @@ class SourceFilter:
             if sources_config.localfile:
                 filtered_config.localfile = self._filter_by_name(
                     sources_config.localfile, source
+                )
+            if sources_config.sharepoint:
+                filtered_config.sharepoint = self._filter_by_name(
+                    sources_config.sharepoint, source
                 )
 
         return filtered_config
