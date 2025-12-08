@@ -2,7 +2,7 @@
 
 import nltk
 import spacy
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_loader.config import Settings
 from qdrant_loader.utils.logging import LoggingConfig
 from spacy.cli.download import download

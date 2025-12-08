@@ -122,7 +122,7 @@ class TestConversionTracking:
         assert metrics.conversion_success is True
         assert metrics.conversion_method == "markitdown"
         assert metrics.conversion_time is not None
-        assert metrics.conversion_time > 0
+        assert metrics.conversion_time >= 0  # Can be 0 if test runs very fast
 
         # Check global conversion metrics
         conv_metrics = monitor.conversion_metrics
@@ -318,7 +318,7 @@ class TestConversionSummary:
         monitor.conversion_metrics.successful_conversions = 8
         monitor.conversion_metrics.failed_conversions = 2
         monitor.conversion_metrics.total_conversion_time = 45.0
-        monitor.conversion_metrics.average_conversion_time = 4.5
+        # average_conversion_time is now calculated as a property (45.0 / 10 = 4.5)
         monitor.conversion_metrics.attachments_processed = 5
         monitor.conversion_metrics.conversion_methods = {
             "markitdown": 8,
@@ -342,7 +342,7 @@ class TestConversionSummary:
         assert summary["failed_conversions"] == 2
         assert summary["success_rate"] == 80.0
         assert summary["total_conversion_time"] == 45.0
-        assert summary["average_conversion_time"] == 4.5
+        assert summary["average_conversion_time"] == 4.5  # 45.0 / 10
         assert summary["attachments_processed"] == 5
         assert summary["conversion_methods"]["markitdown"] == 8
         assert summary["file_types_processed"]["pdf"] == 4

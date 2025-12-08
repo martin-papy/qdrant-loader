@@ -60,7 +60,14 @@ class GitMetadataExtractor:
     def _extract_file_metadata(self, file_path: str, content: str) -> dict[str, Any]:
         """Extract metadata about the file itself."""
         # Get relative path from repository root
-        rel_path = os.path.relpath(file_path, self.config.temp_dir)
+        # Handle cross-drive paths on Windows (ValueError when paths are on different drives)
+        try:
+            rel_path = os.path.relpath(file_path, self.config.temp_dir)
+        except ValueError:
+            raise ValueError(
+                f"Cannot compute relative path for {file_path} from {self.config.temp_dir}. "
+                "Files on different drives should be filtered during file processing."
+            )
         file_type = os.path.splitext(rel_path)[1]
         file_name = os.path.basename(rel_path)
         file_encoding = self._detect_encoding(content)
@@ -80,7 +87,11 @@ class GitMetadataExtractor:
         return {
             "file_type": file_type,
             "file_name": file_name,
-            "file_directory": os.path.dirname("/" + file_path),
+            "file_directory": (
+                os.path.dirname(rel_path)
+                if not os.path.isabs(rel_path)
+                else os.path.dirname(file_path)
+            ),
             "file_encoding": file_encoding,
             "line_count": line_count,
             "word_count": word_count,
