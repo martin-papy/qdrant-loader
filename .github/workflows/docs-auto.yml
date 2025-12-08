@@ -65,14 +65,38 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Restore cached virtual environment
+        uses: actions/cache/restore@v4
+        id: cache-venv-docs
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-docs-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-docs-
+
+      - name: Create venv if not cached
+        if: steps.cache-venv-docs.outputs.cache-hit != 'true'
+        run: python -m venv .venv
+
       - name: Install dependencies
         run: |
+          source .venv/bin/activate
           python -m pip install --upgrade pip
           # Install monorepo packages locally first to avoid PyPI resolution issues
           pip install -e packages/qdrant-loader-core[openai]
           pip install -e .[dev]
           pip install -e packages/qdrant-loader
           pip install -e ".[docs]"
+
+      - name: Save virtual environment cache
+        uses: actions/cache/save@v4
+        if: steps.cache-venv-docs.outputs.cache-hit != 'true'
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-docs-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
+
+      - name: Activate venv for subsequent steps
+        run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
 
       - name: Generate favicons
         run: |
