@@ -1,6 +1,7 @@
 """Test document ID consistency for LocalFile connector."""
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -140,6 +141,7 @@ class TestLocalFileIdConsistency:
     @pytest.mark.asyncio
     async def test_document_id_consistency_with_symlinks(self, temp_dir):
         """Test that document IDs remain consistent when accessing files through symlinks."""
+
         # Create a symlink to the temp directory
         symlink_dir = Path(temp_dir).parent / "symlink_test"
         if symlink_dir.exists():
@@ -147,6 +149,12 @@ class TestLocalFileIdConsistency:
 
         try:
             symlink_dir.symlink_to(temp_dir)
+        except OSError as e:
+            # Skip test on Windows if user doesn't have symlink privileges
+            if sys.platform == "win32" and getattr(e, "winerror", None) == 1314:
+                pytest.skip("Symlink creation requires admin privileges on Windows")
+            raise
+        try:
 
             # Create test files in the original directory
             test_file = Path(temp_dir) / "test_symlink.txt"

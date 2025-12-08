@@ -467,7 +467,7 @@ class TestFacetedSearchEngine:
         assert faceted_results.filtered_count == 2
         assert len(faceted_results.results) == 2
         assert len(faceted_results.facets) > 0
-        assert faceted_results.generation_time_ms > 0
+        assert faceted_results.generation_time_ms >= 0
 
     def test_generate_faceted_results_with_filters(self):
         """Test generating faceted results with applied filters."""

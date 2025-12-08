@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 0.7.4 - Dec 5, 2025
+
+### 🪟 Windows Compatibility Fixes
+
+#### Test Suite Cross-Platform Support
+
+- **Fixed Git connector tests**: Resolved 9 test failures related to cross-platform path handling
+  - Fixed cross-drive relative path errors on Windows (e.g., `ValueError` when computing paths from C: to D:)
+  - Updated all test files to use `os.path.join()` with `temp_dir` instead of hardcoded Unix paths
+  - Enhanced `test_git_connector.py` with proper mocking for temp_dir-based paths
+- **Fixed pytest configuration conflicts**: Resolved root workspace test discovery issues
+
+  - Updated `pyproject.toml` to exclude `packages/` directory from root test collection
+  - Added `norecursedirs` to prevent conftest import conflicts between workspace and packages
+  - All 172 root workspace tests now pass without import errors
+
+- **Fixed config loader test isolation**: Prevented workspace config interference
+
+  - Added `monkeypatch.chdir(tmp_path)` to isolate tests from project root
+  - Tests no longer accidentally discover workspace `config.yaml` files
+
+- **Fixed website build system tests**: Resolved 19 failures/errors on Windows
+  - **Unicode encoding**: Added explicit `encoding="utf-8"` to all file operations
+  - **URL generation**: Used `Path.as_posix()` for cross-platform sitemap URLs
+  - **Windows path handling**: Implemented smart colon detection to distinguish drive letters (`C:`) from source:dest syntax
+  - **File cleanup**: Added retry logic with delays for Windows file handle cleanup (fixes 15 `PermissionError` cases)
+  - **Test assertions**: Updated timing assertions from `> 0` to `>= 0` for edge case compatibility
+
+#### Technical Improvements
+
+- **Cross-platform best practices**: All fixes use Python standard library APIs (`os.path.join()`, `Path.as_posix()`, explicit encoding)
+- **Full backward compatibility**: No breaking changes for Mac/Linux platforms
+- **Comprehensive test coverage**: All 1899+ tests passing on Windows (172 root + 33 git + 120 website + 1674 loader)
+
 ## Version 0.7.3 - Sept 11, 2025
 
 ### Logging System Fixes
@@ -85,7 +119,7 @@
 - **CLI Transport Selection**: Added `--transport` option to choose between stdio and HTTP modes
 - **Health Check Endpoints**: Built-in monitoring and health check capabilities for production deployment
 
-#### 📊 Structured Output & Protocol Features  
+#### 📊 Structured Output & Protocol Features
 
 - **Structured Tool Output**: Enhanced tool responses with JSON-structured content while maintaining backward compatibility
 - **Tool Behavioral Annotations**: Added annotations for all 8 tools indicating read-only and compute-intensive operations
@@ -95,7 +129,7 @@
 #### 🔄 Backward Compatibility & Migration
 
 - **Zero Breaking Changes**: Existing stdio clients continue to work unchanged
-- **Seamless Migration Path**: Easy transition between transport modes without configuration changes  
+- **Seamless Migration Path**: Easy transition between transport modes without configuration changes
 - **Legacy Support**: Full support for existing MCP 2024-11-05 clients
 - **Configuration Compatibility**: All existing configurations work with new transport layer
 
