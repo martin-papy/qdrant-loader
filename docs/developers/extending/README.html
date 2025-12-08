@@ -1,0 +1,488 @@
+<!DOCTYPE html><html><head>
+      <title>README</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\thanh.buingoc\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.20\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<h1 id="extension-guide">Extension Guide </h1>
+<p>This guide provides instructions for extending QDrant Loader with custom functionality. QDrant Loader is designed with a modular architecture that allows for extension through custom connectors and configuration.</p>
+<h2 id="-extension-overview">🎯 Extension Overview </h2>
+<p>QDrant Loader currently supports extension through:</p>
+<ul>
+<li><strong>Custom Data Source Connectors</strong> - Add support for new data sources by implementing the BaseConnector interface</li>
+<li><strong>Configuration Extensions</strong> - Extend configuration options for existing connectors</li>
+<li><strong>File Conversion Extensions</strong> - Leverage the MarkItDown library for additional file format support</li>
+</ul>
+<h3 id="current-architecture">Current Architecture </h3>
+<pre data-role="codeBlock" data-info="text" class="language-text text"><code>┌─────────────────────────────────────────────────────────────┐
+│ QDrant Loader CLI                                           │
+├─────────────────────────────────────────────────────────────┤
+│ Project Manager                                             │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │
+│ │ Config      │ │ State       │ │ Monitoring  │             │
+│ │ Management  │ │ Management  │ │             │             │
+│ └─────────────┘ └─────────────┘ └─────────────┘             │
+├─────────────────────────────────────────────────────────────┤
+│ Async Ingestion Pipeline                                    │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │
+│ │ Connectors  │ │ Chunking    │ │ Embeddings  │             │
+│ │             │ │             │ │             │             │
+│ └─────────────┘ └─────────────┘ └─────────────┘             │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │
+│ │ File        │ │ QDrant      │ │ State       │             │
+│ │ Conversion  │ │ Manager     │ │ Tracking    │             │
+│ └─────────────┘ └─────────────┘ └─────────────┘             │
+└─────────────────────────────────────────────────────────────┘
+</code></pre><h2 id="-development-environment-setup">🚀 Development Environment Setup </h2>
+<h3 id="prerequisites">Prerequisites </h3>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># Clone the repository</span>
+<span class="token function">git</span> clone https://github.com/martin-papy/qdrant-loader.git
+<span class="token builtin class-name">cd</span> qdrant-loader
+
+<span class="token comment"># Recommended: venv + editable installs</span>
+python <span class="token parameter variable">-m</span> venv .venv <span class="token operator">&amp;&amp;</span> <span class="token builtin class-name">source</span> .venv/bin/activate
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> packages/qdrant-loader
+
+<span class="token comment"># Optional: MCP package if developing integration</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> packages/qdrant-loader-mcp-server
+
+<span class="token comment"># Run tests</span>
+pytest <span class="token parameter variable">-v</span>
+</code></pre><h2 id="-custom-data-source-connectors">📊 Custom Data Source Connectors </h2>
+<h3 id="creating-a-custom-connector">Creating a Custom Connector </h3>
+<p>Data source connectors fetch documents from external systems. All connectors must implement the <code>BaseConnector</code> interface:</p>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-from">from</span> abc <span class="token keyword keyword-import">import</span> ABC<span class="token punctuation">,</span> abstractmethod
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>config<span class="token punctuation">.</span>source_config <span class="token keyword keyword-import">import</span> SourceConfig
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>core<span class="token punctuation">.</span>document <span class="token keyword keyword-import">import</span> Document
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">BaseConnector</span><span class="token punctuation">(</span>ABC<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Base class for all connectors."""</span>
+    
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> config<span class="token punctuation">:</span> SourceConfig<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>config <span class="token operator">=</span> config
+        self<span class="token punctuation">.</span>_initialized <span class="token operator">=</span> <span class="token boolean">False</span>
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">__aenter__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Async context manager entry."""</span>
+        self<span class="token punctuation">.</span>_initialized <span class="token operator">=</span> <span class="token boolean">True</span>
+        <span class="token keyword keyword-return">return</span> self
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">__aexit__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> exc_type<span class="token punctuation">,</span> exc_val<span class="token punctuation">,</span> exc_tb<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Async context manager exit."""</span>
+        self<span class="token punctuation">.</span>_initialized <span class="token operator">=</span> <span class="token boolean">False</span>
+    
+    <span class="token decorator annotation punctuation">@abstractmethod</span>
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">get_documents</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">list</span><span class="token punctuation">[</span>Document<span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Get documents from the source."""</span>
+        <span class="token keyword keyword-pass">pass</span>
+</code></pre><h3 id="example-custom-connector-implementation">Example Custom Connector Implementation </h3>
+<p>Here's an example of implementing a custom connector for a REST API:</p>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-import">import</span> httpx
+<span class="token keyword keyword-from">from</span> typing <span class="token keyword keyword-import">import</span> Any
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>connectors<span class="token punctuation">.</span>base <span class="token keyword keyword-import">import</span> BaseConnector
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>core<span class="token punctuation">.</span>document <span class="token keyword keyword-import">import</span> Document
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>config<span class="token punctuation">.</span>source_config <span class="token keyword keyword-import">import</span> SourceConfig
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>utils<span class="token punctuation">.</span>logging <span class="token keyword keyword-import">import</span> LoggingConfig
+
+logger <span class="token operator">=</span> LoggingConfig<span class="token punctuation">.</span>get_logger<span class="token punctuation">(</span>__name__<span class="token punctuation">)</span>
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">CustomAPIConnector</span><span class="token punctuation">(</span>BaseConnector<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Connector for custom REST API data source."""</span>
+    
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> config<span class="token punctuation">:</span> SourceConfig<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+        <span class="token comment"># Access configuration through config.config dict</span>
+        self<span class="token punctuation">.</span>api_url <span class="token operator">=</span> config<span class="token punctuation">.</span>config<span class="token punctuation">[</span><span class="token string">"api_url"</span><span class="token punctuation">]</span>
+        self<span class="token punctuation">.</span>api_key <span class="token operator">=</span> config<span class="token punctuation">.</span>config<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"api_key"</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>batch_size <span class="token operator">=</span> config<span class="token punctuation">.</span>config<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"batch_size"</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">)</span>
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">get_documents</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">list</span><span class="token punctuation">[</span>Document<span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Fetch documents from the custom API."""</span>
+        documents <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        headers <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+        <span class="token keyword keyword-if">if</span> self<span class="token punctuation">.</span>api_key<span class="token punctuation">:</span>
+            headers<span class="token punctuation">[</span><span class="token string">"Authorization"</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"Bearer </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>api_key<span class="token punctuation">}</span></span><span class="token string">"</span></span>
+        
+        <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-with">with</span> httpx<span class="token punctuation">.</span>AsyncClient<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword keyword-as">as</span> client<span class="token punctuation">:</span>
+            <span class="token keyword keyword-try">try</span><span class="token punctuation">:</span>
+                response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> client<span class="token punctuation">.</span>get<span class="token punctuation">(</span>
+                    <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>api_url<span class="token punctuation">}</span></span><span class="token string">/documents"</span></span><span class="token punctuation">,</span>
+                    headers<span class="token operator">=</span>headers<span class="token punctuation">,</span>
+                    params<span class="token operator">=</span><span class="token punctuation">{</span><span class="token string">"limit"</span><span class="token punctuation">:</span> self<span class="token punctuation">.</span>batch_size<span class="token punctuation">}</span>
+                <span class="token punctuation">)</span>
+                response<span class="token punctuation">.</span>raise_for_status<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                data <span class="token operator">=</span> response<span class="token punctuation">.</span>json<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                
+                <span class="token keyword keyword-for">for</span> item <span class="token keyword keyword-in">in</span> data<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"documents"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+                    document <span class="token operator">=</span> self<span class="token punctuation">.</span>_convert_to_document<span class="token punctuation">(</span>item<span class="token punctuation">)</span>
+                    <span class="token keyword keyword-if">if</span> document<span class="token punctuation">:</span>
+                        documents<span class="token punctuation">.</span>append<span class="token punctuation">(</span>document<span class="token punctuation">)</span>
+                        
+            <span class="token keyword keyword-except">except</span> httpx<span class="token punctuation">.</span>RequestError <span class="token keyword keyword-as">as</span> e<span class="token punctuation">:</span>
+                logger<span class="token punctuation">.</span>error<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"API request failed: </span><span class="token interpolation"><span class="token punctuation">{</span>e<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+                <span class="token keyword keyword-raise">raise</span>
+        
+        <span class="token keyword keyword-return">return</span> documents
+    
+    <span class="token keyword keyword-def">def</span> <span class="token function">_convert_to_document</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> api_item<span class="token punctuation">:</span> <span class="token builtin">dict</span><span class="token punctuation">[</span><span class="token builtin">str</span><span class="token punctuation">,</span> Any<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> Document<span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Convert API response item to Document."""</span>
+        <span class="token keyword keyword-return">return</span> Document<span class="token punctuation">(</span>
+            title<span class="token operator">=</span>api_item<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"title"</span><span class="token punctuation">,</span> <span class="token string">"Untitled"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            content_type<span class="token operator">=</span><span class="token string">"text/plain"</span><span class="token punctuation">,</span>
+            content<span class="token operator">=</span>api_item<span class="token punctuation">[</span><span class="token string">"content"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+            metadata<span class="token operator">=</span><span class="token punctuation">{</span>
+                <span class="token string">"api_id"</span><span class="token punctuation">:</span> api_item<span class="token punctuation">[</span><span class="token string">"id"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                <span class="token string">"author"</span><span class="token punctuation">:</span> api_item<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"author"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token string">"created_at"</span><span class="token punctuation">:</span> api_item<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"created_at"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token string">"tags"</span><span class="token punctuation">:</span> api_item<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"tags"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            source_type<span class="token operator">=</span><span class="token string">"custom_api"</span><span class="token punctuation">,</span>
+            source<span class="token operator">=</span>self<span class="token punctuation">.</span>config<span class="token punctuation">.</span>source<span class="token punctuation">,</span>
+            url<span class="token operator">=</span><span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>api_url<span class="token punctuation">}</span></span><span class="token string">/documents/</span><span class="token interpolation"><span class="token punctuation">{</span>api_item<span class="token punctuation">[</span><span class="token string">'id'</span><span class="token punctuation">]</span><span class="token punctuation">}</span></span><span class="token string">"</span></span>
+        <span class="token punctuation">)</span>
+</code></pre><h3 id="integrating-custom-connectors">Integrating Custom Connectors </h3>
+<p>To integrate a custom connector:</p>
+<ol>
+<li>Implement <code>BaseConnector</code></li>
+<li>Create a <code>SourceConfig</code> subclass with validation</li>
+<li>Wire it in your own pipeline or fork with a factory (core orchestrator directly instantiates known connectors)</li>
+</ol>
+<p>Example factory for forks/extensions:</p>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>connectors<span class="token punctuation">.</span>base <span class="token keyword keyword-import">import</span> BaseConnector
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>config<span class="token punctuation">.</span>source_config <span class="token keyword keyword-import">import</span> SourceConfig
+
+<span class="token keyword keyword-def">def</span> <span class="token function">create_connector</span><span class="token punctuation">(</span>source_type<span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">,</span> config<span class="token punctuation">:</span> SourceConfig<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> BaseConnector<span class="token punctuation">:</span>
+    <span class="token keyword keyword-if">if</span> source_type <span class="token operator">==</span> <span class="token string">"custom_api"</span><span class="token punctuation">:</span>
+        <span class="token keyword keyword-from">from</span> <span class="token punctuation">.</span>custom_api <span class="token keyword keyword-import">import</span> CustomAPIConnector
+        <span class="token keyword keyword-return">return</span> CustomAPIConnector<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+    <span class="token keyword keyword-raise">raise</span> ValueError<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Unknown source type: </span><span class="token interpolation"><span class="token punctuation">{</span>source_type<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+</code></pre><h2 id="-document-model">📄 Document Model </h2>
+<p>The <code>Document</code> model is the core data structure used throughout QDrant Loader. It uses Pydantic BaseModel:</p>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-from">from</span> pydantic <span class="token keyword keyword-import">import</span> BaseModel<span class="token punctuation">,</span> Field
+<span class="token keyword keyword-from">from</span> typing <span class="token keyword keyword-import">import</span> Any
+<span class="token keyword keyword-from">from</span> datetime <span class="token keyword keyword-import">import</span> datetime<span class="token punctuation">,</span> UTC
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">Document</span><span class="token punctuation">(</span>BaseModel<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Document model with enhanced metadata support."""</span>
+    <span class="token builtin">id</span><span class="token punctuation">:</span> <span class="token builtin">str</span>  <span class="token comment"># Auto-generated from source_type, source, and url</span>
+    title<span class="token punctuation">:</span> <span class="token builtin">str</span>
+    content_type<span class="token punctuation">:</span> <span class="token builtin">str</span>
+    content<span class="token punctuation">:</span> <span class="token builtin">str</span>
+    metadata<span class="token punctuation">:</span> <span class="token builtin">dict</span><span class="token punctuation">[</span><span class="token builtin">str</span><span class="token punctuation">,</span> Any<span class="token punctuation">]</span> <span class="token operator">=</span> Field<span class="token punctuation">(</span>default_factory<span class="token operator">=</span><span class="token builtin">dict</span><span class="token punctuation">)</span>
+    content_hash<span class="token punctuation">:</span> <span class="token builtin">str</span>  <span class="token comment"># Auto-generated hash of content</span>
+    source_type<span class="token punctuation">:</span> <span class="token builtin">str</span>
+    source<span class="token punctuation">:</span> <span class="token builtin">str</span>
+    url<span class="token punctuation">:</span> <span class="token builtin">str</span>
+    is_deleted<span class="token punctuation">:</span> <span class="token builtin">bool</span> <span class="token operator">=</span> <span class="token boolean">False</span>
+    created_at<span class="token punctuation">:</span> datetime <span class="token operator">=</span> Field<span class="token punctuation">(</span>default_factory<span class="token operator">=</span><span class="token keyword keyword-lambda">lambda</span><span class="token punctuation">:</span> datetime<span class="token punctuation">.</span>now<span class="token punctuation">(</span>UTC<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    updated_at<span class="token punctuation">:</span> datetime <span class="token operator">=</span> Field<span class="token punctuation">(</span>default_factory<span class="token operator">=</span><span class="token keyword keyword-lambda">lambda</span><span class="token punctuation">:</span> datetime<span class="token punctuation">.</span>now<span class="token punctuation">(</span>UTC<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre><h3 id="document-creation-best-practices">Document Creation Best Practices </h3>
+<ol>
+<li><strong>Provide meaningful titles</strong> - Use descriptive titles that help with search</li>
+<li><strong>Set appropriate content_type</strong> - Use MIME types when possible</li>
+<li><strong>Include rich metadata</strong> - Add author, creation date, tags, etc.</li>
+<li><strong>Use consistent source_type</strong> - Follow naming conventions</li>
+<li><strong>Provide URLs when available</strong> - Enable linking back to original content</li>
+</ol>
+<h3 id="document-creation-example">Document Creation Example </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token comment"># The Document constructor automatically generates id and content_hash</span>
+document <span class="token operator">=</span> Document<span class="token punctuation">(</span>
+    title<span class="token operator">=</span><span class="token string">"API Documentation"</span><span class="token punctuation">,</span>
+    content_type<span class="token operator">=</span><span class="token string">"text/markdown"</span><span class="token punctuation">,</span>
+    content<span class="token operator">=</span><span class="token string">"# API Reference\n\nThis is the API documentation..."</span><span class="token punctuation">,</span>
+    metadata<span class="token operator">=</span><span class="token punctuation">{</span>
+        <span class="token string">"author"</span><span class="token punctuation">:</span> <span class="token string">"John Doe"</span><span class="token punctuation">,</span>
+        <span class="token string">"version"</span><span class="token punctuation">:</span> <span class="token string">"1.0"</span><span class="token punctuation">,</span>
+        <span class="token string">"tags"</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">"api"</span><span class="token punctuation">,</span> <span class="token string">"documentation"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token string">"last_modified"</span><span class="token punctuation">:</span> <span class="token string">"2024-01-15T10:30:00Z"</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    source_type<span class="token operator">=</span><span class="token string">"custom_api"</span><span class="token punctuation">,</span>
+    source<span class="token operator">=</span><span class="token string">"my-api-docs"</span><span class="token punctuation">,</span>
+    url<span class="token operator">=</span><span class="token string">"https://api.example.com/docs/reference"</span>
+<span class="token punctuation">)</span>
+</code></pre><h2 id="-configuration-extensions">🔧 Configuration Extensions </h2>
+<h3 id="custom-configuration-classes">Custom Configuration Classes </h3>
+<p>Create configuration classes for your custom connectors by extending <code>SourceConfig</code>:</p>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-from">from</span> pydantic <span class="token keyword keyword-import">import</span> BaseModel<span class="token punctuation">,</span> field_validator
+<span class="token keyword keyword-from">from</span> typing <span class="token keyword keyword-import">import</span> Optional<span class="token punctuation">,</span> List
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>config<span class="token punctuation">.</span>source_config <span class="token keyword keyword-import">import</span> SourceConfig
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">CustomAPIConfig</span><span class="token punctuation">(</span>SourceConfig<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Configuration for custom API connector."""</span>
+    api_key<span class="token punctuation">:</span> Optional<span class="token punctuation">[</span><span class="token builtin">str</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">None</span>
+    batch_size<span class="token punctuation">:</span> <span class="token builtin">int</span> <span class="token operator">=</span> <span class="token number">100</span>
+    timeout<span class="token punctuation">:</span> <span class="token builtin">int</span> <span class="token operator">=</span> <span class="token number">30</span>
+    max_retries<span class="token punctuation">:</span> <span class="token builtin">int</span> <span class="token operator">=</span> <span class="token number">3</span>
+    include_tags<span class="token punctuation">:</span> List<span class="token punctuation">[</span><span class="token builtin">str</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    exclude_tags<span class="token punctuation">:</span> List<span class="token punctuation">[</span><span class="token builtin">str</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    
+    <span class="token decorator annotation punctuation">@field_validator</span><span class="token punctuation">(</span><span class="token string">'batch_size'</span><span class="token punctuation">)</span>
+    <span class="token decorator annotation punctuation">@classmethod</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">validate_batch_size</span><span class="token punctuation">(</span>cls<span class="token punctuation">,</span> v<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword keyword-if">if</span> v <span class="token operator">&lt;</span> <span class="token number">1</span> <span class="token keyword keyword-or">or</span> v <span class="token operator">&gt;</span> <span class="token number">1000</span><span class="token punctuation">:</span>
+            <span class="token keyword keyword-raise">raise</span> ValueError<span class="token punctuation">(</span><span class="token string">'Batch size must be between 1 and 1000'</span><span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> v
+</code></pre><h3 id="configuration-usage">Configuration Usage </h3>
+<pre data-role="codeBlock" data-info="yaml" class="language-yaml yaml"><code><span class="token comment"># config.yaml</span>
+<span class="token key atrule">global</span><span class="token punctuation">:</span>
+  <span class="token key atrule">qdrant</span><span class="token punctuation">:</span>
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> <span class="token string">"${QDRANT_URL}"</span>
+    <span class="token key atrule">api_key</span><span class="token punctuation">:</span> <span class="token string">"${QDRANT_API_KEY}"</span>
+    <span class="token key atrule">collection_name</span><span class="token punctuation">:</span> <span class="token string">"my-collection"</span>
+
+<span class="token key atrule">projects</span><span class="token punctuation">:</span>
+  <span class="token key atrule">my-project</span><span class="token punctuation">:</span>
+    <span class="token key atrule">display_name</span><span class="token punctuation">:</span> <span class="token string">"My Custom API Project"</span>
+    <span class="token key atrule">description</span><span class="token punctuation">:</span> <span class="token string">"Project using custom API connector"</span>
+    <span class="token key atrule">sources</span><span class="token punctuation">:</span>
+      <span class="token key atrule">custom_api</span><span class="token punctuation">:</span>
+        <span class="token key atrule">my-api-source</span><span class="token punctuation">:</span>
+          <span class="token key atrule">base_url</span><span class="token punctuation">:</span> <span class="token string">"https://api.example.com"</span>
+          <span class="token key atrule">api_key</span><span class="token punctuation">:</span> <span class="token string">"${API_KEY}"</span>
+          <span class="token key atrule">batch_size</span><span class="token punctuation">:</span> <span class="token number">50</span>
+          <span class="token key atrule">timeout</span><span class="token punctuation">:</span> <span class="token number">60</span>
+          <span class="token key atrule">include_tags</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">"published"</span><span class="token punctuation">,</span> <span class="token string">"public"</span><span class="token punctuation">]</span>
+          <span class="token key atrule">exclude_tags</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">"draft"</span><span class="token punctuation">,</span> <span class="token string">"private"</span><span class="token punctuation">]</span>
+</code></pre><h2 id="-file-conversion-extensions">🔄 File Conversion Extensions </h2>
+<p>QDrant Loader uses the MarkItDown library for file conversion. You can extend file conversion capabilities by:</p>
+<h3 id="1-leveraging-markitdown-features">1. Leveraging MarkItDown Features </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>core<span class="token punctuation">.</span>file_conversion <span class="token keyword keyword-import">import</span> FileConverter<span class="token punctuation">,</span> FileConversionConfig
+
+<span class="token comment"># Configure file conversion</span>
+config <span class="token operator">=</span> FileConversionConfig<span class="token punctuation">(</span>
+    enable_llm_descriptions<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">,</span>
+    llm_model<span class="token operator">=</span><span class="token string">"gpt-4o-mini"</span><span class="token punctuation">,</span>
+    max_file_size<span class="token operator">=</span><span class="token number">50</span> <span class="token operator">*</span> <span class="token number">1024</span> <span class="token operator">*</span> <span class="token number">1024</span><span class="token punctuation">,</span>  <span class="token comment"># 50MB</span>
+    conversion_timeout<span class="token operator">=</span><span class="token number">300</span>  <span class="token comment"># 5 minutes</span>
+<span class="token punctuation">)</span>
+
+converter <span class="token operator">=</span> FileConverter<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+</code></pre><h3 id="2-custom-file-processing">2. Custom File Processing </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-class">class</span> <span class="token class-name">CustomFileProcessor</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Custom file processor for specific formats."""</span>
+    
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> converter<span class="token punctuation">:</span> FileConverter<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>converter <span class="token operator">=</span> converter
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">process_custom_format</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> file_path<span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">str</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Process custom file format."""</span>
+        <span class="token keyword keyword-if">if</span> file_path<span class="token punctuation">.</span>endswith<span class="token punctuation">(</span><span class="token string">'.custom'</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            <span class="token comment"># Custom processing logic</span>
+            <span class="token keyword keyword-with">with</span> <span class="token builtin">open</span><span class="token punctuation">(</span>file_path<span class="token punctuation">,</span> <span class="token string">'rb'</span><span class="token punctuation">)</span> <span class="token keyword keyword-as">as</span> f<span class="token punctuation">:</span>
+                content <span class="token operator">=</span> f<span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token keyword keyword-return">return</span> self<span class="token punctuation">.</span>_parse_custom_format<span class="token punctuation">(</span>content<span class="token punctuation">)</span>
+        <span class="token keyword keyword-else">else</span><span class="token punctuation">:</span>
+            <span class="token comment"># Fall back to MarkItDown</span>
+            <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-await">await</span> self<span class="token punctuation">.</span>converter<span class="token punctuation">.</span>convert_file<span class="token punctuation">(</span>file_path<span class="token punctuation">)</span>
+    
+    <span class="token keyword keyword-def">def</span> <span class="token function">_parse_custom_format</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> content<span class="token punctuation">:</span> <span class="token builtin">bytes</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">str</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Parse custom file format."""</span>
+        <span class="token comment"># Your custom parsing logic here</span>
+        <span class="token keyword keyword-return">return</span> content<span class="token punctuation">.</span>decode<span class="token punctuation">(</span><span class="token string">'utf-8'</span><span class="token punctuation">)</span>
+</code></pre><h2 id="-testing-custom-extensions">🧪 Testing Custom Extensions </h2>
+<h3 id="unit-testing">Unit Testing </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-import">import</span> pytest
+<span class="token keyword keyword-from">from</span> unittest<span class="token punctuation">.</span>mock <span class="token keyword keyword-import">import</span> AsyncMock<span class="token punctuation">,</span> patch
+<span class="token keyword keyword-from">from</span> your_extension<span class="token punctuation">.</span>custom_api <span class="token keyword keyword-import">import</span> CustomAPIConnector
+<span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>config<span class="token punctuation">.</span>source_config <span class="token keyword keyword-import">import</span> SourceConfig
+
+<span class="token decorator annotation punctuation">@pytest<span class="token punctuation">.</span>mark<span class="token punctuation">.</span>asyncio</span>
+<span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">test_custom_connector_fetch_documents</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Test document fetching."""</span>
+    config <span class="token operator">=</span> SourceConfig<span class="token punctuation">(</span>
+        source_type<span class="token operator">=</span><span class="token string">"custom_api"</span><span class="token punctuation">,</span>
+        source<span class="token operator">=</span><span class="token string">"test-source"</span><span class="token punctuation">,</span>
+        base_url<span class="token operator">=</span><span class="token string">"https://api.example.com"</span><span class="token punctuation">,</span>
+        config<span class="token operator">=</span><span class="token punctuation">{</span>
+            <span class="token string">"api_url"</span><span class="token punctuation">:</span> <span class="token string">"https://api.example.com"</span><span class="token punctuation">,</span>
+            <span class="token string">"api_key"</span><span class="token punctuation">:</span> <span class="token string">"test_key"</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">)</span>
+    
+    connector <span class="token operator">=</span> CustomAPIConnector<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+    
+    <span class="token comment"># Mock the API response</span>
+    <span class="token keyword keyword-with">with</span> patch<span class="token punctuation">(</span><span class="token string">'httpx.AsyncClient.get'</span><span class="token punctuation">)</span> <span class="token keyword keyword-as">as</span> mock_get<span class="token punctuation">:</span>
+        mock_response <span class="token operator">=</span> AsyncMock<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        mock_response<span class="token punctuation">.</span>json<span class="token punctuation">.</span>return_value <span class="token operator">=</span> <span class="token punctuation">{</span>
+            <span class="token string">"documents"</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{</span><span class="token string">"id"</span><span class="token punctuation">:</span> <span class="token string">"1"</span><span class="token punctuation">,</span> <span class="token string">"title"</span><span class="token punctuation">:</span> <span class="token string">"Test"</span><span class="token punctuation">,</span> <span class="token string">"content"</span><span class="token punctuation">:</span> <span class="token string">"Test content"</span><span class="token punctuation">}</span>
+            <span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+        mock_response<span class="token punctuation">.</span>raise_for_status<span class="token punctuation">.</span>return_value <span class="token operator">=</span> <span class="token boolean">None</span>
+        mock_get<span class="token punctuation">.</span>return_value<span class="token punctuation">.</span>__aenter__<span class="token punctuation">.</span>return_value <span class="token operator">=</span> mock_response
+        
+        documents <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> connector<span class="token punctuation">.</span>get_documents<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        
+        <span class="token keyword keyword-assert">assert</span> <span class="token builtin">len</span><span class="token punctuation">(</span>documents<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">1</span>
+        <span class="token keyword keyword-assert">assert</span> documents<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>title <span class="token operator">==</span> <span class="token string">"Test"</span>
+        <span class="token keyword keyword-assert">assert</span> documents<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>content <span class="token operator">==</span> <span class="token string">"Test content"</span>
+</code></pre><h3 id="integration-testing">Integration Testing </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token decorator annotation punctuation">@pytest<span class="token punctuation">.</span>mark<span class="token punctuation">.</span>asyncio</span>
+<span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">test_custom_connector_integration</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Test full integration with QDrant Loader."""</span>
+    <span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>core<span class="token punctuation">.</span>async_ingestion_pipeline <span class="token keyword keyword-import">import</span> AsyncIngestionPipeline
+    <span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>config <span class="token keyword keyword-import">import</span> Settings
+    
+    <span class="token comment"># Load test configuration</span>
+    settings <span class="token operator">=</span> Settings<span class="token punctuation">.</span>from_yaml<span class="token punctuation">(</span><span class="token string">"test_config.yaml"</span><span class="token punctuation">)</span>
+    
+    <span class="token comment"># Create pipeline with custom connector</span>
+    pipeline <span class="token operator">=</span> AsyncIngestionPipeline<span class="token punctuation">(</span>settings<span class="token punctuation">)</span>
+    result <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> pipeline<span class="token punctuation">.</span>process_documents<span class="token punctuation">(</span>project_id<span class="token operator">=</span><span class="token string">"test-project"</span><span class="token punctuation">)</span>
+    
+    <span class="token keyword keyword-assert">assert</span> <span class="token builtin">len</span><span class="token punctuation">(</span>result<span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">0</span>
+</code></pre><h2 id="-packaging-extensions">📦 Packaging Extensions </h2>
+<h3 id="creating-a-package-entry-point-optional">Creating a Package (entry point optional) </h3>
+<pre data-role="codeBlock" data-info="toml" class="language-toml toml"><code><span class="token comment"># pyproject.toml</span>
+<span class="token punctuation">[</span><span class="token table class-name">project</span><span class="token punctuation">]</span>
+<span class="token key property">name</span> <span class="token punctuation">=</span> <span class="token string">"qdrant-loader-custom-extension"</span>
+<span class="token key property">version</span> <span class="token punctuation">=</span> <span class="token string">"1.0.0"</span>
+<span class="token key property">dependencies</span> <span class="token punctuation">=</span> <span class="token punctuation">[</span>
+    <span class="token string">"qdrant-loader&gt;=1.0.0"</span><span class="token punctuation">,</span>
+    <span class="token string">"httpx&gt;=0.24.0"</span><span class="token punctuation">,</span>
+    <span class="token string">"pydantic&gt;=2.0.0"</span>
+<span class="token punctuation">]</span>
+
+<span class="token comment"># Optional entry-points block only if your fork discovers plugins</span>
+<span class="token comment"># [project.entry-points."qdrant_loader.connectors"]</span>
+<span class="token comment"># custom_api = "my_extension.custom_api:CustomAPIConnector"</span>
+</code></pre><h3 id="distribution">Distribution </h3>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token comment"># Build package</span>
+python <span class="token parameter variable">-m</span> build
+
+<span class="token comment"># Install locally for testing</span>
+pip <span class="token function">install</span> <span class="token parameter variable">-e</span> <span class="token builtin class-name">.</span>
+
+<span class="token comment"># Publish to PyPI</span>
+python <span class="token parameter variable">-m</span> twine upload dist/*
+</code></pre><h2 id="-advanced-patterns">🔍 Advanced Patterns </h2>
+<h3 id="error-handling">Error Handling </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-from">from</span> qdrant_loader<span class="token punctuation">.</span>connectors<span class="token punctuation">.</span>exceptions <span class="token keyword keyword-import">import</span> ConnectorError
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">CustomAPIConnector</span><span class="token punctuation">(</span>BaseConnector<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">get_documents</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">list</span><span class="token punctuation">[</span>Document<span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token keyword keyword-try">try</span><span class="token punctuation">:</span>
+            <span class="token comment"># Your implementation</span>
+            <span class="token keyword keyword-pass">pass</span>
+        <span class="token keyword keyword-except">except</span> httpx<span class="token punctuation">.</span>RequestError <span class="token keyword keyword-as">as</span> e<span class="token punctuation">:</span>
+            <span class="token keyword keyword-raise">raise</span> ConnectorError<span class="token punctuation">(</span>
+                <span class="token string-interpolation"><span class="token string">f"Failed to fetch documents from </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>api_url<span class="token punctuation">}</span></span><span class="token string">: </span><span class="token interpolation"><span class="token punctuation">{</span>e<span class="token punctuation">}</span></span><span class="token string">"</span></span>
+            <span class="token punctuation">)</span> <span class="token keyword keyword-from">from</span> e
+        <span class="token keyword keyword-except">except</span> Exception <span class="token keyword keyword-as">as</span> e<span class="token punctuation">:</span>
+            logger<span class="token punctuation">.</span>error<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Unexpected error: </span><span class="token interpolation"><span class="token punctuation">{</span>e<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+            <span class="token keyword keyword-raise">raise</span>
+</code></pre><h3 id="async-best-practices">Async Best Practices </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-import">import</span> asyncio
+<span class="token keyword keyword-from">from</span> typing <span class="token keyword keyword-import">import</span> List
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">CustomAPIConnector</span><span class="token punctuation">(</span>BaseConnector<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> config<span class="token punctuation">:</span> SourceConfig<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>session <span class="token operator">=</span> <span class="token boolean">None</span>
+        self<span class="token punctuation">.</span>semaphore <span class="token operator">=</span> asyncio<span class="token punctuation">.</span>Semaphore<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span>  <span class="token comment"># Limit concurrency</span>
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">__aenter__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Initialize HTTP session."""</span>
+        <span class="token keyword keyword-await">await</span> <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__aenter__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>session <span class="token operator">=</span> httpx<span class="token punctuation">.</span>AsyncClient<span class="token punctuation">(</span>
+            timeout<span class="token operator">=</span>httpx<span class="token punctuation">.</span>Timeout<span class="token punctuation">(</span>self<span class="token punctuation">.</span>config<span class="token punctuation">.</span>config<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"timeout"</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> self
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">__aexit__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> exc_type<span class="token punctuation">,</span> exc_val<span class="token punctuation">,</span> exc_tb<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Clean up HTTP session."""</span>
+        <span class="token keyword keyword-if">if</span> self<span class="token punctuation">.</span>session<span class="token punctuation">:</span>
+            <span class="token keyword keyword-await">await</span> self<span class="token punctuation">.</span>session<span class="token punctuation">.</span>aclose<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword keyword-await">await</span> <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__aexit__<span class="token punctuation">(</span>exc_type<span class="token punctuation">,</span> exc_val<span class="token punctuation">,</span> exc_tb<span class="token punctuation">)</span>
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">get_documents</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">list</span><span class="token punctuation">[</span>Document<span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Fetch documents with proper async handling."""</span>
+        <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-with">with</span> self<span class="token punctuation">.</span>semaphore<span class="token punctuation">:</span>
+            response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> self<span class="token punctuation">.</span>session<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>api_url<span class="token punctuation">}</span></span><span class="token string">/documents"</span></span><span class="token punctuation">)</span>
+            response<span class="token punctuation">.</span>raise_for_status<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            data <span class="token operator">=</span> response<span class="token punctuation">.</span>json<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token keyword keyword-return">return</span> <span class="token punctuation">[</span>self<span class="token punctuation">.</span>_convert_to_document<span class="token punctuation">(</span>item<span class="token punctuation">)</span> <span class="token keyword keyword-for">for</span> item <span class="token keyword keyword-in">in</span> data<span class="token punctuation">[</span><span class="token string">"documents"</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+</code></pre><h3 id="configuration-inheritance">Configuration Inheritance </h3>
+<pre data-role="codeBlock" data-info="python" class="language-python python"><code><span class="token keyword keyword-class">class</span> <span class="token class-name">BaseAPIConnector</span><span class="token punctuation">(</span>BaseConnector<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Base class for API-based connectors."""</span>
+    
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> config<span class="token punctuation">:</span> SourceConfig<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span>config<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>base_url <span class="token operator">=</span> <span class="token builtin">str</span><span class="token punctuation">(</span>config<span class="token punctuation">.</span>base_url<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>api_key <span class="token operator">=</span> config<span class="token punctuation">.</span>config<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string">"api_key"</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>session <span class="token operator">=</span> <span class="token boolean">None</span>
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">__aenter__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Initialize HTTP session with common settings."""</span>
+        <span class="token keyword keyword-await">await</span> <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__aenter__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        headers <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+        <span class="token keyword keyword-if">if</span> self<span class="token punctuation">.</span>api_key<span class="token punctuation">:</span>
+            headers<span class="token punctuation">[</span><span class="token string">"Authorization"</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"Bearer </span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>api_key<span class="token punctuation">}</span></span><span class="token string">"</span></span>
+        self<span class="token punctuation">.</span>session <span class="token operator">=</span> httpx<span class="token punctuation">.</span>AsyncClient<span class="token punctuation">(</span>headers<span class="token operator">=</span>headers<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> self
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">GitHubConnector</span><span class="token punctuation">(</span>BaseAPIConnector<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""GitHub-specific implementation."""</span>
+    
+    <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-def">def</span> <span class="token function">get_documents</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token builtin">list</span><span class="token punctuation">[</span>Document<span class="token punctuation">]</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""Fetch from GitHub API."""</span>
+        response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> self<span class="token punctuation">.</span>session<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>base_url<span class="token punctuation">}</span></span><span class="token string">/repos"</span></span><span class="token punctuation">)</span>
+        <span class="token comment"># GitHub-specific logic</span>
+        <span class="token keyword keyword-pass">pass</span>
+</code></pre><h2 id="-available-connectors">📚 Available Connectors </h2>
+<p>QDrant Loader includes several built-in connectors you can reference:</p>
+<ul>
+<li><strong>GitConnector</strong> - Git repository processing with branch and path filtering</li>
+<li><strong>ConfluenceConnector</strong> - Atlassian Confluence space integration</li>
+<li><strong>JiraConnector</strong> - Atlassian Jira project integration</li>
+<li><strong>LocalFileConnector</strong> - Local file system processing</li>
+<li><strong>PublicDocsConnector</strong> - Public documentation websites</li>
+</ul>
+<p>Each connector demonstrates different patterns and can serve as examples for your custom implementations.</p>
+<h2 id="-getting-help">🆘 Getting Help </h2>
+<h3 id="development-support">Development Support </h3>
+<ul>
+<li><strong><a href="https://github.com/martin-papy/qdrant-loader/discussions">GitHub Discussions</a></strong> - Ask development questions</li>
+<li><strong><a href="https://github.com/martin-papy/qdrant-loader/issues">GitHub Issues</a></strong> - Report bugs or request features</li>
+<li><strong><a href="../../CONTRIBUTING.md">Contributing Guide</a></strong> - Contribution guidelines</li>
+</ul>
+<h3 id="related-documentation">Related Documentation </h3>
+<ul>
+<li><strong><a href="../architecture/">Architecture Overview</a></strong> - System design and components</li>
+<li><strong><a href="../../users/configuration/">Configuration Reference</a></strong> - Configuration options</li>
+</ul>
+<hr>
+<p><strong>Ready to extend QDrant Loader?</strong> Start by implementing a custom connector using the BaseConnector interface and follow the patterns shown in the existing connectors.</p>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>
