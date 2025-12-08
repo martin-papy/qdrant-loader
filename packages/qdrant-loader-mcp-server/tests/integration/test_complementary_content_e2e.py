@@ -403,18 +403,24 @@ class TestComplementaryContentE2E:
             else:
                 return sample_documents[1:4]  # Return business docs as context
 
-        mock_qdrant_client.search.side_effect = lambda query, **kwargs: [
-            MagicMock(
-                id=f"doc_{i}",
-                score=doc.score,
-                payload={
-                    attr: getattr(doc, attr)
-                    for attr in doc.__dict__
-                    if not attr.startswith("_")
-                },
-            )
-            for i, doc in enumerate(create_search_response(query, **kwargs))
-        ]
+        # Mock query_points response (qdrant-client 1.10+)
+        def mock_query_points(query, **kwargs):
+            response = MagicMock()
+            response.points = [
+                MagicMock(
+                    id=f"doc_{i}",
+                    score=doc.score,
+                    payload={
+                        attr: getattr(doc, attr)
+                        for attr in doc.__dict__
+                        if not attr.startswith("_")
+                    },
+                )
+                for i, doc in enumerate(create_search_response(query, **kwargs))
+            ]
+            return response
+
+        mock_qdrant_client.query_points.side_effect = mock_query_points
 
         # Configure the mock_qdrant_client to have the scroll method with sample documents
         def create_mock_scroll_response(**kwargs):
