@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from openai import AsyncOpenAI
-from qdrant_client import QdrantClient
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     HybridSearchResult,
     create_hybrid_search_result,
@@ -20,7 +19,7 @@ from qdrant_loader_mcp_server.search.hybrid_search import (
 @pytest.fixture
 def mock_qdrant_client():
     """Create a mock Qdrant client."""
-    client = AsyncMock(spec=QdrantClient)
+    client = AsyncMock()
 
     # Mock search results with project information using MagicMock
     mock_points = []
@@ -51,7 +50,10 @@ def mock_qdrant_client():
         mock_points.append(mock_point)
 
     # Set up async mock methods
-    client.search = AsyncMock(return_value=mock_points)
+    # Mock query_points response (qdrant-client 1.10+)
+    query_response = MagicMock()
+    query_response.points = mock_points
+    client.query_points = AsyncMock(return_value=query_response)
     client.scroll = AsyncMock(return_value=(mock_points, None))
 
     # Mock collection operations for SearchEngine initialization
@@ -116,9 +118,9 @@ async def test_hybrid_search_with_project_filter(hybrid_search, mock_qdrant_clie
             query="test query", limit=5, project_ids=["project-a"]
         )
 
-        # Verify filter was applied in search call
-        mock_qdrant_client.search.assert_called()
-        search_call_args = mock_qdrant_client.search.call_args
+        # Verify filter was applied in query_points call (qdrant-client 1.10+)
+        mock_qdrant_client.query_points.assert_called()
+        search_call_args = mock_qdrant_client.query_points.call_args
         assert search_call_args[1]["query_filter"] is not None
 
         # Verify results contain project information
@@ -141,9 +143,9 @@ async def test_hybrid_search_without_project_filter(hybrid_search, mock_qdrant_c
         # Test search without project filter
         results = await hybrid_search.search(query="test query", limit=5)
 
-        # Verify no filter was applied
-        mock_qdrant_client.search.assert_called()
-        search_call_args = mock_qdrant_client.search.call_args
+        # Verify no filter was applied (qdrant-client 1.10+)
+        mock_qdrant_client.query_points.assert_called()
+        search_call_args = mock_qdrant_client.query_points.call_args
         assert search_call_args[1]["query_filter"] is None
 
         # Verify results still contain project information from metadata
@@ -164,9 +166,9 @@ async def test_hybrid_search_multiple_projects(hybrid_search, mock_qdrant_client
             query="test query", limit=5, project_ids=["project-a", "project-b"]
         )
 
-        # Verify filter was applied with multiple project IDs
-        mock_qdrant_client.search.assert_called()
-        search_call_args = mock_qdrant_client.search.call_args
+        # Verify filter was applied with multiple project IDs (qdrant-client 1.10+)
+        mock_qdrant_client.query_points.assert_called()
+        search_call_args = mock_qdrant_client.query_points.call_args
         query_filter = search_call_args[1]["query_filter"]
         assert query_filter is not None
 
@@ -309,9 +311,9 @@ async def test_vector_search_with_project_filter(hybrid_search, mock_qdrant_clie
             query="test query", limit=5, project_ids=["project-a"]
         )
 
-        # Verify search was called with filter
-        mock_qdrant_client.search.assert_called()
-        search_call_args = mock_qdrant_client.search.call_args
+        # Verify query_points was called with filter (qdrant-client 1.10+)
+        mock_qdrant_client.query_points.assert_called()
+        search_call_args = mock_qdrant_client.query_points.call_args
         assert search_call_args[1]["query_filter"] is not None
 
         # Verify results

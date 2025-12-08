@@ -474,7 +474,9 @@ class TestQdrantManager:
         """Test successful search."""
         query_vector = [0.1, 0.2, 0.3]
         mock_results = [Mock(spec=models.ScoredPoint)]
-        mock_qdrant_client.search.return_value = mock_results
+        mock_query_response = Mock()
+        mock_query_response.points = mock_results
+        mock_qdrant_client.query_points.return_value = mock_query_response
 
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
@@ -487,15 +489,17 @@ class TestQdrantManager:
             results = manager.search(query_vector, limit=10)
 
             assert results == mock_results
-            mock_qdrant_client.search.assert_called_once_with(
-                collection_name="test_collection", query_vector=query_vector, limit=10
+            mock_qdrant_client.query_points.assert_called_once_with(
+                collection_name="test_collection", query=query_vector, limit=10
             )
 
     def test_search_default_limit(self, mock_settings, mock_qdrant_client):
         """Test search with default limit."""
         query_vector = [0.1, 0.2, 0.3]
         mock_results = [Mock(spec=models.ScoredPoint)]
-        mock_qdrant_client.search.return_value = mock_results
+        mock_query_response = Mock()
+        mock_query_response.points = mock_results
+        mock_qdrant_client.query_points.return_value = mock_query_response
 
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
@@ -507,14 +511,14 @@ class TestQdrantManager:
             manager = QdrantManager(mock_settings)
             manager.search(query_vector)
 
-            mock_qdrant_client.search.assert_called_once_with(
-                collection_name="test_collection", query_vector=query_vector, limit=5
+            mock_qdrant_client.query_points.assert_called_once_with(
+                collection_name="test_collection", query=query_vector, limit=5
             )
 
     def test_search_error(self, mock_settings, mock_qdrant_client):
         """Test search error handling."""
         query_vector = [0.1, 0.2, 0.3]
-        mock_qdrant_client.search.side_effect = Exception("Search failed")
+        mock_qdrant_client.query_points.side_effect = Exception("Search failed")
 
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
