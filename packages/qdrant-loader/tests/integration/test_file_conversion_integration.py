@@ -51,23 +51,28 @@ class TestFileConversionIntegration:
                 b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
             )
             tmp_file.flush()
+            tmp_path = tmp_file.name
 
+        # File is now closed, safe to process and delete
+        try:
+            # This should work if MarkItDown is properly installed with PDF support
             try:
-                # This should work if MarkItDown is properly installed with PDF support
-                try:
-                    result = self.converter.convert_file(tmp_file.name)
+                result = self.converter.convert_file(tmp_path)
 
-                    assert isinstance(result, str)
-                    assert len(result) > 0
+                assert isinstance(result, str)
+                assert len(result) > 0
 
-                except Exception as e:
-                    # If MarkItDown is not available or fails, that's expected in test environment
-                    pytest.skip(
-                        f"MarkItDown conversion failed (expected in test environment): {e}"
-                    )
+            except Exception as e:
+                # If MarkItDown is not available or fails, that's expected in test environment
+                pytest.skip(
+                    f"MarkItDown conversion failed (expected in test environment): {e}"
+                )
 
-            finally:
-                os.unlink(tmp_file.name)
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except (OSError, PermissionError):
+                pass  # File may already be deleted or locked
 
     def test_file_converter_error_handling(self):
         """Test file converter error handling with invalid files."""
@@ -90,14 +95,19 @@ class TestFileConversionIntegration:
             # Write more than 1KB of data
             tmp_file.write(b"x" * 2048)
             tmp_file.flush()
+            tmp_path = tmp_file.name
 
+        # File is now closed, safe to process and delete
+        try:
+            with pytest.raises(
+                Exception
+            ):  # Should raise MarkItDownError wrapping FileSizeExceededError
+                small_converter.convert_file(tmp_path)
+        finally:
             try:
-                with pytest.raises(
-                    Exception
-                ):  # Should raise MarkItDownError wrapping FileSizeExceededError
-                    small_converter.convert_file(tmp_file.name)
-            finally:
-                os.unlink(tmp_file.name)
+                os.unlink(tmp_path)
+            except (OSError, PermissionError):
+                pass  # File may already be deleted or locked
 
     def test_file_conversion_config_integration(self):
         """Test file conversion configuration integration."""
@@ -163,68 +173,77 @@ class TestFileConversionIntegration:
             ) as tmp_file:
                 tmp_file.write(b"fake content")
                 tmp_file.flush()
+                tmp_path = tmp_file.name
 
+            # File is now closed, safe to process and delete
+            try:
+                is_convertible = self.detector.is_supported_for_conversion(tmp_path)
+                assert is_convertible == should_be_convertible, f"Failed for {filename}"
+            finally:
                 try:
-                    is_convertible = self.detector.is_supported_for_conversion(
-                        tmp_file.name
-                    )
-                    assert (
-                        is_convertible == should_be_convertible
-                    ), f"Failed for {filename}"
-                finally:
-                    os.unlink(tmp_file.name)
+                    os.unlink(tmp_path)
+                except (OSError, PermissionError):
+                    pass  # File may already be deleted or locked
 
     def test_file_type_info_comprehensive(self):
         """Test comprehensive file type information gathering."""
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
+            tmp_path = tmp_file.name
 
+        # File is now closed, safe to process and delete
+        try:
+            info = self.detector.get_file_type_info(tmp_path)
+
+            # Verify all expected fields are present
+            expected_fields = [
+                "file_path",
+                "mime_type",
+                "file_extension",
+                "file_size",
+                "is_supported",
+                "normalized_type",
+                "is_excluded",
+            ]
+
+            for field in expected_fields:
+                assert field in info, f"Missing field: {field}"
+
+            # Verify specific values for PDF
+            assert info["file_extension"] == ".pdf"
+            assert info["mime_type"] == "application/pdf"
+            assert info["normalized_type"] == "pdf"
+            assert info["is_supported"] is True
+            assert info["is_excluded"] is False
+            assert info["file_size"] > 0
+
+        finally:
             try:
-                info = self.detector.get_file_type_info(tmp_file.name)
-
-                # Verify all expected fields are present
-                expected_fields = [
-                    "file_path",
-                    "mime_type",
-                    "file_extension",
-                    "file_size",
-                    "is_supported",
-                    "normalized_type",
-                    "is_excluded",
-                ]
-
-                for field in expected_fields:
-                    assert field in info, f"Missing field: {field}"
-
-                # Verify specific values for PDF
-                assert info["file_extension"] == ".pdf"
-                assert info["mime_type"] == "application/pdf"
-                assert info["normalized_type"] == "pdf"
-                assert info["is_supported"] is True
-                assert info["is_excluded"] is False
-                assert info["file_size"] > 0
-
-            finally:
-                os.unlink(tmp_file.name)
+                os.unlink(tmp_path)
+            except (OSError, PermissionError):
+                pass  # File may already be deleted or locked
 
     def test_fallback_document_creation(self):
         """Test fallback document creation functionality."""
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
+            tmp_path = tmp_file.name
 
+        # File is now closed, safe to process and delete
+        try:
+            error = Exception("Test conversion error")
+            fallback_doc = self.converter.create_fallback_document(tmp_path, error)
+
+            assert isinstance(fallback_doc, str)
+            assert "Conversion Status" in fallback_doc
+            assert "Failed" in fallback_doc
+            assert "Test conversion error" in fallback_doc
+            assert Path(tmp_path).name in fallback_doc
+
+        finally:
             try:
-                error = Exception("Test conversion error")
-                fallback_doc = self.converter.create_fallback_document(
-                    tmp_file.name, error
-                )
-
-                assert isinstance(fallback_doc, str)
-                assert "Conversion Status" in fallback_doc
-                assert "Failed" in fallback_doc
-                assert "Test conversion error" in fallback_doc
-                assert Path(tmp_file.name).name in fallback_doc
-
-            finally:
-                os.unlink(tmp_file.name)
+                os.unlink(tmp_path)
+            except (OSError, PermissionError):
+                pass  # File may already be deleted or locked

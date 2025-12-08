@@ -65,7 +65,21 @@ class FileProcessor:
                 return False
 
             # Get relative path from repository root
-            rel_path = os.path.relpath(file_path, self.temp_dir)
+            # Handle cross-drive paths on Windows (ValueError when paths are on different drives)
+            try:
+                rel_path = os.path.relpath(file_path, self.temp_dir)
+            except ValueError:
+                # Cannot calculate relative path (e.g., cross-drive on Windows)
+                # Skip this file as we cannot reliably apply include/exclude patterns
+                self.logger.warning(
+                    "Skipping file on different drive - cannot apply patterns",
+                    file_path=file_path,
+                    base_path=self.temp_dir,
+                )
+                return False
+
+            # Normalize path separators to forward slashes for consistent matching
+            rel_path = rel_path.replace("\\", "/")
             self.logger.debug(f"Relative path: {rel_path}")
 
             # Skip files that are just extensions without names (e.g. ".md")
