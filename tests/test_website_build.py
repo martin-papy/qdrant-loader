@@ -28,7 +28,7 @@ class TestWebsiteBuildSystem:
         build_script = Path("website/build.py")
 
         # Try to compile the script to check syntax
-        with open(build_script) as f:
+        with open(build_script, encoding="utf-8") as f:
             source = f.read()
 
         try:
@@ -61,7 +61,7 @@ class TestWebsiteBuildSystem:
     def test_base_template_structure(self):
         """Test that the base template has required placeholders."""
         base_template = Path("website/templates/base.html")
-        content = base_template.read_text()
+        content = base_template.read_text(encoding="utf-8")
 
         required_placeholders = [
             "{{ page_title }}",
@@ -88,7 +88,7 @@ class TestWebsiteBuildSystem:
         """Test that the favicon generation script has valid syntax."""
         favicon_script = Path("website/assets/generate_favicons.py")
 
-        with open(favicon_script) as f:
+        with open(favicon_script, encoding="utf-8") as f:
             source = f.read()
 
         try:
@@ -146,7 +146,7 @@ class TestWebsiteBuildSystem:
     def test_sitemap_template_structure(self):
         """Test that the robots.txt template has valid structure."""
         robots_template = Path("website/templates/robots.txt")
-        content = robots_template.read_text()
+        content = robots_template.read_text(encoding="utf-8")
 
         # Basic robots.txt structure checks
         assert (
@@ -156,7 +156,7 @@ class TestWebsiteBuildSystem:
     def test_robots_template_structure(self):
         """Test that the robots.txt template has valid structure."""
         robots_template = Path("website/templates/robots.txt")
-        content = robots_template.read_text()
+        content = robots_template.read_text(encoding="utf-8")
 
         # Basic robots.txt structure checks
         assert (
@@ -184,7 +184,7 @@ class TestWebsiteBuildSystem:
     def test_coverage_template_has_required_elements(self):
         """Test that the coverage template has required elements."""
         coverage_template = Path("website/templates/coverage-index.html")
-        content = coverage_template.read_text()
+        content = coverage_template.read_text(encoding="utf-8")
 
         # Check for coverage-related elements
         assert (
@@ -194,7 +194,7 @@ class TestWebsiteBuildSystem:
     def test_docs_template_structure(self):
         """Test that the docs template has proper structure."""
         docs_template = Path("website/templates/docs-index.html")
-        content = docs_template.read_text()
+        content = docs_template.read_text(encoding="utf-8")
 
         # Basic structure checks
         assert len(content.strip()) > 0, "Docs template should not be empty"
@@ -202,7 +202,7 @@ class TestWebsiteBuildSystem:
     def test_index_template_structure(self):
         """Test that the index template has proper structure."""
         index_template = Path("website/templates/index.html")
-        content = index_template.read_text()
+        content = index_template.read_text(encoding="utf-8")
 
         # Basic structure checks
         assert len(content.strip()) > 0, "Index template should not be empty"
@@ -271,7 +271,7 @@ class TestWebsiteBuildIntegration:
                     ).exists(), "Robots.txt should be created"
 
                     # Check that files have content
-                    index_content = (site_dir / "index.html").read_text()
+                    index_content = (site_dir / "index.html").read_text(encoding="utf-8")
                     assert (
                         len(index_content) > 100
                     ), "Index page should have substantial content"
@@ -289,7 +289,7 @@ class TestWebsiteBuildIntegration:
         """Test that template placeholders are properly replaced."""
         # This is a basic test that can be expanded
         base_template = mock_project_structure / "website" / "templates" / "base.html"
-        content = base_template.read_text()
+        content = base_template.read_text(encoding="utf-8")
 
         # Test that we have the expected placeholders
         placeholders = [
@@ -322,7 +322,7 @@ class TestWebsiteBuildIntegration:
 
         loader_status = sample_coverage_data / "htmlcov-loader" / "status.json"
         if loader_status.exists():
-            with open(loader_status) as f:
+            with open(loader_status, encoding="utf-8") as f:
                 data = json.load(f)
             assert "files" in data, "Coverage data should have files section"
 
@@ -331,7 +331,7 @@ class TestWebsiteBuildIntegration:
 
         status_file = sample_test_results / "status.json"
         if status_file.exists():
-            with open(status_file) as f:
+            with open(status_file, encoding="utf-8") as f:
                 data = json.load(f)
             assert "overall_status" in data, "Test results should have overall_status"
 

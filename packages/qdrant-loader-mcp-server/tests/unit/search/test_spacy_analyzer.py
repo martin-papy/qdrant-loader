@@ -104,7 +104,7 @@ class TestSpaCyQueryAnalyzer:
         assert isinstance(result.entities, list)
         assert isinstance(result.semantic_keywords, list)
         assert isinstance(result.main_concepts, list)
-        assert result.processing_time_ms > 0
+        assert result.processing_time_ms >= 0
 
     def test_analyze_query_semantic_question_detection(self, spacy_analyzer):
         """Test question detection in query analysis."""

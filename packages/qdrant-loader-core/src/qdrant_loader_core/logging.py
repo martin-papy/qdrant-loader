@@ -415,7 +415,9 @@ class LoggingConfig:
                 cls._file_handler.close()
             except Exception:
                 pass
-            cls._installed_handlers = [h for h in cls._installed_handlers if h is not cls._file_handler]
+            cls._installed_handlers = [
+                h for h in cls._installed_handlers if h is not cls._file_handler
+            ]
             cls._file_handler = None
 
         # Add new file handler if requested

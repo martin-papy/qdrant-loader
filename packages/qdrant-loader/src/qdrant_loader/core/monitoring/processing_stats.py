@@ -102,12 +102,20 @@ class ProcessingStats:
         Returns:
             Dictionary containing the latest rate metrics
         """
+        # Calculate current window rate with protection against division by zero
+        current_window_elapsed = (
+            time.time() - self.current_window_start
+            if self.current_window_start is not None
+            else 0.0
+        )
+        current_window_rate = (
+            self.current_window_docs / current_window_elapsed
+            if current_window_elapsed > 0
+            else 0.0
+        )
+
         return {
             "overall_rate": self.overall_rate,
             "chunk_rate": self.chunk_rate,
-            "current_window_rate": (
-                self.current_window_docs / (time.time() - self.current_window_start)
-                if self.current_window_start is not None
-                else 0.0
-            ),
+            "current_window_rate": current_window_rate,
         }

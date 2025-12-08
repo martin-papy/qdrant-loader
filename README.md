@@ -7,7 +7,7 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Release Notes v0.7.3](./RELEASE_NOTES.md)** - Latest improvements and bug fixes
+📋 **[Release Notes v0.7.4](./RELEASE_NOTES.md)** - Latest improvements and bug fixes
 
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
 
@@ -177,7 +177,12 @@ Add to your Cursor settings (`.cursor/mcp.json`):
   "mcpServers": {
     "qdrant-loader": {
       "command": "/path/to/venv/bin/mcp-qdrant-loader",
-      "args": ["--config", "/path/to/your/config.yaml", "--env", "/path/to/your/.env"]
+      "args": [
+        "--config",
+        "/path/to/your/config.yaml",
+        "--env",
+        "/path/to/your/.env"
+      ]
     }
   }
 }

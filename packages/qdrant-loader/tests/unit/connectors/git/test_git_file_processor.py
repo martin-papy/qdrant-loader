@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from unittest.mock import patch
 
 import pytest
 from pydantic import HttpUrl
@@ -144,13 +145,11 @@ class TestFileProcessor:
         # Test non-existent file
         assert processor.should_process_file("/nonexistent/file.md") is False
 
-        # Test unreadable file (if possible to create one)
+        # Test unreadable file using mock (chmod doesn't work on Windows)
         test_file = os.path.join(temp_dir, "unreadable.md")
         with open(test_file, "w") as f:
             f.write("test")
-        os.chmod(test_file, 0o000)  # Remove all permissions
 
-        assert processor.should_process_file(test_file) is False
-
-        # Cleanup
-        os.chmod(test_file, 0o666)  # Restore permissions for cleanup
+        # Mock os.access to simulate unreadable file
+        with patch("os.access", return_value=False):
+            assert processor.should_process_file(test_file) is False
