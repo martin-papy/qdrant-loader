@@ -105,8 +105,16 @@ mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src:pa
 
 [tool.pytest.ini_options]
 testpaths = [
-    "packages/*/tests",
     "tests",
+]
+norecursedirs = [
+    "packages",
+    ".*",
+    "build",
+    "dist",
+    "venv",
+    "env",
+    "node_modules",
 ]
 python_files = [
     "test_*.py",
