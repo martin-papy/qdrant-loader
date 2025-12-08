@@ -26,8 +26,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Cache virtual environment
-        uses: actions/cache@v4
+      - name: Restore cached virtual environment
+        uses: actions/cache/restore@v4
         id: cache-venv-core
         with:
           path: .venv
@@ -47,6 +47,13 @@ jobs:
           pip install -e packages/qdrant-loader-core[openai,ollama]
           # Install repo dev deps for pytest, coverage, etc.
           pip install -e .[dev]
+
+      - name: Save virtual environment cache
+        uses: actions/cache/save@v4
+        if: steps.cache-venv-core.outputs.cache-hit != 'true'
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
 
       - name: Activate venv for subsequent steps
         run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
@@ -82,8 +89,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Cache virtual environment
-        uses: actions/cache@v4
+      - name: Restore cached virtual environment
+        uses: actions/cache/restore@v4
         id: cache-venv-loader
         with:
           path: .venv
@@ -103,6 +110,13 @@ jobs:
           pip install -e packages/qdrant-loader-core[openai]
           pip install -e .[dev]
           pip install -e packages/qdrant-loader
+
+      - name: Save virtual environment cache
+        uses: actions/cache/save@v4
+        if: steps.cache-venv-loader.outputs.cache-hit != 'true'
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
 
       - name: Activate venv for subsequent steps
         run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
@@ -244,12 +258,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Cache virtual environment
-        uses: actions/cache@v4
+      - name: Restore cached virtual environment
+        uses: actions/cache/restore@v4
         id: cache-venv-mcp
         with:
           path: .venv
-          key: ${{ runner.os }}-venv-mcp-${{ hashFiles('packages/*/pyproject.toml', 'pyproject.toml') }}
+          key: ${{ runner.os }}-venv-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-venv-mcp-
 
@@ -266,6 +280,13 @@ jobs:
           pip install -e .[dev]
           pip install -e packages/qdrant-loader
           pip install -e packages/qdrant-loader-mcp-server
+
+      - name: Save virtual environment cache
+        uses: actions/cache/save@v4
+        if: steps.cache-venv-mcp.outputs.cache-hit != 'true'
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
 
       - name: Activate venv for subsequent steps
         run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
@@ -334,8 +355,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcairo2-dev libgirepository1.0-dev
 
-      - name: Cache virtual environment
-        uses: actions/cache@v4
+      - name: Restore cached virtual environment
+        uses: actions/cache/restore@v4
         id: cache-venv-website
         with:
           path: .venv
@@ -355,6 +376,13 @@ jobs:
           pip install -e .[dev]
           # Install optional docs dependencies for comprehensive testing
           pip install -e .[docs] || echo "Optional docs dependencies not available"
+
+      - name: Save virtual environment cache
+        uses: actions/cache/save@v4
+        if: steps.cache-venv-website.outputs.cache-hit != 'true'
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-website-${{ hashFiles('pyproject.toml') }}
 
       - name: Activate venv for subsequent steps
         run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
