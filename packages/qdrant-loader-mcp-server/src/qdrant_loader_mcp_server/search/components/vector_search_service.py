@@ -251,15 +251,17 @@ class VectorSearchService:
                 parsed_query.field_queries, project_ids
             )
 
-            results = await self.qdrant_client.search(
+            # Use query_points API (qdrant-client 1.10+)
+            query_response = await self.qdrant_client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_embedding,
+                query=query_embedding,
                 limit=limit,
                 score_threshold=self.min_score,
                 search_params=search_params,
                 query_filter=query_filter,
                 with_payload=True,  # 🔧 CRITICAL: Explicitly request payload data
             )
+            results = query_response.points
 
         extracted_results = []
         for hit in results:

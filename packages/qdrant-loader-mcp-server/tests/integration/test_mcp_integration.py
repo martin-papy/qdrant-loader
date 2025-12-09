@@ -26,7 +26,10 @@ async def integration_handler():
         "source_type": "git",
     }
 
-    mock_qdrant_client.search.return_value = [search_result1]
+    # Mock query_points response (qdrant-client 1.10+)
+    query_response = MagicMock()
+    query_response.points = [search_result1]
+    mock_qdrant_client.query_points.return_value = query_response
     mock_qdrant_client.scroll.return_value = ([search_result1], None)
 
     # Mock collections response for get_collections
