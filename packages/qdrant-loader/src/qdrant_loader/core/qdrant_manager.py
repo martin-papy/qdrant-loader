@@ -169,6 +169,10 @@ class QdrantManager:
                 ),  # Hierarchical relationships
                 ("original_file_type", {"type": "keyword"}),  # File type filtering
                 ("is_converted", {"type": "bool"}),  # Conversion status filtering
+                # Hierarchy tracking indexes (POC1-001: from Unstructured pattern)
+                ("parent_id", {"type": "keyword"}),  # Parent chunk/section ID
+                ("depth", {"type": "integer"}),  # Hierarchy depth (0=root, 1=H1, 2=H2...)
+                ("breadcrumb_text", {"type": "text"}),  # "Root > Section > Subsection"
             ]
 
             # Create indexes with proper error handling

@@ -338,8 +338,11 @@ class BaseChunkingStrategy(ABC):
         chunk_index: int,
         total_chunks: int,
         skip_nlp: bool = False,
+        split_method: str | None = None,
     ) -> Document:
         """Create a new document for a chunk with enhanced metadata.
+
+        POC1-009: Added split provenance metadata for full traceability.
 
         Args:
             original_doc: Original document
@@ -347,16 +350,26 @@ class BaseChunkingStrategy(ABC):
             chunk_index: Index of the chunk
             total_chunks: Total number of chunks
             skip_nlp: Whether to skip expensive NLP processing
+            split_method: The chunking strategy used (e.g., "markdown", "code", "default")
 
         Returns:
             Document: New document instance for the chunk
         """
         # Create enhanced metadata
         metadata = original_doc.metadata.copy()
+
+        # POC1-009: Split provenance metadata (Haystack pattern)
+        # Enables "show me all chunks from document X" queries
+        # and full traceability from chunk back to source
         metadata.update(
             {
                 "chunk_index": chunk_index,
                 "total_chunks": total_chunks,
+                # Split provenance fields
+                "parent_document_id": original_doc.id,
+                "parent_document_title": original_doc.title,
+                "split_index": chunk_index,
+                "split_method": split_method or self.__class__.__name__,
             }
         )
 

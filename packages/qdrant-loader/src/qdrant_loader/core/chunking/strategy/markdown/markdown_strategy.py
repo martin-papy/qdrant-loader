@@ -102,6 +102,12 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 self.progress_tracker.finish_chunking(document.id, 0, "markdown")
                 return []
 
+            # POC1-008: Enrich chunks with standardized hierarchy metadata
+            logger.debug("Enriching chunks with hierarchy metadata")
+            chunks_metadata = self.section_splitter.enrich_chunks_with_hierarchy(
+                document, chunks_metadata
+            )
+
             # Apply configuration-driven safety limit
             max_chunks = self.settings.global_config.chunking.max_chunks_per_document
             if len(chunks_metadata) > max_chunks:

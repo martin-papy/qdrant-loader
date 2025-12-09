@@ -8,6 +8,7 @@ import structlog
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
+    from qdrant_loader.core.document import Document
 
 # Re-export classes and local dependencies at top to satisfy E402
 from .document_parser import DocumentParser, HierarchyBuilder  # noqa: F401
@@ -15,6 +16,12 @@ from .splitters.base import BaseSplitter  # re-export base class  # noqa: F401
 from .splitters.excel import ExcelSplitter  # re-export  # noqa: F401
 from .splitters.fallback import FallbackSplitter  # re-export  # noqa: F401
 from .splitters.standard import StandardSplitter  # re-export  # noqa: F401
+
+# Import hierarchy utilities (POC1-008)
+from qdrant_loader.connectors.shared.hierarchy import (
+    HierarchyMetadata,
+    build_hierarchy_from_markdown_sections,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -510,3 +517,126 @@ class SectionSplitter:
 
         merged.append(current_section)
         return merged
+
+    def build_hierarchy_map(
+        self,
+        document: "Document",
+        chunks_metadata: list[dict[str, Any]],
+    ) -> dict[str, HierarchyMetadata]:
+        """Build a comprehensive hierarchy map for all chunks.
+
+        POC1-008: Implements stack-based parent tracking algorithm
+        inspired by Unstructured.io's approach.
+
+        This method assigns parent-child relationships between chunks
+        based on header levels, enabling:
+        - "retrieve chunk + parent context" queries
+        - depth-based filtering (e.g., "show only H1, H2 sections")
+        - breadcrumb navigation
+
+        Args:
+            document: Source document for context
+            chunks_metadata: List of chunk metadata dicts from split_sections
+
+        Returns:
+            Dictionary mapping chunk IDs to HierarchyMetadata
+
+        Algorithm:
+            Uses a stack to track parent sections at each level.
+            When a new section is encountered:
+            1. Pop stack until we find a parent at a lower level
+            2. The top of stack becomes the parent
+            3. Push current section onto stack
+        """
+        hierarchy_map: dict[str, HierarchyMetadata] = {}
+
+        # Stack tracks (level, chunk_id, title) for parent resolution
+        parent_stack: list[tuple[int, str, str]] = []
+
+        for i, chunk_meta in enumerate(chunks_metadata):
+            level = chunk_meta.get("level", 0)
+            title = chunk_meta.get("title", f"Section {i}")
+            section_path = chunk_meta.get("path", [])
+
+            # Generate a unique chunk ID (will be replaced by actual Document ID later)
+            chunk_id = f"{document.id}_chunk_{i}"
+
+            # Pop stack until we find a parent at a lower level
+            while parent_stack and parent_stack[-1][0] >= level:
+                parent_stack.pop()
+
+            # Determine parent from stack
+            parent_id = None
+            parent_title = None
+            if parent_stack:
+                parent_id = parent_stack[-1][1]
+                parent_title = parent_stack[-1][2]
+
+            # Build hierarchy metadata using the shared utility
+            hierarchy = build_hierarchy_from_markdown_sections(
+                section_path=section_path,
+                section_level=level,
+                document_id=document.id,
+                document_title=document.title,
+                section_id=chunk_id,
+                parent_section_id=parent_id,
+            )
+
+            # Store in map
+            hierarchy_map[chunk_id] = hierarchy
+
+            # Push current section onto stack
+            parent_stack.append((level, chunk_id, title))
+
+            # Enrich the chunk metadata in place with hierarchy fields
+            chunk_meta.update(hierarchy.to_dict())
+
+            logger.debug(
+                "Built hierarchy for chunk",
+                extra={
+                    "chunk_index": i,
+                    "chunk_id": chunk_id,
+                    "level": level,
+                    "title": title,
+                    "parent_id": parent_id,
+                    "depth": hierarchy.depth,
+                    "breadcrumb_text": hierarchy.breadcrumb_text,
+                },
+            )
+
+        return hierarchy_map
+
+    def enrich_chunks_with_hierarchy(
+        self,
+        document: "Document",
+        chunks_metadata: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Enrich chunk metadata with standardized hierarchy fields.
+
+        POC1-008: Convenience method that builds hierarchy map and
+        returns enriched chunks.
+
+        Args:
+            document: Source document
+            chunks_metadata: List of chunk metadata dicts
+
+        Returns:
+            Enriched chunks_metadata with hierarchy fields added
+        """
+        # Build hierarchy map (also enriches chunks in place)
+        self.build_hierarchy_map(document, chunks_metadata)
+
+        # Log summary
+        logger.info(
+            "Enriched chunks with hierarchy metadata",
+            extra={
+                "document_id": document.id,
+                "document_title": document.title,
+                "total_chunks": len(chunks_metadata),
+                "max_depth": max(
+                    (c.get("depth", 0) for c in chunks_metadata), default=0
+                ),
+            },
+        )
+
+        return chunks_metadata
