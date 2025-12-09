@@ -12,6 +12,13 @@ Architecture:
 - Built-in enrichers: Entity, Keyword, Hierarchy, Custom
 
 Example usage:
+    # Option 1: Use factory for quick setup
+    from qdrant_loader.core.enrichers import create_default_pipeline
+
+    pipeline = create_default_pipeline(settings)
+    result = await pipeline.enrich(document)
+
+    # Option 2: Manual configuration
     from qdrant_loader.core.enrichers import (
         EnricherPipeline,
         EntityEnricher,
@@ -28,6 +35,7 @@ Example usage:
 
 from .base_enricher import BaseEnricher, EnricherConfig, EnricherPriority, EnricherResult
 from .entity_enricher import EntityEnricher, EntityEnricherConfig
+from .factory import create_default_pipeline, create_full_pipeline, create_lightweight_pipeline
 from .keyword_enricher import KeywordEnricher, KeywordEnricherConfig
 from .pipeline import EnricherPipeline, PipelineResult
 
@@ -40,6 +48,10 @@ __all__ = [
     # Pipeline
     "EnricherPipeline",
     "PipelineResult",
+    # Factory functions
+    "create_default_pipeline",
+    "create_full_pipeline",
+    "create_lightweight_pipeline",
     # Built-in enrichers
     "EntityEnricher",
     "EntityEnricherConfig",
