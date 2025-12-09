@@ -59,8 +59,22 @@ def mock_qdrant_client():
         "source_type": "confluence",
     }
 
-    client.search.return_value = [search_result1, search_result2]
-    client.scroll.return_value = ([search_result1, search_result2], None)
+    search_result3 = MagicMock()
+    search_result3.id = "3"
+    search_result3.score = 0.6
+    search_result3.payload = {
+        "content": "Test content 3",
+        "metadata": {"title": "Test Doc 3", "url": "http://test3.com"},
+        "source_type": "jira",
+    }
+
+    # Mock query_points response (qdrant-client 1.10+)
+    query_response = MagicMock()
+    query_response.points = [search_result1, search_result2, search_result3]
+    client.query_points = AsyncMock(return_value=query_response)
+    client.scroll = AsyncMock(
+        return_value=([search_result1, search_result2, search_result3], None)
+    )
 
     # Mock collection operations
     collections_response = MagicMock()

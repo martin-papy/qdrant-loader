@@ -47,7 +47,10 @@ def mock_qdrant_client():
         "source_type": "localfile",
     }
 
-    client.search.return_value = [search_result1, search_result2, search_result3]
+    # Mock query_points response (qdrant-client 1.10+)
+    query_response = MagicMock()
+    query_response.points = [search_result1, search_result2, search_result3]
+    client.query_points = AsyncMock(return_value=query_response)
 
     # Create mock scroll results
     scroll_result1 = MagicMock()
@@ -74,17 +77,19 @@ def mock_qdrant_client():
         "source_type": "localfile",
     }
 
-    client.scroll.return_value = (
-        [scroll_result1, scroll_result2, scroll_result3],
-        None,
+    client.scroll = AsyncMock(
+        return_value=(
+            [scroll_result1, scroll_result2, scroll_result3],
+            None,
+        )
     )
 
     # Mock collection operations
     collections_response = MagicMock()
     collections_response.collections = []
-    client.get_collections.return_value = collections_response
-    client.create_collection.return_value = None
-    client.close.return_value = None
+    client.get_collections = AsyncMock(return_value=collections_response)
+    client.create_collection = AsyncMock(return_value=None)
+    client.close = AsyncMock(return_value=None)
 
     return client
 
@@ -175,7 +180,7 @@ async def test_search_error_handling(hybrid_search, mock_qdrant_client):
     hybrid_search._keyword_search = AsyncMock(return_value=[])
     # Ensure fallback path uses the mocked legacy methods
     hybrid_search.hybrid_pipeline = None
-    mock_qdrant_client.search.side_effect = None
+    mock_qdrant_client.query_points.side_effect = None
     out = await hybrid_search.search("q")
     assert out == []
 
@@ -302,9 +307,9 @@ async def test_vector_search(hybrid_search, mock_qdrant_client):
     assert results[0]["text"] == "Test content 1"
     assert results[0]["source_type"] == "git"
 
-    # Verify Qdrant search was called with correct parameters
-    mock_qdrant_client.search.assert_called_once()
-    call_args = mock_qdrant_client.search.call_args
+    # Verify Qdrant query_points was called with correct parameters (qdrant-client 1.10+)
+    mock_qdrant_client.query_points.assert_called_once()
+    call_args = mock_qdrant_client.query_points.call_args
     assert call_args[1]["collection_name"] == "test_collection"
     assert call_args[1]["limit"] == 5
 
