@@ -132,7 +132,7 @@ class LoggingConfig:
         return structlog.get_logger(name)
 
     @classmethod
-    def reconfigure(cls, *, file: str | None = None) -> None:
+    def reconfigure(cls, *, file: str | None = None, level: str | None = None) -> None:
         """Lightweight file reconfiguration for MCP server wrapper.
 
         If core logging is present and supports reconfigure, delegate to it.
