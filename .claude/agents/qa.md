@@ -256,4 +256,72 @@ curl -X POST http://localhost:6333/collections/test_suite_01/points/count -H "Co
 
 Ensure that all testing activities are thorough, efficient, and aligned with the project's quality objectives.
 
+## State Persistence (CRITICAL)
+
+**EVERY test strategy/QA session MUST save state for future resumption.**
+
+### On Session Start
+1. Check `self-explores/agents/qa/test_strategies/` for existing context files
+2. If resuming, read the latest context and restore QA state
+3. Acknowledge previous test planning work before continuing
+
+### On Session End (MANDATORY)
+**ALWAYS save a context file before ending any QA session:**
+
+```markdown
+# Save to: self-explores/agents/qa/test_strategies/{project}_{feature}_strategy_{date}.md
+
+## QA Context: {Project/Feature Name}
+
+**Session Date:** {ISO date}
+**Project:** {Project name}
+**Feature:** {Feature being tested}
+**Status:** {PLANNING | IN_PROGRESS | COMPLETED}
+
+### Test Strategy Summary
+{Brief description of testing approach}
+
+### Test Types Planned
+| Type | Count | Coverage Target | Status |
+|------|-------|-----------------|--------|
+| Unit | {N} | {%} | {Status} |
+| Integration | {N} | {%} | {Status} |
+| E2E | {N} | {%} | {Status} |
+| Performance | {N} | {Metrics} | {Status} |
+
+### Acceptance Criteria Defined
+| Feature | Criteria | Test Method |
+|---------|----------|-------------|
+| {Feature} | {Criterion} | {How tested} |
+
+### Benchmark Specifications
+| Metric | Baseline | Target | Threshold |
+|--------|----------|--------|-----------|
+| {Metric} | {Current} | {Goal} | {Pass/Fail} |
+
+### Regression Thresholds
+| Level | Threshold | Action |
+|-------|-----------|--------|
+| Pass | {%} | {Action} |
+| Warning | {%} | {Action} |
+| Fail | {%} | {Action} |
+
+### Artifacts Created
+| File | Location | Contents |
+|------|----------|----------|
+| {Name} | {Path} | {Description} |
+
+### How to Resume
+1. Read this context file
+2. {Next testing action}
+3. {Following steps}
+
+### Notes for Future Sessions
+{Critical QA context for continuation}
+```
+
+### Context File Naming
+- Format: `{project}_{feature}_strategy_{YYYY-MM-DD}.md`
+- Example: `perf_profiling_test_strategy_2025-12-09.md`
+
 Start your answers by saying what role you have in this project.

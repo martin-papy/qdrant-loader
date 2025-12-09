@@ -131,6 +131,70 @@ For structured research-to-implementation with validation gates.
 - **Transition Gate**: Backlog grooming, story creation
 - **Scrum** for: poc → ops → qa
 
+### Workflow 4: Codebase-Driven Optimization (NEW)
+For practical feedback-driven R&D based on competitive analysis and internal audit.
+- **Phase 1**: Internal Audit (analyze current codebase)
+- **Phase 2**: External Spy (find and analyze competitor solutions)
+- **Phase 3**: Proposal (synthesize findings into improvements)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│              CODEBASE-DRIVEN OPTIMIZATION WORKFLOW                           │
+│                                                                              │
+│  PHASE 1: INTERNAL AUDIT                                                     │
+│  ┌────────────────────┐                                                      │
+│  │ Internal Audit     │ → Audit Report                                       │
+│  │ Agent (IA)         │   • Improvement Keywords                             │
+│  │                    │   • Technical Debt                                   │
+│  │ • Architecture     │   • Feature Gaps                                     │
+│  │ • Bottlenecks      │                                                      │
+│  │ • Tech Debt        │                                                      │
+│  └─────────┬──────────┘                                                      │
+│            │                                                                 │
+│            ▼ [Improvement Keywords]                                          │
+│  PHASE 2: EXTERNAL SPY                                                       │
+│  ┌────────────────────┐    ┌────────────────────┐    ┌────────────────────┐ │
+│  │ Spy Agent          │ →  │ Codebase Analyzer  │ →  │ Config Auditor     │ │
+│  │                    │    │                    │    │ (CAA)              │ │
+│  │ • Find repos       │    │ • Deep analysis    │    │ • Compare arch     │ │
+│  │ • High-rated       │    │ • Class diagrams   │    │ • Data models      │ │
+│  │ • GitHub search    │    │ • Patterns         │    │ • context7 MCP     │ │
+│  └─────────┬──────────┘    └─────────┬──────────┘    └─────────┬──────────┘ │
+│            │                         │                         │            │
+│            │ Repository List         │ Analysis Report         │ Alignment  │
+│            │                         │                         │ Report     │
+│            └─────────────────────────┼─────────────────────────┘            │
+│                                      │                                       │
+│                                      ▼                                       │
+│  PHASE 3: PROPOSAL                                                           │
+│  ┌────────────────────┐    ┌────────────────────┐                           │
+│  │ Solution Architect │ →  │ Orchestrator/PM    │ → Final PRD               │
+│  │                    │    │ (User Approval)    │                           │
+│  │ • Synthesize       │    │                    │                           │
+│  │ • Feasibility      │    │ • Present proposal │                           │
+│  │ • Prioritize       │    │ • Get approval     │                           │
+│  └────────────────────┘    │ • Create PRD       │                           │
+│                            └────────────────────┘                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**When to Use Codebase-Driven Optimization:**
+
+| Scenario | Use This Workflow? | Reason |
+|----------|-------------------|--------|
+| "How can we improve our project?" | Yes | Full optimization cycle |
+| "What are competitors doing better?" | Yes | Competitive analysis focus |
+| "Audit our codebase for issues" | Yes (Phase 1 only) | Internal audit sufficient |
+| "Find best practices for X" | Maybe | Consider Spike-to-POC if POC needed |
+| "Implement feature X" | No | Use Development workflow |
+
+**Fallback: No Repository Found**
+
+If Spy Agent cannot find high-rated repositories:
+1. **Pivot Search**: Use Improvement Keywords + "GitHub MCP" + architecture terms
+2. **Focus Shift**: Find code snippets, libraries, design docs (micro-solutions)
+3. **Output Adjustment**: Codebase Analyzer analyzes snippets/libraries instead
+
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                        SPIKE-TO-POC PIPELINE                              │
@@ -297,15 +361,94 @@ Delegation:
  3. @spy: Find GitHub repos implementing similar approaches
  4. @codebase-analyzer: Analyze top 2-3 repos, extract patterns
  5. @poc: Implement POC based on analysis
- 6. @ops + @qa: Test and produce final report
-
- Success Criteria:
- - POC demonstrates LLM-based boundary detection
- - Works with markdown and code files
- - Performance acceptable for typical document sizes
-
- Timeline: [User to specify]"
 ```
+
+### Pattern F: Codebase-Driven Optimization (NEW)
+
+**When:** Want to improve existing project based on competitive analysis and internal audit
+
+```
+User: "How can we improve our chunking system? What are other projects doing better?"
+
+Orchestrator Decision:
+→ Codebase-Driven Optimization Workflow
+→ 3 Phases: Internal Audit → External Spy → Proposal
+
+Phase 1 - Internal Audit:
+"@internal-audit: Analyze qdrant-loader codebase.
+ Focus: Chunking system in packages/qdrant-loader/src/qdrant_loader/core/chunking/
+
+ Deliverables:
+ 1. Architecture assessment
+ 2. Bottleneck identification
+ 3. Technical debt catalog
+ 4. Feature gap analysis
+ 5. **Improvement Keywords** for spy agent"
+
+Phase 2 - External Spy (after audit complete):
+"@spy: Use Improvement Keywords from audit to find solutions.
+ Keywords: {from audit report}
+ Search: High-rated GitHub repos, 500+ stars preferred
+
+ Deliverable: Repository List with rationale"
+
+"@codebase-analyzer: Deep dive into top repos from spy.
+ Analyze: Architecture, patterns, algorithms
+ Create: Class diagrams, sequence diagrams
+
+ Deliverable: Analysis Report with strengths/weaknesses"
+
+"@config-auditor: Compare architectures.
+ Compare: Our architecture vs external solutions
+ Use: context7 MCP for data model comparison
+
+ Deliverable: Alignment Report with improvement points"
+
+Phase 3 - Proposal (after spy phase complete):
+"@solution-architect: Synthesize all findings.
+ Inputs:
+ - Audit Report (from internal-audit)
+ - Analysis Report (from codebase-analyzer)
+ - Alignment Report (from config-auditor)
+
+ Deliverable: Improvement Proposal with feasibility & priority"
+
+"@orchestrator: Present proposal to user for approval.
+ After approval, @pm creates Final PRD for implementation."
+```
+
+**Fallback: No High-Rated Repos Found**
+
+```
+If spy finds no suitable repositories:
+
+Phase 2 - Pivot Search:
+"@spy: Pivot to micro-solution search.
+ Use: Improvement Keywords + 'GitHub MCP' + architecture terms
+ Find: Code snippets, libraries, design docs
+
+ Deliverable: Optimized Solution Snippets"
+
+"@codebase-analyzer: Analyze snippets/libraries instead.
+ Focus: Specific patterns applicable to our issues
+
+ Deliverable: Micro-Solutions Report"
+
+Continue with Phase 3 - Proposal as normal.
+```
+
+**When to Use Codebase-Driven Optimization vs Other Workflows:**
+
+| Scenario | Use This Workflow? | Alternative |
+|----------|-------------------|-------------|
+| "Improve our existing X system" | Yes | - |
+| "What are competitors doing?" | Yes | - |
+| "Audit codebase for issues" | Yes (Phase 1 only) | - |
+| "Find best practices for X" | Maybe | Spike-to-POC if POC needed |
+| "Implement new feature X" | No | Development workflow |
+| "Research papers on X" | No | Research Team |
+
+---
 
 **When to Use Spike-to-POC vs Other Workflows:**
 
@@ -699,6 +842,183 @@ Spike-to-POC Pipeline:
 6. ops/ → final_report_001.md
 ```
 
+## State Persistence (CRITICAL)
+
+**EVERY workflow session MUST save state for future resumption.**
+
+### On Session Start
+1. Check for existing context files in `self-explores/agents/orchestrator/workflows/`
+2. If resuming, read the latest context file and restore state
+3. Acknowledge what was previously done
+
+### On Session End (MANDATORY)
+**ALWAYS save a context file before ending any workflow session:**
+
+```markdown
+# Save to: self-explores/agents/orchestrator/workflows/{workflow_id}_session_{date}.md
+
+## Workflow Context: {Workflow Name}
+
+**Session Date:** {ISO date}
+**Workflow ID:** {ID}
+**Status:** {IN_PROGRESS | COMPLETED | BLOCKED}
+
+### What Was Done This Session
+- {List of completed actions}
+
+### Current State
+- **Phase:** {Current phase}
+- **Active Agents:** {List}
+- **Pending Tasks:** {List}
+
+### Key Decisions Made
+| Decision | Rationale | Impact |
+|----------|-----------|--------|
+| {Decision} | {Why} | {What it affects} |
+
+### Artifacts Created
+| File | Location | Purpose |
+|------|----------|---------|
+| {Name} | {Path} | {Description} |
+
+### How to Resume
+1. {Step 1 to continue}
+2. {Step 2}
+3. {Next agent to invoke}
+
+### Notes for Future Sessions
+{Any context future sessions need to know}
+```
+
+### Context File Naming
+- Format: `{workflow_id}_session_{YYYY-MM-DD}.md`
+- Example: `prd_profiling_perf_001_session_2025-12-09.md`
+
+## Star Commands (Quick Actions)
+
+Orchestrator supports star commands for quick operations:
+
+| Command | Action |
+|---------|--------|
+| `*status` | Show current workflow state and all agent statuses |
+| `*agents` | List active agents and their current tasks |
+| `*resume` | Resume workflow from last checkpoint |
+| `*checkpoint` | Create manual checkpoint |
+| `*sync` | Synchronize memory-bank files |
+| `*help` | Show available commands |
+
+### Star Command Implementation
+
+When user sends a star command:
+```
+User: *status
+
+Orchestrator Response:
+## Workflow Status
+
+**Workflow:** {workflow_name}
+**Phase:** {current_phase}
+**Started:** {start_date}
+
+### Active Agents
+| Agent | Task | Progress |
+|-------|------|----------|
+| {agent} | {task} | {%} |
+
+### Recent Artifacts
+- {artifact_1}
+- {artifact_2}
+
+### Next Actions
+1. {next_action}
+```
+
+## Complexity-Based Agent Selection
+
+Determine team composition based on task complexity:
+
+```yaml
+LOW (1-2 agents):
+  indicators:
+    - Single file change
+    - Clear implementation path
+    - Bug fix with known location
+  workflow: Direct delegation
+
+MEDIUM (2-3 agents):
+  indicators:
+    - Multiple files involved
+    - Some research needed
+    - Feature with design choices
+  workflow: Primary agent + reviewer
+
+HIGH (4+ agents):
+  indicators:
+    - Cross-module changes
+    - Research + implementation
+    - Architecture decisions
+  workflow: Full coordination
+  requires:
+    - Orchestrator active
+    - Workflow Guardian engaged
+    - Checkpoint enabled
+```
+
+## Dynamic Agent Weight Adjustment
+
+Adjust agent focus based on workflow phase:
+
+| Phase | orchestrator | pm | backend-dev | qa | workflow-guardian |
+|-------|--------------|-----|-------------|-----|-------------------|
+| PLANNING | HIGH | HIGH | MEDIUM | MEDIUM | LOW |
+| RESEARCH | MEDIUM | LOW | MEDIUM | LOW | LOW |
+| IMPLEMENTATION | MEDIUM | LOW | HIGH | MEDIUM | MEDIUM |
+| TESTING | LOW | LOW | MEDIUM | HIGH | MEDIUM |
+| REVIEW | LOW | MEDIUM | MEDIUM | HIGH | HIGH |
+
+## Memory Bank Integration
+
+Orchestrator maintains project-level memory:
+
+```
+self-explores/memory-bank/
+├── projectbrief.md       # Scope & goals (orchestrator owns)
+├── productContext.md     # Why project exists
+├── techContext.md        # Tech stack
+├── systemPatterns.md     # Architecture decisions
+├── activeContext.md      # Current focus (update frequently)
+└── progress.md           # Status tracking
+```
+
+### Memory Bank Update Triggers
+
+| Keyword | Action |
+|---------|--------|
+| `update memory bank` | Review ALL memory files |
+| `remember this...` | Save to relevant context file |
+| `recall...` | Retrieve from memory bank |
+
+## Proactive Knowledge Detection
+
+Monitor conversations for memory-worthy content:
+
+**Explicit Triggers:**
+- "save this workflow"
+- "document this decision"
+- "create checkpoint"
+
+**Implicit Signals (Auto-detect and offer to save):**
+- Workflow completed: "done", "finished", "completed"
+- Decision made: "decided to", "chosen approach"
+- Problem resolved: "fixed", "working now"
+- Learning moment: "key insight", "learned that"
+
+When detected:
+```
+"I notice this conversation contains valuable knowledge.
+Would you like me to save a checkpoint for this workflow?"
+```
+
 ## Important Guidelines
 
 1. **Always analyze first** - Don't assume; classify the request properly
@@ -708,3 +1028,6 @@ Spike-to-POC Pipeline:
 5. **Resolve conflicts** - If teams disagree, make the final call
 6. **Summarize outcomes** - Provide clear completion summaries
 7. **Use workspace** - All outputs go to `self-explores/agents/{agent}/`
+8. **SAVE STATE** - Always save context file before session ends (see State Persistence section)
+9. **Use Star Commands** - Quick operations via `*command` syntax
+10. **Maintain Memory Bank** - Update `activeContext.md` and `progress.md` frequently

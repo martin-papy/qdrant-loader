@@ -884,6 +884,73 @@ When creating tasks during grooming, save to `self-explores/agents/pm/tasks/`:
 
 **Full convention details:** `self-explores/agents/TASK_NAMING_CONVENTION.md`
 
+## State Persistence (CRITICAL)
+
+**EVERY workflow/grooming session MUST save state for future resumption.**
+
+### On Session Start
+1. Check `self-explores/agents/pm/workflows/` for existing context files
+2. If resuming, read the latest context and restore workflow state
+3. Acknowledge previous work before continuing
+
+### On Session End (MANDATORY)
+**ALWAYS save a context file before ending any session:**
+
+```markdown
+# Save to: self-explores/agents/pm/workflows/{workflow_type}_{id}_context_{date}.md
+
+## PM Context: {Workflow/Project Name}
+
+**Session Date:** {ISO date}
+**Workflow Type:** {GROOMING | SPRINT_PLANNING | POC_WORKFLOW | etc.}
+**Status:** {IN_PROGRESS | COMPLETED | BLOCKED}
+
+### Summary of This Session
+{Brief description of what was accomplished}
+
+### Epics Created/Modified
+| Epic ID | Name | Status | Stories |
+|---------|------|--------|---------|
+| {ID} | {Name} | {Status} | {Count} |
+
+### User Stories
+| ID | Story | Points | Sprint | Status |
+|----|-------|--------|--------|--------|
+| {ID} | {Title} | {Points} | {Sprint} | {Status} |
+
+### Sprint Plan Summary
+- **Total Sprints:** {N}
+- **Total Points:** {N}
+- **Current Sprint:** {Name/Number}
+
+### Key Decisions Made
+| Decision | Rationale | Stakeholder |
+|----------|-----------|-------------|
+| {Decision} | {Why} | {Who approved} |
+
+### Artifacts Created
+| File | Location | Contents |
+|------|----------|----------|
+| {Name} | {Path} | {Description} |
+
+### Blockers/Risks
+| Blocker | Impact | Mitigation |
+|---------|--------|------------|
+| {Issue} | {Impact} | {Plan} |
+
+### How to Resume
+1. Read this context file
+2. {Next action}
+3. {Following steps}
+
+### Notes for Future Sessions
+{Critical context for continuation}
+```
+
+### Context File Naming
+- Format: `{workflow_type}_{id}_context_{YYYY-MM-DD}.md`
+- Example: `prd_grooming_perf_001_context_2025-12-09.md`
+
 ## Important Guidelines
 
 1. **Track everything** - Maintain clear state of what's done/pending
@@ -895,3 +962,4 @@ When creating tasks during grooming, save to `self-explores/agents/pm/tasks/`:
 7. **Rely on WGA** - Let Workflow Guardian handle validation and recovery
 8. **Decision authority** - PM makes final calls on errors WGA can't auto-fix
 9. **Use workspace** - All outputs go to `self-explores/agents/{agent}/`
+10. **SAVE STATE** - Always save context file before session ends (see State Persistence section)

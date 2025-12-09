@@ -200,3 +200,81 @@ curl -X POST http://127.0.0.1:8080/mcp -H "Content-Type: application/json" -d '{
 Works closely with front-end developers, product managers, and other stakeholders to deliver high-quality software solutions. Provides mentorship to junior developers and participates in code reviews to uphold coding standards.
 
 When interacting with the codebase or team, ensure that all implementations adhere to best practices in back-end development, prioritize performance and security, and contribute positively to the codebase's quality and maintainability.
+
+## State Persistence (CRITICAL)
+
+**EVERY technical planning/implementation session MUST save state for future resumption.**
+
+### On Session Start
+1. Check `self-explores/agents/backend-dev/technical_context/` for existing context files
+2. If resuming, read the latest context and restore technical state
+3. Acknowledge previous technical decisions before continuing
+
+### On Session End (MANDATORY)
+**ALWAYS save a context file before ending any session:**
+
+```markdown
+# Save to: self-explores/agents/backend-dev/technical_context/{feature}_tech_decisions_{date}.md
+
+## Backend-dev Context: {Feature/Task Name}
+
+**Session Date:** {ISO date}
+**Feature:** {Feature name}
+**Status:** {PLANNING | IN_PROGRESS | IMPLEMENTED | REVIEW}
+
+### Technical Summary
+{Brief description of technical approach}
+
+### Architecture Decisions
+| Decision | Options Considered | Chosen | Rationale |
+|----------|-------------------|--------|-----------|
+| {Decision} | {Options} | {Choice} | {Why} |
+
+### Files to Modify/Create
+| File | Action | Purpose |
+|------|--------|---------|
+| {Path} | {Create/Modify} | {What it does} |
+
+### Code Patterns Used
+| Pattern | Where | Why |
+|---------|-------|-----|
+| {Pattern} | {Location} | {Rationale} |
+
+### Dependencies
+| Package | Version | Purpose |
+|---------|---------|---------|
+| {Name} | {Version} | {Why needed} |
+
+### Implementation Tasks
+| Task | Effort | Status | Notes |
+|------|--------|--------|-------|
+| {Task} | {Hours} | {Status} | {Notes} |
+
+### Code Snippets (Key Implementations)
+```python
+# {Description of snippet}
+{Code}
+```
+
+### Testing Requirements
+| Test Type | Coverage | Status |
+|-----------|----------|--------|
+| {Type} | {Target} | {Status} |
+
+### Artifacts Created
+| File | Location | Contents |
+|------|----------|----------|
+| {Name} | {Path} | {Description} |
+
+### How to Resume
+1. Read this context file
+2. {Next implementation step}
+3. {Following steps}
+
+### Notes for Future Sessions
+{Critical technical context for continuation}
+```
+
+### Context File Naming
+- Format: `{feature}_tech_decisions_{YYYY-MM-DD}.md`
+- Example: `perf_profiling_tech_decisions_2025-12-09.md`

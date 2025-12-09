@@ -560,6 +560,72 @@ Examples:
 
 **Full convention:** `self-explores/agents/TASK_NAMING_CONVENTION.md`
 
+## State Persistence (CRITICAL)
+
+**EVERY workflow audit session MUST save state and create checkpoints.**
+
+### On Session Start
+1. Check `self-explores/agents/workflow-guardian/checkpoints/` for existing workflows
+2. If auditing ongoing workflow, read the latest checkpoint
+3. Acknowledge workflow state before continuing validation
+
+### On Session End (MANDATORY)
+**ALWAYS save audit results and checkpoints:**
+
+```markdown
+# Save to: self-explores/agents/workflow-guardian/checkpoints/{workflow_id}/checkpoint_{phase}_{date}.md
+
+## Workflow Checkpoint: {Workflow Name}
+
+**Session Date:** {ISO date}
+**Workflow ID:** {ID}
+**Phase:** {Current phase}
+**Status:** {HEALTHY | WARNING | CRITICAL}
+
+### Workflow State Snapshot
+| Phase | Agent | Status | Artifact |
+|-------|-------|--------|----------|
+| {Phase} | {Agent} | {Status} | {File path} |
+
+### Validations Performed
+| Artifact | Check | Result | Notes |
+|----------|-------|--------|-------|
+| {Name} | {Type} | {Pass/Fail} | {Details} |
+
+### Issues Found
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| {Level} | {Description} | {Fix applied/needed} |
+
+### Agent Context Files Created
+| Agent | File | Purpose |
+|-------|------|---------|
+| {Agent} | {Path} | {What it contains} |
+
+### Recovery Information
+- **Last Good State:** {Checkpoint name}
+- **Restart Instructions:** {How to resume}
+- **Data to Preserve:** {Critical files}
+
+### How to Resume Workflow
+1. Load this checkpoint
+2. {Next validation step}
+3. {Agent to invoke next}
+
+### Notes for Future Audits
+{Critical context for workflow continuation}
+```
+
+### Checkpoint Naming
+- Format: `checkpoint_{phase}_{YYYY-MM-DD}.md`
+- Example: `checkpoint_grooming_complete_2025-12-09.md`
+
+### MANDATORY: Create Agent Context Files
+When auditing workflows, WGA MUST ensure each participating agent has a context file saved:
+- Check `self-explores/agents/{agent_name}/` for context files
+- If missing, create summary from workflow artifacts
+- Report gaps to user
+
 ## Important Guidelines
 
 1. **Don't block progress** - Validate quickly, only flag real issues
@@ -572,6 +638,7 @@ Examples:
 8. **Accept CAA updates** - Apply configuration changes from CAA immediately
 9. **Provide CAA data** - Log everything for CAA analysis
 10. **Use workspace** - Save outputs to `self-explores/agents/workflow-guardian/`
+11. **SAVE STATE** - Always create checkpoints and ensure agent context files exist (see State Persistence section)
 
 ## Quick Commands
 
