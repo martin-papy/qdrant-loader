@@ -89,7 +89,7 @@ def test_clean_formatter_strips_ansi(tmp_path):
 
 def test_redact_processor_masks_nested_fields():
     logging_mod = import_module("qdrant_loader_core.logging")
-    redact = logging_mod._redact_processor
+    redact = logging_mod.redact_processor
 
     event = {
         "api_key": "sk-ABCDEFGHIJKLMNOP",
