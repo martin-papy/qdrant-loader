@@ -13,7 +13,12 @@ def test_resolve_config_path_env(tmp_path, monkeypatch):
     assert resolve_config_path(None) == cfg
 
 
-def test_build_config_from_dict_minimal_global_llm():
+def test_build_config_from_dict_minimal_global_llm(monkeypatch):
+    # Clear env vars to ensure config dict values are used
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_EMBEDDING_MODEL", raising=False)
+    monkeypatch.delenv("LLM_CHAT_MODEL", raising=False)
     data = {
         "global": {
             "llm": {
