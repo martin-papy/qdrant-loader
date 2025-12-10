@@ -138,9 +138,9 @@ class TestPhase12SimpleIntegration:
 
         # Verify we found relationships
         if len(topic_map.topic_document_frequency) == 0:
-           pytest.skip("No topics found - spaCy model may not be loaded correctly")
+            pytest.skip("No topics found - spaCy model may not be loaded correctly")
         if len(related_topics) == 0:
-           logger.warning("No related topics found for 'authentication'")
+            logger.warning("No related topics found for 'authentication'")
 
         # Test semantic similarity with real spaCy vectors
         similarity = real_spacy_analyzer.nlp("authentication").similarity(

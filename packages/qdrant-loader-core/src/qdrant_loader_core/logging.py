@@ -23,6 +23,7 @@ try:
 except Exception:  # pragma: no cover - fallback when absent
     ExtraAdder = None  # type: ignore
 
+
 class LoggingConfig:
     """Core logging setup with structlog + stdlib redaction and filters."""
 
@@ -213,7 +214,14 @@ class LoggingConfig:
 
                 # Update structlog wrapper to use new level
                 if cls._current_config is not None:
-                    _, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
+                    (
+                        _,
+                        fmt,
+                        _,
+                        clean_output,
+                        suppress_qdrant_warnings,
+                        disable_console,
+                    ) = cls._current_config
 
                     # Choose timestamp format and final renderer
                     if clean_output and fmt == "console":
@@ -237,7 +245,9 @@ class LoggingConfig:
                             redact_processor,
                             final_renderer,
                         ],
-                        wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
+                        wrapper_class=structlog.make_filtering_bound_logger(
+                            numeric_level
+                        ),
                         logger_factory=LoggerFactory(),
                         cache_logger_on_first_use=False,
                     )
@@ -268,6 +278,20 @@ class LoggingConfig:
 
         # Update current config tuple if available
         if cls._current_config is not None:
-            old_level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
+            (
+                old_level,
+                fmt,
+                _,
+                clean_output,
+                suppress_qdrant_warnings,
+                disable_console,
+            ) = cls._current_config
             new_level = level.upper() if level is not None else old_level
-            cls._current_config = (new_level, fmt, file, clean_output, suppress_qdrant_warnings, disable_console)
+            cls._current_config = (
+                new_level,
+                fmt,
+                file,
+                clean_output,
+                suppress_qdrant_warnings,
+                disable_console,
+            )
