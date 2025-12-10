@@ -1,7 +1,7 @@
 """Unit tests for vector search caching functionality."""
 
 import time
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from qdrant_loader_mcp_server.search.components.vector_search_service import (
