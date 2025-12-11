@@ -2,6 +2,8 @@
 
 ## Version 0.7.4 - December 11, 2025
 
+### 🐛 Bug Fixes
+
 #### Compatibility & Platform Support
 
 - **Fixed Windows asyncio event loop crashes** ([#57](https://github.com/martin-papy/qdrant-loader/issues/57)): Resolved critical issues with asyncio signal handling and stdio support on the Windows platform

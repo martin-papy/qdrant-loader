@@ -167,7 +167,9 @@ class LoggingConfig:
                 file_handler = logging.FileHandler(file)
                 file_handler.setFormatter(CleanFormatter("%(message)s"))
                 handlers.append(file_handler)
-            logging.basicConfig(level=getattr(logging, resolved_level), handlers=handlers, force=True)
+            logging.basicConfig(
+                level=getattr(logging, resolved_level), handlers=handlers, force=True
+            )
 
         if cls._current_config is not None:
             old_level, fmt, _, suppress = cls._current_config
