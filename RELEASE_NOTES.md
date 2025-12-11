@@ -1,5 +1,52 @@
 # Release Notes
 
+## Version 0.7.4 - December 11, 2025
+
+### Bug Fixes
+
+#### Windows Compatibility
+
+- **Fixed Windows asyncio event loop crashes** ([#57](https://github.com/martin-papy/qdrant-loader/issues/57)): Resolved `NotImplementedError` when running MCP server on Windows
+  - Added platform check to skip signal-based handlers (`SIGALRM`, `SIGTERM`, `SIGINT`) on Windows where `ProactorEventLoop` lacks these APIs
+  - Implemented cross-platform async stdin handler using `run_in_executor()` for Windows compatibility
+  - MCP server now works reliably on Windows 11 with both stdio and HTTP transports
+  - Fixed Windows test suite compatibility with explicit UTF-8 encoding in file operations
+
+#### Logging System
+
+- **Fixed log level not reconfigurable at runtime** ([#58](https://github.com/martin-papy/qdrant-loader/issues/58)): Resolved issue where `--log-level DEBUG` had no effect after initial logging setup
+  - Updated `LoggingConfig.reconfigure()` method to accept and apply `level` parameter
+  - All CLI commands now properly pass log level to reconfiguration
+  - Debug logs are now displayed correctly when `--log-level DEBUG` is specified
+
+#### Dependency Fixes
+
+- **Fixed missing prometheus-client dependency** ([#60](https://github.com/martin-papy/qdrant-loader/issues/60)): Added `prometheus-client>=0.19.0,<1.0.0` to main dependencies
+  - Resolves `ModuleNotFoundError: No module named 'prometheus_client'` in fresh environments
+  - Dependency was accidentally removed during cleanup in v0.7.3 but is required at runtime for metrics collection
+  - Upper bound prevents breaking changes from prometheus-client 1.x
+
+- **Fixed missing spacy dependency in MCP server** ([#67](https://github.com/martin-papy/qdrant-loader/issues/67)): Added `spacy>=3.7.0` to MCP server dependencies
+  - Resolves `ModuleNotFoundError: No module named 'spacy'` when starting MCP server
+  - Required for semantic analysis features (`spacy_analyzer.py`)
+  - Fixes Cursor MCP crash on startup for new installations
+
+#### API Compatibility
+
+- **Fixed qdrant-client API incompatibility** ([#74](https://github.com/martin-papy/qdrant-loader/issues/74)): Updated vector search to use new qdrant-client API
+  - Migrated from deprecated `client.search()` to `client.query_points()` API (breaking change in qdrant-client >= 1.10)
+  - Resolves `AttributeError: 'AsyncQdrantClient' object has no attribute 'search'`
+  - All MCP search tools now work correctly with qdrant-client 1.12+
+  - Updated mock payload structure and improved test robustness
+
+### Affected Packages
+
+| Package | Changes |
+|---------|---------|
+| `qdrant-loader` | prometheus-client dependency, logging fixes |
+| `qdrant-loader-core` | Log level reconfiguration |
+| `qdrant-loader-mcp-server` | Windows compatibility, spacy dependency, qdrant-client API migration |
+
 ## Version 0.7.3 - Sept 11, 2025
 
 ### Logging System Fixes
