@@ -439,10 +439,11 @@ class TestListFiles:
 
         result = git_operations.list_files()
 
+        # Use os.path.join for expected paths to match OS-specific separators
         expected = [
-            "/fake/repo/path/file1.txt",
-            "/fake/repo/path/file2.py",
-            "/fake/repo/path/dir/file3.md",
+            os.path.join("/fake/repo/path", "file1.txt"),
+            os.path.join("/fake/repo/path", "file2.py"),
+            os.path.join("/fake/repo/path", "dir/file3.md"),
         ]
         assert result == expected
         mock_repo.git.ls_tree.assert_called_once_with("-r", "--name-only", "HEAD")

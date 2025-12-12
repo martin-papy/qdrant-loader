@@ -21,40 +21,45 @@ class TestPhase2_2Integration:
     def mock_qdrant_client(self):
         """Create a mock Qdrant client."""
         client = AsyncMock()
-        client.search = AsyncMock(
-            return_value=[
-                Mock(
-                    score=0.9,
-                    payload={
-                        "content": "FastAPI OAuth 2.0 authentication implementation guide",
-                        "source_type": "git",
-                        "metadata": {
-                            "title": "OAuth Authentication Guide",
-                            "url": "https://example.com/oauth-guide",
-                            "has_code_blocks": True,
-                            "section_type": "implementation",
-                            "entities": ["OAuth", "FastAPI"],
-                            "topics": ["authentication", "security"],
-                        },
+
+        # Mock search results
+        mock_points = [
+            Mock(
+                score=0.9,
+                payload={
+                    "content": "FastAPI OAuth 2.0 authentication implementation guide",
+                    "source_type": "git",
+                    "metadata": {
+                        "title": "OAuth Authentication Guide",
+                        "url": "https://example.com/oauth-guide",
+                        "has_code_blocks": True,
+                        "section_type": "implementation",
+                        "entities": ["OAuth", "FastAPI"],
+                        "topics": ["authentication", "security"],
                     },
-                ),
-                Mock(
-                    score=0.8,
-                    payload={
-                        "content": "Business requirements for authentication system",
-                        "source_type": "confluence",
-                        "metadata": {
-                            "title": "Auth Requirements",
-                            "url": "https://example.com/auth-requirements",
-                            "has_code_blocks": False,
-                            "section_type": "requirements",
-                            "entities": ["Company"],
-                            "topics": ["requirements", "security"],
-                        },
+                },
+            ),
+            Mock(
+                score=0.8,
+                payload={
+                    "content": "Business requirements for authentication system",
+                    "source_type": "confluence",
+                    "metadata": {
+                        "title": "Auth Requirements",
+                        "url": "https://example.com/auth-requirements",
+                        "has_code_blocks": False,
+                        "section_type": "requirements",
+                        "entities": ["Company"],
+                        "topics": ["requirements", "security"],
                     },
-                ),
-            ]
-        )
+                },
+            ),
+        ]
+
+        # Mock query_points response (qdrant-client 1.10+)
+        query_response = MagicMock()
+        query_response.points = mock_points
+        client.query_points = AsyncMock(return_value=query_response)
 
         client.scroll = AsyncMock(
             return_value=(
@@ -270,8 +275,9 @@ class TestPhase2_2Integration:
                 processing_time_ms=30.0,
             )
 
-            # Mock diverse results
-            hybrid_search_engine.qdrant_client.search.return_value = [
+            # Mock diverse results (qdrant-client 1.10+)
+            mock_query_response = Mock()
+            mock_query_response.points = [
                 Mock(
                     score=0.9,
                     payload={
@@ -287,6 +293,9 @@ class TestPhase2_2Integration:
                 )
                 for i in range(10)
             ]
+            hybrid_search_engine.qdrant_client.query_points.return_value = (
+                mock_query_response
+            )
 
             results = await hybrid_search_engine.search(
                 query=query, limit=20, session_context={"session_type": "exploration"}

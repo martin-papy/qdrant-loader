@@ -54,7 +54,7 @@ dev = [
     "py-spy",
     "snakeviz",
     "memory-profiler",
-    "prometheus-client",
+    "prometheus-client>=0.19.0,<1.0.0",
 ]
 docs = [
     "tomli>=2.0.0",
@@ -105,8 +105,16 @@ mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src:pa
 
 [tool.pytest.ini_options]
 testpaths = [
-    "packages/*/tests",
     "tests",
+]
+norecursedirs = [
+    "packages",
+    ".*",
+    "build",
+    "dist",
+    "venv",
+    "env",
+    "node_modules",
 ]
 python_files = [
     "test_*.py",

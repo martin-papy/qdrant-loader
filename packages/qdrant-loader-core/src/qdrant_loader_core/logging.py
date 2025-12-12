@@ -10,181 +10,18 @@ from __future__ import annotations
 
 import logging
 import os
-import re
-from typing import Any
 
 import structlog
 from structlog.stdlib import LoggerFactory
+
+from .logging_filters import ApplicationFilter, QdrantVersionFilter, RedactionFilter
+from .logging_processors import CleanFormatter, redact_processor
 
 try:
     # ExtraAdder is available in structlog >= 20
     from structlog.stdlib import ExtraAdder  # type: ignore
 except Exception:  # pragma: no cover - fallback when absent
     ExtraAdder = None  # type: ignore
-
-
-class QdrantVersionFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        try:
-            return "version check" not in record.getMessage().lower()
-        except Exception:
-            return True
-
-
-class ApplicationFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        # Allow all logs by default; app packages may add their own filters
-        return True
-
-
-class RedactionFilter(logging.Filter):
-    """Redacts obvious secrets from stdlib log records."""
-
-    # Heuristics for tokens/keys in plain strings
-    TOKEN_PATTERNS = [
-        re.compile(r"sk-[A-Za-z0-9_\-]{6,}"),
-        re.compile(r"tok-[A-Za-z0-9_\-]{6,}"),
-        re.compile(
-            r"(?i)(api_key|authorization|token|access_token|secret|password)\s*[:=]\s*([^\s]+)"
-        ),
-        re.compile(r"Bearer\s+[A-Za-z0-9_\-\.]+"),
-    ]
-
-    # Keys commonly used for secrets in structlog event dictionaries
-    SENSITIVE_KEYS = {
-        "api_key",
-        "llm_api_key",
-        "authorization",
-        "Authorization",
-        "token",
-        "access_token",
-        "secret",
-        "password",
-    }
-
-    def _redact_text(self, text: str) -> str:
-        def mask(m: re.Match[str]) -> str:
-            s = m.group(0)
-            if len(s) <= 8:
-                return "***REDACTED***"
-            return s[:2] + "***REDACTED***" + s[-2:]
-
-        redacted = text
-        for pat in self.TOKEN_PATTERNS:
-            redacted = pat.sub(mask, redacted)
-        return redacted
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        try:
-            redaction_detected = False
-
-            # Args may contain secrets; best-effort mask strings and detect changes
-            if isinstance(record.args, tuple):
-                new_args = []
-                for a in record.args:
-                    if isinstance(a, str):
-                        red_a = self._redact_text(a)
-                        if red_a != a:
-                            redaction_detected = True
-                        new_args.append(red_a)
-                    else:
-                        new_args.append(a)
-                record.args = tuple(new_args)
-
-            # Redact raw message only when it contains no formatting placeholders
-            # to avoid interfering with %-style or {}-style formatting
-            if isinstance(record.msg, str):
-                try:
-                    has_placeholders = ("%" in record.msg) or ("{" in record.msg)
-                except Exception:
-                    has_placeholders = True
-                if not has_placeholders:
-                    red_msg = self._redact_text(record.msg)
-                    if red_msg != record.msg:
-                        record.msg = red_msg
-                        redaction_detected = True
-
-            # If structlog extras contain sensitive keys, mark as redacted
-            try:
-                if any(
-                    (k in self.SENSITIVE_KEYS and bool(record.__dict__.get(k)))
-                    for k in record.__dict__.keys()
-                ):
-                    redaction_detected = True
-            except Exception:
-                pass
-
-            # Ensure a visible redaction marker appears in the captured message
-            if redaction_detected:
-                try:
-                    if (
-                        isinstance(record.msg, str)
-                        and "***REDACTED***" not in record.msg
-                    ):
-                        # Append a marker in a way that won't interfere with %-formatting
-                        record.msg = f"{record.msg} ***REDACTED***"
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        return True
-
-
-class CleanFormatter(logging.Formatter):
-    """Formatter that removes ANSI color codes for clean file output."""
-
-    def format(self, record: logging.LogRecord) -> str:
-        message = super().format(record)
-        try:
-            ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-            return ansi_escape.sub("", message)
-        except Exception:
-            return message
-
-
-def _redact_processor(
-    logger: Any, method_name: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
-    """Structlog processor to redact sensitive fields in event_dict."""
-    sensitive_keys = {
-        "api_key",
-        "llm_api_key",
-        "authorization",
-        "Authorization",
-        "token",
-        "access_token",
-        "secret",
-        "password",
-    }
-
-    def mask(value: str) -> str:
-        try:
-            if not isinstance(value, str) or not value:
-                return "***REDACTED***"
-            if len(value) <= 8:
-                return "***REDACTED***"
-            return value[:2] + "***REDACTED***" + value[-2:]
-        except Exception:
-            return "***REDACTED***"
-
-    def deep_redact(obj: Any) -> Any:
-        try:
-            if isinstance(obj, dict):
-                return {
-                    k: (
-                        mask(v)
-                        if k in sensitive_keys and isinstance(v, str)
-                        else deep_redact(v)
-                    )
-                    for k, v in obj.items()
-                }
-            if isinstance(obj, list):
-                return [deep_redact(i) for i in obj]
-            return obj
-        except Exception:
-            return obj
-
-    return deep_redact(event_dict)
 
 
 class LoggingConfig:
@@ -339,7 +176,7 @@ class LoggingConfig:
                 structlog.stdlib.add_logger_name,
                 structlog.stdlib.add_log_level,
                 structlog.processors.TimeStamper(fmt=ts_fmt),
-                _redact_processor,
+                redact_processor,
                 final_renderer,
             ],
             wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
@@ -357,13 +194,66 @@ class LoggingConfig:
         return structlog.get_logger(name)
 
     @classmethod
-    def reconfigure(cls, *, file: str | None = None) -> None:
-        """Lightweight reconfiguration for file destination.
+    def reconfigure(cls, *, file: str | None = None, level: str | None = None) -> None:
+        """Lightweight reconfiguration for file destination and optionally log level.
 
         Replaces only the file handler while keeping console handlers and
-        structlog processors intact.
+        structlog processors intact. Optionally updates the log level.
+
+        Args:
+            file: Path to log file (optional)
+            level: New log level (optional, e.g., "DEBUG", "INFO")
         """
         root_logger = logging.getLogger()
+
+        # Update log level if provided
+        if level is not None:
+            try:
+                numeric_level = getattr(logging, level.upper())
+                root_logger.setLevel(numeric_level)
+
+                # Update structlog wrapper to use new level
+                if cls._current_config is not None:
+                    (
+                        _,
+                        fmt,
+                        _,
+                        clean_output,
+                        suppress_qdrant_warnings,
+                        disable_console,
+                    ) = cls._current_config
+
+                    # Choose timestamp format and final renderer
+                    if clean_output and fmt == "console":
+                        ts_fmt = "%H:%M:%S"
+                        final_renderer = structlog.dev.ConsoleRenderer(colors=True)
+                    else:
+                        ts_fmt = "iso"
+                        final_renderer = (
+                            structlog.processors.JSONRenderer()
+                            if fmt == "json"
+                            else structlog.dev.ConsoleRenderer(colors=True)
+                        )
+
+                    # Reconfigure structlog with new level
+                    structlog.configure(
+                        processors=[
+                            structlog.stdlib.filter_by_level,
+                            structlog.stdlib.add_logger_name,
+                            structlog.stdlib.add_log_level,
+                            structlog.processors.TimeStamper(fmt=ts_fmt),
+                            redact_processor,
+                            final_renderer,
+                        ],
+                        wrapper_class=structlog.make_filtering_bound_logger(
+                            numeric_level
+                        ),
+                        logger_factory=LoggerFactory(),
+                        cache_logger_on_first_use=False,
+                    )
+            except AttributeError:
+                raise ValueError(f"Invalid log level: {level}") from None
+
         # Remove existing file handler if present
         if cls._file_handler is not None:
             try:
@@ -371,7 +261,9 @@ class LoggingConfig:
                 cls._file_handler.close()
             except Exception:
                 pass
-            cls._installed_handlers = [h for h in cls._installed_handlers if h is not cls._file_handler]
+            cls._installed_handlers = [
+                h for h in cls._installed_handlers if h is not cls._file_handler
+            ]
             cls._file_handler = None
 
         # Add new file handler if requested
@@ -386,5 +278,20 @@ class LoggingConfig:
 
         # Update current config tuple if available
         if cls._current_config is not None:
-            level, fmt, _, clean_output, suppress_qdrant_warnings, disable_console = cls._current_config
-            cls._current_config = (level, fmt, file, clean_output, suppress_qdrant_warnings, disable_console)
+            (
+                old_level,
+                fmt,
+                _,
+                clean_output,
+                suppress_qdrant_warnings,
+                disable_console,
+            ) = cls._current_config
+            new_level = level.upper() if level is not None else old_level
+            cls._current_config = (
+                new_level,
+                fmt,
+                file,
+                clean_output,
+                suppress_qdrant_warnings,
+                disable_console,
+            )

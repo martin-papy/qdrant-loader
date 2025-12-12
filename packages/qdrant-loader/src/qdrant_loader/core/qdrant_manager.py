@@ -246,12 +246,13 @@ class QdrantManager:
         """Search for similar vectors in the collection."""
         try:
             client = self._ensure_client_connected()
-            search_result = client.search(
+            # Use query_points API (qdrant-client 1.10+)
+            query_response = client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=limit,
             )
-            return search_result
+            return query_response.points
         except Exception as e:
             logger.error("Failed to search collection", error=str(e))
             raise
@@ -281,13 +282,14 @@ class QdrantManager:
                 ]
             )
 
-            search_result = client.search(
+            # Use query_points API (qdrant-client 1.10+)
+            query_response = client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 query_filter=project_filter,
                 limit=limit,
             )
-            return search_result
+            return query_response.points
         except Exception as e:
             logger.error(
                 "Failed to search collection with project filter",

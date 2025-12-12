@@ -2,16 +2,56 @@
 
 import logging
 import os
+import shutil
 import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
+import structlog
 from qdrant_loader_mcp_server.utils.logging import (
     ApplicationFilter,
     CleanFormatter,
     LoggingConfig,
     QdrantVersionFilter,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_logging_state():
+    """Reset logging state before and after each test to prevent test pollution."""
+    # Store original state
+    root_logger = logging.getLogger()
+    original_handlers = root_logger.handlers.copy()
+    original_level = root_logger.level
+
+    # Reset LoggingConfig state
+    LoggingConfig._initialized = False
+    LoggingConfig._current_config = None
+
+    yield
+
+    # Cleanup: remove all handlers and restore original state
+    for handler in root_logger.handlers[:]:
+        try:
+            root_logger.removeHandler(handler)
+            if isinstance(handler, logging.FileHandler):
+                handler.close()
+        except Exception:
+            pass
+
+    # Restore original handlers
+    for handler in original_handlers:
+        if handler not in root_logger.handlers:
+            root_logger.addHandler(handler)
+
+    root_logger.setLevel(original_level)
+
+    # Reset structlog
+    structlog.reset_defaults()
+
+    # Reset LoggingConfig state
+    LoggingConfig._initialized = False
+    LoggingConfig._current_config = None
 
 
 def test_qdrant_version_filter():
@@ -94,31 +134,39 @@ def test_logging_config_setup_basic():
 
 
 def test_logging_config_setup_with_file():
-    """Test logging configuration with file output."""
+    """Test logging configuration with file."""
     LoggingConfig._initialized = False
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        try:
-            # Set environment variable to match expected level
-            with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INFO"}, clear=False):
-                LoggingConfig.setup(level="INFO", format="json", file=tmp_file.name)
+        tmp_file_name = tmp_file.name
 
-            assert LoggingConfig._initialized is True
-            assert LoggingConfig._current_config == (
-                "INFO",
-                "json",
-                tmp_file.name,
-                True,
-            )
-        finally:
-            os.unlink(tmp_file.name)
+    try:
+        # Set environment variable to match expected level
+        with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INFO"}, clear=False):
+            LoggingConfig.setup(level="INFO", format="json", file=tmp_file_name)
+
+        assert LoggingConfig._initialized is True
+        assert LoggingConfig._current_config == (
+            "INFO",
+            "json",
+            tmp_file_name,
+            True,
+        )
+    finally:
+        # Close all logging handlers before deleting file (Windows compatibility)
+        logging.shutdown()
+        try:
+            os.unlink(tmp_file_name)
+        except Exception:
+            pass
 
 
 def test_logging_config_setup_with_env_variables():
     """Test logging configuration with environment variables."""
     LoggingConfig._initialized = False
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    tmp_dir = tempfile.mkdtemp()
+    try:
         log_file = os.path.join(tmp_dir, "test.log")
 
         with patch.dict(
@@ -134,6 +182,14 @@ def test_logging_config_setup_with_env_variables():
             assert LoggingConfig._initialized is True
             # Check that log file was created
             assert os.path.exists(log_file)
+    finally:
+        # Close all logging handlers before cleanup (Windows compatibility)
+        logging.shutdown()
+
+        try:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        except Exception:
+            pass
 
 
 def test_logging_config_setup_disabled_console():
@@ -268,3 +324,74 @@ def test_logging_config_reset_and_reconfigure():
         assert LoggingConfig._current_config is not None
         assert LoggingConfig._current_config[0] == "DEBUG"
         assert LoggingConfig._current_config[1] == "json"
+
+
+def test_reconfigure_with_level(monkeypatch):
+    """Test that reconfigure() correctly updates the log level."""
+    # Clear env vars to ensure test values are used
+    monkeypatch.delenv("MCP_LOG_LEVEL", raising=False)
+
+    # Initial setup
+    LoggingConfig.setup(level="INFO", format="console")
+    assert LoggingConfig._current_config is not None
+    assert LoggingConfig._current_config[0] == "INFO"
+
+    # Reconfigure with new level
+    LoggingConfig.reconfigure(level="DEBUG")
+    assert LoggingConfig._current_config[0] == "DEBUG"
+    # Other config values should remain unchanged
+    assert LoggingConfig._current_config[1] == "console"
+
+
+def test_reconfigure_with_file_and_level(monkeypatch):
+    """Test that reconfigure() correctly updates both file and level."""
+    # Clear env vars to ensure test values are used
+    monkeypatch.delenv("MCP_LOG_LEVEL", raising=False)
+
+    # Initial setup
+    LoggingConfig.setup(level="INFO", format="console")
+    assert LoggingConfig._current_config is not None
+
+    # Reconfigure with both file and level
+    with patch("logging.FileHandler"):
+        LoggingConfig.reconfigure(file="/tmp/test.log", level="WARNING")
+
+    assert LoggingConfig._current_config[0] == "WARNING"
+    assert LoggingConfig._current_config[2] == "/tmp/test.log"
+
+
+def test_reconfigure_level_only_preserves_other_config(monkeypatch):
+    """Test that reconfigure(level=...) preserves other config values."""
+    # Clear env vars to ensure test values are used
+    monkeypatch.delenv("MCP_LOG_LEVEL", raising=False)
+
+    # Initial setup with specific values
+    LoggingConfig.setup(level="INFO", format="json", suppress_qdrant_warnings=True)
+    original_format = LoggingConfig._current_config[1]
+    original_suppress = LoggingConfig._current_config[3]
+
+    # Reconfigure only level
+    LoggingConfig.reconfigure(level="ERROR")
+
+    # Level should change
+    assert LoggingConfig._current_config[0] == "ERROR"
+    # Other values should be preserved
+    assert LoggingConfig._current_config[1] == original_format
+    assert LoggingConfig._current_config[3] == original_suppress
+
+
+def test_reconfigure_without_level_preserves_current_level(monkeypatch):
+    """Test that reconfigure() without level keeps the current level."""
+    # Clear env vars to ensure test values are used
+    monkeypatch.delenv("MCP_LOG_LEVEL", raising=False)
+
+    # Initial setup
+    LoggingConfig.setup(level="DEBUG", format="console")
+    assert LoggingConfig._current_config[0] == "DEBUG"
+
+    # Reconfigure without level (only file)
+    with patch("logging.FileHandler"):
+        LoggingConfig.reconfigure(file="/tmp/test.log")
+
+    # Level should remain unchanged
+    assert LoggingConfig._current_config[0] == "DEBUG"
