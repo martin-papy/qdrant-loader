@@ -1,5 +1,29 @@
 # Release Notes
 
+## Version 0.7.4 - December 11, 2025
+
+### 🐛 Bug Fixes
+
+#### Compatibility & Platform Support
+
+- **Fixed Windows asyncio event loop crashes** ([#57](https://github.com/martin-papy/qdrant-loader/issues/57)): Resolved critical issues with asyncio signal handling and stdio support on the Windows platform
+
+#### Logging System Improvements
+
+- **Fixed --log-level CLI option** ([#58](https://github.com/martin-papy/qdrant-loader/issues/58)): Resolved issue where --log-level DEBUG command line argument was not working after logging initialization
+
+#### Dependency management
+
+- **Added missing prometheus-client dependency** ([#60](https://github.com/martin-papy/qdrant-loader/issues/60)): Fixed missing prometheus-client package that was causing import errors
+- **Deprecated import fixes** ([#61](https://github.com/martin-papy/qdrant-loader/issues/61)): Resolved deprecated langchain.text_splitter import warnings
+- **Added missing Spacy dependency** ([#67](https://github.com/martin-papy/qdrant-loader/issues/67)): Fixed missing spacy package that was causing Cursor MCP crash on startup
+
+#### MCP Integration Updates
+
+- **Fixed MCP Search API compatibility** ([#74](https://github.com/martin-papy/qdrant-loader/issues/74)): Resolved incompatibility issues with qdrant-client 1.16
+
+#### Test Suite Cross-Platform Support
+
 ## Version 0.7.3 - Sept 11, 2025
 
 ### Logging System Fixes
@@ -85,7 +109,7 @@
 - **CLI Transport Selection**: Added `--transport` option to choose between stdio and HTTP modes
 - **Health Check Endpoints**: Built-in monitoring and health check capabilities for production deployment
 
-#### 📊 Structured Output & Protocol Features  
+#### 📊 Structured Output & Protocol Features
 
 - **Structured Tool Output**: Enhanced tool responses with JSON-structured content while maintaining backward compatibility
 - **Tool Behavioral Annotations**: Added annotations for all 8 tools indicating read-only and compute-intensive operations
@@ -95,7 +119,7 @@
 #### 🔄 Backward Compatibility & Migration
 
 - **Zero Breaking Changes**: Existing stdio clients continue to work unchanged
-- **Seamless Migration Path**: Easy transition between transport modes without configuration changes  
+- **Seamless Migration Path**: Easy transition between transport modes without configuration changes
 - **Legacy Support**: Full support for existing MCP 2024-11-05 clients
 - **Configuration Compatibility**: All existing configurations work with new transport layer
 

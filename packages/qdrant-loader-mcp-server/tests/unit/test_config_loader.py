@@ -13,7 +13,12 @@ def test_resolve_config_path_env(tmp_path, monkeypatch):
     assert resolve_config_path(None) == cfg
 
 
-def test_build_config_from_dict_minimal_global_llm():
+def test_build_config_from_dict_minimal_global_llm(monkeypatch):
+    # Clear env vars to ensure config dict values are used
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_EMBEDDING_MODEL", raising=False)
+    monkeypatch.delenv("LLM_CHAT_MODEL", raising=False)
     data = {
         "global": {
             "llm": {
@@ -44,7 +49,9 @@ def test_redact_effective_config():
     assert red["derived"]["openai"]["api_key"] == "***REDACTED***"
 
 
-def test_load_config_env_only(monkeypatch):
+def test_load_config_env_only(monkeypatch, tmp_path):
+    # Change to a temporary directory to avoid finding config.yaml in the project root
+    monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("MCP_CONFIG", raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "secret")

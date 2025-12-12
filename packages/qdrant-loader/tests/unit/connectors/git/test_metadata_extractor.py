@@ -1,5 +1,6 @@
 """Tests for the Git metadata extractor implementation."""
 
+import os
 import tempfile
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
@@ -85,11 +86,14 @@ def test():
 [Test Link](https://example.com)
 """
 
-        metadata = extractor._extract_file_metadata("/tmp/test.md", content)
+        # Use a path relative to temp_dir to avoid cross-drive issues on Windows
+        file_path = os.path.join(base_config.temp_dir, "test.md")
+        metadata = extractor._extract_file_metadata(file_path, content)
 
         assert metadata["file_type"] == ".md"
         assert metadata["file_name"] == "test.md"
-        assert metadata["file_directory"].replace("//", "/") == "/tmp"  # Normalize path
+        # File directory should be empty string for files directly in temp_dir
+        assert metadata["file_directory"] == ""
         assert metadata["file_encoding"] == "utf-8"
         assert metadata["line_count"] == 12
         assert metadata["word_count"] > 0
@@ -102,7 +106,8 @@ def test():
         """Test extraction of repository metadata."""
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(base_config)
-            metadata = extractor._extract_repo_metadata("/tmp/test.md")
+            file_path = os.path.join(base_config.temp_dir, "test.md")
+            metadata = extractor._extract_repo_metadata(file_path)
 
             assert metadata["repository_name"] == "repo"
             assert metadata["repository_owner"] == "test"
@@ -114,7 +119,8 @@ def test():
         """Test extraction of Git metadata."""
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(base_config)
-            metadata = extractor._extract_git_metadata("/tmp/test.md")
+            file_path = os.path.join(base_config.temp_dir, "test.md")
+            metadata = extractor._extract_git_metadata(file_path)
 
             assert metadata["last_commit_date"] == "2024-01-01T00:00:00+00:00"
             assert metadata["last_commit_author"] == "Test Author"
@@ -132,7 +138,8 @@ print("Hello")
 """
         with patch("git.Repo", return_value=mock_repo):
             extractor = GitMetadataExtractor(base_config)
-            metadata = extractor.extract_all_metadata("/tmp/test.md", content)
+            file_path = os.path.join(base_config.temp_dir, "test.md")
+            metadata = extractor.extract_all_metadata(file_path, content)
 
             # Verify file metadata
             assert metadata["file_type"] == ".md"
@@ -153,14 +160,17 @@ print("Hello")
 
         # Test with invalid repository
         with patch("git.Repo", side_effect=git.InvalidGitRepositoryError):
-            metadata = extractor._extract_git_metadata("/tmp/test.md")
+            file_path = os.path.join(base_config.temp_dir, "test.md")
+            metadata = extractor._extract_git_metadata(file_path)
             assert metadata == {}
 
-        # Test with non-existent file
-        metadata = extractor._extract_file_metadata("/nonexistent/test.md", "")
+        # Test with non-existent file in a subdirectory
+        file_path = os.path.join(base_config.temp_dir, "nonexistent", "test.md")
+        metadata = extractor._extract_file_metadata(file_path, "")
         assert metadata["file_type"] == ".md"
         assert metadata["file_name"] == "test.md"
-        assert metadata["file_directory"].replace("//", "/") == "/nonexistent"
+        # File directory should be the relative path from temp_dir
+        assert metadata["file_directory"] == "nonexistent"
 
     def test_detect_encoding(self, base_config):
         """Test encoding detection."""

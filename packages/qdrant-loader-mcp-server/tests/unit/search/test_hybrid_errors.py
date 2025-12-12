@@ -6,7 +6,7 @@ import pytest
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_search_error_handling(hybrid_search, mock_qdrant_client):
-    mock_qdrant_client.search = AsyncMock(side_effect=Exception("Test error"))
+    mock_qdrant_client.query_points = AsyncMock(side_effect=Exception("Test error"))
     with pytest.raises(Exception) as excinfo:
         await hybrid_search.search("test query")
     assert "Test error" in str(excinfo.value)

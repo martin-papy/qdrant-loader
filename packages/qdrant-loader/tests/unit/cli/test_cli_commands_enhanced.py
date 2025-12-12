@@ -97,10 +97,16 @@ class TestCreateDatabaseDirectory:
             with patch("qdrant_loader.cli.cli._get_logger") as mock_logger:
                 mock_logger.return_value = Mock()
 
-                with pytest.raises(ClickException) as exc_info:
-                    _create_database_directory(test_path)
+                with patch(
+                    "qdrant_loader.cli.cli._create_db_dir_helper"
+                ) as mock_helper:
+                    # Force helper to raise exception
+                    mock_helper.side_effect = OSError("Permission denied")
 
-                assert "Failed to create directory" in str(exc_info.value)
+                    with pytest.raises(ClickException) as exc_info:
+                        _create_database_directory(test_path)
+
+                    assert "Failed to create directory" in str(exc_info.value)
 
     def test_create_database_directory_existing_directory(self):
         """Test directory creation when directory already exists."""

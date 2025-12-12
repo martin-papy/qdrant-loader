@@ -366,7 +366,7 @@ class TestTopicSearchChainGenerator:
         assert topic_chain.total_topics_covered > 0
         assert 0 <= topic_chain.estimated_discovery_potential <= 1
         assert 0 <= topic_chain.chain_coherence_score <= 1
-        assert topic_chain.generation_time_ms > 0
+        assert topic_chain.generation_time_ms >= 0  # Can be 0 if execution is very fast
 
     def test_calculate_discovery_potential(self, chain_generator):
         """Test discovery potential calculation."""
@@ -508,7 +508,7 @@ class TestTopicChainIntegration:
         assert chain.original_query == "How to implement secure API authentication"
         assert len(chain.chain_links) <= 3
         assert chain.total_topics_covered > 0
-        assert chain.generation_time_ms > 0
+        assert chain.generation_time_ms >= 0
 
         # Verify chain links have valid structure
         for link in chain.chain_links:
