@@ -136,9 +136,16 @@ class TestGitConnector:
         connector = GitConnector(invalid_config)
 
         # Test cloning failure
-        with pytest.raises(RuntimeError):
-            async with connector:
-                pass
+        with patch.object(
+            connector.git_ops,
+            "clone",
+            side_effect=Exception("clone failed"),
+        ):
+            with pytest.raises(RuntimeError) as exc:
+                async with connector:
+                    pass
+
+        assert "Failed to set up Git repository" in str(exc.value)
 
     @pytest.mark.asyncio
     async def test_file_processing(self, mock_config, mock_git_ops):

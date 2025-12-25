@@ -37,9 +37,17 @@ jobs:
       - name: Run core tests and generate coverage reports
         run: |
           cd packages/qdrant-loader-core
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-core.xml --cov-report=html:../../htmlcov-core -v
+          python -m pytest tests/ --cov=src -v
+
+      - name: Generate coverage reports
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        run: |
+          cd packages/qdrant-loader-core
+          coverage xml -o ../../coverage-core.xml
+          coverage html -d ../../htmlcov-core
 
       - name: Upload core coverage artifact
+        if: github.event_name == 'push' && github.ref_name == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-core-${{ github.run_id }}
@@ -47,6 +55,7 @@ jobs:
             htmlcov-core
             coverage-core.xml
           retention-days: 30
+
   test-loader:
     name: Test QDrant Loader
     runs-on: ubuntu-latest
@@ -185,12 +194,31 @@ jobs:
           echo "YAML config structure:"
           head -20 tests/config.test.yaml
 
-      - name: Run loader tests and generate coverage reports
+      - name: Run loader unit tests
         run: |
           cd packages/qdrant-loader
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --cov-report=html:../../htmlcov-loader -v
+          python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
+
+      - name: Run loader integration tests
+        if: |
+          (github.event_name == 'pull_request' &&
+          (github.event.pull_request.base.ref == 'develop' ||
+            github.event.pull_request.base.ref == 'main')) ||
+          (github.event_name == 'push' &&
+          (github.ref_name == 'develop' || github.ref_name == 'main'))
+        run: |
+          cd packages/qdrant-loader
+          python -m pytest tests/integration --cov=src --cov-append --cov-report= -v
+
+      - name: Generate coverage reports
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        run: |
+          cd packages/qdrant-loader
+          coverage xml -o ../../coverage-loader.xml
+          coverage html -d ../../htmlcov-loader
 
       - name: Upload loader coverage artifact
+        if: github.event_name == 'push' && github.ref_name == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-loader-${{ github.run_id }}
@@ -252,12 +280,31 @@ jobs:
           echo "Contents (with secrets masked):"
           sed 's/=.*/=***/' tests/.env.test
 
-      - name: Run MCP server tests and generate coverage reports
+      - name: Run MCP server unit tests
         run: |
           cd packages/qdrant-loader-mcp-server
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --cov-report=html:../../htmlcov-mcp -v
+          python -m pytest tests/unit -n 2 --cov=src --cov-report= --cov-report=term-missing -v
+
+      - name: Run MCP server integration tests
+        if: |
+          (github.event_name == 'pull_request' &&
+          (github.event.pull_request.base.ref == 'develop' ||
+            github.event.pull_request.base.ref == 'main')) ||
+          (github.event_name == 'push' &&
+          (github.ref_name == 'develop' || github.ref_name == 'main'))
+        run: |
+          cd packages/qdrant-loader-mcp-server
+          python -m pytest tests/integration --cov=src --cov-append --cov-report= --cov-report=term-missing -v
+
+      - name: Generate coverage reports
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        run: |
+          cd packages/qdrant-loader-mcp-server
+          coverage xml -o ../../coverage-mcp.xml
+          coverage html -d ../../htmlcov-mcp
 
       - name: Upload MCP server coverage artifact
+        if: github.event_name == 'push' && github.ref_name == 'main'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-mcp-${{ github.run_id }}
