@@ -132,20 +132,32 @@ class LoggingConfig:
         return structlog.get_logger(name)
 
     @classmethod
-    def reconfigure(cls, *, file: str | None = None) -> None:
-        """Lightweight file reconfiguration for MCP server wrapper.
+    def reconfigure(cls, *, file: str | None = None, level: str | None = None) -> None:
+        """Lightweight reconfiguration for file destination and optionally log level.
 
         If core logging is present and supports reconfigure, delegate to it.
         Otherwise, force-replace root handlers with a new file handler (and keep stderr
         if console is enabled via env).
+
+        Args:
+            file: Path to log file (optional)
+            level: New log level (optional, e.g., "DEBUG", "INFO")
         """
         disable_console_logging = (
             os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
         )
 
         if CoreLoggingConfig is not None and hasattr(CoreLoggingConfig, "reconfigure"):
-            CoreLoggingConfig.reconfigure(file=file)  # type: ignore
+            CoreLoggingConfig.reconfigure(file=file, level=level)  # type: ignore
         else:
+            # Determine the level to use
+            if level is not None:
+                resolved_level = level.upper()
+            elif cls._current_config is not None:
+                resolved_level = cls._current_config[0]
+            else:
+                resolved_level = "INFO"
+
             handlers: list[logging.Handler] = []
             if not disable_console_logging:
                 stderr_handler = logging.StreamHandler(sys.stderr)
@@ -155,8 +167,11 @@ class LoggingConfig:
                 file_handler = logging.FileHandler(file)
                 file_handler.setFormatter(CleanFormatter("%(message)s"))
                 handlers.append(file_handler)
-            logging.basicConfig(level=getattr(logging, (cls._current_config or ("INFO",))[0]), handlers=handlers, force=True)  # type: ignore
+            logging.basicConfig(
+                level=getattr(logging, resolved_level), handlers=handlers, force=True
+            )
 
         if cls._current_config is not None:
-            level, fmt, _, suppress = cls._current_config
-            cls._current_config = (level, fmt, file, suppress)
+            old_level, fmt, _, suppress = cls._current_config
+            new_level = level.upper() if level is not None else old_level
+            cls._current_config = (new_level, fmt, file, suppress)
