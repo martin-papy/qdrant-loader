@@ -178,6 +178,7 @@ class TestIntelligenceHandlerFindSimilar:
             similarity_metrics=None,
             project_ids=None,
             source_types=None,
+            similarity_threshold=0.7,  # Default value when not provided
         )
         assert result == {"result": mock_similar_docs}
 
@@ -205,6 +206,37 @@ class TestIntelligenceHandlerFindSimilar:
             similarity_metrics=["semantic_similarity", "entity_overlap"],
             project_ids=None,
             source_types=None,
+            similarity_threshold=0.7,  # Default value when not provided
+        )
+
+    @pytest.mark.asyncio
+    async def test_handle_find_similar_documents_with_custom_threshold(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test finding similar documents with custom similarity threshold."""
+        mock_result = {
+            "similar_documents": [{"document_id": "doc1", "similarity_score": 0.85}]
+        }
+        mock_search_engine.find_similar_documents.return_value = mock_result
+        mock_protocol.create_response.return_value = {"result": mock_result}
+
+        params = {
+            "target_query": "target",
+            "comparison_query": "comparison",
+            "similarity_threshold": 0.8,  # Custom threshold
+            "max_similar": 3,
+        }
+
+        await intelligence_handler.handle_find_similar_documents(7, params)
+
+        mock_search_engine.find_similar_documents.assert_called_once_with(
+            target_query="target",
+            comparison_query="comparison",
+            max_similar=3,
+            similarity_metrics=None,
+            project_ids=None,
+            source_types=None,
+            similarity_threshold=0.8,
         )
 
 
@@ -1374,4 +1406,5 @@ class TestIntelligenceHandlerEdgeCasesMalformedData:
             similarity_metrics=None,
             source_types=None,
             project_ids=None,
+            similarity_threshold=0.7,  # Default value when not in params
         )

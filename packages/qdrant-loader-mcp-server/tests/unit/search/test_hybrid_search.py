@@ -1045,6 +1045,7 @@ async def test_find_similar_documents(hybrid_search):
         target_document=target_doc,
         documents=documents,
         similarity_metrics=[SimilarityMetric.SEMANTIC_SIMILARITY],
+        similarity_threshold=0.3,
         max_similar=5,
     )
 
