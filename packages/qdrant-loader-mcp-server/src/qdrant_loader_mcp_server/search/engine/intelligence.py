@@ -105,6 +105,7 @@ class IntelligenceOperations:
         max_similar: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
+        similarity_threshold: float = 0.7,
     ) -> dict[str, Any]:
         """
         Find documents similar to a target document.
@@ -116,7 +117,7 @@ class IntelligenceOperations:
             max_similar: Maximum number of similar documents to return
             source_types: Optional list of source types to filter by
             project_ids: Optional list of project IDs to filter by
-
+            similarity_threshold: Minimum similarity score threshold for similar documents in results
         Returns:
             List of similar documents with similarity scores
         """
@@ -165,7 +166,11 @@ class IntelligenceOperations:
 
             # Find similar documents
             similar = await self.engine.hybrid_search.find_similar_documents(
-                target_doc, comparison_results, metric_enums or None, max_similar
+                target_doc,
+                comparison_results,
+                metric_enums or None,
+                max_similar,
+                similarity_threshold,
             )
 
             return {
