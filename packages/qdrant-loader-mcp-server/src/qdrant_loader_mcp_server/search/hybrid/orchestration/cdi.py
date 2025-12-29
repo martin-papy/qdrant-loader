@@ -23,6 +23,7 @@ async def find_similar_documents(
     documents: list[HybridSearchResult],
     similarity_metrics: list[SimilarityMetric] | None = None,
     max_similar: int = 5,
+    similarity_threshold: float = 0.7,
 ) -> list[dict[str, Any]]:
     similarity_calculator = engine.cross_document_engine.similarity_calculator
     similar_docs = []
@@ -42,15 +43,17 @@ async def find_similar_documents(
         similarity = similarity_calculator.calculate_similarity(
             target_document, doc, similarity_metrics
         )
-        similar_docs.append(
-            {
-                "document_id": doc.document_id,
-                "document": doc,
-                "similarity_score": similarity.similarity_score,
-                "metric_scores": similarity.metric_scores,
-                "similarity_reasons": [similarity.get_display_explanation()],
-            }
-        )
+        # Filter by similarity threshold
+        if similarity.similarity_score >= similarity_threshold:
+            similar_docs.append(
+                {
+                    "document_id": doc.document_id,
+                    "document": doc,
+                    "similarity_score": similarity.similarity_score,
+                    "metric_scores": similarity.metric_scores,
+                    "similarity_reasons": [similarity.get_display_explanation()],
+                }
+            )
     similar_docs.sort(key=lambda x: x["similarity_score"], reverse=True)
     return similar_docs[:max_similar]
 

@@ -191,6 +191,7 @@ class HybridEngineAPI:
         documents: list[HybridSearchResult],
         similarity_metrics: list[SimilarityMetric] | None = None,
         max_similar: int = 5,
+        similarity_threshold: float = 0.7,
     ) -> list[dict[str, Any]]:
         from .orchestration.cdi import find_similar_documents as _find
 
@@ -200,6 +201,7 @@ class HybridEngineAPI:
             documents=documents,
             similarity_metrics=similarity_metrics,
             max_similar=max_similar,
+            similarity_threshold=similarity_threshold,
         )
 
     async def detect_document_conflicts(
