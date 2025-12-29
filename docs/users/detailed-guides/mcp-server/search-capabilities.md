@@ -104,8 +104,8 @@ Results:
 {
   "name": "search",
   "parameters": {
-    "query": "string",  // Natural language query - be conversational!
-    "limit": 10,  // Results to return (default: 5)
+    "query": "string", // Natural language query - be conversational!
+    "limit": 10, // Results to return (default: 5)
     "source_types": ["git", "confluence", "jira", "documentation", "localfile"],
     "project_ids": ["project1", "project2"]
   }
@@ -168,14 +168,15 @@ Recommendation: Create under Security section for consistency
 {
   "name": "hierarchy_search",
   "parameters": {
-    "query": "string",  // Search query
-    "limit": 10,  // Number of results (default: 10)
-    "organize_by_hierarchy": false,  // Group results by structure
-    "hierarchy_filter": {  // Hierarchy-specific filters
-      "depth": 3,  // Filter by hierarchy depth
-      "has_children": true,  // Filter by whether pages have children
-      "parent_title": "API Documentation",  // Filter by parent page
-      "root_only": false  // Show only root pages
+    "query": "string", // Search query
+    "limit": 10, // Number of results (default: 10)
+    "organize_by_hierarchy": false, // Group results by structure
+    "hierarchy_filter": {
+      // Hierarchy-specific filters
+      "depth": 3, // Filter by hierarchy depth
+      "has_children": true, // Filter by whether pages have children
+      "parent_title": "API Documentation", // Filter by parent page
+      "root_only": false // Show only root pages
     }
   }
 }
@@ -234,15 +235,16 @@ Content Analysis Results:
 {
   "name": "attachment_search",
   "parameters": {
-    "query": "string",  // Search query
-    "limit": 10,  // Number of results
-    "include_parent_context": true,  // Include parent document info
-    "attachment_filter": {  // Attachment-specific filters
-      "file_type": "pdf",  // Filter by file type
-      "file_size_min": 1024,  // Minimum file size in bytes
-      "file_size_max": 10485760,  // Maximum file size in bytes
-      "attachments_only": true,  // Show only attachments
-      "author": "john.doe",  // Filter by author
+    "query": "string", // Search query
+    "limit": 10, // Number of results
+    "include_parent_context": true, // Include parent document info
+    "attachment_filter": {
+      // Attachment-specific filters
+      "file_type": "pdf", // Filter by file type
+      "file_size_min": 1024, // Minimum file size in bytes
+      "file_size_max": 10485760, // Maximum file size in bytes
+      "attachments_only": true, // Show only attachments
+      "author": "john.doe", // Filter by author
       "parent_document_title": "API Documentation"
     }
   }
@@ -260,7 +262,7 @@ Content Analysis Results:
   "name": "analyze_document_relationships",
   "parameters": {
     "query": "search query to get documents for analysis",
-    "limit": 15,  // Maximum documents to analyze
+    "limit": 15, // Maximum documents to analyze
     "source_types": ["confluence", "git"],
     "project_ids": ["project1"]
   }
@@ -301,8 +303,11 @@ Relationship Analysis:
   "parameters": {
     "target_query": "target document to find similarities for",
     "comparison_query": "documents to compare against",
-    "similarity_metrics": ["entity_overlap", "semantic_similarity"],
-    "max_similar": 5
+    "similarity_metrics": ["entity_overlap", "semantic_similarity"], // Optional
+    "similarity_threshold": 0.5, // Optional: Minimum similarity score (0.0-1.0, default: 0.7)
+    "source_types": ["confluence", "git"], // Optional
+    "project_ids": ["project1"], // Optional
+    "max_similar": 5 // Optional
   }
 }
 ```
@@ -413,7 +418,7 @@ Complementary Content Found:
   "name": "cluster_documents",
   "parameters": {
     "query": "search query to get documents for clustering",
-    "strategy": "mixed_features",  // clustering strategy
+    "strategy": "mixed_features", // clustering strategy
     "max_clusters": 10,
     "min_cluster_size": 2,
     "limit": 25,
@@ -462,10 +467,10 @@ Get detailed information and context for a specific document, including metadata
 {
   "name": "expand_document",
   "arguments": {
-    "document_id": "string",  // Required: Document identifier
-    "include_relationships": true,  // Include related documents
-    "include_metadata": true,  // Include document metadata
-    "include_content_summary": true  // Include content analysis
+    "document_id": "string", // Required: Document identifier
+    "include_relationships": true, // Include related documents
+    "include_metadata": true, // Include document metadata
+    "include_content_summary": true // Include content analysis
   }
 }
 ```
@@ -479,7 +484,7 @@ Query: Get detailed information about document "api-auth-guide"
 📄 API Authentication Guide
 ├── 📊 Metadata: Created 2024-01-15, Updated 2024-03-10
 ├── 🏷️ Tags: authentication, security, API, OAuth
-├── 🔗 Related Documents: 
+├── 🔗 Related Documents:
 │   ├── OAuth Implementation Guide
 │   ├── Security Best Practices
 │   └── API Rate Limiting
@@ -500,10 +505,10 @@ Explore document clusters with detailed analysis, showing how documents are grou
 {
   "name": "expand_cluster",
   "arguments": {
-    "cluster_id": "string",  // Required: Cluster identifier
-    "include_document_details": true,  // Include individual document info
-    "include_cluster_metrics": true,  // Include clustering statistics
-    "max_documents": 20  // Maximum documents to show in cluster
+    "cluster_id": "string", // Required: Cluster identifier
+    "include_document_details": true, // Include individual document info
+    "include_cluster_metrics": true, // Include clustering statistics
+    "max_documents": 20 // Maximum documents to show in cluster
   }
 }
 ```
@@ -625,6 +630,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 #### For Large Knowledge Bases
 
 1. **Optimize Search Parameters**
+
    - Use appropriate `limit` values for your needs
    - Filter by `source_types` or `project_ids` when possible
    - Use specific search tools for targeted queries
