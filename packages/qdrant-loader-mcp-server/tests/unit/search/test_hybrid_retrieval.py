@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from qdrant_loader_mcp_server.search.components.search_result_models import (
@@ -38,7 +38,9 @@ async def test_search_empty_results(hybrid_search, mock_qdrant_client):
     hybrid_search._vector_search = AsyncMock(return_value=[])
     hybrid_search._keyword_search = AsyncMock(return_value=[])
 
-    mock_qdrant_client.search.return_value = []
+    mock_query_response = MagicMock()
+    mock_query_response.points = []
+    mock_qdrant_client.query_points.return_value = mock_query_response
     mock_qdrant_client.scroll.return_value = ([], None)
 
     results = await hybrid_search.search("test query")

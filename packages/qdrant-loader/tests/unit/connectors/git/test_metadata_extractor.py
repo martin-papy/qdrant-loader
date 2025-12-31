@@ -171,7 +171,7 @@ print("Hello")
         assert metadata["file_name"] == "test.md"
         # File directory should be the relative path from temp_dir
         assert metadata["file_directory"] == "nonexistent"
-        
+
     def test_detect_encoding(self, base_config):
         """Test encoding detection."""
         extractor = GitMetadataExtractor(base_config)
