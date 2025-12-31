@@ -2,7 +2,7 @@ name: Test and Coverage
 
 on:
   push:
-    branches: [ main, develop, feature/*, bugfix/*, release/*, fix/*, chore/* ]
+    branches: [ main, develop, feature/*, bugfix/*, release/*, fix/* ]
   pull_request:
     branches: [ main, develop, feature/*, bugfix/*, release/*, fix/* ]
 
@@ -22,6 +22,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -31,9 +32,9 @@ jobs:
         id: pip-cache-core
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-py312-core-
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-
 
       - name: Install dependencies
         run: |
@@ -48,7 +49,7 @@ jobs:
         if: steps.pip-cache-core.outputs.cache-hit != 'true'
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
 
       - name: Run core tests and generate coverage reports
         run: |
@@ -56,7 +57,7 @@ jobs:
           python -m pytest tests/ --cov=src -v
 
       - name: Generate coverage reports
-        # if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
           cd packages/qdrant-loader-core
           coverage xml -o ../../coverage-core.xml
@@ -79,6 +80,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -95,24 +97,12 @@ jobs:
         id: pip-cache-loader
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-py312-loader-
-
-      - name: Restore cached virtual environment
-        uses: actions/cache/restore@v4
-        id: cache-venv-loader
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
-
-      - name: Create venv if not cached
-        if: steps.cache-venv-loader.outputs.cache-hit != 'true'
-        run: python -m venv .venv
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-
 
       - name: Install dependencies
         run: |
-          source .venv/bin/activate
           python -m pip install --upgrade pip
           # Install monorepo packages locally in dependency order to avoid PyPI resolution
           pip install -e packages/qdrant-loader-core[openai]
@@ -124,17 +114,7 @@ jobs:
         if: steps.pip-cache-loader.outputs.cache-hit != 'true'
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
-
-      - name: Save virtual environment cache
-        uses: actions/cache/save@v4
-        if: steps.cache-venv-loader.outputs.cache-hit != 'true'
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
-
-      - name: Activate venv for subsequent steps
-        run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
 
       - name: Create .env.test file for loader
         run: |
@@ -254,18 +234,18 @@ jobs:
           python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
 
       - name: Run loader integration tests
-        # if: |
-        #   (github.event_name == 'pull_request' &&
-        #   (github.event.pull_request.base.ref == 'develop' ||
-        #     github.event.pull_request.base.ref == 'main')) ||
-        #   (github.event_name == 'push' &&
-        #   (github.ref_name == 'develop' || github.ref_name == 'main'))
+        if: |
+          (github.event_name == 'pull_request' &&
+          (github.event.pull_request.base.ref == 'develop' ||
+            github.event.pull_request.base.ref == 'main')) ||
+          (github.event_name == 'push' &&
+          (github.ref_name == 'develop' || github.ref_name == 'main'))
         run: |
           cd packages/qdrant-loader
           python -m pytest tests/integration --cov=src --cov-append --cov-report= -v
 
       - name: Generate coverage reports
-        # if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
           cd packages/qdrant-loader
           coverage xml -o ../../coverage-loader.xml
@@ -288,6 +268,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -297,24 +278,12 @@ jobs:
         id: pip-cache-mcp
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-py312-mcp-
-
-      - name: Restore cached virtual environment
-        uses: actions/cache/restore@v4
-        id: cache-venv-mcp
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
-
-      - name: Create venv if not cached
-        if: steps.cache-venv-mcp.outputs.cache-hit != 'true'
-        run: python -m venv .venv
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-
 
       - name: Install dependencies
         run: |
-          source .venv/bin/activate
           python -m pip install --upgrade pip
           # Install monorepo packages locally in dependency order to avoid PyPI resolution
           pip install -e packages/qdrant-loader-core
@@ -327,17 +296,7 @@ jobs:
         if: steps.pip-cache-mcp.outputs.cache-hit != 'true'
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
-
-      - name: Save virtual environment cache
-        uses: actions/cache/save@v4
-        if: steps.cache-venv-mcp.outputs.cache-hit != 'true'
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
-
-      - name: Activate venv for subsequent steps
-        run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
 
       - name: Create .env.test file for MCP server
         run: |
@@ -378,18 +337,18 @@ jobs:
           python -m pytest tests/unit -n 2 --cov=src --cov-report= --cov-report=term-missing -v
 
       - name: Run MCP server integration tests
-        # if: |
-        #   (github.event_name == 'pull_request' &&
-        #   (github.event.pull_request.base.ref == 'develop' ||
-        #     github.event.pull_request.base.ref == 'main')) ||
-        #   (github.event_name == 'push' &&
-        #   (github.ref_name == 'develop' || github.ref_name == 'main'))
+        if: |
+          (github.event_name == 'pull_request' &&
+          (github.event.pull_request.base.ref == 'develop' ||
+            github.event.pull_request.base.ref == 'main')) ||
+          (github.event_name == 'push' &&
+          (github.ref_name == 'develop' || github.ref_name == 'main'))
         run: |
           cd packages/qdrant-loader-mcp-server
           python -m pytest tests/integration --cov=src --cov-append --cov-report= --cov-report=term-missing -v
 
       - name: Generate coverage reports
-        # if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
           cd packages/qdrant-loader-mcp-server
           coverage xml -o ../../coverage-mcp.xml
@@ -412,6 +371,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -427,9 +387,9 @@ jobs:
         id: pip-cache-website
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-website-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-py312-website-
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-
 
       - name: Install website test dependencies
         run: |
@@ -444,7 +404,7 @@ jobs:
         if: steps.pip-cache-website.outputs.cache-hit != 'true'
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py312-website-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
 
       - name: Run website tests with coverage
         run: |
