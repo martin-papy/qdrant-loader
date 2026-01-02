@@ -1158,10 +1158,9 @@ class TestIntelligenceHandlerResponseFormatting:
         self, intelligence_handler, mock_search_engine, mock_protocol
     ):
         """Test fallback to item-level source_title when document doesn't have it."""
-        mock_doc_obj = MagicMock()
+        # Create a mock without source_title attribute using spec
+        mock_doc_obj = MagicMock(spec=['document_id', 'text'])
         mock_doc_obj.document_id = "doc789"
-        # Mock object has no source_title attribute
-        del mock_doc_obj.source_title
         mock_doc_obj.text = "Some content"
 
         mock_similar_docs = [
@@ -1199,11 +1198,9 @@ class TestIntelligenceHandlerResponseFormatting:
         self, intelligence_handler, mock_search_engine, mock_protocol
     ):
         """Test that missing text results in empty content_preview, not error."""
-        mock_doc_obj = MagicMock()
+        # Create mock with only document_id, no source_title or text attributes
+        mock_doc_obj = MagicMock(spec=['document_id'])
         mock_doc_obj.document_id = "doc999"
-        mock_doc_obj.source_title = "No Content Doc"
-        # No text attribute
-        del mock_doc_obj.text
 
         mock_similar_docs = [
             {
