@@ -145,8 +145,12 @@ class TestVectorSearchCache:
         # Mock the get_embedding method
         vector_search_service.get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3])
 
-        # Mock QDrant search response
-        vector_search_service.qdrant_client.search.return_value = sample_search_results
+        # Mock QDrant query_points response (qdrant-client 1.10+)
+        mock_query_response = MagicMock()
+        mock_query_response.points = sample_search_results
+        vector_search_service.qdrant_client.query_points = AsyncMock(
+            return_value=mock_query_response
+        )
 
         # First call - should be a cache miss
         results1 = await vector_search_service.vector_search("test query", 10)
@@ -161,7 +165,7 @@ class TestVectorSearchCache:
         assert results1 == results2
 
         # Verify QDrant was only called once
-        assert vector_search_service.qdrant_client.search.call_count == 1
+        assert vector_search_service.qdrant_client.query_points.call_count == 1
 
     @patch("qdrant_loader_mcp_server.search.components.vector_search_service.time.time")
     @pytest.mark.asyncio
@@ -172,8 +176,12 @@ class TestVectorSearchCache:
         # Mock the get_embedding method
         vector_search_service.get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3])
 
-        # Mock QDrant search response
-        vector_search_service.qdrant_client.search.return_value = sample_search_results
+        # Mock QDrant query_points response (qdrant-client 1.10+)
+        mock_query_response = MagicMock()
+        mock_query_response.points = sample_search_results
+        vector_search_service.qdrant_client.query_points = AsyncMock(
+            return_value=mock_query_response
+        )
 
         # First call at time 1000
         mock_time.return_value = 1000.0
@@ -200,9 +208,11 @@ class TestVectorSearchCache:
             return_value=[0.1, 0.2, 0.3]
         )
 
-        # Mock QDrant search response
-        vector_search_service_no_cache.qdrant_client.search.return_value = (
-            sample_search_results
+        # Mock QDrant query_points response (qdrant-client 1.10+)
+        mock_query_response = MagicMock()
+        mock_query_response.points = sample_search_results
+        vector_search_service_no_cache.qdrant_client.query_points = AsyncMock(
+            return_value=mock_query_response
         )
 
         # Multiple calls with same parameters
@@ -214,7 +224,7 @@ class TestVectorSearchCache:
         assert vector_search_service_no_cache._cache_hits == 0
 
         # QDrant should be called twice
-        assert vector_search_service_no_cache.qdrant_client.search.call_count == 2
+        assert vector_search_service_no_cache.qdrant_client.query_points.call_count == 2
 
     def test_cache_cleanup_expired_entries(self, vector_search_service):
         """Test cleanup of expired cache entries."""
@@ -323,8 +333,12 @@ class TestVectorSearchCache:
         # Mock the get_embedding method
         vector_search_service.get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3])
 
-        # Mock QDrant search response
-        vector_search_service.qdrant_client.search.return_value = sample_search_results
+        # Mock QDrant query_points response (qdrant-client 1.10+)
+        mock_query_response = MagicMock()
+        mock_query_response.points = sample_search_results
+        vector_search_service.qdrant_client.query_points = AsyncMock(
+            return_value=mock_query_response
+        )
 
         # Search with different project filters should create separate cache entries
         await vector_search_service.vector_search("test query", 10, ["project1"])
@@ -335,7 +349,7 @@ class TestVectorSearchCache:
 
         assert vector_search_service._cache_misses == 2  # First two calls
         assert vector_search_service._cache_hits == 1  # Third call
-        assert vector_search_service.qdrant_client.search.call_count == 2
+        assert vector_search_service.qdrant_client.query_points.call_count == 2
 
     @pytest.mark.asyncio
     async def test_result_format_consistency(
@@ -345,8 +359,12 @@ class TestVectorSearchCache:
         # Mock the get_embedding method
         vector_search_service.get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3])
 
-        # Mock QDrant search response
-        vector_search_service.qdrant_client.search.return_value = sample_search_results
+        # Mock QDrant query_points response (qdrant-client 1.10+)
+        mock_query_response = MagicMock()
+        mock_query_response.points = sample_search_results
+        vector_search_service.qdrant_client.query_points = AsyncMock(
+            return_value=mock_query_response
+        )
 
         # Get fresh results
         fresh_results = await vector_search_service.vector_search("test query", 10)

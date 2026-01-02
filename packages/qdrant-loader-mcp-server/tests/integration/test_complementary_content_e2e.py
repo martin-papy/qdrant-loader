@@ -403,18 +403,34 @@ class TestComplementaryContentE2E:
             else:
                 return sample_documents[1:4]  # Return business docs as context
 
-        mock_qdrant_client.search.side_effect = lambda query, **kwargs: [
-            MagicMock(
-                id=f"doc_{i}",
-                score=doc.score,
-                payload={
-                    attr: getattr(doc, attr)
-                    for attr in doc.__dict__
-                    if not attr.startswith("_")
-                },
-            )
-            for i, doc in enumerate(create_search_response(query, **kwargs))
-        ]
+        # Mock query_points response (qdrant-client 1.10+)
+        def mock_query_points(query, **kwargs):
+            response = MagicMock()
+            response.points = [
+                MagicMock(
+                    id=f"doc_{i}",
+                    score=doc.score,
+                    payload={
+                        "content": doc.text,  # Map text → content for keyword_search compatibility
+                        "source_type": doc.source_type,
+                        "source_title": doc.source_title,
+                        "project_id": doc.project_id,
+                        "entities": doc.entities,
+                        "topics": doc.topics,
+                        "key_phrases": doc.key_phrases,
+                        "content_type_context": doc.content_type_context,
+                        "has_code_blocks": doc.has_code_blocks,
+                        "has_tables": doc.has_tables,
+                        "word_count": doc.word_count,
+                        "depth": doc.depth,
+                        "metadata": {},  # Provide empty metadata dict
+                    },
+                )
+                for i, doc in enumerate(create_search_response(query, **kwargs))
+            ]
+            return response
+
+        mock_qdrant_client.query_points.side_effect = mock_query_points
 
         # Configure the mock_qdrant_client to have the scroll method with sample documents
         def create_mock_scroll_response(**kwargs):
