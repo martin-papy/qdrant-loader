@@ -24,6 +24,7 @@ async def run_search(
     original_vector_weight = engine.result_combiner.vector_weight
     original_keyword_weight = engine.result_combiner.keyword_weight
     original_min_score = engine.result_combiner.min_score
+    user_limit = limit
 
     combined_results: list[HybridSearchResult]
 
@@ -169,4 +170,5 @@ async def run_search(
             except Exception:
                 pass
 
-    return combined_results
+    final_results = combined_results[:user_limit]
+    return final_results
