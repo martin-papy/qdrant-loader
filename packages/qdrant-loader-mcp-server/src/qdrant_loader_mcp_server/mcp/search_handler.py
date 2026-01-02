@@ -58,7 +58,7 @@ class SearchHandler:
         query = params["query"]
         source_types = params.get("source_types", [])
         project_ids = params.get("project_ids", [])
-        limit = params.get("limit", 10)
+        limit = params.get("limit", 5)
 
         logger.info(
             "Processing search request",
