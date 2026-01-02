@@ -57,15 +57,15 @@ def sample_search_results():
     return [
         create_hybrid_search_result(
             score=0.9,
-            text="Sample document about AI and machine learning",
+            text="Sample document about API Rate Limiting",
             source_type="confluence",
-            source_title="AI Documentation",
-            source_url="http://test.com/ai-doc",
+            source_title="API Rate Limiting Guide",
+            source_url="http://test.com/api-rate-limiting",
             document_id="doc1",
-            project_id="proj1",
-            entities=["AI", "machine learning", "neural networks"],
-            topics=["artificial intelligence", "technology"],
-            breadcrumb_text="Technology > AI > Documentation",
+            project_id="backend-docs",
+            entities=["API", "rate limiting", "throttling"],
+            topics=["API design", "performance"],
+            breadcrumb_text="Backend > API > Documentation",
         ),
         create_hybrid_search_result(
             score=0.8,
@@ -708,6 +708,287 @@ async def test_find_similar_documents_no_target(
 
         # Method now returns an empty dict for no target found to match declared return type
         assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_find_similar_documents_cross_project_filtering(
+    search_engine,
+    qdrant_config,
+    openai_config,
+    mock_qdrant_client,
+    mock_openai_client,
+):
+    """Test that target document search ignores project_ids filter while comparison respects it.
+
+    Business Logic:
+    - Target document: Search ALL projects to find best match
+    - Comparison documents: Apply project_ids filter to limit comparison scope
+
+    Use case: "Find documents in mobile-app project similar to the API Rate Limiting
+    guide from backend-docs project"
+    """
+    # Target document from backend-docs project
+    target_doc = create_hybrid_search_result(
+        score=0.95,
+        text="API Rate Limiting implementation guide",
+        source_type="confluence",
+        source_title="API Rate Limiting Guide",
+        source_url="http://test.com/rate-limiting",
+        document_id="backend-doc-1",
+        project_id="backend-docs",
+        entities=["API", "rate limiting", "throttling"],
+        topics=["API design", "performance"],
+    )
+
+    # Comparison documents from mobile-app project
+    mobile_docs = [
+        create_hybrid_search_result(
+            score=0.85,
+            text="Mobile API throttling configuration",
+            source_type="git",
+            source_title="Mobile API Config",
+            source_url="http://test.com/mobile-api",
+            document_id="mobile-doc-1",
+            project_id="mobile-app",
+            entities=["API", "throttling", "configuration"],
+            topics=["mobile", "API"],
+        ),
+        create_hybrid_search_result(
+            score=0.80,
+            text="Mobile app performance optimization",
+            source_type="confluence",
+            source_title="Performance Guide",
+            source_url="http://test.com/mobile-perf",
+            document_id="mobile-doc-2",
+            project_id="mobile-app",
+            entities=["performance", "optimization"],
+            topics=["mobile", "performance"],
+        ),
+    ]
+
+    mock_hybrid_search = AsyncMock()
+    # First search (target): returns doc from backend-docs (NO project filter)
+    # Second search (comparison): returns docs from mobile-app (WITH project filter)
+    mock_hybrid_search.search = AsyncMock(
+        side_effect=[
+            [target_doc],  # Target search - no project filter applied
+            mobile_docs,  # Comparison search - project filter applied
+        ]
+    )
+
+    mock_similar_docs = [
+        {
+            "document": mobile_docs[0],
+            "similarity_score": 0.82,
+            "similarity_reasons": ["High API and throttling overlap"],
+        }
+    ]
+    mock_hybrid_search.find_similar_documents.return_value = mock_similar_docs
+
+    with (
+        patch(
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            return_value=mock_qdrant_client,
+        ),
+        patch(
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
+            return_value=mock_openai_client,
+        ),
+        patch(
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
+            return_value=mock_hybrid_search,
+        ),
+    ):
+        await search_engine.initialize(qdrant_config, openai_config)
+
+        result = await search_engine.find_similar_documents(
+            target_query="API Rate Limiting Guide",
+            comparison_query="API configuration",
+            max_similar=5,
+            project_ids=["mobile-app"],  # Filter only for comparison
+        )
+
+        # Verify search was called twice
+        assert mock_hybrid_search.search.call_count == 2
+
+        # Verify target search (1st call) - NO project_ids filter
+        target_call = mock_hybrid_search.search.call_args_list[0]
+        assert target_call[1]["query"] == "API Rate Limiting Guide"
+        assert target_call[1]["limit"] == 1
+        assert target_call[1]["project_ids"] is None  # Key assertion: no filter
+
+        # Verify comparison search (2nd call) - WITH project_ids filter
+        comparison_call = mock_hybrid_search.search.call_args_list[1]
+        assert comparison_call[1]["query"] == "API configuration"
+        assert comparison_call[1]["project_ids"] == [
+            "mobile-app"
+        ]  # Key assertion: filter applied
+
+        # Verify similar documents found
+        assert len(result) == 1
+        assert result[0]["document"].project_id == "mobile-app"
+
+
+@pytest.mark.asyncio
+async def test_find_similar_documents_same_project_behavior(
+    search_engine,
+    qdrant_config,
+    openai_config,
+    mock_qdrant_client,
+    mock_openai_client,
+):
+    """Test find_similar when both target and comparison could be in same project.
+
+    Verifies that even when target happens to be in the filtered project,
+    the logic still works correctly (target found from all projects, comparison filtered).
+    """
+    # Documents all from same project
+    proj1_docs = [
+        create_hybrid_search_result(
+            score=0.95,
+            text="Main authentication guide",
+            source_type="confluence",
+            source_title="Auth Guide",
+            source_url="http://test.com/auth",
+            document_id="proj1-doc-1",
+            project_id="proj1",
+            entities=["authentication", "OAuth", "JWT"],
+            topics=["security", "authentication"],
+        ),
+        create_hybrid_search_result(
+            score=0.85,
+            text="OAuth implementation details",
+            source_type="git",
+            source_title="OAuth Implementation",
+            source_url="http://test.com/oauth",
+            document_id="proj1-doc-2",
+            project_id="proj1",
+            entities=["OAuth", "implementation"],
+            topics=["security", "OAuth"],
+        ),
+    ]
+
+    mock_hybrid_search = AsyncMock()
+    mock_hybrid_search.search = AsyncMock(
+        side_effect=[
+            [proj1_docs[0]],  # Target
+            proj1_docs,  # Comparison pool
+        ]
+    )
+
+    mock_similar_docs = [
+        {
+            "document": proj1_docs[1],
+            "similarity_score": 0.78,
+            "similarity_reasons": ["OAuth implementation overlap"],
+        }
+    ]
+    mock_hybrid_search.find_similar_documents.return_value = mock_similar_docs
+
+    with (
+        patch(
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            return_value=mock_qdrant_client,
+        ),
+        patch(
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
+            return_value=mock_openai_client,
+        ),
+        patch(
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
+            return_value=mock_hybrid_search,
+        ),
+    ):
+        await search_engine.initialize(qdrant_config, openai_config)
+
+        result = await search_engine.find_similar_documents(
+            target_query="authentication guide",
+            comparison_query="OAuth",
+            max_similar=5,
+            project_ids=["proj1"],
+        )
+
+        # Verify target search still has NO project filter (even though result happens to be in proj1)
+        target_call = mock_hybrid_search.search.call_args_list[0]
+        assert target_call[1]["project_ids"] is None
+
+        # Verify comparison search HAS project filter
+        comparison_call = mock_hybrid_search.search.call_args_list[1]
+        assert comparison_call[1]["project_ids"] == ["proj1"]
+
+        assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_find_similar_documents_no_project_filter(
+    search_engine,
+    qdrant_config,
+    openai_config,
+    mock_qdrant_client,
+    mock_openai_client,
+):
+    """Test find_similar when NO project_ids filter is provided.
+
+    Both target and comparison should search all projects.
+    """
+    all_docs = [
+        create_hybrid_search_result(
+            score=0.95,
+            text="Document from project A",
+            source_type="confluence",
+            source_title="Doc A",
+            source_url="http://test.com/a",
+            document_id="doc-a",
+            project_id="projectA",
+        ),
+        create_hybrid_search_result(
+            score=0.85,
+            text="Document from project B",
+            source_type="git",
+            source_title="Doc B",
+            source_url="http://test.com/b",
+            document_id="doc-b",
+            project_id="projectB",
+        ),
+    ]
+
+    mock_hybrid_search = AsyncMock()
+    mock_hybrid_search.search = AsyncMock(
+        side_effect=[
+            [all_docs[0]],  # Target
+            all_docs,  # Comparison
+        ]
+    )
+    mock_hybrid_search.find_similar_documents.return_value = []
+
+    with (
+        patch(
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
+            return_value=mock_qdrant_client,
+        ),
+        patch(
+            "qdrant_loader_mcp_server.search.engine.AsyncOpenAI",
+            return_value=mock_openai_client,
+        ),
+        patch(
+            "qdrant_loader_mcp_server.search.engine.core.HybridSearchEngine",
+            return_value=mock_hybrid_search,
+        ),
+    ):
+        await search_engine.initialize(qdrant_config, openai_config)
+
+        await search_engine.find_similar_documents(
+            target_query="any document",
+            comparison_query="all documents",
+            # NO project_ids parameter
+        )
+
+        # Both searches should have None for project_ids
+        target_call = mock_hybrid_search.search.call_args_list[0]
+        comparison_call = mock_hybrid_search.search.call_args_list[1]
+
+        assert target_call[1]["project_ids"] is None
+        assert comparison_call[1]["project_ids"] is None
 
 
 @pytest.mark.asyncio

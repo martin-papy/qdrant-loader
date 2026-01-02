@@ -488,14 +488,19 @@ class SearchEngine:
         if not self._search_ops:
             raise RuntimeError("Search engine not initialized")
 
+        # Search strategy:
+        # 1. Target document: Search across ALL projects to find best match for target_query,
+        # not limited by project_ids filter
+        # 2. Comparison documents: Apply project_ids filter to limit comparison scope
+        
         # First, search for target documents
         target_documents = await self._search_ops.search(
-            target_query, source_types, 1, project_ids
+            target_query, source_types, 1, None
         )
         if not target_documents:
             return {}
 
-        # Then search for comparison documents
+        # Apply project_ids filter for comparison pool
         comparison_documents = await self._search_ops.search(
             comparison_query or target_query, source_types, limit, project_ids
         )
