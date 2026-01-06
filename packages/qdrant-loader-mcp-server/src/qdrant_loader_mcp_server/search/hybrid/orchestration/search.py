@@ -24,7 +24,6 @@ async def run_search(
     original_vector_weight = engine.result_combiner.vector_weight
     original_keyword_weight = engine.result_combiner.keyword_weight
     original_min_score = engine.result_combiner.min_score
-    user_limit = limit
 
     combined_results: list[HybridSearchResult]
 
@@ -53,7 +52,7 @@ async def run_search(
                 local_combiner.vector_weight = adaptive_config.vector_weight
                 local_combiner.keyword_weight = adaptive_config.keyword_weight
                 local_combiner.min_score = adaptive_config.min_score_threshold
-                limit = min(adaptive_config.max_results, limit * 2)
+                fetch_limit = min(adaptive_config.max_results, limit * 2)
 
         expanded_query = await engine._expand_query(query)
         if adaptive_config and getattr(adaptive_config, "expand_query", False):
@@ -96,7 +95,7 @@ async def run_search(
                 combined_results = await engine._orchestrator.run_pipeline(
                     local_pipeline,
                     query=query,
-                    limit=limit,
+                    limit=fetch_limit,
                     query_context=query_context,
                     source_types=source_types,
                     project_ids=project_ids,
@@ -108,7 +107,7 @@ async def run_search(
                 combined_results = await engine._orchestrator.run_pipeline(
                     p,
                     query=query,
-                    limit=limit,
+                    limit=fetch_limit,
                     query_context=query_context,
                     source_types=source_types,
                     project_ids=project_ids,
@@ -117,10 +116,10 @@ async def run_search(
                 )
         else:
             vector_results = await engine._vector_search(
-                expanded_query, limit * 3, project_ids
+                expanded_query, fetch_limit * 3, project_ids
             )
             keyword_results = await engine._keyword_search(
-                query, limit * 3, project_ids
+                query, fetch_limit * 3, project_ids
             )
             combined_results = await _combine_results_helper(
                 local_combiner,
@@ -128,7 +127,7 @@ async def run_search(
                 vector_results,
                 keyword_results,
                 query_context,
-                limit,
+                fetch_limit,
                 source_types,
                 project_ids,
             )
@@ -170,5 +169,4 @@ async def run_search(
             except Exception:
                 pass
 
-    final_results = combined_results[:user_limit]
-    return final_results
+    return combined_results[:limit]
