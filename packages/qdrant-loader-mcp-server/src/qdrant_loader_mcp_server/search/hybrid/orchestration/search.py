@@ -26,6 +26,7 @@ async def run_search(
     original_min_score = engine.result_combiner.min_score
 
     combined_results: list[HybridSearchResult]
+    fetch_limit = limit
 
     try:
         # Build a request-scoped combiner clone to avoid mutating shared engine state
