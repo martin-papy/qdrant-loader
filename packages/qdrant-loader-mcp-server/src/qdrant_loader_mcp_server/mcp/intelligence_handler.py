@@ -152,6 +152,9 @@ class IntelligenceHandler:
                 max_similar=params.get("max_similar", 5),
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
+                similarity_threshold=params.get(
+                    "similarity_threshold", 0.7
+                ),  # Default 0.7
             )
 
             # Normalize result: engine may return list, but can return {} on empty

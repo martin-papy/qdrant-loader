@@ -528,6 +528,7 @@ class SearchEngine:
             comparison_documents,
             metric_enums,
             max_similar,
+            similarity_threshold,
         )
 
     async def detect_document_conflicts(
