@@ -22,9 +22,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Restore pip dependency cache
+        uses: actions/cache/restore@v4
+        id: pip-cache-core
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-
 
       - name: Install dependencies
         run: |
@@ -33,6 +43,13 @@ jobs:
           pip install -e packages/qdrant-loader-core[openai,ollama]
           # Install repo dev deps for pytest, coverage, etc.
           pip install -e .[dev]
+
+      - name: Save pip dependency cache
+        uses: actions/cache/save@v4
+        if: steps.pip-cache-core.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
 
       - name: Run core tests and generate coverage reports
         run: |
@@ -63,6 +80,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -74,6 +92,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
+      - name: Restore pip dependency cache
+        uses: actions/cache/restore@v4
+        id: pip-cache-loader
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -81,6 +108,13 @@ jobs:
           pip install -e packages/qdrant-loader-core[openai]
           pip install -e .[dev]
           pip install -e packages/qdrant-loader
+
+      - name: Save pip dependency cache
+        uses: actions/cache/save@v4
+        if: steps.pip-cache-loader.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
 
       - name: Create .env.test file for loader
         run: |
@@ -234,9 +268,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Restore pip dependency cache
+        uses: actions/cache/restore@v4
+        id: pip-cache-mcp
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-
 
       - name: Install dependencies
         run: |
@@ -246,6 +290,13 @@ jobs:
           pip install -e .[dev]
           pip install -e packages/qdrant-loader
           pip install -e packages/qdrant-loader-mcp-server
+
+      - name: Save pip dependency cache
+        uses: actions/cache/save@v4
+        if: steps.pip-cache-mcp.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
 
       - name: Create .env.test file for MCP server
         run: |
@@ -320,6 +371,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -330,6 +382,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcairo2-dev libgirepository1.0-dev
 
+      - name: Restore pip dependency cache
+        uses: actions/cache/restore@v4
+        id: pip-cache-website
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-
+
       - name: Install website test dependencies
         run: |
           python -m pip install --upgrade pip
@@ -337,6 +398,13 @@ jobs:
           pip install -e .[dev]
           # Install optional docs dependencies for comprehensive testing
           pip install -e .[docs] || echo "Optional docs dependencies not available"
+
+      - name: Save pip dependency cache
+        uses: actions/cache/save@v4
+        if: steps.pip-cache-website.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
 
       - name: Run website tests with coverage
         run: |
