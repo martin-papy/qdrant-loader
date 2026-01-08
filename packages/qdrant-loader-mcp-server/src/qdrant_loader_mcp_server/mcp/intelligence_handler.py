@@ -204,24 +204,49 @@ class IntelligenceHandler:
             for item in similar_docs:
                 # Normalize access to document fields
                 document = item.get("document") if isinstance(item, dict) else None
+
+                # Extract document_id - try both dict and object attribute access
                 document_id = (
-                    (
+                    item.get("document_id", "") if isinstance(item, dict) else ""
+                )
+                if not document_id and document:
+                    document_id = (
                         document.get("document_id")
                         if isinstance(document, dict)
-                        else None
+                        else getattr(document, "document_id", "")
                     )
-                    or (item.get("document_id") if isinstance(item, dict) else None)
-                    or ""
-                )
-                title = (
-                    (
-                        document.get("source_title")
-                        if isinstance(document, dict)
-                        else None
+
+                # Extract title - try both dict and object attribute access
+                title = "Untitled"
+                if document:
+                    if isinstance(document, dict):
+                        title = document.get("source_title", "Untitled")
+                    else:
+                        title = getattr(document, "source_title", "Untitled")
+                if not title or title == "Untitled":
+                    title = (
+                        item.get("source_title", "Untitled")
+                        if isinstance(item, dict)
+                        else "Untitled"
                     )
-                    or (item.get("title") if isinstance(item, dict) else None)
-                    or "Untitled"
-                )
+
+                # Extract text content - try both dict and object attribute access
+                content_text = ""
+                if document:
+                    if isinstance(document, dict):
+                        content_text = document.get("text", "")
+                    else:
+                        content_text = getattr(document, "text", "")
+
+                # Create content preview
+                content_preview = ""
+                if content_text and isinstance(content_text, str):
+                    content_preview = (
+                        content_text[:200] + "..."
+                        if len(content_text) > 200
+                        else content_text
+                    )
+
                 similarity_score = float(item.get("similarity_score", 0.0))
                 highest_similarity = max(highest_similarity, similarity_score)
 
@@ -249,18 +274,7 @@ class IntelligenceHandler:
                             if isinstance(item.get("similarity_reasons", []), list)
                             else item.get("similarity_reason", "")
                         ),
-                        "content_preview": (
-                            (document.get("text", "")[:200] + "...")
-                            if isinstance(document, dict)
-                            and isinstance(document.get("text"), str)
-                            and len(document.get("text")) > 200
-                            else (
-                                document.get("text")
-                                if isinstance(document, dict)
-                                and isinstance(document.get("text"), str)
-                                else ""
-                            )
-                        ),
+                        "content_preview": content_preview,
                     }
                 )
 
