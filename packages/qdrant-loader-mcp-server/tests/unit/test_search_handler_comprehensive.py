@@ -252,7 +252,7 @@ class TestHandleSearch:
 
                 # Verify defaults were used
                 search_handler.search_engine.search.assert_called_once_with(
-                    query="test", source_types=[], project_ids=[], limit=10
+                    query="test", source_types=[], project_ids=[], limit=5
                 )
 
     @pytest.mark.asyncio
