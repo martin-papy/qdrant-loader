@@ -61,7 +61,11 @@ class TestMarkItDownWindowsFix:
                 with patch.object(converter, "_validate_file") as mock_validate:
                     with patch.object(
                         converter, "_get_markitdown"
-                    ) as mock_get_markitdown:
+                    ) as mock_get_markitdown, patch(
+                        "threading.Thread.start",
+                        autospec=True,
+                        return_value=None,
+                    ):
                         mock_validate.return_value = None  # Pass validation
 
                         mock_markitdown = Mock()
