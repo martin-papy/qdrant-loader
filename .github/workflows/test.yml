@@ -46,7 +46,7 @@ jobs:
 
       - name: Save pip dependency cache
         uses: actions/cache/save@v4
-        if: steps.pip-cache-core.outputs.cache-hit != 'true'
+        if: steps.pip-cache-core.outputs.cache-hit != 'true' && github.ref_name == 'main'
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
@@ -111,7 +111,7 @@ jobs:
 
       - name: Save pip dependency cache
         uses: actions/cache/save@v4
-        if: steps.pip-cache-loader.outputs.cache-hit != 'true'
+        if: steps.pip-cache-loader.outputs.cache-hit != 'true' && github.ref_name == 'main'
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
@@ -293,7 +293,7 @@ jobs:
 
       - name: Save pip dependency cache
         uses: actions/cache/save@v4
-        if: steps.pip-cache-mcp.outputs.cache-hit != 'true'
+        if: steps.pip-cache-mcp.outputs.cache-hit != 'true' && github.ref_name == 'main'
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
@@ -334,7 +334,7 @@ jobs:
       - name: Run MCP server unit tests
         run: |
           cd packages/qdrant-loader-mcp-server
-          python -m pytest tests/unit -n 2 --cov=src --cov-report= --cov-report=term-missing -v
+          python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
 
       - name: Run MCP server integration tests
         if: |
@@ -401,7 +401,7 @@ jobs:
 
       - name: Save pip dependency cache
         uses: actions/cache/save@v4
-        if: steps.pip-cache-website.outputs.cache-hit != 'true'
+        if: steps.pip-cache-website.outputs.cache-hit != 'true' && github.ref_name == 'main'
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
