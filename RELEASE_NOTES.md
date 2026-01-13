@@ -1,5 +1,16 @@
 # Release Notes
 
+## [0.7.5] - 2025-15-01
+
+### Fixed
+
+- Fixed search filtering by project (`project_ids` filter) not working. ([#85](https://github.com/martin-papy/qdrant-loader/issues/85))
+- Fixed search queries ignoring the `limit` parameter. ([#86](https://github.com/martin-papy/qdrant-loader/issues/86))
+- Fixed the `similarity_threshold` parameter not being applied in the `find_similar_documents` tool. ([#89](https://github.com/martin-papy/qdrant-loader/issues/89))
+- Fixed `find_similar_documents` returning empty `title` and `content_preview` fields. ([#90](https://github.com/martin-papy/qdrant-loader/issues/90))
+- Fixed `find_complementary_content` not populating `complementary_reason` and `reasons` fields for cross-topic results. ([#93](https://github.com/martin-papy/qdrant-loader/issues/93))
+- Fixed incorrect results from `find_similar_documents` when the target document was not part of the filtered projects. ([#95](https://github.com/martin-papy/qdrant-loader/issues/95))
+
 ## [0.7.4] - 2025-12-11
 
 ### Fixed
