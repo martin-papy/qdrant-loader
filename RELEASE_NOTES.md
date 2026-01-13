@@ -1,28 +1,15 @@
 # Release Notes
 
-## Version 0.7.4 - December 11, 2025
+## [0.7.4] - 2025-12-11
 
-### 🐛 Bug Fixes
+### Fixed
 
-#### Compatibility & Platform Support
-
-- **Fixed Windows asyncio event loop crashes** ([#57](https://github.com/martin-papy/qdrant-loader/issues/57)): Resolved critical issues with asyncio signal handling and stdio support on the Windows platform
-
-#### Logging System Improvements
-
-- **Fixed --log-level CLI option** ([#58](https://github.com/martin-papy/qdrant-loader/issues/58)): Resolved issue where --log-level DEBUG command line argument was not working after logging initialization
-
-#### Dependency management
-
-- **Added missing prometheus-client dependency** ([#60](https://github.com/martin-papy/qdrant-loader/issues/60)): Fixed missing prometheus-client package that was causing import errors
-- **Deprecated import fixes** ([#61](https://github.com/martin-papy/qdrant-loader/issues/61)): Resolved deprecated langchain.text_splitter import warnings
-- **Added missing Spacy dependency** ([#67](https://github.com/martin-papy/qdrant-loader/issues/67)): Fixed missing spacy package that was causing Cursor MCP crash on startup
-
-#### MCP Integration Updates
-
-- **Fixed MCP Search API compatibility** ([#74](https://github.com/martin-papy/qdrant-loader/issues/74)): Resolved incompatibility issues with qdrant-client 1.16
-
-#### Test Suite Cross-Platform Support
+- Fixed Windows asyncio event loop crashes by resolving issues with signal handling and stdio support on the Windows platform. ([#57](https://github.com/martin-papy/qdrant-loader/issues/57))
+- Fixed the `--log-level` CLI option not applying correctly when set to `DEBUG` after logging initialization. ([#58](https://github.com/martin-papy/qdrant-loader/issues/58))
+- Added missing `prometheus-client` dependency to prevent import errors. ([#60](https://github.com/martin-papy/qdrant-loader/issues/60))
+- Resolved deprecated `langchain.text_splitter` import warnings. ([#61](https://github.com/martin-papy/qdrant-loader/issues/61))
+- Added missing `spacy` dependency that caused Cursor MCP to crash on startup. ([#67](https://github.com/martin-papy/qdrant-loader/issues/67))
+- Fixed MCP Search API compatibility issues with `qdrant-client` version 1.16. ([#74](https://github.com/martin-papy/qdrant-loader/issues/74))
 
 ## Version 0.7.3 - Sept 11, 2025
 
