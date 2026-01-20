@@ -25,6 +25,27 @@ async def find_similar_documents(
     max_similar: int = 5,
     similarity_threshold: float = 0.7,
 ) -> list[dict[str, Any]]:
+    """
+    Finds documents most similar to a target document using the engine's similarity calculator.
+    
+    Skips self-comparison (by `document_id` when available, otherwise by object identity), filters out results with similarity scores below `similarity_threshold`, sorts matches by descending similarity, and returns up to `max_similar` entries.
+    
+    Parameters:
+        engine: Cross-document engine container used to access the similarity calculator.
+        target_document: The document to compare others against.
+        documents: Iterable of documents to evaluate for similarity.
+        similarity_metrics (optional): Metrics to use when calculating similarity; forwarded to the similarity calculator.
+        max_similar (optional): Maximum number of similar documents to return.
+        similarity_threshold (optional): Minimum similarity score required for a document to be included.
+    
+    Returns:
+        list[dict[str, Any]]: A list of dictionaries (ordered by descending `similarity_score`) where each entry contains:
+            - `document_id`: the matched document's identifier
+            - `document`: the matched document object
+            - `similarity_score`: the overall similarity score
+            - `metric_scores`: per-metric similarity scores
+            - `similarity_reasons`: list with a human-readable explanation for the similarity
+    """
     similarity_calculator = engine.cross_document_engine.similarity_calculator
     similar_docs = []
     for doc in documents:

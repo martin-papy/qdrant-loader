@@ -143,14 +143,17 @@ class FieldQueryParser:
         field_queries: list[FieldQuery] | None,
         project_ids: list[str] | None = None,
     ) -> models.Filter | None:
-        """Create a Qdrant filter from field queries.
-
-        Args:
-            field_queries: List of field queries to convert to filters
-            project_ids: Optional project ID filters to include
-
+        """
+        Build a Qdrant Filter from parsed field queries and optional project IDs.
+        
+        Converts each provided FieldQuery into a payload match condition using the parser's supported field mappings and type conversion. If project_ids are provided and no explicit project_id field query exists, adds an OR condition that matches any of the given project IDs in one of three payload keys: "project_id", "source", or "metadata.project_id". Returns a Filter that requires all constructed conditions, or None when no conditions are produced.
+        
+        Parameters:
+            field_queries (list[FieldQuery] | None): FieldQuery objects to convert into filter conditions; omitted or empty means no field-based conditions.
+            project_ids (list[str] | None): Project IDs to require in any supported project location when not explicitly specified via a field query.
+        
         Returns:
-            Qdrant Filter object or None if no filters needed
+            models.Filter | None: A Qdrant Filter containing the required must conditions, or None if no filter conditions were created.
         """
         must_conditions = []
 
