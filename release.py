@@ -312,10 +312,49 @@ def extract_repo_info(git_url: str, dry_run: bool = False) -> str:
     sys.exit(1)
 
 
+def extract_changelog_for_version(version: str) -> str:
+    """Extract changelog content for a specific version from root CHANGELOG.md.
+    
+    Args:
+        version: Version string (e.g., "0.7.4")
+    
+    Returns:
+        Changelog content or empty string if not found
+    """
+    logger = logging.getLogger(__name__)
+    
+    changelog_path = "CHANGELOG.md"
+    if not Path(changelog_path).exists():
+        logger.debug(f"CHANGELOG not found at {changelog_path}")
+        return ""
+    
+    with open(changelog_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    # Find version section (format: ## [X.Y.Z] - Date)
+    import re
+    version_pattern = rf"## \[{re.escape(version)}\].*?\n(.*?)(?=\n## |\Z)"
+    match = re.search(version_pattern, content, re.DOTALL)
+    
+    if not match:
+        logger.debug(f"Version {version} not found in {changelog_path}")
+        return ""
+    
+    version_content = match.group(1).strip()
+    return version_content
+
+
 def create_github_release(
     package_name: str, version: str, token: str, dry_run: bool = False
 ) -> None:
-    """Create a GitHub release for a specific package."""
+    """Create a GitHub release for a specific package.
+    
+    Args:
+        package_name: Name of the package to release
+        version: Version string
+        token: GitHub API token
+        dry_run: If True, simulate without making changes
+    """
     logger = logging.getLogger(__name__)
     tag_name = f"{package_name}-v{version}"
 
@@ -326,9 +365,15 @@ def create_github_release(
         return
 
     logger.info(f"Creating GitHub release for {package_name} version {version}")
-    # Get the latest commits for release notes
-    stdout, _ = run_command("git log --pretty=format:'%h %s' -n 10")
-    release_notes = f"## Changes for {package_name} v{version}\n\n```\n{stdout}\n```"
+    
+    # Extract changelog directly from root CHANGELOG.md
+    logger.info(f"Extracting changelog from root CHANGELOG.md")
+    release_notes = extract_changelog_for_version(version)
+    
+    if not release_notes:
+        logger.warning("No changelog found, falling back to git log for release notes")
+        stdout, _ = run_command("git log --pretty=format:'%h %s' -n 10")
+        release_notes = f"## Changes for {package_name} v{version}\n\n```\n{stdout}\n```"
 
     # Create release
     headers = {
@@ -359,6 +404,7 @@ def create_github_release(
             f"Error creating GitHub release for {package_name}: {response.text}"
         )
         sys.exit(1)
+    
     logger.info(f"GitHub release created successfully for {package_name}")
 
 
@@ -379,74 +425,76 @@ def check_main_up_to_date(dry_run: bool = False) -> bool:
     return True
 
 
-def check_release_notes_updated(new_version: str, dry_run: bool = False) -> bool:
-    """Check if RELEASE_NOTES.md has been updated with the new version."""
+def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
+    """Check if root CHANGELOG.md has been updated with the new version."""
     logger = logging.getLogger(__name__)
     logger.debug(
-        f"Checking if RELEASE_NOTES.md has been updated for version {new_version}"
+        f"Checking if CHANGELOG.md has been updated for version {new_version}"
     )
 
-    release_notes_path = Path("RELEASE_NOTES.md")
-    if not release_notes_path.exists():
-        logger.error("RELEASE_NOTES.md file not found in the repository root")
+    changelog_path = Path("CHANGELOG.md")
+    
+    if not changelog_path.exists():
+        logger.error(f"CHANGELOG.md file not found at {changelog_path}")
         if not dry_run:
             sys.exit(1)
         return False
 
     try:
-        with open(release_notes_path, encoding="utf-8") as f:
+        with open(changelog_path, encoding="utf-8") as f:
             content = f.read()
 
-        # Look for the version section at the beginning of the file
-        # Expected format: ## Version X.Y.Z - Date
+        # Look for the version section
+        # Expected format: ## [X.Y.Z] - Date
         import re
 
-        # Extract the first version section after the title
         lines = content.split("\n")
-        version_pattern = r"^## Version (\d+\.\d+\.\d+(?:b\d+)?)"
+        version_pattern = r"^## \[(\d+\.\d+\.\d+(?:b\d+)?)\]"
 
+        found_version = None
         for line in lines:
-            if line.startswith("## Version"):
-                match = re.match(version_pattern, line)
-                if match:
-                    found_version = match.group(1)
-                    logger.debug(
-                        f"Found version section in RELEASE_NOTES.md: {found_version}"
-                    )
-
-                    if found_version == new_version:
-                        logger.debug(
-                            "Release notes are up to date with the new version"
-                        )
-                        return True
-                    else:
-                        logger.error(
-                            f"RELEASE_NOTES.md has not been updated for version {new_version}"
-                        )
-                        logger.error(
-                            f"Found version {found_version} but expected {new_version}"
-                        )
-                        logger.error(
-                            "Please add a release notes section for the new version at the top of RELEASE_NOTES.md"
-                        )
-                        logger.error(
-                            f"Expected format: ## Version {new_version} - <Date>"
-                        )
-                        if not dry_run:
-                            sys.exit(1)
-                        return False
+            if re.match(r'^## \[Unreleased\]', line):
+                continue  # Skip Unreleased section
+                
+            match = re.match(version_pattern, line)
+            if match:
+                found_version = match.group(1)
+                logger.debug(
+                    f"Found version section in CHANGELOG.md: {found_version}"
+                )
                 break
 
-        # If we get here, no version section was found
-        logger.error("No version section found in RELEASE_NOTES.md")
-        logger.error(f"Please add a release notes section for version {new_version}")
-        logger.error(f"Expected format: ## Version {new_version} - <Date>")
-        if not dry_run:
-            sys.exit(1)
-        return False
+        if found_version == new_version:
+            logger.debug(
+                f"CHANGELOG.md is up to date with the new version"
+            )
+            return True
+        elif found_version:
+            logger.error(
+                f"CHANGELOG.md has not been updated for version {new_version}"
+            )
+            logger.error(
+                f"Found version {found_version} but expected {new_version}"
+            )
+            logger.error(
+                f"Please add a changelog section for the new version at the top of {changelog_path}"
+            )
+            logger.error(
+                f"Expected format: ## [{new_version}] - <Date>"
+            )
+            if not dry_run:
+                sys.exit(1)
+            return False
+        else:
+            logger.error(f"No version section found in CHANGELOG.md")
+            logger.error(f"Please add a changelog section for version {new_version}")
+            logger.error(f"Expected format: ## [{new_version}] - <Date>")
+            if not dry_run:
+                sys.exit(1)
+            return False
 
     except Exception as e:
-        logger.error(f"Error reading RELEASE_NOTES.md: {e}")
+        logger.error(f"Error reading CHANGELOG.md: {e}")
         if not dry_run:
             sys.exit(1)
         return False
@@ -946,7 +994,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     if dry_run:
         print("🔍 DRY RUN MODE - No changes will be made\n")
 
-    # Run initial safety checks (without release notes check)
+    # Run initial safety checks (without changelog check)
     initial_check_results = {}
     initial_check_results["git_status"] = check_git_status(dry_run)
     initial_check_results["current_branch"] = check_current_branch(dry_run)
@@ -1060,11 +1108,11 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         sys.exit(1)
 
     # Now check if release notes have been updated for the new version
-    release_notes_check = check_release_notes_updated(new_version, dry_run)
+    changelog_check = check_changelog_updated(new_version, dry_run)
 
     # Combine all check results
     all_check_results = initial_check_results.copy()
-    all_check_results["release_notes_updated"] = release_notes_check
+    all_check_results["changelog_updated"] = changelog_check
 
     # Apply the same version to all packages
     new_versions = {}
@@ -1074,15 +1122,15 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     # Display planned change
     print(f"All packages: {current_version} → {new_version}")
 
-    # Show release notes check result
+    # Show changlog check result
     if dry_run:
-        print("\n📋 RELEASE NOTES CHECK")
+        print("\n📋 Changelog CHECK")
         print("─" * 30)
-        status = "✅" if release_notes_check else "❌"
-        print(f"{status} Release Notes Updated")
-        if not release_notes_check:
+        status = "✅" if changelog_check else "❌"
+        print(f"{status} Changelog Updated")
+        if not changelog_check:
             print(
-                f"   ⚠️  RELEASE_NOTES.md needs to be updated for version {new_version}"
+                f"   ⚠️  CHANGELOG.md needs to be updated for version {new_version}"
             )
         print()
 
@@ -1202,16 +1250,17 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     for package_name in get_packages_for_release():
         create_github_release(
             package_name, new_version, token, dry_run
-        )  # Use new_version
+        )
 
-    print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
-    print("─" * 40)
-    print(f"\n📦 Released version: v{new_version}")  # Show new_version
-    print("   All packages released with the same version")
-    print(f"\n🔄 Updated from: v{current_version}")  # Show what we updated from
-    print("   All packages now have the same new version")
-    print("   Development Status classifiers updated automatically")
-    print("   New version committed and pushed to remote repository")
+    if not dry_run:
+        print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
+        print("─" * 40)
+        print(f"\n📦 Released version: v{new_version}")
+        print("   All packages released with the same version")
+        print(f"\n🔄 Updated from: v{current_version}")
+        print("   All packages now have the same new version")
+        print("   Development Status classifiers updated automatically")
+        print("   New version committed and pushed to remote repository")
 
 
 if __name__ == "__main__":
