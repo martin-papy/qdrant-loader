@@ -547,7 +547,9 @@ class IntelligenceOperations:
                             "relevance_score": rec.get(
                                 "complementary_score", rec.get("relevance_score", 0.0)
                             ),
-                            "reason": rec.get("recommendation_reason", rec.get("reason", "")),
+                            "reason": rec.get(
+                                "recommendation_reason", rec.get("reason", "")
+                            ),
                             "strategy": rec.get(
                                 "relationship_type", rec.get("strategy", "related")
                             ),

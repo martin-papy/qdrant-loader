@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Qdrant-loader-mcp-server
 
-- UnboundLocalError in `find_similar_documents` related to `fetch_limit` variable [#100]
 - Mixed document types (dict/object) causing "Untitled" and empty `content_preview` in results [#92]
 - Incorrect usage of NestedCondition for `project_ids` filter replaced with dot notation [#97]
 - Search results not respecting user-specified `limit` parameter (now defaults to 5) [#98]
@@ -29,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Qdrant-loader-mcp-server
 
-- Updated `reason` field to use `recommendation_reason` in document analysis [#91]
+- Updated `reason` field from `explanation` to `recommendation_reason` in complementary content results [#100]
 - Enhanced validation for text field types to prevent display issues [#92]
 
 ## [0.7.4] - 2025-12-11
