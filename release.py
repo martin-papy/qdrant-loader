@@ -314,32 +314,32 @@ def extract_repo_info(git_url: str, dry_run: bool = False) -> str:
 
 def extract_changelog_for_version(version: str) -> str:
     """Extract changelog content for a specific version from root CHANGELOG.md.
-    
+
     Args:
         version: Version string (e.g., "0.7.4")
-    
+
     Returns:
         Changelog content or empty string if not found
     """
     logger = logging.getLogger(__name__)
-    
+
     changelog_path = "CHANGELOG.md"
     if not Path(changelog_path).exists():
         logger.debug(f"CHANGELOG not found at {changelog_path}")
         return ""
-    
-    with open(changelog_path, "r", encoding="utf-8") as f:
+
+    with open(changelog_path, encoding="utf-8") as f:
         content = f.read()
-    
+
     # Find version section (format: ## [X.Y.Z] - Date)
     import re
     version_pattern = rf"## \[{re.escape(version)}\].*?\n(.*?)(?=\n## |\Z)"
     match = re.search(version_pattern, content, re.DOTALL)
-    
+
     if not match:
         logger.debug(f"Version {version} not found in {changelog_path}")
         return ""
-    
+
     version_content = match.group(1).strip()
     return version_content
 
@@ -348,7 +348,7 @@ def create_github_release(
     package_name: str, version: str, token: str, dry_run: bool = False
 ) -> None:
     """Create a GitHub release for a specific package.
-    
+
     Args:
         package_name: Name of the package to release
         version: Version string
@@ -365,11 +365,11 @@ def create_github_release(
         return
 
     logger.info(f"Creating GitHub release for {package_name} version {version}")
-    
+
     # Extract changelog directly from root CHANGELOG.md
-    logger.info(f"Extracting changelog from root CHANGELOG.md")
+    logger.info("Extracting changelog from root CHANGELOG.md")
     release_notes = extract_changelog_for_version(version)
-    
+
     if not release_notes:
         logger.warning("No changelog found, falling back to git log for release notes")
         stdout, _ = run_command("git log --pretty=format:'%h %s' -n 10")
@@ -404,7 +404,7 @@ def create_github_release(
             f"Error creating GitHub release for {package_name}: {response.text}"
         )
         sys.exit(1)
-    
+
     logger.info(f"GitHub release created successfully for {package_name}")
 
 
@@ -433,7 +433,7 @@ def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
     )
 
     changelog_path = Path("CHANGELOG.md")
-    
+
     if not changelog_path.exists():
         logger.error(f"CHANGELOG.md file not found at {changelog_path}")
         if not dry_run:
@@ -455,7 +455,7 @@ def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
         for line in lines:
             if re.match(r'^## \[Unreleased\]', line):
                 continue  # Skip Unreleased section
-                
+
             match = re.match(version_pattern, line)
             if match:
                 found_version = match.group(1)
@@ -466,7 +466,7 @@ def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
 
         if found_version == new_version:
             logger.debug(
-                f"CHANGELOG.md is up to date with the new version"
+                "CHANGELOG.md is up to date with the new version"
             )
             return True
         elif found_version:
@@ -486,7 +486,7 @@ def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
                 sys.exit(1)
             return False
         else:
-            logger.error(f"No version section found in CHANGELOG.md")
+            logger.error("No version section found in CHANGELOG.md")
             logger.error(f"Please add a changelog section for version {new_version}")
             logger.error(f"Expected format: ## [{new_version}] - <Date>")
             if not dry_run:
