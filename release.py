@@ -1122,7 +1122,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     # Display planned change
     print(f"All packages: {current_version} → {new_version}")
 
-    # Show changlog check result
+    # Show changelog check result
     if dry_run:
         print("\n📋 Changelog CHECK")
         print("─" * 30)
