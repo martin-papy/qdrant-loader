@@ -21,6 +21,23 @@ async def run_search(
     behavioral_context: list[str] | None,
 ) -> list[HybridSearchResult]:
     # Save original combiner values up front for safe restoration
+    """
+    Execute a hybrid search for the given query using the provided engine and return ranked results.
+    
+    Per-request adjustments (query expansion, intent-adaptive combiner weights, and fetch limits) are applied to a cloned combiner and do not mutate the engine's shared combiner state; the function attempts to restore the engine's result_combiner attributes to their original values and logs any restoration failures without raising.
+    
+    Parameters:
+        engine: Search engine instance providing hybrid search, planners, expansion, and orchestration.
+        query (str): The user query to search for.
+        limit (int): Maximum number of results to return.
+        source_types (list[str] | None): Optional list of source types to filter results.
+        project_ids (list[str] | None): Optional list of project IDs to restrict the search.
+        session_context (dict[str, Any] | None): Optional session-level context used for intent classification and adaptations.
+        behavioral_context (list[str] | None): Optional behavioral signals used for intent classification and adaptations.
+    
+    Returns:
+        list[HybridSearchResult]: Ranked hybrid search results; length will be at most `limit`.
+    """
     original_vector_weight = engine.result_combiner.vector_weight
     original_keyword_weight = engine.result_combiner.keyword_weight
     original_min_score = engine.result_combiner.min_score
