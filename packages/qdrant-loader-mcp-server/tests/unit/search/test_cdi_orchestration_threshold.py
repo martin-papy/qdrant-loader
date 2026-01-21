@@ -15,10 +15,10 @@ from qdrant_loader_mcp_server.search.hybrid.orchestration.cdi import (
 def mock_engine():
     """
     Create a mock engine configured for similarity tests.
-    
+
     The returned Mock has a `cross_document_engine` attribute that is a Mock, and that object's
     `similarity_calculator` attribute is also a Mock.
-    
+
     Returns:
         Mock: A configured mock engine with `cross_document_engine` and its `similarity_calculator`.
     """
@@ -46,12 +46,12 @@ def target_document():
 def comparison_documents():
     """
     Create three hybrid search result documents with distinct similarity scores for testing.
-    
+
     Each returned document represents a comparison candidate:
     - "high-similarity-doc": score 0.85, contains JWT-related text and an entity.
     - "medium-similarity-doc": score 0.6, database schema text.
     - "low-similarity-doc": score 0.3, marketing text.
-    
+
     Returns:
         list: A list of three hybrid search result objects used as comparison documents in tests.
     """

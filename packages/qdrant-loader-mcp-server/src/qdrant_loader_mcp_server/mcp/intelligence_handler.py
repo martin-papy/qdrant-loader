@@ -122,7 +122,7 @@ class IntelligenceHandler:
     ) -> dict[str, Any]:
         """
         Handle a "find similar documents" request and return MCP-formatted results.
-        
+
         Parameters:
             request_id (str | int | None): The request identifier to include in the MCP response.
             params (dict[str, Any]): Request parameters. Required keys:
@@ -134,7 +134,7 @@ class IntelligenceHandler:
                 - source_types: Restrict search to specific source types.
                 - project_ids: Restrict search to specific project identifiers.
                 - similarity_threshold (float): Minimum similarity score to consider (default 0.7).
-        
+
         Returns:
             dict[str, Any]: An MCP protocol response dictionary. On success the response's `result` contains:
                 - content: a list with a single text block (human-readable summary).
