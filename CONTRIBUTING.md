@@ -142,6 +142,8 @@ git push origin feature/your-feature-name
 
 ## 📝 Coding Standards
 
+> **📖 For comprehensive guidelines** including Pythonic patterns, AI/RAG best practices, and PR review checklists, see the [Best Practices Guide](./docs/developers/contributing/).
+
 ### Code Style
 
 We use the following tools to maintain code quality:
