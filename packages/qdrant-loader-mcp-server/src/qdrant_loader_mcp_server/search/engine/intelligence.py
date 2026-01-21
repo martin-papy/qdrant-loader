@@ -105,20 +105,28 @@ class IntelligenceOperations:
         max_similar: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
+        similarity_threshold: float = 0.7,
     ) -> dict[str, Any]:
         """
-        Find documents similar to a target document.
-
-        Args:
-            target_query: Query to find the target document
-            comparison_query: Query to get documents to compare against
-            similarity_metrics: Similarity metrics to use
-            max_similar: Maximum number of similar documents to return
-            source_types: Optional list of source types to filter by
-            project_ids: Optional list of project IDs to filter by
-
+        Find documents most similar to a target document retrieved by a query.
+        
+        Parameters:
+            target_query (str): Query used to select the target document (first search result).
+            comparison_query (str): Query used to retrieve candidate documents to compare against.
+            similarity_metrics (list[str] | None): Optional list of similarity metric names; unknown names are ignored.
+            max_similar (int): Maximum number of similar documents to include in results.
+            source_types (list[str] | None): Optional list of source types to filter both searches.
+            project_ids (list[str] | None): Optional list of project IDs to filter both searches.
+            similarity_threshold (float): Minimum similarity score for results to be considered similar.
+        
         Returns:
-            List of similar documents with similarity scores
+            dict: Result object containing either an error or similarity details.
+                On success, includes:
+                    - target_document (dict): {document_id, title, source_type} for the target.
+                    - similar_documents: Backend-provided list of similar document entries (each includes similarity scores).
+                    - similarity_metrics_used: List of metric names used or the string "default".
+                    - comparison_documents_analyzed (int): Number of comparison documents evaluated.
+                On failure, includes an "error" key with details and additional context fields (e.g., target_query or comparison_count).
         """
         if not self.engine.hybrid_search:
             raise RuntimeError("Search engine not initialized")
@@ -165,7 +173,11 @@ class IntelligenceOperations:
 
             # Find similar documents
             similar = await self.engine.hybrid_search.find_similar_documents(
-                target_doc, comparison_results, metric_enums or None, max_similar
+                target_doc,
+                comparison_results,
+                metric_enums or None,
+                max_similar,
+                similarity_threshold,
             )
 
             return {
@@ -370,17 +382,23 @@ class IntelligenceOperations:
         project_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """
-        Find content that complements a target document.
-
-        Args:
-            target_query: Query to find the target document
-            context_query: Query to get contextual documents
-            max_recommendations: Maximum number of recommendations
-            source_types: Optional list of source types to filter by
-            project_ids: Optional list of project IDs to filter by
-
+        Find documents that complement a target document using contextual documents.
+        
+        Performs a search for a target document (with several fallback queries if none found), retrieves contextual documents, and returns up to `max_recommendations` complementary recommendations derived from those context documents.
+        
+        Parameters:
+            target_query (str): Query used to locate the primary target document.
+            context_query (str): Query used to retrieve contextual documents for comparison.
+            max_recommendations (int): Maximum number of complementary recommendations to return.
+            source_types (list[str] | None): Optional list of source types to filter searches.
+            project_ids (list[str] | None): Optional list of project IDs to filter searches.
+        
         Returns:
-            Dict containing complementary recommendations and target document info
+            dict: {
+                "complementary_recommendations": list -- Transformed recommendation entries (each is a dict with at least `document_id`, `title`, `relevance_score`, `reason`, `strategy`, and optional `source_type`/`project_id`) or raw recommendation items if not mappable;
+                "target_document": dict | None -- `{ "document_id", "title", "source_type" }` for the chosen target document, or `None` if no target was found;
+                "context_documents_analyzed": int -- Number of context documents that were analyzed.
+            }
         """
         if not self.engine.hybrid_search:
             raise RuntimeError("Search engine not initialized")
@@ -542,7 +560,9 @@ class IntelligenceOperations:
                             "relevance_score": rec.get(
                                 "complementary_score", rec.get("relevance_score", 0.0)
                             ),
-                            "reason": rec.get("explanation", rec.get("reason", "")),
+                            "reason": rec.get(
+                                "recommendation_reason", rec.get("reason", "")
+                            ),
                             "strategy": rec.get(
                                 "relationship_type", rec.get("strategy", "related")
                             ),

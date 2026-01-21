@@ -143,17 +143,19 @@ class FieldQueryParser:
         field_queries: list[FieldQuery] | None,
         project_ids: list[str] | None = None,
     ) -> models.Filter | None:
-        """Create a Qdrant filter from field queries.
-
-        Args:
-            field_queries: List of field queries to convert to filters
-            project_ids: Optional project ID filters to include
-
+        """
+        Build a Qdrant Filter from parsed field queries and optional project IDs.
+        
+        Converts each provided FieldQuery into a payload match condition using the parser's supported field mappings and type conversion. If project_ids are provided and no explicit project_id field query exists, adds an OR condition that matches any of the given project IDs in one of three payload keys: "project_id", "source", or "metadata.project_id". Returns a Filter that requires all constructed conditions, or None when no conditions are produced.
+        
+        Parameters:
+            field_queries (list[FieldQuery] | None): FieldQuery objects to convert into filter conditions; omitted or empty means no field-based conditions.
+            project_ids (list[str] | None): Project IDs to require in any supported project location when not explicitly specified via a field query.
+        
         Returns:
-            Qdrant Filter object or None if no filters needed
+            models.Filter | None: A Qdrant Filter containing the required must conditions, or None if no filter conditions were created.
         """
         must_conditions = []
-        should_conditions = []
 
         # Add field query conditions
         if field_queries:
@@ -164,26 +166,11 @@ class FieldQueryParser:
                 )
 
                 # Handle nested fields (e.g., metadata.chunk_index)
-                if "." in payload_key:
-                    parts = payload_key.split(".", 1)
-                    condition = models.NestedCondition(
-                        nested=models.Nested(
-                            key=parts[0],
-                            filter=models.Filter(
-                                must=[
-                                    models.FieldCondition(
-                                        key=parts[1],
-                                        match=models.MatchValue(value=match_value),
-                                    )
-                                ]
-                            ),
-                        )
-                    )
-                else:
-                    # For top-level fields, use direct field condition
-                    condition = models.FieldCondition(
-                        key=payload_key, match=models.MatchValue(value=match_value)
-                    )
+                # Use dot notation for all fields - Qdrant supports this natively
+                # This is simpler and more reliable than NestedCondition
+                condition = models.FieldCondition(
+                    key=payload_key, match=models.MatchValue(value=match_value)
+                )
 
                 must_conditions.append(condition)
                 self.logger.debug(
@@ -197,31 +184,27 @@ class FieldQueryParser:
             else False
         )
         if project_ids and not has_project_id_field_query:
-            # Support both top-level project_id and nested metadata.project_id, and root 'source'
+            # Support project_id in 3 locations using dot notation
+            # Note: NestedCondition doesn't work - must use dot notation for nested fields
             top_level = models.FieldCondition(
                 key="project_id", match=models.MatchAny(any=project_ids)
             )
-            top_level_source = models.FieldCondition(
+            source_field = models.FieldCondition(
                 key="source", match=models.MatchAny(any=project_ids)
             )
-            nested_meta = models.NestedCondition(
-                nested=models.Nested(
-                    key="metadata",
-                    filter=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="project_id",
-                                match=models.MatchAny(any=project_ids),
-                            )
-                        ]
-                    ),
-                )
+            metadata_field = models.FieldCondition(
+                key="metadata.project_id", match=models.MatchAny(any=project_ids)
             )
 
-            # Use OR semantics so either storage layout matches
-            should_conditions.extend([top_level, top_level_source, nested_meta])
+            # Wrap OR conditions in Filter(should=[...]) and add to must
+            # This ensures at least one project location must match
+            project_or_filter = models.Filter(
+                should=[top_level, source_field, metadata_field]
+            )
+            must_conditions.append(project_or_filter)
             self.logger.debug(
-                f"Added project filter (top-level or nested): {project_ids}"
+                f"DEBUG project_ids filter: Looking for project_ids={project_ids} in 3 locations: "
+                f"top-level 'project_id', 'source' field, or 'metadata.project_id'"
             )
         elif project_ids and has_project_id_field_query:
             self.logger.debug(
@@ -229,8 +212,8 @@ class FieldQueryParser:
             )
 
         # Return filter if we have conditions
-        if must_conditions or should_conditions:
-            return models.Filter(must=must_conditions, should=should_conditions)
+        if must_conditions:
+            return models.Filter(must=must_conditions)
 
         return None
 

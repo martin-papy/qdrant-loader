@@ -120,7 +120,34 @@ class IntelligenceHandler:
     async def handle_find_similar_documents(
         self, request_id: str | int | None, params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Handle find similar documents request."""
+        """
+        Handle a "find similar documents" request and return MCP-formatted results.
+        
+        Parameters:
+            request_id (str | int | None): The request identifier to include in the MCP response.
+            params (dict[str, Any]): Request parameters. Required keys:
+                - target_query: The primary query or document to compare against.
+                - comparison_query: The query or document set to compare with the target.
+              Optional keys:
+                - similarity_metrics: Metrics or configuration used to compute similarity.
+                - max_similar (int): Maximum number of similar documents to return (default 5).
+                - source_types: Restrict search to specific source types.
+                - project_ids: Restrict search to specific project identifiers.
+                - similarity_threshold (float): Minimum similarity score to consider (default 0.7).
+        
+        Returns:
+            dict[str, Any]: An MCP protocol response dictionary. On success the response's `result` contains:
+                - content: a list with a single text block (human-readable summary).
+                - structuredContent: a dict with
+                    - similar_documents: list of similar document entries, each containing
+                      `document_id`, `title`, `similarity_score`, `similarity_metrics`,
+                      `similarity_reason`, and `content_preview`.
+                    - similarity_summary: metadata including `total_compared`, `similar_found`,
+                      `highest_similarity`, and `metrics_used`.
+                - isError: False
+            On invalid parameters the function returns an MCP error response with code -32602.
+            On internal failures the function returns an MCP error response with code -32603.
+        """
         logger.debug("Handling find similar documents with params", params=params)
 
         # Validate required parameters
@@ -152,6 +179,9 @@ class IntelligenceHandler:
                 max_similar=params.get("max_similar", 5),
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
+                similarity_threshold=params.get(
+                    "similarity_threshold", 0.7
+                ),  # Default 0.7
             )
 
             # Normalize result: engine may return list, but can return {} on empty
@@ -204,24 +234,49 @@ class IntelligenceHandler:
             for item in similar_docs:
                 # Normalize access to document fields
                 document = item.get("document") if isinstance(item, dict) else None
+
+                # Extract document_id - try both dict and object attribute access
                 document_id = (
-                    (
+                    item.get("document_id", "") if isinstance(item, dict) else ""
+                )
+                if not document_id and document:
+                    document_id = (
                         document.get("document_id")
                         if isinstance(document, dict)
-                        else None
+                        else getattr(document, "document_id", "")
                     )
-                    or (item.get("document_id") if isinstance(item, dict) else None)
-                    or ""
-                )
-                title = (
-                    (
-                        document.get("source_title")
-                        if isinstance(document, dict)
-                        else None
+
+                # Extract title - try both dict and object attribute access
+                title = "Untitled"
+                if document:
+                    if isinstance(document, dict):
+                        title = document.get("source_title", "Untitled")
+                    else:
+                        title = getattr(document, "source_title", "Untitled")
+                if not title or title == "Untitled":
+                    title = (
+                        item.get("source_title", "Untitled")
+                        if isinstance(item, dict)
+                        else "Untitled"
                     )
-                    or (item.get("title") if isinstance(item, dict) else None)
-                    or "Untitled"
-                )
+
+                # Extract text content - try both dict and object attribute access
+                content_text = ""
+                if document:
+                    if isinstance(document, dict):
+                        content_text = document.get("text", "")
+                    else:
+                        content_text = getattr(document, "text", "")
+
+                # Create content preview
+                content_preview = ""
+                if content_text and isinstance(content_text, str):
+                    content_preview = (
+                        content_text[:200] + "..."
+                        if len(content_text) > 200
+                        else content_text
+                    )
+
                 similarity_score = float(item.get("similarity_score", 0.0))
                 highest_similarity = max(highest_similarity, similarity_score)
 
@@ -249,18 +304,7 @@ class IntelligenceHandler:
                             if isinstance(item.get("similarity_reasons", []), list)
                             else item.get("similarity_reason", "")
                         ),
-                        "content_preview": (
-                            (document.get("text", "")[:200] + "...")
-                            if isinstance(document, dict)
-                            and isinstance(document.get("text"), str)
-                            and len(document.get("text")) > 200
-                            else (
-                                document.get("text")
-                                if isinstance(document, dict)
-                                and isinstance(document.get("text"), str)
-                                else ""
-                            )
-                        ),
+                        "content_preview": content_preview,
                     }
                 )
 
