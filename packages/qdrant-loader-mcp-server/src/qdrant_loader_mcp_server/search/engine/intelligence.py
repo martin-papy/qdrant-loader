@@ -109,7 +109,7 @@ class IntelligenceOperations:
     ) -> dict[str, Any]:
         """
         Find documents most similar to a target document retrieved by a query.
-        
+
         Parameters:
             target_query (str): Query used to select the target document (first search result).
             comparison_query (str): Query used to retrieve candidate documents to compare against.
@@ -118,7 +118,7 @@ class IntelligenceOperations:
             source_types (list[str] | None): Optional list of source types to filter both searches.
             project_ids (list[str] | None): Optional list of project IDs to filter both searches.
             similarity_threshold (float): Minimum similarity score for results to be considered similar.
-        
+
         Returns:
             dict: Result object containing either an error or similarity details.
                 On success, includes:
@@ -383,16 +383,16 @@ class IntelligenceOperations:
     ) -> dict[str, Any]:
         """
         Find documents that complement a target document using contextual documents.
-        
+
         Performs a search for a target document (with several fallback queries if none found), retrieves contextual documents, and returns up to `max_recommendations` complementary recommendations derived from those context documents.
-        
+
         Parameters:
             target_query (str): Query used to locate the primary target document.
             context_query (str): Query used to retrieve contextual documents for comparison.
             max_recommendations (int): Maximum number of complementary recommendations to return.
             source_types (list[str] | None): Optional list of source types to filter searches.
             project_ids (list[str] | None): Optional list of project IDs to filter searches.
-        
+
         Returns:
             dict: {
                 "complementary_recommendations": list -- Transformed recommendation entries (each is a dict with at least `document_id`, `title`, `relevance_score`, `reason`, `strategy`, and optional `source_type`/`project_id`) or raw recommendation items if not mappable;
