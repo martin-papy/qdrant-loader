@@ -41,11 +41,11 @@ class SearchHandler:
     ) -> dict[str, Any]:
         """
         Handle a basic text search and return an MCP-formatted response.
-        
+
         Validates that `params` contains a required "query" key, processes the query via the QueryProcessor,
         executes a search with the SearchEngine using optional filters from `params`, and returns both a
         backward-compatible text block and a structured search result suitable for the MCP protocol.
-        
+
         Parameters:
             request_id (str | int | None): The incoming request identifier passed to the protocol response.
             params (dict): Search parameters. Required keys:
@@ -54,7 +54,7 @@ class SearchHandler:
                 - "source_types" (list): list of source type filters (default: []).
                 - "project_ids" (list): list of project id filters (default: []).
                 - "limit" (int): maximum number of search results to request (default: 5).
-        
+
         Returns:
             dict: An MCP protocol response dictionary. On success the response contains a `result`
             with `content` (text block), `structuredContent` (results, total_found, query_context),
