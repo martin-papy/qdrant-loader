@@ -120,7 +120,34 @@ class IntelligenceHandler:
     async def handle_find_similar_documents(
         self, request_id: str | int | None, params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Handle find similar documents request."""
+        """
+        Handle a "find similar documents" request and return MCP-formatted results.
+        
+        Parameters:
+            request_id (str | int | None): The request identifier to include in the MCP response.
+            params (dict[str, Any]): Request parameters. Required keys:
+                - target_query: The primary query or document to compare against.
+                - comparison_query: The query or document set to compare with the target.
+              Optional keys:
+                - similarity_metrics: Metrics or configuration used to compute similarity.
+                - max_similar (int): Maximum number of similar documents to return (default 5).
+                - source_types: Restrict search to specific source types.
+                - project_ids: Restrict search to specific project identifiers.
+                - similarity_threshold (float): Minimum similarity score to consider (default 0.7).
+        
+        Returns:
+            dict[str, Any]: An MCP protocol response dictionary. On success the response's `result` contains:
+                - content: a list with a single text block (human-readable summary).
+                - structuredContent: a dict with
+                    - similar_documents: list of similar document entries, each containing
+                      `document_id`, `title`, `similarity_score`, `similarity_metrics`,
+                      `similarity_reason`, and `content_preview`.
+                    - similarity_summary: metadata including `total_compared`, `similar_found`,
+                      `highest_similarity`, and `metrics_used`.
+                - isError: False
+            On invalid parameters the function returns an MCP error response with code -32602.
+            On internal failures the function returns an MCP error response with code -32603.
+        """
         logger.debug("Handling find similar documents with params", params=params)
 
         # Validate required parameters
