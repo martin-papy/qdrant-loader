@@ -486,7 +486,7 @@ class SearchEngine:
     ) -> dict | list[dict]:
         """
         Finds documents most similar to a single target document.
-        
+
         Parameters:
             target_query (str): Query used to retrieve the single target document.
             comparison_query (str): Query used to retrieve comparison documents; if empty, `target_query` is used.
@@ -496,10 +496,10 @@ class SearchEngine:
             limit (int): Number of comparison documents to retrieve when executing the comparison query.
             source_types (list[str] | None): Optional filter for document source types.
             project_ids (list[str] | None): Optional filter for project identifiers.
-        
+
         Returns:
             dict | list[dict]: A dictionary or list of dictionaries containing similarity information for comparison documents relative to the selected target document. Returns an empty dict if no target document is found.
-        
+
         Raises:
             RuntimeError: If the search engine has not been initialized.
         """
@@ -558,15 +558,15 @@ class SearchEngine:
     ) -> dict:
         """
         Detects semantic or content conflicts among documents related to a query.
-        
+
         Performs a search for documents matching `query` and, if at least two documents are found, delegates conflict detection to the intelligence operations module. If fewer than two documents are found, returns a structured response indicating insufficient documents. When a conflict result dictionary is returned, the function attaches `query_metadata` and a lightweight `original_documents` list describing the retrieved documents.
-        
+
         Parameters:
             query (str): The search query used to retrieve candidate documents for conflict detection.
             limit (int): Maximum number of documents to retrieve for analysis.
             source_types (list[str] | None): Optional list of source types to filter search results.
             project_ids (list[str] | None): Optional list of project IDs to filter search results.
-        
+
         Returns:
             dict: A dictionary containing conflict detection results. Possible keys include:
                 - `conflicts`: list of detected conflicts (may be empty).
@@ -575,7 +575,7 @@ class SearchEngine:
                 - `document_count`: number of documents considered.
                 - `query_metadata`: metadata about the original query and filters.
                 - `original_documents`: list of lightweight document records with `document_id`, `title`, and `source_type`.
-        
+
         Raises:
             RuntimeError: If search operations or intelligence operations are not initialized.
         """
