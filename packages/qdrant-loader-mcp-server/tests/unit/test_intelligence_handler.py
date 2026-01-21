@@ -178,6 +178,7 @@ class TestIntelligenceHandlerFindSimilar:
             similarity_metrics=None,
             project_ids=None,
             source_types=None,
+            similarity_threshold=0.7,  # Default value when not provided
         )
         assert result == {"result": mock_similar_docs}
 
@@ -205,6 +206,37 @@ class TestIntelligenceHandlerFindSimilar:
             similarity_metrics=["semantic_similarity", "entity_overlap"],
             project_ids=None,
             source_types=None,
+            similarity_threshold=0.7,  # Default value when not provided
+        )
+
+    @pytest.mark.asyncio
+    async def test_handle_find_similar_documents_with_custom_threshold(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test finding similar documents with custom similarity threshold."""
+        mock_result = {
+            "similar_documents": [{"document_id": "doc1", "similarity_score": 0.85}]
+        }
+        mock_search_engine.find_similar_documents.return_value = mock_result
+        mock_protocol.create_response.return_value = {"result": mock_result}
+
+        params = {
+            "target_query": "target",
+            "comparison_query": "comparison",
+            "similarity_threshold": 0.8,  # Custom threshold
+            "max_similar": 3,
+        }
+
+        await intelligence_handler.handle_find_similar_documents(7, params)
+
+        mock_search_engine.find_similar_documents.assert_called_once_with(
+            target_query="target",
+            comparison_query="comparison",
+            max_similar=3,
+            similarity_metrics=None,
+            project_ids=None,
+            source_types=None,
+            similarity_threshold=0.8,
         )
 
 
@@ -1051,6 +1083,226 @@ class TestIntelligenceHandlerResponseFormatting:
             assert "Missing document_id" in error_call
 
     @pytest.mark.asyncio
+    async def test_find_similar_documents_with_object_document(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test handling of document objects with proper attribute access."""
+        # Create a mock document object to simulate HybridSearchResult
+        mock_doc_obj = MagicMock()
+        mock_doc_obj.document_id = "doc123"
+        mock_doc_obj.source_title = "Test Document Title"
+        # Make text long enough to trigger truncation at 200 chars
+        mock_doc_obj.text = "A" * 250  # 250 chars, should be truncated to 200 + "..."
+
+        # Return list format as search engine does
+        mock_similar_docs = [
+            {
+                "document_id": "doc123",
+                "document": mock_doc_obj,  # Document as object, not dict
+                "similarity_score": 0.85,
+                "metric_scores": {"semantic_similarity": 0.85},
+                "similarity_reasons": ["High semantic overlap"],
+            }
+        ]
+        mock_search_engine.find_similar_documents.return_value = mock_similar_docs
+
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        params = {
+            "target_query": "test query",
+            "comparison_query": "comparison",
+            "max_similar": 5,
+        }
+
+        await intelligence_handler.handle_find_similar_documents(42, params)
+
+        # Verify create_response was called with correct structure
+        mock_protocol.create_response.assert_called_once()
+        call_args = mock_protocol.create_response.call_args
+
+        # Extract the result parameter from the call
+        result_param = call_args[1]["result"]
+        structured = result_param["structuredContent"]
+        similar_docs = structured["similar_documents"]
+
+        # Should have 1 document
+        assert len(similar_docs) == 1
+
+        doc = similar_docs[0]
+        # Verify title was extracted from object attribute
+        assert doc["title"] == "Test Document Title"
+        # Verify content_preview was created and truncated
+        assert "content_preview" in doc
+        assert len(doc["content_preview"]) > 0
+        # Should be truncated at 200 chars with "..."
+        assert doc["content_preview"].endswith("...")
+        assert len(doc["content_preview"]) == 203  # 200 chars + "..."
+        # Verify it's not "Untitled" or empty
+        assert doc["title"] != "Untitled"
+
+    @pytest.mark.asyncio
+    async def test_find_similar_documents_with_dict_document(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test handling of document dicts with proper dict access."""
+        # Return list format with document as dict
+        mock_similar_docs = [
+            {
+                "document_id": "doc456",
+                "document": {  # Document as dict
+                    "document_id": "doc456",
+                    "source_title": "Dict Document",
+                    "text": "Content from dict document",
+                },
+                "similarity_score": 0.75,
+                "metric_scores": {"entity_overlap": 0.75},
+                "similarity_reasons": ["Entity overlap"],
+            }
+        ]
+        mock_search_engine.find_similar_documents.return_value = mock_similar_docs
+
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        params = {
+            "target_query": "test",
+            "comparison_query": "all",
+            "max_similar": 5,
+        }
+
+        await intelligence_handler.handle_find_similar_documents(43, params)
+
+        # Verify create_response was called with correct structure
+        call_args = mock_protocol.create_response.call_args
+        result_param = call_args[1]["result"]
+        structured = result_param["structuredContent"]
+        similar_docs = structured["similar_documents"]
+
+        assert len(similar_docs) == 1
+        doc = similar_docs[0]
+        # Verify title was extracted from dict
+        assert doc["title"] == "Dict Document"
+        # Verify content_preview exists
+        assert "content_preview" in doc
+        assert doc["content_preview"] == "Content from dict document"
+
+    @pytest.mark.asyncio
+    async def test_find_similar_documents_missing_title_fallback(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test fallback to item-level source_title when document doesn't have it."""
+        # Create a mock without source_title attribute using spec
+        mock_doc_obj = MagicMock(spec=["document_id", "text"])
+        mock_doc_obj.document_id = "doc789"
+        mock_doc_obj.text = "Some content"
+
+        mock_similar_docs = [
+            {
+                "document_id": "doc789",
+                "source_title": "Item Level Title",  # Title at item level
+                "document": mock_doc_obj,
+                "similarity_score": 0.65,
+                "metric_scores": {},
+                "similarity_reasons": [],
+            }
+        ]
+        mock_search_engine.find_similar_documents.return_value = mock_similar_docs
+
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        params = {
+            "target_query": "test",
+            "comparison_query": "comparison",
+        }
+
+        await intelligence_handler.handle_find_similar_documents(44, params)
+
+        call_args = mock_protocol.create_response.call_args
+        result_param = call_args[1]["result"]
+        structured = result_param["structuredContent"]
+        similar_docs = structured["similar_documents"]
+
+        assert len(similar_docs) == 1
+        # Should fallback to item-level source_title
+        assert similar_docs[0]["title"] == "Item Level Title"
+
+    @pytest.mark.asyncio
+    async def test_find_similar_documents_no_text_empty_preview(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test that missing text results in empty content_preview, not error."""
+        # Create mock with only document_id, no source_title or text attributes
+        mock_doc_obj = MagicMock(spec=["document_id"])
+        mock_doc_obj.document_id = "doc999"
+
+        mock_similar_docs = [
+            {
+                "document_id": "doc999",
+                "document": mock_doc_obj,
+                "similarity_score": 0.50,
+                "metric_scores": {},
+                "similarity_reasons": [],
+            }
+        ]
+        mock_search_engine.find_similar_documents.return_value = mock_similar_docs
+
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        params = {
+            "target_query": "test",
+            "comparison_query": "comparison",
+        }
+
+        await intelligence_handler.handle_find_similar_documents(45, params)
+
+        call_args = mock_protocol.create_response.call_args
+        result_param = call_args[1]["result"]
+        structured = result_param["structuredContent"]
+        similar_docs = structured["similar_documents"]
+
+        assert len(similar_docs) == 1
+        # Content preview should be empty string, not cause error
+        assert similar_docs[0]["content_preview"] == ""
+
+    @pytest.mark.asyncio
+    async def test_find_similar_documents_non_string_text(
+        self, intelligence_handler, mock_search_engine, mock_protocol
+    ):
+        """Test handling of non-string text values."""
+        mock_doc_obj = MagicMock()
+        mock_doc_obj.document_id = "doc888"
+        mock_doc_obj.source_title = "Bad Type Doc"
+        mock_doc_obj.text = 12345  # Non-string text (bug scenario)
+
+        mock_similar_docs = [
+            {
+                "document_id": "doc888",
+                "document": mock_doc_obj,
+                "similarity_score": 0.60,
+                "metric_scores": {},
+                "similarity_reasons": [],
+            }
+        ]
+        mock_search_engine.find_similar_documents.return_value = mock_similar_docs
+
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        params = {
+            "target_query": "test",
+            "comparison_query": "comparison",
+        }
+
+        await intelligence_handler.handle_find_similar_documents(46, params)
+
+        call_args = mock_protocol.create_response.call_args
+        result_param = call_args[1]["result"]
+        structured = result_param["structuredContent"]
+        similar_docs = structured["similar_documents"]
+
+        assert len(similar_docs) == 1
+        # Should handle non-string gracefully with empty preview
+        assert similar_docs[0]["content_preview"] == ""
+
+    @pytest.mark.asyncio
     async def test_formatter_method_calls(
         self, intelligence_handler, mock_search_engine, mock_protocol
     ):
@@ -1374,4 +1626,5 @@ class TestIntelligenceHandlerEdgeCasesMalformedData:
             similarity_metrics=None,
             source_types=None,
             project_ids=None,
+            similarity_threshold=0.7,  # Default value when not in params
         )
