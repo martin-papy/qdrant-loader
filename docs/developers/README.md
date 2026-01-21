@@ -14,6 +14,10 @@ Welcome to the QDrant Loader developer documentation! This guide provides everyt
 - **[Testing Guide](./testing/)** - Testing strategies, frameworks, and best practices
 - **[Deployment Guide](./deployment/)** - Production deployment, containerization, and CI/CD
 
+### Contributing
+
+- **[Best Practices](./contributing/)** - Pythonic patterns, AI/RAG guidelines, and PR review checklist
+
 ### Documentation
 
 - **[Documentation Maintenance](./documentation/)** - Maintaining and updating documentation
