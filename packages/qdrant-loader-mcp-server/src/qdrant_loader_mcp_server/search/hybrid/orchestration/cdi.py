@@ -27,9 +27,9 @@ async def find_similar_documents(
 ) -> list[dict[str, Any]]:
     """
     Finds documents most similar to a target document using the engine's similarity calculator.
-    
+
     Skips self-comparison (by `document_id` when available, otherwise by object identity), filters out results with similarity scores below `similarity_threshold`, sorts matches by descending similarity, and returns up to `max_similar` entries.
-    
+
     Parameters:
         engine: Cross-document engine container used to access the similarity calculator.
         target_document: The document to compare others against.
@@ -37,7 +37,7 @@ async def find_similar_documents(
         similarity_metrics (optional): Metrics to use when calculating similarity; forwarded to the similarity calculator.
         max_similar (optional): Maximum number of similar documents to return.
         similarity_threshold (optional): Minimum similarity score required for a document to be included.
-    
+
     Returns:
         list[dict[str, Any]]: A list of dictionaries (ordered by descending `similarity_score`) where each entry contains:
             - `document_id`: the matched document's identifier

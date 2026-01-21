@@ -195,14 +195,14 @@ class HybridEngineAPI:
     ) -> list[dict[str, Any]]:
         """
         Identify documents in a collection that are most similar to a target document.
-        
+
         Parameters:
             target_document (HybridSearchResult): The document to compare others against.
             documents (list[HybridSearchResult]): Candidate documents to evaluate for similarity.
             similarity_metrics (list[SimilarityMetric] | None): Metrics to use when computing similarity; if omitted, defaults are applied.
             max_similar (int): Maximum number of similar documents to return.
             similarity_threshold (float): Minimum similarity score (0.0–1.0) required for a document to be included.
-        
+
         Returns:
             list[dict[str, Any]]: A list of similarity records for matching documents (up to `max_similar`), each containing at least the document reference and its similarity score.
         """
@@ -222,10 +222,10 @@ class HybridEngineAPI:
     ) -> dict[str, Any]:
         """
         Detect conflicts among the provided documents.
-        
+
         Parameters:
             documents (list[HybridSearchResult]): Documents to analyze for conflicting content or metadata.
-        
+
         Returns:
             dict[str, Any]: Analysis results mapping conflict categories or identifiers to details such as affected document IDs, conflicting fields, and confidence scores.
         """
