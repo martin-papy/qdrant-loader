@@ -189,14 +189,14 @@ Use Google-style docstrings:
 ```python
 def process_document(content: str, metadata: Dict[str, Any]) -> ProcessedDocument:
     """Process a document with the given content and metadata.
-    
+
     Args:
         content: The raw document content to process.
         metadata: Additional metadata about the document.
-        
+
     Returns:
         A ProcessedDocument instance with chunked content and enriched metadata.
-        
+
     Raises:
         ProcessingError: If the document cannot be processed.
     """
@@ -235,26 +235,26 @@ from qdrant_loader.processors import DocumentProcessor
 
 class TestDocumentProcessor:
     """Test cases for DocumentProcessor."""
-    
+
     def test_process_simple_document(self):
         """Test processing a simple text document."""
         processor = DocumentProcessor()
         content = "This is a test document."
-        
+
         result = processor.process(content)
-        
+
         assert result.chunks
         assert len(result.chunks) == 1
         assert result.chunks[0].content == content
-    
+
     @patch('qdrant_loader.processors.external_service')
     def test_process_with_external_service(self, mock_service):
         """Test processing with mocked external service."""
         mock_service.return_value = "processed content"
         processor = DocumentProcessor()
-        
+
         result = processor.process("input")
-        
+
         mock_service.assert_called_once_with("input")
         assert result.content == "processed content"
 ```
@@ -301,7 +301,7 @@ pytest -m "not slow"
 
 #### Markdown Guidelines
 
-```markdown
+````markdown
 # Use clear headings
 
 ## Structure content logically
@@ -312,6 +312,7 @@ pytest -m "not slow"
 # Command examples should be copy-pastable
 qdrant-loader --workspace . init
 ```
+````
 
 **Use formatting** for emphasis and `code` for technical terms.
 
@@ -346,20 +347,24 @@ When creating a pull request, include:
 
 ```markdown
 ## Description
+
 Brief description of the changes and why they're needed.
 
 ## Type of Change
+
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] New feature (non-breaking change that adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] Manual testing performed
 
 ## Checklist
+
 - [ ] Code follows the project's style guidelines
 - [ ] Self-review of code completed
 - [ ] Code is commented, particularly in hard-to-understand areas
@@ -387,25 +392,31 @@ Brief description of the changes and why they're needed.
 
 ```markdown
 ## Bug Description
+
 A clear and concise description of what the bug is.
 
 ## To Reproduce
+
 Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
 
 ## Expected Behavior
+
 A clear and concise description of what you expected to happen.
 
 ## Environment
+
 - OS: [e.g. macOS 12.0, Ubuntu 20.04, Windows 10]
 - Python version: [e.g. 3.12.2]
 - QDrant Loader version: [e.g. 0.4.0b1]
 - QDrant version: [e.g. 1.7.0]
 
 ## Additional Context
+
 Add any other context about the problem here.
 ```
 
@@ -421,18 +432,23 @@ Add any other context about the problem here.
 
 ```markdown
 ## Feature Description
+
 A clear and concise description of what you want to happen.
 
 ## Problem Statement
+
 What problem does this feature solve? What's the current limitation?
 
 ## Proposed Solution
+
 Describe the solution you'd like to see implemented.
 
 ## Alternatives Considered
+
 Describe any alternative solutions or features you've considered.
 
 ## Additional Context
+
 Add any other context, mockups, or examples about the feature request here.
 ```
 
@@ -446,7 +462,7 @@ We use **unified versioning** - both packages always have the same version numbe
 
 1. **Update version numbers** in both packages
 2. **Create release branch** and test thoroughly
-3. **Create GitHub release** with release notes
+3. **Create GitHub release** with changelog
 4. **Publish to PyPI** using the release script
 
 ```bash
