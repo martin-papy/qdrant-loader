@@ -1142,7 +1142,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             return
         sys.exit(1)
 
-    # Now check if release notes have been updated for the new version
+    # Now check if changelog have been updated for the new version
     changelog_check = check_changelog_updated(new_version, dry_run)
 
     # Combine all check results
@@ -1225,7 +1225,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
         print("\n" + "─" * 50)
 
-        # Check all results including release notes
+        # Check all results including changelog
         all_failed_checks = []
         for check_name, passed in all_check_results.items():
             if not passed:
@@ -1246,7 +1246,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
         return
 
-    # In real mode, exit if any check failed (including release notes)
+    # In real mode, exit if any check failed (including changelog)
     if not all(all_check_results.values()):
         logger.error("One or more safety checks failed. Aborting release.")
         sys.exit(1)
