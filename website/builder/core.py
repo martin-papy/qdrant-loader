@@ -358,8 +358,8 @@ class WebsiteBuilder:
         try:
             if Path("README.md").exists():
                 self.build_markdown_page("README.md", "docs/README.html")
-            if Path("RELEASE_NOTES.md").exists():
-                self.build_markdown_page("RELEASE_NOTES.md", "docs/RELEASE_NOTES.html")
+            if Path("CHANGELOG.md").exists():
+                self.build_markdown_page("CHANGELOG.md", "docs/CHANGELOG.html")
             if Path("CONTRIBUTING.md").exists():
                 self.build_markdown_page("CONTRIBUTING.md", "docs/CONTRIBUTING.html")
             # License (plain text) rendered via helper

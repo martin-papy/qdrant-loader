@@ -85,9 +85,9 @@ name: Test and Coverage
 
 on:
   push:
-    branches: [ main, develop, feature/*, bugfix/*, release/* ]
+    branches: [main, develop, feature/*, bugfix/*, release/*]
   pull_request:
-    branches: [ main, develop, feature/*, bugfix/*, release/* ]
+    branches: [main, develop, feature/*, bugfix/*, release/*]
 
 permissions:
   contents: read
@@ -106,7 +106,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
       - name: Install system dependencies
         run: |
           # Install ffmpeg for MarkItDown audio processing
@@ -150,23 +150,23 @@ name: Documentation Website
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'docs/**'
-      - 'README.md'
-      - 'RELEASE_NOTES.md'
-      - 'packages/*/README.md'
-      - 'website/**'
-      - '.github/workflows/docs.yml'
+      - "docs/**"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "packages/*/README.md"
+      - "website/**"
+      - ".github/workflows/docs.yml"
   workflow_run:
     workflows: ["Test and Coverage"]
     types:
       - completed
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       force_deploy:
-        description: 'Force deployment even without recent test artifacts'
+        description: "Force deployment even without recent test artifacts"
         required: false
         default: false
         type: boolean
@@ -190,7 +190,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
