@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-01-22
+
+### Changed
+
+- Documentation terminology updated from "Release Notes" to "Changelog" [#112]
+- Applied consistent formatting across workflow and updated navigation links [#112]
+
 ## [0.7.5] - 2026-01-20
 
 ### Fixed
