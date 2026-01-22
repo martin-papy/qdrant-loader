@@ -2,19 +2,19 @@ name: Documentation Website (Auto)
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'docs/**'
-      - 'README.md'
-      - 'RELEASE_NOTES.md'
-      - 'packages/*/README.md'
-      - 'website/**'
-      - '.github/workflows/docs-auto.yml'
+      - "docs/**"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "packages/*/README.md"
+      - "website/**"
+      - ".github/workflows/docs-auto.yml"
   workflow_run:
     workflows: ["Test and Coverage"]
     types:
       - completed
-    branches: [ main ]
+    branches: [main]
   release:
     types: [published]
     # Only trigger on main package releases, not MCP server releases
@@ -63,7 +63,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -83,25 +83,25 @@ jobs:
         id: get-workflow-run
         run: |
           echo "🔍 Finding latest successful test workflow run on main branch..."
-          
+
           # Get the latest successful workflow run for "Test and Coverage" on main branch
           WORKFLOW_RUN=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
             | jq -r '.workflows[] | select(.name == "Test and Coverage") | .id')
-          
+
           if [ "$WORKFLOW_RUN" = "null" ] || [ -z "$WORKFLOW_RUN" ]; then
             echo "❌ Could not find 'Test and Coverage' workflow"
             exit 1
           fi
-          
+
           LATEST_RUN=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_RUN/runs?branch=main&status=completed&conclusion=success&per_page=1" \
             | jq -r '.workflow_runs[0].id')
-          
+
           if [ "$LATEST_RUN" = "null" ] || [ -z "$LATEST_RUN" ]; then
             echo "❌ No successful test runs found on main branch"
             echo "⚠️  Continuing without test artifacts for release"
@@ -170,7 +170,7 @@ jobs:
           echo "📊 Total files built: $(find site -type f | wc -l)"
           echo "📄 HTML pages: $(find site -name "*.html" | wc -l)"
           echo "📁 Directories: $(find site -type d | wc -l)"
-          
+
           # Check if main pages exist
           if [ -f "site/index.html" ]; then
             echo "✅ Homepage built successfully"
@@ -178,14 +178,14 @@ jobs:
             echo "❌ Homepage missing"
             exit 1
           fi
-          
+
           if [ -f "site/docs/index.html" ]; then
             echo "✅ Documentation index built successfully"
           else
             echo "❌ Documentation index missing"
             exit 1
           fi
-          
+
           if [ -f "site/coverage/index.html" ]; then
             echo "✅ Coverage index built successfully"
           else
@@ -242,7 +242,7 @@ jobs:
           echo "Event: ${{ github.event_name }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
-          
+
           # Check if this was a release event and if we should deploy
           if [ "${{ github.event_name }}" = "release" ]; then
             if [ "${{ needs.check-release.result }}" = "success" ] && [ "${{ needs.check-release.outputs.should-deploy }}" = "true" ]; then
@@ -253,7 +253,7 @@ jobs:
               echo "⏭️  Documentation deployment skipped to avoid duplicates"
             fi
           fi
-          
+
           if [ "${{ needs.build-docs.result }}" = "success" ]; then
             echo "✅ Website built successfully"
             echo "📦 Artifact: website-auto-${{ github.run_id }}"
@@ -269,4 +269,4 @@ jobs:
           else
             echo "❌ Website build failed"
             exit 1
-          fi 
+          fi
