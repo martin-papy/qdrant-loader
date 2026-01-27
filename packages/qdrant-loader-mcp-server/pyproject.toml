@@ -42,6 +42,7 @@ dependencies = [
     "tomli>=2.0.0",
     "networkx>=3.0.0",
     "spacy>=3.7.0",
+    "sentence-transformers>=2.2.0",
     "qdrant-loader-core==0.7.4",
 ]
 classifiers = [

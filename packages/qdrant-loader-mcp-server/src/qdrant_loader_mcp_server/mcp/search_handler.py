@@ -3,6 +3,7 @@
 import inspect
 from typing import Any
 
+from ..search.hybrid.components.reranking import HybridReranker
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
@@ -20,6 +21,16 @@ from .protocol import MCPProtocol
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
 
+# class RerankingConfig(BaseModel):
+#     enabled: bool = Field(default=False, description="Enable or disable reranking")
+#     model: str = Field(
+#         default="cross-encoder/ms-marco-MiniLM-L-12-v2",
+#         description="Reranking model to use",
+#     )
+#     device: str = Field(default="cpu", description="Device to run the reranking model")
+#     batch_size: int = Field(
+#         default=32, description="Batch size for reranking model inference"
+#     )
 
 class SearchHandler:
     """Handler for search-related operations."""
@@ -29,12 +40,22 @@ class SearchHandler:
         search_engine: SearchEngine,
         query_processor: QueryProcessor,
         protocol: MCPProtocol,
+        reranking_config: RerankingConfig = RerankingConfig(),
     ):
         """Initialize search handler."""
         self.search_engine = search_engine
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self.reranker = None
+
+        if reranking_config.enabled:
+            self.reranker = HybridReranker(
+                enabled=reranking_config.enabled,
+                model=reranking_config.model,
+                device=reranking_config.device,
+                batch_size=reranking_config.batch_size,
+            )
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -106,6 +127,16 @@ class SearchHandler:
                 project_ids=project_ids,
                 limit=limit,
             )
+
+            # Apply reranking if enabled
+            if self.reranker:
+                results = self.reranker.rerank(
+                    query=query,
+                    results=results,
+                    top_k=limit,
+                    text_key="text",
+                )
+
             logger.info(
                 "Search completed successfully",
                 result_count=len(results),
