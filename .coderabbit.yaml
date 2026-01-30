@@ -12,10 +12,6 @@ reviews:
   base_branches:
     - develop
     - main
-
-# Review settings
-review:
-  enabled: true
   
   # Review all file types
   paths:
@@ -29,22 +25,6 @@ review:
     - "**/*.test.py"
     - "**/tests/**"
 
-# Review behavior
-behavior:
-  # Review on PR open
-  review_on_open: true
-  # Review on new commits
-  review_on_update: true
-  # Review on comment (optional)
-  review_on_comment: true
-
 # Chat settings (for AI assistant features)
 chat:
   enabled: true
-
-# Summary settings
-summary:
-  # Enable PR summaries
-  enabled: true
-  # Include commit messages in summary
-  include_commit_messages: true
