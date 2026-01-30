@@ -9,9 +9,7 @@ reviews:
     enabled: true
     # Review PRs targeting these branches:
     # - Any branch → develop
-    # - develop → main
-    # - hotfix/* → main
-    # - hotfix/* → develop
+    # - Any branch → main
     base_branches:
       - develop
       - main
