@@ -57,14 +57,18 @@ jobs:
           python -m pytest tests/ --cov=src -v
 
       - name: Generate coverage reports
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'main')
         run: |
           cd packages/qdrant-loader-core
           coverage xml -o ../../coverage-core.xml
           coverage html -d ../../htmlcov-core
 
       - name: Upload core coverage artifact
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'main')
         uses: actions/upload-artifact@v4
         with:
           name: coverage-core-${{ github.run_id }}
@@ -245,14 +249,18 @@ jobs:
           python -m pytest tests/integration --cov=src --cov-append --cov-report= -v
 
       - name: Generate coverage reports
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'main')
         run: |
           cd packages/qdrant-loader
           coverage xml -o ../../coverage-loader.xml
           coverage html -d ../../htmlcov-loader
 
       - name: Upload loader coverage artifact
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'main')
         uses: actions/upload-artifact@v4
         with:
           name: coverage-loader-${{ github.run_id }}
@@ -348,14 +356,18 @@ jobs:
           python -m pytest tests/integration --cov=src --cov-append --cov-report= --cov-report=term-missing -v
 
       - name: Generate coverage reports
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'main')
         run: |
           cd packages/qdrant-loader-mcp-server
           coverage xml -o ../../coverage-mcp.xml
           coverage html -d ../../htmlcov-mcp
 
       - name: Upload MCP server coverage artifact
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+          (github.event_name == 'push' && github.ref_name == 'main')
         uses: actions/upload-artifact@v4
         with:
           name: coverage-mcp-${{ github.run_id }}
