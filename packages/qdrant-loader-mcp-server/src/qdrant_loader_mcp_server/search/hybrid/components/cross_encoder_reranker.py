@@ -61,11 +61,6 @@ class CrossEncoderReranker:
         top_k: int | None = None,
         text_key: str = "text",
     ) -> List[Any]:
-        
-        self.logger.debug(
-            "Cross encoder rerank is excuting"
-            f"query={query}, results={len(results)}"
-        )
 
         if not self.enabled or not results:
             return results
