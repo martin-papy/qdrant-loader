@@ -115,6 +115,26 @@ def test_extract_texts_empty_results_short_circuit(mock_ce, mock_cross_encoder):
 
 
 @patch("qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder")
+def test_skipped_empty_texts_preserve_alignment(mock_ce, mock_cross_encoder):
+    mock_ce.return_value = mock_cross_encoder
+    # Only two non-empty texts at indices 1 and 3
+    mock_cross_encoder.predict.return_value = [0.2, 0.9]
+
+    reranker = CrossEncoderReranker("test-model")
+
+    results = [{"text": ""}, {"text": "b"}, {"text": ""}, {"text": "c"}]
+
+    output = reranker.rerank("query", results)
+
+    # 'c' has the higher score and should be ranked first
+    assert output[0]["text"] == "c"
+    assert output[0]["cross_encoder_score"] == 0.9
+    assert output[1]["text"] == "b"
+    assert output[1]["cross_encoder_score"] == 0.2
+    assert len(output) == 2
+
+
+@patch("qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder")
 def test_model_failure_disables_reranker(mock_ce):
     mock_ce.side_effect = RuntimeError("boom")
 

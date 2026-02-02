@@ -1,5 +1,6 @@
 """Search operations handler for MCP server."""
 
+import asyncio
 import inspect
 from typing import Any
 
@@ -124,7 +125,8 @@ class SearchHandler:
 
             # Apply reranking if enabled
             if self.reranker:
-                results = self.reranker.rerank(
+                results = await asyncio.to_thread(
+                    self.reranker.rerank,
                     query=query,
                     results=results,
                     top_k=limit,

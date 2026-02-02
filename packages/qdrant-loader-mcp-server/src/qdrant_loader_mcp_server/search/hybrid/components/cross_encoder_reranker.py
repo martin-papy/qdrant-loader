@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List
+from typing import Any, List, Tuple
 
 try:
     from sentence_transformers import CrossEncoder
@@ -40,10 +40,6 @@ class CrossEncoderReranker:
 
     def _load_model(self) -> None:
 
-        self.logger.error(
-            f"🚀🚀🚀 LOADING CROSS ENCODER MODEL: {self.model_name} 🚀🚀🚀"
-        )
-
         if self.model is not None:
             return
 
@@ -66,8 +62,8 @@ class CrossEncoderReranker:
         text_key: str = "text",
     ) -> List[Any]:
         
-        self.logger.error(
-            "🔥🔥🔥 CROSS ENCODER RERANK IS EXECUTING 🔥🔥🔥 "
+        self.logger.debug(
+            "Cross encoder rerank is excuting"
             f"query={query}, results={len(results)}"
         )
 
@@ -79,11 +75,11 @@ class CrossEncoderReranker:
             return results
 
         try:
-            texts = self._extract_texts(results, text_key)
-            if not texts:
+            texts_with_indices = self._extract_texts_with_indices(results, text_key)
+            if not texts_with_indices:
                 return results
 
-            pairs = [(query, text) for text in texts]
+            pairs = [(query, text) for (_idx, text) in texts_with_indices]
 
             scores = self.model.predict(
                 pairs,
@@ -91,8 +87,14 @@ class CrossEncoderReranker:
                 show_progress_bar=False,
             )
 
+            # Map scores back to original results using saved indices
+            mapped = [
+                (results[idx], float(score))
+                for (idx, _), score in zip(texts_with_indices, scores)
+            ]
+
             ranked = sorted(
-                zip(results, scores),
+                mapped,
                 key=lambda x: x[1],
                 reverse=True,
             )
@@ -116,10 +118,10 @@ class CrossEncoderReranker:
             self.logger.error(f"Cross-encoder reranking failed: {e}")
             return results
 
-    def _extract_texts(self, results: List[Any], text_key: str) -> List[str]:
-        texts: List[str] = []
+    def _extract_texts_with_indices(self, results: List[Any], text_key: str) -> List[Tuple[int, str]]:
+        texts: List[Tuple[int, str]] = []
 
-        for r in results:
+        for idx, r in enumerate(results):
             if isinstance(r, dict):
                 text = r.get(text_key, "")
             elif hasattr(r, text_key):
@@ -129,6 +131,6 @@ class CrossEncoderReranker:
 
             text = str(text).strip()
             if text:
-                texts.append(text[:1000])
+                texts.append((idx, text[:1000]))
 
         return texts
