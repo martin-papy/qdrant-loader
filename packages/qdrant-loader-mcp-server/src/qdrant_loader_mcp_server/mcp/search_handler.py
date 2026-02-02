@@ -21,16 +21,7 @@ from .protocol import MCPProtocol
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
 
-# class RerankingConfig(BaseModel):
-#     enabled: bool = Field(default=False, description="Enable or disable reranking")
-#     model: str = Field(
-#         default="cross-encoder/ms-marco-MiniLM-L-12-v2",
-#         description="Reranking model to use",
-#     )
-#     device: str = Field(default="cpu", description="Device to run the reranking model")
-#     batch_size: int = Field(
-#         default=32, description="Batch size for reranking model inference"
-#     )
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 class SearchHandler:
     """Handler for search-related operations."""
@@ -40,7 +31,7 @@ class SearchHandler:
         search_engine: SearchEngine,
         query_processor: QueryProcessor,
         protocol: MCPProtocol,
-        reranking_config: RerankingConfig = RerankingConfig(),
+        reranking_config: MCPReranking | None = None,
     ):
         """Initialize search handler."""
         self.search_engine = search_engine
@@ -48,6 +39,9 @@ class SearchHandler:
         self.protocol = protocol
         self.formatters = MCPFormatters()
         self.reranker = None
+
+        if reranking_config is None:
+            reranking_config = MCPReranking()
 
         if reranking_config.enabled:
             self.reranker = HybridReranker(

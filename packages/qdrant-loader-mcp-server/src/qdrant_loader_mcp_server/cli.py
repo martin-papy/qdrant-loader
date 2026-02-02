@@ -113,7 +113,7 @@ async def start_http_server(
         # Initialize components
         search_engine = SearchEngine()
         query_processor = QueryProcessor(config.openai)
-        mcp_handler = MCPHandler(search_engine, query_processor)
+        mcp_handler = MCPHandler(search_engine, query_processor, reranking_config=config.reranking)
 
         # Initialize search engine
         try:
@@ -272,7 +272,7 @@ async def handle_stdio(config: Config, log_level: str):
         # Initialize components
         search_engine = SearchEngine()
         query_processor = QueryProcessor(config.openai)
-        mcp_handler = MCPHandler(search_engine, query_processor)
+        mcp_handler = MCPHandler(search_engine, query_processor, reranking_config=config.reranking)
 
         # Initialize search engine
         try:

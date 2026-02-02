@@ -9,6 +9,7 @@ from .intelligence_handler import IntelligenceHandler
 from .protocol import MCPProtocol
 from .schemas import MCPSchemas
 from .search_handler import SearchHandler
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.handler")
@@ -17,7 +18,12 @@ logger = LoggingConfig.get_logger("src.mcp.handler")
 class MCPHandler:
     """MCP Handler for processing RAG requests."""
 
-    def __init__(self, search_engine: SearchEngine, query_processor: QueryProcessor):
+    def __init__(
+        self,
+        search_engine: SearchEngine,
+        query_processor: QueryProcessor,
+        reranking_config: MCPReranking | None = None,
+    ):
         """Initialize MCP Handler."""
         self.protocol = MCPProtocol()
         self.search_engine = search_engine
@@ -25,7 +31,7 @@ class MCPHandler:
 
         # Initialize specialized handlers
         self.search_handler = SearchHandler(
-            search_engine, query_processor, self.protocol
+            search_engine, query_processor, self.protocol, reranking_config=reranking_config
         )
         self.intelligence_handler = IntelligenceHandler(search_engine, self.protocol)
 
