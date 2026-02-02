@@ -1,0 +1,30 @@
+# CodeRabbit Configuration for Qdrant Loader
+# This configures automated code reviews for pull requests
+# Using CodeRabbit Schema v2
+
+# Enable reviews for specific base branches
+reviews:
+  # Auto review settings
+  auto_review:
+    enabled: true
+    # Review PRs targeting these branches:
+    # - Any branch → develop
+    # - Any branch → main
+    base_branches:
+      - develop
+      - main
+  
+  # Path filters
+  path_filters:
+    # Include all files by default
+    - "**/*"
+    # Exclude markdown files (mostly documentation)
+    - "!**/*.md"
+    # Exclude test files
+    - "!**/*.test.py"
+    - "!**/tests/**"
+
+# Chat settings
+chat:
+  auto_reply: true
+  art: true
