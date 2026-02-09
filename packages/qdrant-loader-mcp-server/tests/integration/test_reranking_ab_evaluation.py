@@ -41,6 +41,62 @@ import time
 from dataclasses import dataclass, field
 
 import pytest
+import requests
+
+NORMAL_URL = "http://127.0.0.1:8080/mcp"
+RERANK_URL = "http://127.0.0.1:8081/mcp"
+REQUEST_TIMEOUT = 30
+
+def call_search_api(url: str, query: str, limit: int = 10) -> tuple[list[dict], float]:
+    """
+    Call MCP search endpoint and return normalized results + latency.
+    Normalizes MCP JSON-RPC response into evaluation format.
+    """
+
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "search",
+        "params": {
+            "query": query,
+            "limit": limit,
+        },
+    }
+
+    start = time.time()
+
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            timeout=30,
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        pytest.fail(f"MCP API call failed: {e}")
+
+    latency_ms = (time.time() - start) * 1000
+    data = response.json()
+
+    if data.get("result", {}).get("isError"):
+        pytest.fail(f"MCP returned error: {data}")
+
+    raw_results = (
+        data.get("result", {})
+        .get("structuredContent", {})
+        .get("results", [])
+    )
+
+    normalized_results = [
+        {
+            "id": r["document_id"],
+            "text": r.get("content_snippet", ""),
+            "score": r.get("score", 0.0),
+        }
+        for r in raw_results
+    ]
+
+    return normalized_results, latency_ms
 
 # Skip all tests if prerequisites not available
 pytestmark = [
@@ -316,65 +372,11 @@ def calculate_rank_displacement(
 # MOCK SEARCH FUNCTIONS (Replace with actual search in real tests)
 # =============================================================================
 
+def mock_search_without_reranking(query: str, limit: int = 10):
+    return call_search_api(NORMAL_URL, query, limit)
 
-def mock_search_without_reranking(
-    query: str, limit: int = 10
-) -> tuple[list[dict], float]:
-    """
-    Mock search without reranking.
-    In real tests, this would call the actual search engine with reranking disabled.
-
-    Returns:
-        Tuple of (results, latency_ms)
-    """
-    start = time.time()
-
-    # Simulate search delay
-    time.sleep(0.05)
-
-    # Mock results based on query type
-    # In real implementation, this calls the actual search API
-    results = [
-        {
-            "id": f"doc-{i}",
-            "text": f"Content for query: {query}",
-            "score": 0.9 - i * 0.1,
-        }
-        for i in range(limit)
-    ]
-
-    latency_ms = (time.time() - start) * 1000
-    return results, latency_ms
-
-
-def mock_search_with_reranking(query: str, limit: int = 10) -> tuple[list[dict], float]:
-    """
-    Mock search with cross-encoder reranking.
-    In real tests, this would call the actual search engine with reranking enabled.
-
-    Returns:
-        Tuple of (results, latency_ms)
-    """
-    start = time.time()
-
-    # Simulate search + reranking delay
-    time.sleep(0.15)  # Reranking adds latency
-
-    # Mock results - reranking typically reorders results
-    results = [
-        {
-            "id": f"doc-{i}",
-            "text": f"Content for query: {query}",
-            "score": 0.9 - i * 0.1,
-            "cross_encoder_score": 0.95 - i * 0.08,
-            "cross_encoder_rank": i + 1,
-        }
-        for i in range(limit)
-    ]
-
-    latency_ms = (time.time() - start) * 1000
-    return results, latency_ms
-
+def mock_search_with_reranking(query: str, limit: int = 10):
+    return call_search_api(RERANK_URL, query, limit)
 
 # =============================================================================
 # TEST CLASSES
