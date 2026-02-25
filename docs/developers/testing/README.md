@@ -450,7 +450,65 @@ async def test_cli_integration(tmp_path):
 
 ## 📊 Performance Testing
 
-### Benchmarking
+### Startup Time Benchmarking
+
+Use the startup benchmark scripts to measure CLI responsiveness before and after changes.
+
+```bash
+# Measure startup time for all CLI commands (5 runs each)
+python scripts/benchmark_startup.py
+
+# Increase runs for more stable results
+python scripts/benchmark_startup.py --runs 10
+
+# Save results as JSON for future comparison
+python scripts/benchmark_startup.py --save scripts/baseline.json
+
+# Compare current results against a saved baseline
+python scripts/benchmark_startup.py --compare scripts/baseline.json
+
+# Skip MCP server benchmark
+python scripts/benchmark_startup.py --no-mcp
+```
+
+### Import Profiling
+
+Use the import profiling script to identify heavy dependencies in the import chain.
+
+```bash
+# Profile imports and show top offenders by cumulative time
+python scripts/profile_imports.py
+
+# Show more entries
+python scripts/profile_imports.py --top 30
+
+# Show package-level summary (grouped by top-level package)
+python scripts/profile_imports.py --packages
+
+# Show import tree (filtered by minimum time)
+python scripts/profile_imports.py --tree --tree-min-ms 50
+
+# Save raw importtime output for later analysis
+python scripts/profile_imports.py --save import_profile.txt
+
+# Load and analyze a previously saved profile
+python scripts/profile_imports.py --load import_profile.txt
+
+# Profile a specific module (e.g., MCP server)
+python scripts/profile_imports.py --module qdrant_loader_mcp_server.main
+```
+
+You can also use Python's built-in import profiling directly:
+
+```bash
+# Raw import time profiling
+python -X importtime -c "import qdrant_loader.main" 2> import_profile.txt
+
+# Sort by cumulative time
+sort -k2 -rn import_profile.txt | head -30
+```
+
+### Ingestion Benchmarking
 
 ```python
 # tests/performance/test_ingestion_speed.py
@@ -464,16 +522,16 @@ from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 async def test_ingestion_performance(test_settings):
     """Benchmark ingestion performance."""
     pipeline = AsyncIngestionPipeline(settings=test_settings)
-    
+
     start_time = time.time()
-    
+
     try:
         await pipeline.initialize()
         documents = await pipeline.process_documents(project_id="test-project")
-        
+
         end_time = time.time()
         duration = end_time - start_time
-        
+
         # Performance assertions
         assert duration < 30.0  # Should complete in under 30 seconds
         assert isinstance(documents, list)
