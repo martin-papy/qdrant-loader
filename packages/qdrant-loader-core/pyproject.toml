@@ -10,7 +10,7 @@ name = "qdrant-loader-core"
 version = "0.7.6"
 description = "Shared core for provider-agnostic LLM support and configuration mapping for qdrant-loader ecosystem"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "<=3.12, >=3.10"
 license = "GPL-3.0"
 authors = [
     { name = "Martin Papy", email = "martin.papy@cbtw.tech" },

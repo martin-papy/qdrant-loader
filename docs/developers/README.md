@@ -53,7 +53,7 @@ QDrant Loader follows a modular architecture designed for multi-project document
 
 ## 🚀 Getting Started for Developers
 
-### 1. Development Environment Setup
+### 1. Development Environment Setup with venv and pip
 
 ```bash
 # Clone the repository
@@ -71,6 +71,24 @@ pip install -e ".[dev]"
 # Install MCP server package
 cd ../qdrant-loader-mcp-server
 pip install -e ".[dev]"
+
+# Start QDrant for development
+docker run -p 6333:6333 qdrant/qdrant:latest
+```
+
+### 1.1 Development Environment Setup with uv
+
+```bash
+# Clone the repository
+git clone https://github.com/martin-papy/qdrant-loader.git
+cd qdrant-loader
+
+# install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh # mac & linux
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" # windows
+
+# Initialize virtual environment, install packages and enable scripts 
+uv sync --all-packages --all-extras
 
 # Start QDrant for development
 docker run -p 6333:6333 qdrant/qdrant:latest
