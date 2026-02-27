@@ -21,15 +21,15 @@ from pathlib import Path
 
 
 COMMANDS = {
-    "qdrant-loader --help": ["python", "-m", "qdrant_loader.main", "--help"],
-    "qdrant-loader config --help": ["python", "-m", "qdrant_loader.main", "config", "--help"],
-    "qdrant-loader ingest --help": ["python", "-m", "qdrant_loader.main", "ingest", "--help"],
-    "qdrant-loader init --help": ["python", "-m", "qdrant_loader.main", "init", "--help"],
+    "qdrant-loader --help": [sys.executable, "-m", "qdrant_loader.main", "--help"],
+    "qdrant-loader config --help": [sys.executable, "-m", "qdrant_loader.main", "config", "--help"],
+    "qdrant-loader ingest --help": [sys.executable, "-m", "qdrant_loader.main", "ingest", "--help"],
+    "qdrant-loader init --help": [sys.executable, "-m", "qdrant_loader.main", "init", "--help"],
 }
 
 MCP_COMMANDS = {
     "qdrant-loader-mcp --help": [
-        "python",
+        sys.executable,
         "-m",
         "qdrant_loader_mcp_server.main",
         "--help",
