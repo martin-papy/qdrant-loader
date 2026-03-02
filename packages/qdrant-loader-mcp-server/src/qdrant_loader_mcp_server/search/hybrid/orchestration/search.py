@@ -6,7 +6,7 @@ from typing import Any
 from ...components.result_combiner import ResultCombiner
 from ...components.search_result_models import HybridSearchResult
 from ..components.helpers import combine_results as _combine_results_helper
-from ..pipeline import HybridPipeline
+from ..pipeline import HybridPipeline, HybridSearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ async def run_search(
             local_combiner.min_score = engine_min_score
 
         if plan.use_pipeline and engine.hybrid_pipeline is not None:
-            p = engine.hybrid_pipeline
+            p: HybridPipeline = engine.hybrid_pipeline
             if isinstance(p, HybridPipeline):
                 # Clone pipeline for this request with the local combiner to avoid shared mutation
                 local_pipeline = HybridPipeline(
@@ -110,14 +110,14 @@ async def run_search(
                     normalizer=p.normalizer,
                     deduplicator=p.deduplicator,
                 )
-                combined_results = await engine._orchestrator.run_pipeline(
+                combined_results: HybridSearchResult = await engine._orchestrator.run_pipeline(
                     local_pipeline,
                     query=query,
                     limit=fetch_limit,
                     query_context=query_context,
                     source_types=source_types,
                     project_ids=project_ids,
-                    vector_query=plan.expanded_query,
+                    vector_query=query,
                     keyword_query=query,
                 )
             else:

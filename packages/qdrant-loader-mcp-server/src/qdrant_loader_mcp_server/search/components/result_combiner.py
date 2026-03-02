@@ -58,7 +58,7 @@ class ResultCombiner:
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
-        """Combine and rerank results from vector and keyword search.
+        """Combine and rerank results using Weighted Recipocal Rerank Fusion from vector (dense) and keyword (sparse) search.
 
         Args:
             vector_results: Results from vector search
@@ -72,9 +72,10 @@ class ResultCombiner:
             List of combined and ranked HybridSearchResult objects
         """
         combined_dict = {}
+        rff_constant = 60 # represents k
 
         # Process vector results
-        for result in vector_results:
+        for rank, result in enumerate(vector_results, 1):
             text = result["text"]
             if text not in combined_dict:
                 metadata = result["metadata"]
@@ -91,13 +92,15 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "rrf_score": self._scorer.vector_weight * (1 / (rank + rff_constant))
                 }
 
         # Process keyword results
-        for result in keyword_results:
+        for rank, result in enumerate(keyword_results, 1):
             text = result["text"]
             if text in combined_dict:
                 combined_dict[text]["keyword_score"] = result["score"]
+                combined_dict[text]["rrf_score"] += self._scorer.keyword_weight * (1 / (rank + rff_constant))
             else:
                 metadata = result["metadata"]
                 combined_dict[text] = {
@@ -112,6 +115,7 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "rrf_score": self._scorer.keyword_weight * (1 / (rank + rff_constant))
                 }
 
         # Calculate combined scores and create results
@@ -133,16 +137,16 @@ class ResultCombiner:
             if search_intent and result_filters:
                 if should_skip_result(metadata, result_filters, query_context):
                     continue
+            # combined_score = self._scorer.compute(
+            #     ScoreComponents(
+            #         vector_score=info["vector_score"],
+            #         keyword_score=info["keyword_score"],
+            #         metadata_score=0.0,  # Preserve legacy behavior (no metadata in base score)
+            #     )
+            # )
+            combined_score = info['rrf_score'] 
 
-            combined_score = self._scorer.compute(
-                ScoreComponents(
-                    vector_score=info["vector_score"],
-                    keyword_score=info["keyword_score"],
-                    metadata_score=0.0,  # Preserve legacy behavior (no metadata in base score)
-                )
-            )
-
-            if combined_score >= self.min_score:
+            if combined_score:
                 # Extract all metadata components
                 metadata_components = self.metadata_extractor.extract_all_metadata(
                     metadata
@@ -275,7 +279,6 @@ class ResultCombiner:
 
         # Sort by combined score
         combined_results.sort(key=lambda x: x.score, reverse=True)
-
         # Apply diversity filtering for exploratory intents
         if adaptive_config and adaptive_config.diversity_factor > 0.0:
             try:

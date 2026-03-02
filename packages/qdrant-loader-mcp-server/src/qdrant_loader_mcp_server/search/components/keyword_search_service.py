@@ -10,7 +10,9 @@ from rank_bm25 import BM25Okapi
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
-
+from nltk.tokenize import RegexpTokenizer
+from nltk.stem import SnowballStemmer
+from nltk.corpus import stopwords
 
 class KeywordSearchService:
     """Handles keyword search operations using BM25."""
@@ -29,6 +31,7 @@ class KeywordSearchService:
         self.qdrant_client = qdrant_client
         self.collection_name = collection_name
         self.field_parser = FieldQueryParser()
+        self._stop_words = set(stopwords.words('english'))
         self.logger = LoggingConfig.get_logger(__name__)
 
     async def keyword_search(
@@ -177,17 +180,20 @@ class KeywordSearchService:
 
     @staticmethod
     def _tokenize(text: str) -> list[str]:
-        """Tokenize text using regex-based word tokenization and lowercasing."""
+        """Tokenize text using NLTK RegexpTokenizer word tokenization.
+        
+        See: https://www.nltk.org/api/nltk.tokenize.regexp.html
+        """
         if not isinstance(text, str):
             return []
-        return re.findall(r"\b\w+\b", text.lower())
+        return RegexpTokenizer(r"\b\w+\b").tokenize(text)
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.
 
-        Tokenizes documents and query with regex word tokenization and lowercasing.
+        Tokenizes documents and query with NLTK regex word tokenization.
         """
         tokenized_docs = [self._tokenize(doc) for doc in documents]
         bm25 = BM25Okapi(tokenized_docs)
-        tokenized_query = self._tokenize(query)
+        tokenized_query = [SnowballStemmer(language="english").stem(word) for word in self._tokenize(query) if word not in self._stop_words]
         return bm25.get_scores(tokenized_query)
