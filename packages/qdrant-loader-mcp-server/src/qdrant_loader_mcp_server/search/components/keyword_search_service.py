@@ -1,12 +1,16 @@
 """Keyword search service for hybrid search."""
 
+from __future__ import annotations
+
 import asyncio
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
+
+if TYPE_CHECKING:
+    from qdrant_client import QdrantClient
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
