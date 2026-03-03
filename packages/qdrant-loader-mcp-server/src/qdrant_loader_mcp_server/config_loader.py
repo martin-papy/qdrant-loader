@@ -19,6 +19,7 @@ from typing import Any
 import yaml
 
 from .config import Config, OpenAIConfig, QdrantConfig, SearchConfig
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
 from .utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -132,12 +133,21 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     )
     chat_model = models.get("chat") or os.getenv("LLM_CHAT_MODEL") or "gpt-3.5-turbo"
 
+    # Build reranking config from global section if present
+    reranking_cfg = None
+    if isinstance(global_data.get("reranking"), dict):
+        try:
+            reranking_cfg = MCPReranking(**global_data.get("reranking") or {})
+        except Exception:
+            logger.warning("Invalid reranking config in file; using defaults")
+
     cfg = Config(
         qdrant=QdrantConfig(**qdrant) if qdrant else QdrantConfig(),
         openai=OpenAIConfig(
             api_key=api_key, model=embedding_model, chat_model=chat_model
         ),
         search=SearchConfig(**search) if search else SearchConfig(),
+        reranking=reranking_cfg if reranking_cfg is not None else MCPReranking(),
     )
     return cfg
 

@@ -1,8 +1,10 @@
 """Search operations handler for MCP server."""
 
+import asyncio
 import inspect
 from typing import Any
 
+from ..search.hybrid.components.reranking import HybridReranker
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
@@ -20,6 +22,7 @@ from .protocol import MCPProtocol
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
 
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 class SearchHandler:
     """Handler for search-related operations."""
@@ -29,12 +32,25 @@ class SearchHandler:
         search_engine: SearchEngine,
         query_processor: QueryProcessor,
         protocol: MCPProtocol,
+        reranking_config: MCPReranking | None = None,
     ):
         """Initialize search handler."""
         self.search_engine = search_engine
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self.reranker = None
+
+        if reranking_config is None:
+            reranking_config = MCPReranking()
+
+        if reranking_config.enabled:
+            self.reranker = HybridReranker(
+                enabled=reranking_config.enabled,
+                model=reranking_config.model,
+                device=reranking_config.device,
+                batch_size=reranking_config.batch_size,
+            )
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -106,6 +122,17 @@ class SearchHandler:
                 project_ids=project_ids,
                 limit=limit,
             )
+
+            # Apply reranking if enabled
+            if self.reranker:
+                results = await asyncio.to_thread(
+                    self.reranker.rerank,
+                    query=query,
+                    results=results,
+                    top_k=limit,
+                    text_key="text",
+                )
+
             logger.info(
                 "Search completed successfully",
                 result_count=len(results),

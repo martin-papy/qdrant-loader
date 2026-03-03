@@ -8,6 +8,9 @@ from typing import Annotated
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+# Import reranking Pydantic model from MCP models
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -279,3 +282,5 @@ class Config(BaseModel):
         default_factory=lambda: OpenAIConfig(api_key=os.getenv("OPENAI_API_KEY"))
     )
     search: SearchConfig = Field(default_factory=SearchConfig)
+    # Reranking configuration (loaded from global.reranking in config.yaml)
+    reranking: MCPReranking = Field(default_factory=MCPReranking)
