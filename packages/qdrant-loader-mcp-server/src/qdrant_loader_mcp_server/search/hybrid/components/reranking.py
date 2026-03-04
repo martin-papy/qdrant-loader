@@ -19,9 +19,6 @@ class HybridReranker:
 
         if enabled:
             self.cross_encoder = CrossEncoderReranker(
-                model_name=model,
-                device=device,
-                batch_size=batch_size,
                 enabled=True,
             )
             self.logger.info("Cross-encoder reranker enabled")
