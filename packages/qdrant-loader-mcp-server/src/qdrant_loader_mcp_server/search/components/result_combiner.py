@@ -23,7 +23,7 @@ class ResultCombiner:
         vector_weight: float = 0.6,
         keyword_weight: float = 0.3,
         metadata_weight: float = 0.1,
-        min_score: float = 0.3,  # with the new WRRF algorithm, this is not used
+        min_score: float = 0.3,
         spacy_analyzer: SpaCyQueryAnalyzer | None = None,
     ):
         """Initialize the result combiner.
@@ -210,7 +210,7 @@ class ResultCombiner:
 
 
     def is_result_filtered(self, use_wrrf: bool, wrrf_score: float, chunk_score: float):
-        # Scale minimum threshold
+        # Scale minimum threshold for WRRF
         wrrf_min_score = self.min_score * ((self._scorer.vector_weight + self._scorer.keyword_weight) / (WRRF_CONSTANT + 1))
         # Filter low wrrf
         if use_wrrf and wrrf_score <= wrrf_min_score:
@@ -221,7 +221,6 @@ class ResultCombiner:
             return True
         return False
 
-    # TODO: Leaving project_ids to check if we should add it later on. We should check the git blame for the intent.
     async def combine_results(
         self,
         vector_results: list[dict[str, Any]],
@@ -244,56 +243,7 @@ class ResultCombiner:
         Returns:
             List of combined and ranked HybridSearchResult objects
         """
-        combined_dict = {}
-        rff_constant = 60  # represents k
-
-        # Process vector results
-        for rank, result in enumerate(vector_results, 1):
-            text = result["text"]
-            if text not in combined_dict:
-                metadata = result["metadata"]
-                combined_dict[text] = {
-                    "text": text,
-                    "metadata": metadata,
-                    "source_type": result["source_type"],
-                    "vector_score": result["score"],
-                    "keyword_score": 0.0,
-                    # 🔧 CRITICAL FIX: Include all root-level fields from search services
-                    "title": result.get("title", ""),
-                    "url": result.get("url", ""),
-                    "document_id": result.get("document_id", ""),
-                    "source": result.get("source", ""),
-                    "created_at": result.get("created_at", ""),
-                    "updated_at": result.get("updated_at", ""),
-                    "rrf_score": self._scorer.vector_weight
-                    * (1 / (rank + rff_constant)),
-                }
-
-        # Process keyword results
-        for rank, result in enumerate(keyword_results, 1):
-            text = result["text"]
-            if text in combined_dict:
-                combined_dict[text]["keyword_score"] = result["score"]
-                combined_dict[text]["rrf_score"] += self._scorer.keyword_weight * (
-                    1 / (rank + rff_constant)
-                )
-            else:
-                metadata = result["metadata"]
-                combined_dict[text] = {
-                    "text": text,
-                    "metadata": metadata,
-                    "source_type": result["source_type"],
-                    "vector_score": 0.0,
-                    "keyword_score": result["score"],
-                    "title": result.get("title", ""),
-                    "url": result.get("url", ""),
-                    "document_id": result.get("document_id", ""),
-                    "source": result.get("source", ""),
-                    "created_at": result.get("created_at", ""),
-                    "updated_at": result.get("updated_at", ""),
-                    "rrf_score": self._scorer.keyword_weight
-                    * (1 / (rank + rff_constant)),
-                }
+        combined_dict = self.merge_results_with_wrrf(vector_results=vector_results, keyword_results=keyword_results)
 
         # Calculate combined scores and create results
         combined_results = []
@@ -315,14 +265,6 @@ class ResultCombiner:
             if search_intent and result_filters:
                 if should_skip_result(metadata, result_filters, query_context):
                     continue
-            # combined_score = self._scorer.compute(
-            #     ScoreComponents(
-            #         vector_score=info["vector_score"],
-            #         keyword_score=info["keyword_score"],
-            #         metadata_score=0.0,  # Preserve legacy behavior (no metadata in base score)
-            #     )
-            # )
-            combined_score = info["rrf_score"]
 
             wrrf_score = info['wrrf_score']
             # Fallback to standard weighting scoring
@@ -351,8 +293,6 @@ class ResultCombiner:
 
             title = self.extract_chunk_title(info=info, metadata=metadata, chunk_index=chunk_index, total_chunks=total_chunks)
             enhanced_metadata = self.merge_rich_and_enhanced_metadata(info=info, metadata=metadata, metadata_components=metadata_components, chunk_index=chunk_index, total_chunks=total_chunks)
-
-            # NOTE: No additional fallback; root payload project_id is authoritative
 
             # Create HybridSearchResult using factory function
             hybrid_result = create_hybrid_search_result(
