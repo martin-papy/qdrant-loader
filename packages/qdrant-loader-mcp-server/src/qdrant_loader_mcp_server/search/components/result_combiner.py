@@ -22,7 +22,7 @@ class ResultCombiner:
         vector_weight: float = 0.6,
         keyword_weight: float = 0.3,
         metadata_weight: float = 0.1,
-        min_score: float = 0.3,
+        min_score: float = 0.3,  # with the new WRRF algorithm, this is not used
         spacy_analyzer: SpaCyQueryAnalyzer | None = None,
     ):
         """Initialize the result combiner.
@@ -72,7 +72,7 @@ class ResultCombiner:
             List of combined and ranked HybridSearchResult objects
         """
         combined_dict = {}
-        rff_constant = 60 # represents k
+        rff_constant = 60  # represents k
 
         # Process vector results
         for rank, result in enumerate(vector_results, 1):
@@ -92,7 +92,8 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
-                    "rrf_score": self._scorer.vector_weight * (1 / (rank + rff_constant))
+                    "rrf_score": self._scorer.vector_weight
+                    * (1 / (rank + rff_constant)),
                 }
 
         # Process keyword results
@@ -100,7 +101,9 @@ class ResultCombiner:
             text = result["text"]
             if text in combined_dict:
                 combined_dict[text]["keyword_score"] = result["score"]
-                combined_dict[text]["rrf_score"] += self._scorer.keyword_weight * (1 / (rank + rff_constant))
+                combined_dict[text]["rrf_score"] += self._scorer.keyword_weight * (
+                    1 / (rank + rff_constant)
+                )
             else:
                 metadata = result["metadata"]
                 combined_dict[text] = {
@@ -115,7 +118,8 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
-                    "rrf_score": self._scorer.keyword_weight * (1 / (rank + rff_constant))
+                    "rrf_score": self._scorer.keyword_weight
+                    * (1 / (rank + rff_constant)),
                 }
 
         # Calculate combined scores and create results
@@ -144,7 +148,7 @@ class ResultCombiner:
             #         metadata_score=0.0,  # Preserve legacy behavior (no metadata in base score)
             #     )
             # )
-            combined_score = info['rrf_score'] 
+            combined_score = info["rrf_score"]
 
             if combined_score:
                 # Extract all metadata components
