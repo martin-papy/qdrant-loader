@@ -10,7 +10,7 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 
 if TYPE_CHECKING:
-    from qdrant_client import QdrantClient
+    from qdrant_client import AsyncQdrantClient
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
@@ -21,7 +21,7 @@ class KeywordSearchService:
 
     def __init__(
         self,
-        qdrant_client: QdrantClient,
+        qdrant_client: AsyncQdrantClient,
         collection_name: str,
     ):
         """Initialize the keyword search service.
