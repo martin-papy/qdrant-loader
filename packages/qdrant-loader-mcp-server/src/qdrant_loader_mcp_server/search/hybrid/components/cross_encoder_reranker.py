@@ -1,13 +1,29 @@
+"""
+Cross-encoder reranker to implement the WRRF algorithm.
+
+Uses the CrossEncoder class from the sentence-transformers library to rerank search results.
+"""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Tuple
+import types
+from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING:
     from sentence_transformers import CrossEncoder
-    import torch
+
+_torch: types.ModuleType | None = None
+try:
+    import torch as _torch
 except ImportError:
-    CrossEncoder = None
+    pass
+
+_CrossEncoder: type[CrossEncoder] | None = None
+try:
+    from sentence_transformers import CrossEncoder as _CrossEncoder
+except ImportError:
+    pass
 
 
 class CrossEncoderReranker:
@@ -15,11 +31,14 @@ class CrossEncoderReranker:
 
     def __init__(
         self,
+        model_name: str = "cross-encoder/ms-marco-MiniLM-L-12-v2",
+        device: str | None = None,
+        batch_size: int = 32,
         enabled: bool = True,
     ):
-        self.model_name = "cross-encoder/ms-marco-MiniLM-L-12-v2"
-        self.device = self._get_optimal_device()
-        self.batch_size = 32
+        self.model_name = model_name
+        self.device = device if device is not None else self._get_optimal_device()
+        self.batch_size = batch_size
         self.enabled = enabled
 
         self.model: CrossEncoder | None = None
@@ -29,7 +48,7 @@ class CrossEncoderReranker:
             self.logger.info("Cross-encoder reranking disabled")
             return
 
-        if CrossEncoder is None:
+        if _CrossEncoder is None:
             self.logger.warning(
                 "sentence-transformers not installed. "
                 "Install with: pip install sentence-transformers"
@@ -38,14 +57,14 @@ class CrossEncoderReranker:
 
     def _get_optimal_device(self) -> str:
         """Check the device to run reranking on: CUDA -> MPS -> CPU"""
-        if torch is None:
+        if _torch is None:
             return "cpu"
 
-        if torch.cuda.is_available():
+        if _torch.cuda.is_available():
             return "cuda"
 
         # torch >= 1.12 and macOS supports Metal
-        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        if hasattr(_torch.backends, "mps") and _torch.backends.mps.is_available():
             return "mps"
 
         return "cpu"
@@ -55,11 +74,14 @@ class CrossEncoderReranker:
         if self.model is not None:
             return
 
+        if _CrossEncoder is None:
+            return
+
         try:
             self.logger.info(
                 f"Loading cross-encoder model: {self.model_name} on {self.device}"
             )
-            self.model = CrossEncoder(self.model_name, device=self.device)
+            self.model = _CrossEncoder(self.model_name, device=self.device)
             self.logger.info("Cross-encoder model loaded")
         except Exception as e:
             self.logger.error(f"Failed to load cross-encoder model: {e}")
@@ -69,10 +91,10 @@ class CrossEncoderReranker:
     def rerank(
         self,
         query: str,
-        results: List[Any],
+        results: list[Any],
         top_k: int | None = None,
         text_key: str = "text",
-    ) -> List[Any]:
+    ) -> list[Any]:
 
         if not self.enabled or not results:
             return results
@@ -97,7 +119,7 @@ class CrossEncoderReranker:
             # Map scores back to original results using saved indices
             mapped = [
                 (results[idx], float(score))
-                for (idx, _), score in zip(texts_with_indices, scores)
+                for (idx, _), score in zip(texts_with_indices, scores, strict=False)
             ]
 
             ranked = sorted(
@@ -115,8 +137,9 @@ class CrossEncoderReranker:
                     item["cross_encoder_score"] = float(score)
                     item["cross_encoder_rank"] = rank
                 else:
-                    setattr(item, "cross_encoder_score", float(score))
-                    setattr(item, "cross_encoder_rank", rank)
+                    item.cross_encoder_score = float(score)
+                    item.cross_encoder_rank = rank
+                    item.score = float(score)
                 output.append(item)
 
             return output
@@ -125,8 +148,10 @@ class CrossEncoderReranker:
             self.logger.error(f"Cross-encoder reranking failed: {e}")
             return results
 
-    def _extract_texts_with_indices(self, results: List[Any], text_key: str) -> List[Tuple[int, str]]:
-        texts: List[Tuple[int, str]] = []
+    def _extract_texts_with_indices(
+        self, results: list[Any], text_key: str
+    ) -> list[tuple[int, str]]:
+        texts: list[tuple[int, str]] = []
 
         for idx, r in enumerate(results):
             if isinstance(r, dict):

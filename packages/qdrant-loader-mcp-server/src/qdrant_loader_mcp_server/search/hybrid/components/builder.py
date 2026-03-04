@@ -437,7 +437,7 @@ def initialize_engine_components(
     if engine_self.hybrid_pipeline is not None and processing_config is not None:
         if getattr(processing_config, "enable_reranker", False):
             try:
-                engine_self.hybrid_pipeline.reranker = HybridReranker()
+                engine_self.hybrid_pipeline.reranker = HybridReranker(enabled=True)
             except Exception:
                 engine_self.hybrid_pipeline.reranker = None
         if getattr(processing_config, "enable_booster", False):
