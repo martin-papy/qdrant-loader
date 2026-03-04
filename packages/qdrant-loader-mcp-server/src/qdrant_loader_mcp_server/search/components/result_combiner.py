@@ -3,7 +3,7 @@
 from typing import Any
 
 from ...utils.logging import LoggingConfig
-from ..hybrid.components.scoring import HybridScorer, ScoreComponents
+from ..hybrid.components.scoring import HybridScorer
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from .combining import (
     boost_score_with_metadata,
@@ -13,6 +13,7 @@ from .combining import (
 from .metadata_extractor import MetadataExtractor
 from .search_result_models import HybridSearchResult, create_hybrid_search_result
 
+WRRF_CONSTANT = 60
 
 class ResultCombiner:
     """Combines and ranks search results from multiple sources."""
@@ -49,32 +50,13 @@ class ResultCombiner:
             metadata_weight=self.metadata_weight,
         )
 
-    async def combine_results(
-        self,
-        vector_results: list[dict[str, Any]],
-        keyword_results: list[dict[str, Any]],
-        query_context: dict[str, Any],
-        limit: int,
-        source_types: list[str] | None = None,
-        project_ids: list[str] | None = None,
-    ) -> list[HybridSearchResult]:
-        """Combine and rerank results from vector and keyword search.
-
-        Args:
-            vector_results: Results from vector search
-            keyword_results: Results from keyword search
-            query_context: Query analysis context
-            limit: Maximum number of results to return
-            source_types: Optional source type filters
-            project_ids: Optional project ID filters
-
-        Returns:
-            List of combined and ranked HybridSearchResult objects
+    def merge_results_with_wrrf(self, vector_results: list[dict[str, Any]], keyword_results: list[dict[str, Any]]) -> dict:
+        """
+        Merge and rerank results using Weighted Recipocal Rerank Fusion from vector (dense) and keyword (sparse) search.
         """
         combined_dict = {}
-
         # Process vector results
-        for result in vector_results:
+        for rank, result in enumerate(vector_results, 1):
             text = result["text"]
             if text not in combined_dict:
                 metadata = result["metadata"]
@@ -91,13 +73,16 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "wrrf_score": self._scorer.vector_weight * (1 / (rank + WRRF_CONSTANT))
                 }
 
         # Process keyword results
-        for result in keyword_results:
+        for rank, result in enumerate(keyword_results, 1):
             text = result["text"]
             if text in combined_dict:
                 combined_dict[text]["keyword_score"] = result["score"]
+                # Sum
+                combined_dict[text]["wrrf_score"] += self._scorer.keyword_weight * (1 / (rank + WRRF_CONSTANT))
             else:
                 metadata = result["metadata"]
                 combined_dict[text] = {
@@ -112,7 +97,153 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "wrrf_score": self._scorer.keyword_weight * (1 / (rank + WRRF_CONSTANT))
                 }
+        return combined_dict
+
+
+    def extract_chunk_title(self, info: dict, metadata: dict, chunk_index: int, total_chunks: int) -> str:
+        # Extract fields from both direct payload fields and nested metadata
+        # Use direct fields from Qdrant payload when available, fallback to metadata
+        title = info.get("title", "") or metadata.get("title", "")
+
+        # Extract rich metadata from nested metadata object
+        file_name = metadata.get("file_name", "")
+        metadata.get("file_type", "")
+
+
+        # Enhanced title generation using actual Qdrant structure
+        # Priority: root title > nested section_title > file_name + chunk info > source
+        root_title = info.get(
+            "title", ""
+        )  # e.g., "Stratégie commerciale MYA.pdf - Chunk 2"
+        nested_title = metadata.get("title", "")  # e.g., "Preamble (Part 2)"
+        section_title = metadata.get("section_title", "")
+
+        if root_title:
+            title = root_title
+        elif nested_title:
+            title = nested_title
+        elif section_title:
+            title = section_title
+        elif file_name:
+            title = file_name
+            # Add chunk info if available from nested metadata
+            sub_chunk_index = metadata.get("sub_chunk_index")
+            total_sub_chunks = metadata.get("total_sub_chunks")
+            if sub_chunk_index is not None and total_sub_chunks is not None:
+                title += (
+                    f" - Chunk {int(sub_chunk_index) + 1}/{total_sub_chunks}"
+                )
+            elif chunk_index is not None and total_chunks is not None:
+                title += f" - Chunk {int(chunk_index) + 1}/{total_chunks}"
+        else:
+            source = info.get("source", "") or metadata.get("source", "")
+            if source:
+                # Extract filename from path-like sources
+                import os
+
+                title = (
+                    os.path.basename(source)
+                    if "/" in source or "\\" in source
+                    else source
+                )
+            else:
+                title = "Untitled"
+        return title
+
+    def merge_rich_and_enhanced_metadata(self, info: dict, metadata: dict, metadata_components: dict, chunk_index: int, total_chunks: int) -> dict:
+        # Create enhanced metadata dict with rich Qdrant fields
+        enhanced_metadata = {
+            # Core fields from root level of Qdrant payload
+            "source_url": info.get("url", ""),
+            "document_id": info.get("document_id", ""),
+            "created_at": info.get("created_at", ""),
+            "last_modified": info.get("updated_at", ""),
+            "repo_name": info.get("source", ""),
+            # Project scoping is stored at the root as 'source'
+            "project_id": info.get("source", ""),
+            # Construct file path from nested metadata
+            "file_path": (
+                metadata.get("file_directory", "").rstrip("/")
+                + "/"
+                + metadata.get("file_name", "")
+                if metadata.get("file_name") and metadata.get("file_directory")
+                else metadata.get("file_name", "")
+            ),
+        }
+
+        # Add rich metadata from nested metadata object (confirmed structure)
+        rich_metadata_fields = {
+            "original_filename": metadata.get("file_name"),
+            "file_size": metadata.get("file_size"),
+            "original_file_type": metadata.get("file_type")
+            or metadata.get("original_file_type"),
+            "word_count": metadata.get("word_count"),
+            "char_count": metadata.get("character_count")
+            or metadata.get("char_count")
+            or metadata.get("line_count"),
+            "chunk_index": metadata.get("sub_chunk_index", chunk_index),
+            "total_chunks": metadata.get("total_sub_chunks", total_chunks),
+            "chunking_strategy": metadata.get("chunking_strategy")
+            or metadata.get("conversion_method"),
+            # Project fields now come from root payload; avoid overriding with nested metadata
+            "collection_name": metadata.get("collection_name"),
+            # Additional rich fields from actual Qdrant structure
+            "section_title": metadata.get("section_title"),
+            "parent_section": metadata.get("parent_section"),
+            "file_encoding": metadata.get("file_encoding"),
+            "conversion_failed": metadata.get("conversion_failed", False),
+            "is_excel_sheet": metadata.get("is_excel_sheet", False),
+        }
+
+        # Only add non-None values to avoid conflicts
+        for key, value in rich_metadata_fields.items():
+            if value is not None:
+                enhanced_metadata[key] = value
+
+        # Merge with flattened metadata components (flattened takes precedence for conflicts)
+        flattened_components = flatten_metadata_components(metadata_components)
+        enhanced_metadata.update(flattened_components)
+
+        return enhanced_metadata
+
+
+    def is_result_filtered(self, use_wrrf: bool, wrrf_score: float, chunk_score: float):
+        # Scale minimum threshold
+        wrrf_min_score = self.min_score * ((self._scorer.vector_weight + self._scorer.keyword_weight) / (WRRF_CONSTANT + 1))
+        # Filter low wrrf
+        if use_wrrf and wrrf_score <= wrrf_min_score:
+            return True
+
+        # Fallback to standard filter
+        if chunk_score <= self.min_score:
+            return True
+        return False
+
+    async def combine_results(
+        self,
+        vector_results: list[dict[str, Any]],
+        keyword_results: list[dict[str, Any]],
+        query_context: dict[str, Any],
+        limit: int,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None,
+    ) -> list[HybridSearchResult]:
+        """Combine and rerank results using Weighted Recipocal Rerank Fusion from vector (dense) and keyword (sparse) search.
+
+        Args:
+            vector_results: Results from vector search
+            keyword_results: Results from keyword search
+            query_context: Query analysis context
+            limit: Maximum number of results to return
+            source_types: Optional source type filters
+            project_ids: Optional project ID filters
+
+        Returns:
+            List of combined and ranked HybridSearchResult objects
+        """
+        combined_dict = self.merge_results_with_wrrf(vector_results=vector_results, keyword_results=keyword_results)
 
         # Calculate combined scores and create results
         combined_results = []
@@ -122,160 +253,64 @@ class ResultCombiner:
         adaptive_config = query_context.get("adaptive_config")
         result_filters = adaptive_config.result_filters if adaptive_config else {}
 
+        # Naive WRRF trigger
+        use_wrrf = len(combined_dict.keys()) >= 10
+
         for text, info in combined_dict.items():
             # Skip if source type doesn't match filter
             if source_types and info["source_type"] not in source_types:
                 continue
-
-            metadata = info["metadata"]
-
             # Apply intent-specific result filtering
+            metadata = info["metadata"]
             if search_intent and result_filters:
                 if should_skip_result(metadata, result_filters, query_context):
                     continue
 
-            combined_score = self._scorer.compute(
-                ScoreComponents(
-                    vector_score=info["vector_score"],
-                    keyword_score=info["keyword_score"],
-                    metadata_score=0.0,  # Preserve legacy behavior (no metadata in base score)
-                )
+            wrrf_score = info['wrrf_score']
+            # Fallback to standard weighting scoring
+            chunk_score = (info['keyword_score'] * self._scorer.keyword_weight) + (info['vector_score'] * self._scorer.vector_weight)
+
+            # Filter based on WRRF or standard scores and weighting
+            if self.is_result_filtered(use_wrrf, wrrf_score, chunk_score):
+                continue
+
+            score = wrrf_score if use_wrrf else chunk_score
+
+            # Extract all metadata components
+            metadata_components = self.metadata_extractor.extract_all_metadata(
+                metadata
             )
 
-            if combined_score >= self.min_score:
-                # Extract all metadata components
-                metadata_components = self.metadata_extractor.extract_all_metadata(
-                    metadata
-                )
+            # TODO: Evaluate metadata score boosting with WRRF and in general - Boost score with metadata
+            boosted_score = boost_score_with_metadata(
+                score,
+                metadata,
+                query_context,
+                spacy_analyzer=self.spacy_analyzer,
+            )
+            chunk_index = metadata.get("chunk_index")
+            total_chunks = metadata.get("total_chunks")
 
-                # Boost score with metadata
-                boosted_score = boost_score_with_metadata(
-                    combined_score,
-                    metadata,
-                    query_context,
-                    spacy_analyzer=self.spacy_analyzer,
-                )
+            title = self.extract_chunk_title(info=info, metadata=metadata, chunk_index=chunk_index, total_chunks=total_chunks)
+            enhanced_metadata = self.merge_rich_and_enhanced_metadata(info=info, metadata=metadata, metadata_components=metadata_components, chunk_index=chunk_index, total_chunks=total_chunks)
 
-                # Extract fields from both direct payload fields and nested metadata
-                # Use direct fields from Qdrant payload when available, fallback to metadata
-                title = info.get("title", "") or metadata.get("title", "")
+            # NOTE: No additional fallback; root payload project_id is authoritative
 
-                # Extract rich metadata from nested metadata object
-                file_name = metadata.get("file_name", "")
-                metadata.get("file_type", "")
-                chunk_index = metadata.get("chunk_index")
-                total_chunks = metadata.get("total_chunks")
+            # Create HybridSearchResult using factory function
+            hybrid_result = create_hybrid_search_result(
+                score=boosted_score,
+                text=text,
+                source_type=info["source_type"],
+                source_title=title,
+                vector_score=info["vector_score"],
+                keyword_score=info["keyword_score"],
+                **enhanced_metadata,
+            )
 
-                # Enhanced title generation using actual Qdrant structure
-                # Priority: root title > nested section_title > file_name + chunk info > source
-                root_title = info.get(
-                    "title", ""
-                )  # e.g., "Stratégie commerciale MYA.pdf - Chunk 2"
-                nested_title = metadata.get("title", "")  # e.g., "Preamble (Part 2)"
-                section_title = metadata.get("section_title", "")
-
-                if root_title:
-                    title = root_title
-                elif nested_title:
-                    title = nested_title
-                elif section_title:
-                    title = section_title
-                elif file_name:
-                    title = file_name
-                    # Add chunk info if available from nested metadata
-                    sub_chunk_index = metadata.get("sub_chunk_index")
-                    total_sub_chunks = metadata.get("total_sub_chunks")
-                    if sub_chunk_index is not None and total_sub_chunks is not None:
-                        title += (
-                            f" - Chunk {int(sub_chunk_index) + 1}/{total_sub_chunks}"
-                        )
-                    elif chunk_index is not None and total_chunks is not None:
-                        title += f" - Chunk {int(chunk_index) + 1}/{total_chunks}"
-                else:
-                    source = info.get("source", "") or metadata.get("source", "")
-                    if source:
-                        # Extract filename from path-like sources
-                        import os
-
-                        title = (
-                            os.path.basename(source)
-                            if "/" in source or "\\" in source
-                            else source
-                        )
-                    else:
-                        title = "Untitled"
-
-                # Create enhanced metadata dict with rich Qdrant fields
-                enhanced_metadata = {
-                    # Core fields from root level of Qdrant payload
-                    "source_url": info.get("url", ""),
-                    "document_id": info.get("document_id", ""),
-                    "created_at": info.get("created_at", ""),
-                    "last_modified": info.get("updated_at", ""),
-                    "repo_name": info.get("source", ""),
-                    # Project scoping is stored at the root as 'source'
-                    "project_id": info.get("source", ""),
-                    # Construct file path from nested metadata
-                    "file_path": (
-                        metadata.get("file_directory", "").rstrip("/")
-                        + "/"
-                        + metadata.get("file_name", "")
-                        if metadata.get("file_name") and metadata.get("file_directory")
-                        else metadata.get("file_name", "")
-                    ),
-                }
-
-                # Add rich metadata from nested metadata object (confirmed structure)
-                rich_metadata_fields = {
-                    "original_filename": metadata.get("file_name"),
-                    "file_size": metadata.get("file_size"),
-                    "original_file_type": metadata.get("file_type")
-                    or metadata.get("original_file_type"),
-                    "word_count": metadata.get("word_count"),
-                    "char_count": metadata.get("character_count")
-                    or metadata.get("char_count")
-                    or metadata.get("line_count"),
-                    "chunk_index": metadata.get("sub_chunk_index", chunk_index),
-                    "total_chunks": metadata.get("total_sub_chunks", total_chunks),
-                    "chunking_strategy": metadata.get("chunking_strategy")
-                    or metadata.get("conversion_method"),
-                    # Project fields now come from root payload; avoid overriding with nested metadata
-                    "collection_name": metadata.get("collection_name"),
-                    # Additional rich fields from actual Qdrant structure
-                    "section_title": metadata.get("section_title"),
-                    "parent_section": metadata.get("parent_section"),
-                    "file_encoding": metadata.get("file_encoding"),
-                    "conversion_failed": metadata.get("conversion_failed", False),
-                    "is_excel_sheet": metadata.get("is_excel_sheet", False),
-                }
-
-                # Only add non-None values to avoid conflicts
-                for key, value in rich_metadata_fields.items():
-                    if value is not None:
-                        enhanced_metadata[key] = value
-
-                # Merge with flattened metadata components (flattened takes precedence for conflicts)
-                flattened_components = flatten_metadata_components(metadata_components)
-                enhanced_metadata.update(flattened_components)
-
-                # NOTE: No additional fallback; root payload project_id is authoritative
-
-                # Create HybridSearchResult using factory function
-                hybrid_result = create_hybrid_search_result(
-                    score=boosted_score,
-                    text=text,
-                    source_type=info["source_type"],
-                    source_title=title,
-                    vector_score=info["vector_score"],
-                    keyword_score=info["keyword_score"],
-                    **enhanced_metadata,
-                )
-
-                combined_results.append(hybrid_result)
+            combined_results.append(hybrid_result)
 
         # Sort by combined score
         combined_results.sort(key=lambda x: x.score, reverse=True)
-
         # Apply diversity filtering for exploratory intents
         if adaptive_config and adaptive_config.diversity_factor > 0.0:
             try:
