@@ -217,10 +217,11 @@ class ResultCombiner:
             return True
 
         # Fallback to standard filter
-        if chunk_score <= self.min_score:
+        if not use_wrrf and chunk_score <= self.min_score:
             return True
         return False
 
+    # TODO: Leaving project_ids to check if we should add it later on. We should check the git blame for the intent.
     async def combine_results(
         self,
         vector_results: list[dict[str, Any]],
