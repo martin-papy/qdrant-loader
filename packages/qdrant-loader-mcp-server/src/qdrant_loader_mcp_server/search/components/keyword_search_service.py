@@ -1,7 +1,6 @@
 """Keyword search service for hybrid search."""
 
 import asyncio
-import re
 from typing import Any
 
 import numpy as np
@@ -177,17 +176,29 @@ class KeywordSearchService:
 
     @staticmethod
     def _tokenize(text: str) -> list[str]:
-        """Tokenize text using regex-based word tokenization and lowercasing."""
+        """Tokenize text using NLTK RegexpTokenizer word tokenization.
+
+        See: https://www.nltk.org/api/nltk.tokenize.regexp.html
+        """
+        from nltk.tokenize import RegexpTokenizer
+
         if not isinstance(text, str):
             return []
-        return re.findall(r"\b\w+\b", text.lower())
+        return RegexpTokenizer(r"\b\w+\b").tokenize(text)
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.
 
-        Tokenizes documents and query with regex word tokenization and lowercasing.
+        Tokenizes documents and query with NLTK regex word tokenization.
         """
+        import nltk
+        from nltk.corpus import stopwords
+        from nltk.stem import SnowballStemmer
+
+        nltk.download('stopwords', quiet=True)
+        stop_words = set(stopwords.words('english'))
+
         tokenized_docs = [self._tokenize(doc) for doc in documents]
         bm25 = BM25Okapi(tokenized_docs)
-        tokenized_query = self._tokenize(query)
+        tokenized_query = [SnowballStemmer(language="english").stem(word) for word in self._tokenize(query) if word not in stop_words]
         return bm25.get_scores(tokenized_query)
