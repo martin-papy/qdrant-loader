@@ -111,7 +111,7 @@ async def run_search(
                     normalizer=hybrid_pipeline.normalizer,
                     deduplicator=hybrid_pipeline.deduplicator,
                 )
-                combined_results: HybridSearchResult = await engine._orchestrator.run_pipeline(
+                combined_results: list[HybridSearchResult] = await engine._orchestrator.run_pipeline(
                     local_pipeline,
                     query=query,
                     limit=fetch_limit,
@@ -124,7 +124,7 @@ async def run_search(
             else:
                 # Custom or mocked pipeline: honor its run override without cloning
                 combined_results: HybridSearchResult = await engine._orchestrator.run_pipeline(
-                    p,
+                    hybrid_pipeline,
                     query=query,
                     limit=fetch_limit,
                     query_context=query_context,

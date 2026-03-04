@@ -3,6 +3,7 @@
 import asyncio
 from typing import Any
 
+import nltk
 import numpy as np
 from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
@@ -29,6 +30,11 @@ class KeywordSearchService:
         self.collection_name = collection_name
         self.field_parser = FieldQueryParser()
         self.logger = LoggingConfig.get_logger(__name__)
+
+        try:
+            nltk.data.find("corpora/stopwords")
+        except LookupError:
+            nltk.download("stopwords")
 
     async def keyword_search(
         self,
@@ -181,24 +187,21 @@ class KeywordSearchService:
         See: https://www.nltk.org/api/nltk.tokenize.regexp.html
         """
         from nltk.tokenize import RegexpTokenizer
+        from nltk.corpus import stopwords
+        from nltk.stem import SnowballStemmer
 
         if not isinstance(text, str):
             return []
-        return RegexpTokenizer(r"\b\w+\b").tokenize(text)
+        stop_words = set(stopwords.words('english'))
+        tokenized_text = RegexpTokenizer(r"\b\w+\b").tokenize(text)
+        return [SnowballStemmer(language="english").stem(word) for word in tokenized_text if word not in stop_words]
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.
 
         Tokenizes documents and query with NLTK regex word tokenization.
         """
-        import nltk
-        from nltk.corpus import stopwords
-        from nltk.stem import SnowballStemmer
-
-        nltk.download('stopwords', quiet=True)
-        stop_words = set(stopwords.words('english'))
-
         tokenized_docs = [self._tokenize(doc) for doc in documents]
         bm25 = BM25Okapi(tokenized_docs)
-        tokenized_query = [SnowballStemmer(language="english").stem(word) for word in self._tokenize(query) if word not in stop_words]
+        tokenized_query = self._tokenize(query)
         return bm25.get_scores(tokenized_query)
