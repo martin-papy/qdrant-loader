@@ -5,6 +5,7 @@ from typing import Any, List, Tuple
 
 try:
     from sentence_transformers import CrossEncoder
+    import torch
 except ImportError:
     CrossEncoder = None
 
@@ -14,14 +15,11 @@ class CrossEncoderReranker:
 
     def __init__(
         self,
-        model_name: str,
-        device: str = "cpu",
-        batch_size: int = 32,
         enabled: bool = True,
     ):
-        self.model_name = model_name
-        self.device = device
-        self.batch_size = batch_size
+        self.model_name = "cross-encoder/ms-marco-MiniLM-L-12-v2"
+        self.device = self._get_optimal_device()
+        self.batch_size = 32
         self.enabled = enabled
 
         self.model: CrossEncoder | None = None
@@ -37,6 +35,20 @@ class CrossEncoderReranker:
                 "Install with: pip install sentence-transformers"
             )
             self.enabled = False
+
+    def _get_optimal_device(self) -> str:
+        """Check the device to run reranking on: CUDA -> MPS -> CPU"""
+        if torch is None:
+            return "cpu"
+
+        if torch.cuda.is_available():
+            return "cuda"
+
+        # torch >= 1.12 and macOS supports Metal
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+
+        return "cpu"
 
     def _load_model(self) -> None:
 
