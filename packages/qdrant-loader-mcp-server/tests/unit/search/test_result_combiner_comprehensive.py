@@ -206,7 +206,7 @@ class TestCombineResultsCore:
                 vector_results=sample_vector_results,
                 keyword_results=sample_keyword_results,
                 query_context=sample_query_context,
-                limit=10,
+                limit=9,
             )
 
         # Find the overlapping result (same text in both vector and keyword)
