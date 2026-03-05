@@ -1,13 +1,16 @@
 """Vector search service for hybrid search."""
 
+from __future__ import annotations
+
 import hashlib
 import time
 from asyncio import Lock
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from qdrant_client import AsyncQdrantClient
-from qdrant_client.http import models
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
+    from qdrant_client.http import models as qdrant_models
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
@@ -239,6 +242,8 @@ class VectorSearchService:
                 results.append(FilterResult(1.0, point.payload))
         else:
             # Hybrid search (vector search + field filters)
+            from qdrant_client.http import models
+
             search_query = parsed_query.text_query if parsed_query.text_query else query
             query_embedding = await self.get_embedding(search_query)
 
@@ -332,7 +337,7 @@ class VectorSearchService:
 
     def _build_filter(
         self, project_ids: list[str] | None = None
-    ) -> models.Filter | None:
+    ) -> qdrant_models.Filter | None:
         """Legacy method for backward compatibility - use FieldQueryParser instead.
 
         Args:
@@ -357,7 +362,7 @@ class VectorSearchService:
 
     def build_filter(
         self, project_ids: list[str] | None = None
-    ) -> models.Filter | None:
+    ) -> qdrant_models.Filter | None:
         """Public wrapper for building a Qdrant filter for project constraints.
 
         Prefer using `FieldQueryParser.create_qdrant_filter` for field queries. This

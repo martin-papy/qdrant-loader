@@ -1,9 +1,13 @@
 """Field query parser for handling field-specific search syntax."""
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from qdrant_client.http import models
+if TYPE_CHECKING:
+    from qdrant_client.http import models as qdrant_models
 
 from ...utils.logging import LoggingConfig
 
@@ -142,7 +146,7 @@ class FieldQueryParser:
         self,
         field_queries: list[FieldQuery] | None,
         project_ids: list[str] | None = None,
-    ) -> models.Filter | None:
+    ) -> qdrant_models.Filter | None:
         """
         Build a Qdrant Filter from parsed field queries and optional project IDs.
 
@@ -155,6 +159,8 @@ class FieldQueryParser:
         Returns:
             models.Filter | None: A Qdrant Filter containing the required must conditions, or None if no filter conditions were created.
         """
+        from qdrant_client.http import models
+
         must_conditions = []
 
         # Add field query conditions

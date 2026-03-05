@@ -26,7 +26,7 @@ def test_factory_routes_to_noop_on_openai_init_failure(monkeypatch):
         def __init__(self, *args, **kwargs):  # type: ignore[no-untyped-def]
             raise RuntimeError("boom")
 
-    monkeypatch.setattr(factory, "OpenAIProvider", _BadProvider)
+    monkeypatch.setattr(openai_mod, "OpenAIProvider", _BadProvider)
 
     provider = factory.create_provider(
         _settings("openai", base_url="https://api.openai.com/v1")
@@ -58,8 +58,10 @@ def test_factory_azure_error_returns_noop(monkeypatch):
             raise RuntimeError("boom")
 
     # If Azure provider is importable, force failure path
-    if getattr(factory, "AzureOpenAIProvider", None) is not None:
-        monkeypatch.setattr(factory, "AzureOpenAIProvider", _BadAzure)
+    if azure_mod.AzureOpenAIProvider is not None:
+        monkeypatch.setattr(azure_mod, "AzureOpenAIProvider", _BadAzure)
+        # Reset the lazy cache so _get_azure_provider_class() re-imports the patched class
+        monkeypatch.setattr(factory, "_azure_provider_class", factory._SENTINEL)
         provider = factory.create_provider(
             _settings("azure_openai", base_url="https://x.openai.azure.com")
         )
