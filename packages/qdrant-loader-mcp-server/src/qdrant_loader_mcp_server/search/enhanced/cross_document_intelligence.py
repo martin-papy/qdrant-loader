@@ -33,7 +33,8 @@ from .cdi.models import (
     SimilarityMetric,
 )
 
-# Re-export NetworkX for test compatibility
+# Re-export NetworkX for test compatibility (tests patch nx.hits, nx.pagerank, etc.)
+# This module is only imported when CDI functionality is needed, so this is acceptable
 try:
     import networkx as nx
 except ImportError:
