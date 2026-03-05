@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import nltk
 import numpy as np
+from nltk.stem import SnowballStemmer
 from rank_bm25 import BM25Okapi
 
 if TYPE_CHECKING:
@@ -34,11 +35,18 @@ class KeywordSearchService:
         self.collection_name = collection_name
         self.field_parser = FieldQueryParser()
         self.logger = LoggingConfig.get_logger(__name__)
+        self._stemmer = SnowballStemmer(language="english")
 
         try:
+            from nltk.corpus import stopwords
+
             nltk.data.find("corpora/stopwords")
+
         except LookupError:
             nltk.download("stopwords")
+        finally:
+            self._stop_words = set(stopwords.words('english'))
+
 
     async def keyword_search(
         self,
@@ -183,22 +191,17 @@ class KeywordSearchService:
         return results
 
     # Note: _build_filter method removed - now using FieldQueryParser.create_qdrant_filter()
-
-    @staticmethod
-    def _tokenize(text: str) -> list[str]:
+    def _tokenize(self, text: str) -> list[str]:
         """Tokenize text using NLTK RegexpTokenizer word tokenization.
 
         See: https://www.nltk.org/api/nltk.tokenize.regexp.html
         """
         from nltk.tokenize import RegexpTokenizer
-        from nltk.corpus import stopwords
-        from nltk.stem import SnowballStemmer
 
         if not isinstance(text, str):
             return []
-        stop_words = set(stopwords.words('english'))
         tokenized_text = RegexpTokenizer(r"\b\w+\b").tokenize(text)
-        return [SnowballStemmer(language="english").stem(word) for word in tokenized_text if word not in stop_words]
+        return [self._stemmer.stem(word) for word in tokenized_text if word not in self._stop_words]
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.
