@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import nltk
 import numpy as np
 from nltk.stem import SnowballStemmer
+from nltk.tokenize import RegexpTokenizer
 from rank_bm25 import BM25Okapi
 
 if TYPE_CHECKING:
@@ -196,12 +197,11 @@ class KeywordSearchService:
 
         See: https://www.nltk.org/api/nltk.tokenize.regexp.html
         """
-        from nltk.tokenize import RegexpTokenizer
 
         if not isinstance(text, str):
             return []
-        tokenized_text = RegexpTokenizer(r"\b\w+\b").tokenize(text)
-        return [self._stemmer.stem(word) for word in tokenized_text if word not in self._stop_words]
+        tokenized_text: list[str] = RegexpTokenizer(r"\b\w+\b").tokenize(text)
+        return [self._stemmer.stem(word) for word in tokenized_text if word.lower() not in self._stop_words]
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.

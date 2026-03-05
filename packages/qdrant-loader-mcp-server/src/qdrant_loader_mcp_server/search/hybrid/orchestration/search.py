@@ -6,7 +6,7 @@ from typing import Any
 from ...components.result_combiner import ResultCombiner
 from ...components.search_result_models import HybridSearchResult
 from ..components.helpers import combine_results as _combine_results_helper
-from ..pipeline import HybridPipeline, HybridSearchResult
+from ..pipeline import HybridPipeline
 
 logger = logging.getLogger(__name__)
 
