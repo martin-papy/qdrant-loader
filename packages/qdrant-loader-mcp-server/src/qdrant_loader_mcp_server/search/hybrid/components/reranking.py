@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List
+from typing import Any
 
 from .cross_encoder_reranker import CrossEncoderReranker
 
@@ -33,10 +33,10 @@ class HybridReranker:
     def rerank(
         self,
         query: str,
-        results: List[Any],
+        results: list[Any],
         top_k: int | None = None,
         text_key: str = "text",
-    ) -> List[Any]:
+    ) -> list[Any]:
 
         if not results or self.cross_encoder is None:
             return results

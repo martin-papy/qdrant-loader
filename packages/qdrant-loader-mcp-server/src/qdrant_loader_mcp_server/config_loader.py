@@ -18,8 +18,9 @@ from typing import Any
 
 import yaml
 
-from .config import Config, OpenAIConfig, QdrantConfig, SearchConfig
 from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+from .config import Config, OpenAIConfig, QdrantConfig, SearchConfig
 from .utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)

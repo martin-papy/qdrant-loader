@@ -4,8 +4,8 @@ import asyncio
 import inspect
 from typing import Any
 
-from ..search.hybrid.components.reranking import HybridReranker
 from ..search.engine import SearchEngine
+from ..search.hybrid.components.reranking import HybridReranker
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
@@ -23,6 +23,7 @@ from .protocol import MCPProtocol
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
 
 from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 
 class SearchHandler:
     """Handler for search-related operations."""

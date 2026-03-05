@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, Field
 
+
 class MCPReranking(BaseModel):
     """Reranking model."""
 

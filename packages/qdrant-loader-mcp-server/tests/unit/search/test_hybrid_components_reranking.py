@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from qdrant_loader_mcp_server.search.hybrid.components.reranking import HybridReranker
+
 
 @pytest.fixture
 def sample_results():

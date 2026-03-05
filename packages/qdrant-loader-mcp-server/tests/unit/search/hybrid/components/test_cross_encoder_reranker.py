@@ -1,7 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
-from qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker import CrossEncoderReranker
+import pytest
+from qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker import (
+    CrossEncoderReranker,
+)
+
 
 class DummyResult:
     def __init__(self, text):

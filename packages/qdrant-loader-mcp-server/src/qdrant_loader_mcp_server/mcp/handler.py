@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig, get_version
@@ -9,7 +11,6 @@ from .intelligence_handler import IntelligenceHandler
 from .protocol import MCPProtocol
 from .schemas import MCPSchemas
 from .search_handler import SearchHandler
-from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.handler")
