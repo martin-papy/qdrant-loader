@@ -10,13 +10,33 @@ This package provides a comprehensive search engine through modular components:
 - strategies: Search strategy selection and optimization
 """
 
-# Re-export the main SearchEngine class and clients for backward compatibility
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+# Re-export the main SearchEngine class for backward compatibility
 from ..hybrid_search import HybridSearchEngine
-from .core import AsyncOpenAI, AsyncQdrantClient, SearchEngine
+from .core import SearchEngine
+
+# Lazy re-exports for backward compatibility (only imported when accessed)
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
+
+    AsyncOpenAI = None  # type: ignore[assignment]
 
 __all__ = [
     "SearchEngine",
-    "AsyncQdrantClient",
-    "AsyncOpenAI",
     "HybridSearchEngine",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy import for backward compatibility."""
+    if name == "AsyncQdrantClient":
+        from qdrant_client import AsyncQdrantClient
+
+        return AsyncQdrantClient
+    if name == "AsyncOpenAI":
+        # Return None as it was in core.py
+        return None
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

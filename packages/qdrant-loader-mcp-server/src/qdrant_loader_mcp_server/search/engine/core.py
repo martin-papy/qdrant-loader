@@ -5,12 +5,16 @@ This module implements the core SearchEngine class with initialization,
 configuration management, and resource cleanup functionality.
 """
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
-from qdrant_client import AsyncQdrantClient, models
+
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
 
 from ...config import OpenAIConfig, QdrantConfig, SearchConfig
 from ...utils.logging import LoggingConfig
@@ -23,11 +27,22 @@ from .search import SearchOperations
 from .strategies import StrategySelector
 from .topic_chain import TopicChainOperations
 
-# Expose OpenAI Async client symbol at module scope for tests to patch only.
-# Do not import the OpenAI library at runtime to avoid hard dependency.
+# Expose client symbols at module scope for tests to patch only.
+# Do not import the libraries at runtime to avoid hard dependency - use lazy loading.
 AsyncOpenAI = None  # type: ignore[assignment]
+AsyncQdrantClient = None  # type: ignore[assignment] - will be lazy loaded
 
 logger = LoggingConfig.get_logger(__name__)
+
+
+def _get_async_qdrant_client():
+    """Get AsyncQdrantClient class, using module-level if patched, otherwise lazy import."""
+    global AsyncQdrantClient
+    if AsyncQdrantClient is not None:
+        return AsyncQdrantClient
+    from qdrant_client import AsyncQdrantClient as _AsyncQdrantClient
+
+    return _AsyncQdrantClient
 
 
 def _safe_value_to_dict(value_obj: object) -> dict:
@@ -93,6 +108,11 @@ class SearchEngine:
         search_config: SearchConfig | None = None,
     ) -> None:
         """Initialize the search engine with configuration."""
+        from qdrant_client.http import models
+
+        # Use helper to get client class (supports test patching)
+        QdrantClientClass = _get_async_qdrant_client()
+
         self.config = config
         try:
             # Configure timeout for Qdrant cloud instances
@@ -103,7 +123,7 @@ class SearchEngine:
             }
             if getattr(config, "api_key", None):
                 client_kwargs["api_key"] = config.api_key
-            self.client = AsyncQdrantClient(**client_kwargs)
+            self.client = QdrantClientClass(**client_kwargs)
             # Keep legacy OpenAI client for now only when tests patch AsyncOpenAI
             try:
                 if AsyncOpenAI is not None and getattr(openai_config, "api_key", None):
