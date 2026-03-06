@@ -34,7 +34,7 @@ def test_disabled_reranker_returns_results_unchanged(mock_ce):
 def test_model_loads_once(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
 
-    reranker = CrossEncoderReranker("test-model")
+    reranker = CrossEncoderReranker("test-model", device="cpu")
 
     results = [{"text": "a"}]
     reranker.rerank("query", results)

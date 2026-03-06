@@ -19,11 +19,11 @@ try:
 except ImportError:
     pass
 
-_CrossEncoder: type[CrossEncoder] | None = None
+CrossEncoder: type[CrossEncoder] | None = None
 try:
-    from sentence_transformers import CrossEncoder as _CrossEncoder
+    from sentence_transformers import CrossEncoder
 except ImportError:
-    pass
+    CrossEncoder = None
 
 
 class CrossEncoderReranker:
@@ -48,7 +48,7 @@ class CrossEncoderReranker:
             self.logger.info("Cross-encoder reranking disabled")
             return
 
-        if _CrossEncoder is None:
+        if CrossEncoder is None:
             self.logger.warning(
                 "sentence-transformers not installed. "
                 "Install with: pip install sentence-transformers"
@@ -74,14 +74,14 @@ class CrossEncoderReranker:
         if self.model is not None:
             return
 
-        if _CrossEncoder is None:
+        if CrossEncoder is None:
             return
 
         try:
             self.logger.info(
                 f"Loading cross-encoder model: {self.model_name} on {self.device}"
             )
-            self.model = _CrossEncoder(self.model_name, device=self.device)
+            self.model = CrossEncoder(self.model_name, device=self.device)
             self.logger.info("Cross-encoder model loaded")
         except Exception as e:
             self.logger.error(f"Failed to load cross-encoder model: {e}")
