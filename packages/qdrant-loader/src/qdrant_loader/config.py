@@ -1,7 +1,5 @@
 """Configuration management for the application."""
 
-from decimal import Context
-
 from pydantic import BaseModel, Field
 
 
@@ -32,21 +30,6 @@ class ChunkingConfig(BaseModel):
     )
 
 
-class ContextualEmbeddingConfig(BaseModel):
-    """Configuration for contextual embedding."""
-
-    enabled: bool = Field(default=False, description="Enable contextual embedding")
-    include_title: bool = Field(
-        default=True, description="Include title in the embedding"
-    )
-    include_source_type: bool = Field(
-        default=True, description="Include source type in the embedding"
-    )
-    include_source: bool = Field(
-        default=False, description="Include source in the embedding"
-    )
-
-
 class GlobalConfig(BaseModel):
     """Global configuration settings."""
 
@@ -57,11 +40,6 @@ class GlobalConfig(BaseModel):
     semantic_analysis: SemanticAnalysisConfig = Field(
         default_factory=SemanticAnalysisConfig,
         description="Semantic analysis configuration",
-    )
-
-    contextual_embedding: ContextualEmbeddingConfig = Field(
-        default_factory=ContextualEmbeddingConfig,
-        description="Contextual embedding configuration",
     )
 
 

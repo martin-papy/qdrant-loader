@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ..utils.logging import LoggingConfig
 from .chunking import ChunkingConfig
+from .embedding import ContextualEmbeddingConfig
 
 # Import consolidated configs
 from .global_config import GlobalConfig, SemanticAnalysisConfig
@@ -65,6 +66,7 @@ def _get_connector_configs():
 __all__ = [
     "ChunkingConfig",
     "ConfluenceSpaceConfig",
+    "ContextualEmbeddingConfig",
     "GitAuthConfig",
     "GitRepoConfig",
     "GlobalConfig",

@@ -5,6 +5,27 @@ from pydantic import Field
 from qdrant_loader.config.base import BaseConfig
 
 
+class ContextualEmbeddingConfig(BaseConfig):
+    """Configuration for contextual embedding enrichment."""
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable contextual enrichment before generating embeddings",
+    )
+    include_title: bool = Field(
+        default=True,
+        description="Include the parent document title in the contextual prefix",
+    )
+    include_source_type: bool = Field(
+        default=True,
+        description="Include the parent document source type in the contextual prefix",
+    )
+    include_source: bool = Field(
+        default=False,
+        description="Include the parent document source identifier in the contextual prefix",
+    )
+
+
 class EmbeddingConfig(BaseConfig):
     """Configuration for embedding generation."""
 
