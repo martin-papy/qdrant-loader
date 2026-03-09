@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.core.pipeline.workers.embedding_worker import EmbeddingWorker
 
 
@@ -30,6 +31,7 @@ class TestEmbeddingWorker:
     def test_embedding_worker_initialization(self):
         """Test EmbeddingWorker initialization."""
         assert self.embedding_worker.embedding_service == self.mock_embedding_service
+        assert self.embedding_worker.contextual_embedding_config == self.mock_contextual_embedding_config
         assert self.embedding_worker.max_workers == 4
         assert self.embedding_worker.queue_size == 1000
         assert self.embedding_worker.shutdown_event == self.mock_shutdown_event
@@ -463,4 +465,5 @@ class TestEmbeddingWorker:
             [
                 "[Document: Mock Parent Document | Source: localfile]\n\nRaw chunk content"
             ]
+        )
         )
