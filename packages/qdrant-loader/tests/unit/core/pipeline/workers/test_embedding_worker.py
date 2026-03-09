@@ -16,9 +16,12 @@ class TestEmbeddingWorker:
         self.mock_embedding_service.batch_size = 10
         self.mock_shutdown_event = Mock(spec=asyncio.Event)
         self.mock_shutdown_event.is_set.return_value = False
+        self.mock_contextual_embedding_config = Mock()
+        self.mock_contextual_embedding_config.enabled = False
 
         self.embedding_worker = EmbeddingWorker(
             embedding_service=self.mock_embedding_service,
+            contextual_embedding_config=self.mock_contextual_embedding_config,
             max_workers=4,
             queue_size=1000,
             shutdown_event=self.mock_shutdown_event,
@@ -35,6 +38,7 @@ class TestEmbeddingWorker:
         """Test EmbeddingWorker initialization with default shutdown event."""
         worker = EmbeddingWorker(
             embedding_service=self.mock_embedding_service,
+            contextual_embedding_config=self.mock_contextual_embedding_config,
             max_workers=2,
             queue_size=500,
         )
@@ -418,3 +422,45 @@ class TestEmbeddingWorker:
 
         # Verify embedding service was not called
         self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+        self.mock_embedding_service.get_embeddings.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_uses_contextual_text_when_enabled(self):
+        """Test that contextual text is sent to the embedding service when enabled."""
+        mock_chunk = Mock()
+        mock_chunk.content = "Raw chunk content"
+        mock_chunk.id = "chunk1"
+        mock_chunk.metadata = {
+            "parent_document": Mock(
+                title="Mock Parent Document",
+                source_type="localfile",
+                source="demo-project",  # TODO: Discuss with team about test file
+            )
+        }
+
+        self.mock_contextual_embedding_config.enabled = True
+        self.mock_contextual_embedding_config.include_title = True
+        self.mock_contextual_embedding_config.include_source_type = True
+        self.mock_contextual_embedding_config.include_source = False
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            return_value=[[0.1, 0.2, 0.3]]
+        )
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            result = await self.embedding_worker.process([mock_chunk])
+
+        assert result == [(mock_chunk, [0.1, 0.2, 0.3])]
+        self.mock_embedding_service.get_embeddings.assert_called_once_with(
+            [
+                "[Document: Mock Parent Document | Source: localfile]\n\nRaw chunk content"
+            ]
+        )

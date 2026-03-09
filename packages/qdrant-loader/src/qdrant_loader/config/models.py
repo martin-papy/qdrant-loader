@@ -140,6 +140,9 @@ class ProjectStats(BaseModel):
 
     @field_serializer("last_updated")
     def serialize_last_updated(self, value: datetime | None) -> str | None:
+        """
+        Serialize the last updated timestamp to ISO format.
+        """
         return value.isoformat() if value else None
 
 
@@ -158,6 +161,7 @@ class ProjectInfo(BaseModel):
 
     @field_serializer("last_updated")
     def serialize_last_updated(self, value: datetime | None) -> str | None:
+        """Serialize the last updated timestamp to ISO format."""
         return value.isoformat() if value else None
 
 

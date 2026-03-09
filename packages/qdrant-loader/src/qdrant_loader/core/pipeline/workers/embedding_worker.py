@@ -7,6 +7,8 @@ from typing import Any
 
 import psutil
 
+from qdrant_loader.config.embedding import ContextualEmbeddingConfig
+from qdrant_loader.core.embedding import build_contextual_text
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
 from qdrant_loader.core.monitoring import prometheus_metrics
 from qdrant_loader.utils.logging import LoggingConfig
@@ -22,12 +24,14 @@ class EmbeddingWorker(BaseWorker):
     def __init__(
         self,
         embedding_service: EmbeddingService,
+        contextual_embedding_config: ContextualEmbeddingConfig | None = None,
         max_workers: int = 4,
         queue_size: int = 1000,
         shutdown_event: asyncio.Event | None = None,
     ):
         super().__init__(max_workers, queue_size)
         self.embedding_service = embedding_service
+        self.contextual_embedding_config = contextual_embedding_config
         self.shutdown_event = shutdown_event or asyncio.Event()
 
     async def process(self, chunks: list[Any]) -> list[tuple[Any, list[float]]]:
@@ -54,9 +58,17 @@ class EmbeddingWorker(BaseWorker):
                 gc.collect()
 
             with prometheus_metrics.EMBEDDING_DURATION.time():
+                embedding_inputs = [
+                    (
+                        build_contextual_text(chunk, self.contextual_embedding_config)
+                        if self.contextual_embedding_config is not None
+                        else chunk.content
+                    )
+                    for chunk in chunks
+                ]
                 # Add timeout to prevent hanging and check for shutdown
                 embeddings = await asyncio.wait_for(
-                    self.embedding_service.get_embeddings([c.content for c in chunks]),
+                    self.embedding_service.get_embeddings(embedding_inputs),
                     timeout=300.0,  # Increased to 5 minute timeout for large batches
                 )
 

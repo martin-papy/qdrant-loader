@@ -108,6 +108,10 @@ mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src:pa
 testpaths = [
     "tests",
 ]
+
+[tool.pylint."messages control"]
+disable = ["all"]
+
 norecursedirs = [
     "packages",
     ".*",

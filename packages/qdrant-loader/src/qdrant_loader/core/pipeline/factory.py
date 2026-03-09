@@ -91,6 +91,7 @@ class PipelineComponentsFactory:
 
         embedding_worker = EmbeddingWorker(
             embedding_service=embedding_service,
+            contextual_embedding_config=settings.global_config.contextual_embedding,
             max_workers=config.max_embed_workers,
             queue_size=config.queue_size,
             shutdown_event=resource_manager.shutdown_event,
