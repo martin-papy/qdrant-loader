@@ -19,7 +19,7 @@ def format_validation_errors(errors: list[dict[str, Any]]) -> Table:
     table.add_column("Suggestion", style="green")
 
     for err in errors:
-        loc = " -> ".join(str(l) for l in err.get("loc", []))
+        loc = " -> ".join(str(part) for part in err.get("loc", []))
         msg = err.get("msg", "Unknown error")
         suggestion = _suggest_fix(loc, msg)
         table.add_row(loc or "(root)", msg, suggestion)
@@ -53,8 +53,8 @@ def print_config_error(error: Exception) -> None:
 
         if isinstance(error, yaml.YAMLError):
             msg = "YAML syntax error in configuration file"
-            if hasattr(error, "problem_mark"):
-                mark = error.problem_mark
+            mark = getattr(error, "problem_mark", None)
+            if mark is not None:
                 msg += f" at line {mark.line + 1}, column {mark.column + 1}"
             _stderr_console.print(
                 Panel(
@@ -115,6 +115,8 @@ def _suggest_fix(field: str, message: str) -> str:
     msg_lower = message.lower()
     field_lower = field.lower()
 
+    if "qdrant" in field_lower and "api_key" in field_lower:
+        return "Set QDRANT_API_KEY in .env or environment"
     if "api_key" in field_lower or "api_key" in msg_lower:
         return "Set OPENAI_API_KEY in .env or environment"
     if "collection_name" in field_lower:

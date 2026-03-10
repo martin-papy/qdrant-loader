@@ -1,7 +1,5 @@
 """Tests for the config.py module."""
 
-import pytest
-from pydantic import ValidationError
 from qdrant_loader.config import (
     ChunkingConfig,
     GlobalConfig,
@@ -247,21 +245,32 @@ class TestSettings:
 
     def test_settings_properties_exist(self):
         """Test that expected properties exist on Settings."""
-        global_config = self._create_valid_global_config()
-        settings = Settings(global_config=global_config)
+        import os
 
-        # These properties should exist based on the Settings class
-        assert hasattr(settings, "global_config")
-        assert hasattr(settings, "projects_config")
+        # Temporarily remove QDRANT_* env vars that _auto_resolve_env_vars picks up
+        saved = {
+            k: os.environ.pop(k)
+            for k in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME")
+            if k in os.environ
+        }
+        try:
+            global_config = self._create_valid_global_config()
+            settings = Settings(global_config=global_config)
 
-        # Check if property methods exist and work
-        assert hasattr(Settings, "qdrant_url")
-        assert hasattr(Settings, "qdrant_api_key")
-        assert hasattr(Settings, "qdrant_collection_name")
-        assert hasattr(Settings, "openai_api_key")
-        assert hasattr(Settings, "state_db_path")
+            # These properties should exist based on the Settings class
+            assert hasattr(settings, "global_config")
+            assert hasattr(settings, "projects_config")
 
-        # Test that properties work
-        assert settings.qdrant_url == "http://localhost:6333"
-        assert settings.qdrant_collection_name == "test_collection"
-        assert settings.qdrant_api_key is None
+            # Check if property methods exist and work
+            assert hasattr(Settings, "qdrant_url")
+            assert hasattr(Settings, "qdrant_api_key")
+            assert hasattr(Settings, "qdrant_collection_name")
+            assert hasattr(Settings, "openai_api_key")
+            assert hasattr(Settings, "state_db_path")
+
+            # Test that properties work
+            assert settings.qdrant_url == "http://localhost:6333"
+            assert settings.qdrant_collection_name == "test_collection"
+            assert settings.qdrant_api_key is None
+        finally:
+            os.environ.update(saved)

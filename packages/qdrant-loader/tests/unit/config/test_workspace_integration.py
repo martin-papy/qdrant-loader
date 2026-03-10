@@ -78,8 +78,12 @@ test_key_for_workspace=workspace_value
             == (temp_workspace / "data" / "qdrant-loader.db").resolve()
         )
 
-    def test_workspace_configuration_initialization(self, temp_workspace):
+    def test_workspace_configuration_initialization(self, temp_workspace, monkeypatch):
         """Test configuration initialization with workspace."""
+        # Remove env vars that would override config values in CI
+        for var in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME"):
+            monkeypatch.delenv(var, raising=False)
+
         workspace_config = setup_workspace(temp_workspace)
 
         # Initialize configuration with workspace

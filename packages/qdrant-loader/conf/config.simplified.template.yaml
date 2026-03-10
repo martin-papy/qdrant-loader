@@ -6,7 +6,7 @@
 #   - Collection name: "documents" (or set QDRANT_COLLECTION_NAME env var)
 #   - Embedding model: text-embedding-3-small
 #   - Chunk size: 1500 chars, overlap: 200
-#   - State DB: in-memory (or set STATE_DB_PATH env var)
+#   - State DB: ./state.db (or set STATE_DB_PATH env var)
 #
 # Environment Variables (auto-resolved):
 #   - OPENAI_API_KEY  → fills embedding + LLM API key

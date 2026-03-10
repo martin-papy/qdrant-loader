@@ -6,15 +6,14 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 import yaml
 from qdrant_loader.config import Settings
 from qdrant_loader.config.state import StateManagementConfig
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _write_minimal_config(
     *,
@@ -100,19 +99,26 @@ class TestAutoEnvResolution:
             clean["QDRANT_URL"] = "http://remote.qdrant.example.com:6333"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
-            assert settings.global_config.qdrant.url == "http://remote.qdrant.example.com:6333"
+            assert (
+                settings.global_config.qdrant.url
+                == "http://remote.qdrant.example.com:6333"
+            )
         finally:
             os.unlink(config_path)
 
     def test_qdrant_url_does_not_override_config_value(self, tmp_path):
         """If qdrant.url is set to a non-default value in config, env var does not override."""
-        config_path = _write_minimal_config(qdrant_url="https://my-qdrant.internal:6333")
+        config_path = _write_minimal_config(
+            qdrant_url="https://my-qdrant.internal:6333"
+        )
         try:
             clean = _clean_env("QDRANT_URL")
             clean["QDRANT_URL"] = "http://should-not-win.example.com"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
-            assert settings.global_config.qdrant.url == "https://my-qdrant.internal:6333"
+            assert (
+                settings.global_config.qdrant.url == "https://my-qdrant.internal:6333"
+            )
         finally:
             os.unlink(config_path)
 
@@ -124,7 +130,9 @@ class TestAutoEnvResolution:
             clean["QDRANT_COLLECTION_NAME"] = "my_custom_collection"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
-            assert settings.global_config.qdrant.collection_name == "my_custom_collection"
+            assert (
+                settings.global_config.qdrant.collection_name == "my_custom_collection"
+            )
         finally:
             os.unlink(config_path)
 

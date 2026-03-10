@@ -197,9 +197,7 @@ class TestMultiProjectConfigParser:
         config_data = {
             "global": {"chunking": {"chunk_size": 500}},
             "sources": {
-                "git": {
-                    "my-repo": {"url": "https://github.com/example/repo.git"}
-                }
+                "git": {"my-repo": {"url": "https://github.com/example/repo.git"}}
             },
         }
 
@@ -232,13 +230,7 @@ class TestMultiProjectConfigParser:
 
     def test_normalize_config_sources_takes_priority_when_no_projects(self, parser):
         """Sources without projects gets a default project with display_name 'Default Project'."""
-        config_data = {
-            "sources": {
-                "localfile": {
-                    "docs": {"path": "/some/path"}
-                }
-            }
-        }
+        config_data = {"sources": {"localfile": {"docs": {"path": "/some/path"}}}}
 
         result = parser._normalize_config(config_data)
 

@@ -76,6 +76,12 @@ projects:
         # Set required environment variables
         os.environ["STATE_DB_PATH"] = "/tmp/test_template.db"
         os.environ["OPENAI_API_KEY"] = "test_api_key_12345"
+        # Remove QDRANT_* env vars so _auto_resolve_env_vars doesn't override config
+        saved_qdrant = {
+            k: os.environ.pop(k)
+            for k in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME")
+            if k in os.environ
+        }
 
         try:
             # Initialize configuration with template
@@ -93,6 +99,7 @@ projects:
                 del os.environ["STATE_DB_PATH"]
             if "OPENAI_API_KEY" in os.environ:
                 del os.environ["OPENAI_API_KEY"]
+            os.environ.update(saved_qdrant)
 
     def test_template_embedding_configuration(self, temp_config_file):
         """Test template embedding configuration."""

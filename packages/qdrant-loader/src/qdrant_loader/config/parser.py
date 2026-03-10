@@ -90,18 +90,25 @@ class MultiProjectConfigParser:
         has_projects = "projects" in config_data
         has_sources = "sources" in config_data
 
+        if has_sources and has_projects:
+            _get_logger().warning(
+                "Config has both 'projects' and top-level 'sources'; "
+                "top-level 'sources' will be ignored"
+            )
+
         if has_sources and not has_projects:
             _get_logger().debug(
                 "Simplified config detected: wrapping top-level 'sources' "
                 "into default project"
             )
-            sources = config_data.pop("sources")
-            config_data["projects"] = {
+            result = {k: v for k, v in config_data.items() if k != "sources"}
+            result["projects"] = {
                 "default": {
                     "display_name": "Default Project",
-                    "sources": sources,
+                    "sources": config_data["sources"],
                 }
             }
+            return result
 
         return config_data
 

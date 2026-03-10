@@ -35,6 +35,11 @@ def run_setup_wizard(output_dir: Path) -> None:
     """
     output_dir = Path(output_dir).resolve()
 
+    if output_dir.exists() and not output_dir.is_dir():
+        raise click.BadParameter(
+            f"'{output_dir}' exists but is not a directory.", param_hint="output_dir"
+        )
+
     console.print(
         Panel(
             "[bold]qdrant-loader Setup Wizard[/bold]\n"
@@ -79,10 +84,27 @@ def run_setup_wizard(output_dir: Path) -> None:
         console.print(
             f"\n[bold cyan]Step 3: Configure {SOURCE_TYPES[source_type]}[/bold cyan]"
         )
-        source_name: str = click.prompt(
-            "Source name (identifier)", default=f"my-{source_type}"
-        )
-        source_config, extra_env = _collect_source_config(source_type)
+        existing_names = all_sources.get(source_type, {})
+        existing_suffixes = {_source_name_to_env_suffix(n) for n in existing_names}
+        while True:
+            source_name = click.prompt(
+                "Source name (identifier)", default=f"my-{source_type}"
+            )
+            suffix = _source_name_to_env_suffix(source_name)
+            if source_name in existing_names:
+                console.print(
+                    f"[red]{source_type}/{source_name} already exists. "
+                    f"Pick a different name.[/red]"
+                )
+                continue
+            if suffix in existing_suffixes:
+                console.print(
+                    f"[red]'{source_name}' collides with an existing "
+                    f"env var suffix. Pick a different name.[/red]"
+                )
+                continue
+            break
+        source_config, extra_env = _collect_source_config(source_type, source_name)
 
         # Merge into all_sources
         if source_type not in all_sources:
@@ -148,11 +170,20 @@ def run_setup_wizard(output_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _collect_source_config(source_type: str) -> _SourceResult:
+def _source_name_to_env_suffix(source_name: str) -> str:
+    """Convert a source name like 'my-repo' to an env-var-safe suffix like 'MY_REPO'."""
+    import re
+
+    suffix = re.sub(r"[^A-Za-z0-9]", "_", source_name).strip("_").upper()
+    return suffix if suffix else "DEFAULT"
+
+
+def _collect_source_config(source_type: str, source_name: str) -> _SourceResult:
     """Dispatch to the correct collector based on *source_type*.
 
     Args:
         source_type: One of the keys in ``SOURCE_TYPES``.
+        source_name: User-chosen identifier, used to create unique env var names.
 
     Returns:
         A tuple of (source yaml dict, extra env-var dict).
@@ -167,18 +198,16 @@ def _collect_source_config(source_type: str) -> _SourceResult:
     collector = collectors.get(source_type)
     if collector is None:
         return {}, {}
-    return collector()
+    return collector(source_name)
 
 
-def _collect_git_config() -> _SourceResult:
+def _collect_git_config(source_name: str) -> _SourceResult:
     """Collect Git repository source configuration.
 
     Returns:
         Tuple of (source config dict, extra env vars).
     """
-    url: str = click.prompt(
-        "Repository URL (e.g., https://github.com/org/repo.git)"
-    )
+    url: str = click.prompt("Repository URL (e.g., https://github.com/org/repo.git)")
     branch: str = click.prompt("Branch", default="main")
     token: str = click.prompt(
         "Access token (leave empty for public repos)", default="", hide_input=True
@@ -196,13 +225,15 @@ def _collect_git_config() -> _SourceResult:
     extra_env: dict[str, str] = {}
 
     if token:
-        config["token"] = "${REPO_TOKEN}"
-        extra_env["REPO_TOKEN"] = token
+        suffix = _source_name_to_env_suffix(source_name)
+        env_key = f"GIT_TOKEN_{suffix}"
+        config["token"] = f"${{{env_key}}}"
+        extra_env[env_key] = token
 
     return config, extra_env
 
 
-def _collect_confluence_config() -> _SourceResult:
+def _collect_confluence_config(source_name: str) -> _SourceResult:
     """Collect Confluence source configuration.
 
     Returns:
@@ -215,54 +246,58 @@ def _collect_confluence_config() -> _SourceResult:
     email: str = click.prompt("Email")
     token: str = click.prompt("API token", hide_input=True)
 
+    suffix = _source_name_to_env_suffix(source_name)
+    token_key = f"CONFLUENCE_TOKEN_{suffix}"
+    email_key = f"CONFLUENCE_EMAIL_{suffix}"
+
     config: dict[str, Any] = {
         "base_url": base_url,
         "space_key": space_key,
-        "token": "${CONFLUENCE_TOKEN}",
-        "email": "${CONFLUENCE_EMAIL}",
+        "token": f"${{{token_key}}}",
+        "email": f"${{{email_key}}}",
     }
     extra_env: dict[str, str] = {
-        "CONFLUENCE_TOKEN": token,
-        "CONFLUENCE_EMAIL": email,
+        token_key: token,
+        email_key: email,
     }
     return config, extra_env
 
 
-def _collect_jira_config() -> _SourceResult:
+def _collect_jira_config(source_name: str) -> _SourceResult:
     """Collect Jira source configuration.
 
     Returns:
         Tuple of (source config dict, extra env vars).
     """
-    base_url: str = click.prompt(
-        "Jira URL (e.g., https://mycompany.atlassian.net)"
-    )
+    base_url: str = click.prompt("Jira URL (e.g., https://mycompany.atlassian.net)")
     project_key: str = click.prompt("Project key")
     email: str = click.prompt("Email")
     token: str = click.prompt("API token", hide_input=True)
 
+    suffix = _source_name_to_env_suffix(source_name)
+    token_key = f"JIRA_TOKEN_{suffix}"
+    email_key = f"JIRA_EMAIL_{suffix}"
+
     config: dict[str, Any] = {
         "base_url": base_url,
         "project_key": project_key,
-        "token": "${JIRA_TOKEN}",
-        "email": "${JIRA_EMAIL}",
+        "token": f"${{{token_key}}}",
+        "email": f"${{{email_key}}}",
     }
     extra_env: dict[str, str] = {
-        "JIRA_TOKEN": token,
-        "JIRA_EMAIL": email,
+        token_key: token,
+        email_key: email,
     }
     return config, extra_env
 
 
-def _collect_publicdocs_config() -> _SourceResult:
+def _collect_publicdocs_config(source_name: str) -> _SourceResult:
     """Collect Public Documentation source configuration.
 
     Returns:
         Tuple of (source config dict, extra env vars).
     """
-    base_url: str = click.prompt(
-        "Documentation URL (e.g., https://docs.example.com/)"
-    )
+    base_url: str = click.prompt("Documentation URL (e.g., https://docs.example.com/)")
     version: str = click.prompt("Version", default="latest")
     content_type: str = click.prompt(
         "Content type",
@@ -278,17 +313,19 @@ def _collect_publicdocs_config() -> _SourceResult:
     return config, {}
 
 
-def _collect_localfile_config() -> _SourceResult:
+def _collect_localfile_config(source_name: str) -> _SourceResult:
     """Collect Local Files source configuration.
 
     Returns:
         Tuple of (source config dict, extra env vars).
     """
-    path: str = click.prompt(
+    raw_path: str = click.prompt(
         "Directory path (e.g., /path/to/files or file:///path)"
     )
-    if not path.startswith("file://"):
-        path = f"file://{path}"
+    if raw_path.startswith("file://"):
+        path = raw_path
+    else:
+        path = Path(raw_path).expanduser().resolve().as_uri()
 
     file_types_raw: str = click.prompt(
         "File types (comma-separated)", default="*.md,*.txt,*.py"
@@ -305,6 +342,13 @@ def _collect_localfile_config() -> _SourceResult:
 # ---------------------------------------------------------------------------
 # File writers
 # ---------------------------------------------------------------------------
+
+
+def _escape_env_value(value: str) -> str:
+    """Escape a value for .env file if it contains special characters."""
+    if any(c in value for c in ("=", "\n", '"', "'", " ", "\t", "#", "$", "`")):
+        return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return value
 
 
 def _write_env_file(
@@ -328,24 +372,42 @@ def _write_env_file(
         collection_name: Collection name (written only when not "documents").
         extra_vars: Additional environment variables from source-specific config.
     """
-    lines: list[str] = [f"OPENAI_API_KEY={openai_key}"]
+    lines: list[str] = [f"OPENAI_API_KEY={_escape_env_value(openai_key)}"]
 
     if qdrant_url and qdrant_url != "http://localhost:6333":
-        lines.append(f"QDRANT_URL={qdrant_url}")
+        lines.append(f"QDRANT_URL={_escape_env_value(qdrant_url)}")
 
     if qdrant_api_key:
-        lines.append(f"QDRANT_API_KEY={qdrant_api_key}")
+        lines.append(f"QDRANT_API_KEY={_escape_env_value(qdrant_api_key)}")
 
     if collection_name and collection_name != "documents":
-        lines.append(f"QDRANT_COLLECTION_NAME={collection_name}")
+        lines.append(f"QDRANT_COLLECTION_NAME={_escape_env_value(collection_name)}")
 
     if extra_vars:
         lines.append("")
         for key, value in extra_vars.items():
-            lines.append(f"{key}={value}")
+            lines.append(f"{key}={_escape_env_value(value)}")
 
     lines.append("")  # trailing newline
-    path.write_text("\n".join(lines), encoding="utf-8")
+    content = "\n".join(lines)
+
+    # Write with restrictive permissions from the start
+    import os
+
+    try:
+        fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, content.encode("utf-8"))
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError:
+        # Fallback for platforms that don't support os.open mode (e.g., Windows)
+        path.write_text(content, encoding="utf-8")
+        try:
+            path.chmod(0o600)
+        except OSError:
+            pass
 
 
 def _write_config_file_multi(
@@ -366,7 +428,5 @@ def _write_config_file_multi(
     with path.open("w", encoding="utf-8") as fh:
         fh.write("# Generated by qdrant-loader setup\n")
         fh.write("# Simplified configuration format\n")
-        fh.write(
-            "# See config.template.yaml for the full multi-project format.\n\n"
-        )
+        fh.write("# See config.template.yaml for the full multi-project format.\n\n")
         yaml.dump(config, fh, default_flow_style=False, sort_keys=False)

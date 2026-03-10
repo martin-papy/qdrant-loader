@@ -4,7 +4,6 @@ import os
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
 from qdrant_loader.config import Settings
 
@@ -52,6 +51,12 @@ class TestSettingsQdrantIntegration:
 
     def test_settings_with_valid_qdrant_config(self):
         """Test that Settings works with valid qdrant configuration."""
+        # Remove env vars that _auto_resolve_env_vars would pick up
+        saved = {}
+        for key in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME"):
+            if key in os.environ:
+                saved[key] = os.environ.pop(key)
+
         config_data = {
             "global": {
                 "qdrant": {
@@ -93,6 +98,7 @@ class TestSettingsQdrantIntegration:
         finally:
             os.unlink(config_path)
             os.unlink(env_path)
+            os.environ.update(saved)
 
     def test_qdrant_convenience_properties(self):
         """Test the convenience properties for accessing qdrant configuration."""

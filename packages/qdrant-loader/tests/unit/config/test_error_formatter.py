@@ -8,19 +8,18 @@ from unittest.mock import patch
 import pytest
 import yaml
 from pydantic import BaseModel, ValidationError
-from rich.console import Console
-from rich.table import Table
-
 from qdrant_loader.config.error_formatter import (
     _suggest_fix,
     format_validation_errors,
     print_config_error,
 )
-
+from rich.console import Console
+from rich.table import Table
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_validation_error(model_cls, data: dict) -> ValidationError:
     """Trigger a Pydantic ValidationError and return it."""
@@ -43,6 +42,7 @@ def _capture_print_config_error(error: Exception) -> str:
 # ---------------------------------------------------------------------------
 # format_validation_errors
 # ---------------------------------------------------------------------------
+
 
 class TestFormatValidationErrors:
     """Tests for format_validation_errors()."""
@@ -67,7 +67,11 @@ class TestFormatValidationErrors:
         errors = [
             {"loc": ("api_key",), "msg": "field required", "type": "missing"},
             {"loc": ("url",), "msg": "invalid url", "type": "value_error"},
-            {"loc": ("chunk_size",), "msg": "must be positive integer", "type": "value_error"},
+            {
+                "loc": ("chunk_size",),
+                "msg": "must be positive integer",
+                "type": "value_error",
+            },
         ]
         table = format_validation_errors(errors)
         assert table.row_count == len(errors)
@@ -81,7 +85,13 @@ class TestFormatValidationErrors:
 
     def test_format_validation_errors_nested_loc_joined_with_arrow(self):
         """Nested loc parts are joined with ' -> '."""
-        errors = [{"loc": ("projects", "my_project", "collection_name"), "msg": "required", "type": "missing"}]
+        errors = [
+            {
+                "loc": ("projects", "my_project", "collection_name"),
+                "msg": "required",
+                "type": "missing",
+            }
+        ]
         # Just verify no exception is raised and a row was added.
         table = format_validation_errors(errors)
         assert table.row_count == 1
@@ -102,6 +112,7 @@ class TestFormatValidationErrors:
 # ---------------------------------------------------------------------------
 # print_config_error – ValidationError
 # ---------------------------------------------------------------------------
+
 
 class TestPrintConfigErrorValidationError:
     """Tests for print_config_error() when given a Pydantic ValidationError."""
@@ -129,6 +140,7 @@ class TestPrintConfigErrorValidationError:
 # ---------------------------------------------------------------------------
 # print_config_error – yaml.YAMLError
 # ---------------------------------------------------------------------------
+
 
 class TestPrintConfigErrorYamlError:
     """Tests for print_config_error() when given a yaml.YAMLError."""
@@ -162,6 +174,7 @@ class TestPrintConfigErrorYamlError:
 # print_config_error – FileNotFoundError
 # ---------------------------------------------------------------------------
 
+
 class TestPrintConfigErrorFileNotFoundError:
     """Tests for print_config_error() when given a FileNotFoundError."""
 
@@ -181,6 +194,7 @@ class TestPrintConfigErrorFileNotFoundError:
 # print_config_error – ValueError
 # ---------------------------------------------------------------------------
 
+
 class TestPrintConfigErrorValueError:
     """Tests for print_config_error() when given a ValueError."""
 
@@ -199,6 +213,7 @@ class TestPrintConfigErrorValueError:
 # ---------------------------------------------------------------------------
 # print_config_error – generic / unknown exception type
 # ---------------------------------------------------------------------------
+
 
 class TestPrintConfigErrorGeneric:
     """Tests for print_config_error() generic fallback path."""
@@ -236,6 +251,7 @@ class TestPrintConfigErrorGeneric:
 # ---------------------------------------------------------------------------
 # _suggest_fix
 # ---------------------------------------------------------------------------
+
 
 class TestSuggestFix:
     """Tests for the _suggest_fix() private helper."""
@@ -304,3 +320,24 @@ class TestSuggestFix:
         """Message matching is case-insensitive."""
         result = _suggest_fix("some_field", "CHUNK value is invalid")
         assert "chunk_size" in result
+
+    def test_suggest_fix_qdrant_api_key(self):
+        """Returns QDRANT_API_KEY suggestion for qdrant api_key field."""
+        result = _suggest_fix("qdrant.api_key", "field required")
+        assert "QDRANT_API_KEY" in result
+        assert "OPENAI" not in result
+
+
+# ---------------------------------------------------------------------------
+# YAML error with problem_mark=None
+# ---------------------------------------------------------------------------
+
+
+class TestPrintConfigErrorYamlProblemMarkNone:
+    """Tests for YAML error handling when problem_mark is explicitly None."""
+
+    def test_yaml_error_with_problem_mark_none(self):
+        """YAML error with problem_mark=None should not raise AttributeError."""
+        error = yaml.MarkedYAMLError(problem="bad", problem_mark=None)
+        output = _capture_print_config_error(error)
+        assert len(output.strip()) > 0

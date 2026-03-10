@@ -271,6 +271,10 @@ class Settings(BaseSettings):
 
         Priority: config file value > environment variable > default.
         Only fills in values that were not explicitly set in config.
+
+        Note: detection uses default-value sentinels, so explicitly setting a
+        config value equal to the default (e.g. url: http://localhost:6333)
+        will still be overridden by the environment variable.
         """
         # OPENAI_API_KEY → embedding.api_key and llm.api_key
         openai_key = os.getenv("OPENAI_API_KEY")
