@@ -74,8 +74,8 @@ class IntelligenceHandler:
             analysis_results = await self.search_engine.analyze_document_relationships(
                 query=params["query"],
                 limit=params.get("limit", 20),
-                source_types=params.get("source_types"),
-                project_ids=params.get("project_ids"),
+                source_types=params.get("source_types") or [],
+                project_ids=params.get("project_ids") or [],
             )
 
             logger.info("Analysis completed successfully")
@@ -192,10 +192,10 @@ class IntelligenceHandler:
             similar_docs_raw = await self.search_engine.find_similar_documents(
                 target_query=params["target_query"],
                 comparison_query=params["comparison_query"],
-                similarity_metrics=params.get("similarity_metrics"),
+                similarity_metrics=params.get("similarity_metrics") or [],
                 max_similar=params.get("max_similar", 5),
-                source_types=params.get("source_types"),
-                project_ids=params.get("project_ids"),
+                source_types=params.get("source_types") or [],
+                project_ids=params.get("project_ids") or [],
                 similarity_threshold=params.get(
                     "similarity_threshold", 0.7
                 ),  # Default 0.7
@@ -317,9 +317,13 @@ class IntelligenceHandler:
                             if isinstance(v, int | float)
                         },
                         "similarity_reason": (
-                            ", ".join(item.get("similarity_reasons", []))
-                            if isinstance(item.get("similarity_reasons", []), list)
-                            else item.get("similarity_reason", "")
+                            ", ".join(reasons)
+                            if isinstance(
+                                reasons := item.get("similarity_reasons"), list
+                            )
+                            else (
+                                item.get("similarity_reason", "") or str(reasons or "")
+                            )
                         ),
                         "content_preview": content_preview,
                     }
@@ -390,8 +394,8 @@ class IntelligenceHandler:
             conflict_kwargs: dict[str, Any] = {
                 "query": params["query"],
                 "limit": params.get("limit"),
-                "source_types": params.get("source_types"),
-                "project_ids": params.get("project_ids"),
+                "source_types": params.get("source_types") or [],
+                "project_ids": params.get("project_ids") or [],
             }
             for opt in (
                 "use_llm",
@@ -457,16 +461,17 @@ class IntelligenceHandler:
                 )
 
         try:
-            logger.info("🔍 About to call search_engine.find_complementary_content")
-            logger.info(f"🔍 search_engine type: {type(self.search_engine)}")
-            logger.info(f"🔍 search_engine is None: {self.search_engine is None}")
+            logger.debug(
+                "Calling search_engine.find_complementary_content (%s)",
+                type(self.search_engine).__name__,
+            )
 
             result = await self.search_engine.find_complementary_content(
                 target_query=params["target_query"],
                 context_query=params["context_query"],
                 max_recommendations=params.get("max_recommendations", 5),
-                source_types=params.get("source_types"),
-                project_ids=params.get("project_ids"),
+                source_types=params.get("source_types") or [],
+                project_ids=params.get("project_ids") or [],
             )
 
             # Defensive check to ensure we received the expected result type
@@ -486,8 +491,9 @@ class IntelligenceHandler:
             target_document = result.get("target_document")
             context_documents_analyzed = result.get("context_documents_analyzed", 0)
 
-            logger.info(
-                f"✅ search_engine.find_complementary_content completed, got {len(complementary_recommendations)} results"
+            logger.debug(
+                "find_complementary_content completed, got %s results",
+                len(complementary_recommendations),
             )
 
             # Create lightweight structured content using the new formatter
@@ -550,8 +556,8 @@ class IntelligenceHandler:
                 max_clusters=params.get("max_clusters", 10),
                 min_cluster_size=params.get("min_cluster_size", 2),
                 strategy=params.get("strategy", "mixed_features"),
-                source_types=params.get("source_types"),
-                project_ids=params.get("project_ids"),
+                source_types=params.get("source_types") or [],
+                project_ids=params.get("project_ids") or [],
             )
 
             logger.info("Document clustering completed successfully")
