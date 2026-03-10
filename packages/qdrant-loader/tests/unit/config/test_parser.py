@@ -19,9 +19,8 @@ class TestMultiProjectConfigParser:
         """Test global config parsing with validation error - covers lines 83-85."""
         # Create invalid global config data that will trigger ValidationError
         invalid_global_data = {
-            "qdrant": {
-                "collection_name": "",  # Empty collection name should trigger validation error
-                "vector_size": "invalid",  # Invalid vector size
+            "chunking": {
+                "chunk_size": -1,  # Must be > 0
             }
         }
 

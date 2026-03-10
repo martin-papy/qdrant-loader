@@ -40,8 +40,12 @@ class TestSettingsQdrantIntegration:
             env_path = Path(f.name)
 
         try:
-            with pytest.raises(ValueError, match="Qdrant configuration is required"):
-                Settings.from_yaml(config_path, env_path)
+            # Without explicit qdrant config, defaults are used
+            # (env vars like QDRANT_COLLECTION_NAME may override)
+            settings = Settings.from_yaml(config_path, env_path)
+            assert settings.global_config.qdrant is not None
+            assert settings.global_config.qdrant.url is not None
+            assert settings.global_config.qdrant.collection_name is not None
         finally:
             os.unlink(config_path)
             os.unlink(env_path)

@@ -225,11 +225,14 @@ class TestSettings:
         assert isinstance(settings.global_config, GlobalConfig)
         assert isinstance(settings.projects_config, ProjectsConfig)
 
-    def test_settings_validation_requires_qdrant(self):
-        """Test that Settings validation requires Qdrant configuration."""
-        # Test that Settings fails without Qdrant config
-        with pytest.raises(ValidationError, match="Qdrant configuration is required"):
-            Settings(global_config=GlobalConfig())
+    def test_settings_has_default_qdrant(self):
+        """Test that Settings provides default Qdrant configuration."""
+        # Qdrant config now has sensible defaults (url=localhost:6333, collection=documents)
+        # Note: env vars like QDRANT_URL, QDRANT_COLLECTION_NAME may override defaults
+        settings = Settings(global_config=GlobalConfig())
+        assert settings.global_config.qdrant is not None
+        assert settings.global_config.qdrant.url is not None
+        assert settings.global_config.qdrant.collection_name is not None
 
     def test_settings_to_dict(self):
         """Test converting Settings to dictionary."""

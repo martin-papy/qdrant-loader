@@ -53,8 +53,8 @@ class GlobalConfig(BaseConfig):
         default_factory=FileConversionConfig,
         description="File conversion configuration",
     )
-    qdrant: QdrantConfig | None = Field(
-        default=None, description="Qdrant configuration"
+    qdrant: QdrantConfig = Field(
+        default_factory=QdrantConfig, description="Qdrant configuration"
     )
 
     def __init__(self, **data):
@@ -95,5 +95,5 @@ class GlobalConfig(BaseConfig):
                     "llm_api_key": self.file_conversion.markitdown.llm_api_key,
                 },
             },
-            "qdrant": self.qdrant.to_dict() if self.qdrant else None,
+            "qdrant": self.qdrant.to_dict(),
         }

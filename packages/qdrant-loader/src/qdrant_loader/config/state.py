@@ -34,7 +34,9 @@ class IngestionStatus:
 class StateManagementConfig(BaseConfig):
     """Configuration for state management."""
 
-    database_path: str = Field(..., description="Path to SQLite database file")
+    database_path: str = Field(
+        default=":memory:", description="Path to SQLite database file"
+    )
     table_prefix: str = Field(
         default="qdrant_loader_", description="Prefix for database tables"
     )

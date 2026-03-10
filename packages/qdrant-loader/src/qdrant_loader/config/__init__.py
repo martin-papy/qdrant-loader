@@ -246,9 +246,8 @@ class Settings(BaseSettings):
         """Validate that required configuration is present for configured sources."""
         _get_logger().debug("Validating source configurations")
 
-        # Validate that qdrant configuration is present in global config
-        if not self.global_config.qdrant:
-            raise ValueError("Qdrant configuration is required in global config")
+        # Auto-resolve environment variables as fallbacks
+        self._auto_resolve_env_vars()
 
         # Validate that required fields are not empty after variable substitution
         if not self.global_config.qdrant.url:
@@ -267,25 +266,49 @@ class Settings(BaseSettings):
         _get_logger().debug("Source configuration validation successful")
         return self
 
+    def _auto_resolve_env_vars(self) -> None:
+        """Auto-resolve well-known environment variables as fallbacks.
+
+        Priority: config file value > environment variable > default.
+        Only fills in values that were not explicitly set in config.
+        """
+        # OPENAI_API_KEY → embedding.api_key and llm.api_key
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            if not self.global_config.embedding.api_key:
+                self.global_config.embedding.api_key = openai_key
+            if self.global_config.llm and isinstance(self.global_config.llm, dict):
+                if not self.global_config.llm.get("api_key"):
+                    self.global_config.llm["api_key"] = openai_key
+
+        # QDRANT_URL → qdrant.url (override only if still default)
+        qdrant_url = os.getenv("QDRANT_URL")
+        if qdrant_url and self.global_config.qdrant.url == "http://localhost:6333":
+            self.global_config.qdrant.url = qdrant_url
+
+        # QDRANT_API_KEY → qdrant.api_key
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        if qdrant_api_key and not self.global_config.qdrant.api_key:
+            self.global_config.qdrant.api_key = qdrant_api_key
+
+        # QDRANT_COLLECTION_NAME → qdrant.collection_name
+        collection = os.getenv("QDRANT_COLLECTION_NAME")
+        if collection and self.global_config.qdrant.collection_name == "documents":
+            self.global_config.qdrant.collection_name = collection
+
     @property
     def qdrant_url(self) -> str:
         """Get the Qdrant URL from global configuration."""
-        if not self.global_config.qdrant:
-            raise ValueError("Qdrant configuration is not available")
         return self.global_config.qdrant.url
 
     @property
     def qdrant_api_key(self) -> str | None:
         """Get the Qdrant API key from global configuration."""
-        if not self.global_config.qdrant:
-            return None
         return self.global_config.qdrant.api_key
 
     @property
     def qdrant_collection_name(self) -> str:
         """Get the Qdrant collection name from global configuration."""
-        if not self.global_config.qdrant:
-            raise ValueError("Qdrant configuration is not available")
         return self.global_config.qdrant.collection_name
 
     @property

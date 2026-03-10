@@ -35,6 +35,10 @@ class MultiProjectConfigParser:
     ) -> ParsedConfig:
         """Parse configuration with multi-project support.
 
+        Supports two formats:
+        1. Standard: config with 'projects' section
+        2. Simplified: config with top-level 'sources' (auto-wrapped into default project)
+
         Args:
             config_data: Raw configuration data from YAML
             skip_validation: Whether to skip validation during parsing
@@ -46,6 +50,9 @@ class MultiProjectConfigParser:
             ValidationError: If configuration is invalid
         """
         _get_logger().debug("Starting configuration parsing")
+
+        # Auto-wrap simplified format: top-level 'sources' → projects.default
+        config_data = self._normalize_config(config_data)
 
         # Validate configuration structure
         self.validator.validate_structure(config_data)
@@ -67,6 +74,36 @@ class MultiProjectConfigParser:
             global_config=global_config,
             projects_config=projects_config,
         )
+
+    def _normalize_config(self, config_data: dict[str, Any]) -> dict[str, Any]:
+        """Normalize simplified config format to standard format.
+
+        If config has top-level 'sources' but no 'projects', wrap sources
+        into a default project automatically.
+
+        Args:
+            config_data: Raw configuration data
+
+        Returns:
+            Normalized configuration data with 'projects' section
+        """
+        has_projects = "projects" in config_data
+        has_sources = "sources" in config_data
+
+        if has_sources and not has_projects:
+            _get_logger().debug(
+                "Simplified config detected: wrapping top-level 'sources' "
+                "into default project"
+            )
+            sources = config_data.pop("sources")
+            config_data["projects"] = {
+                "default": {
+                    "display_name": "Default Project",
+                    "sources": sources,
+                }
+            }
+
+        return config_data
 
     def _parse_global_config(
         self, global_data: dict[str, Any], skip_validation: bool = False
