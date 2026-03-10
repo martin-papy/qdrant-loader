@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.core.pipeline.workers.embedding_worker import EmbeddingWorker
 
 
@@ -426,13 +427,6 @@ class TestEmbeddingWorker:
 
         # Verify embedding service was not called
         self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
-        self.mock_embedding_service.get_embeddings.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_uses_contextual_text_when_enabled(self):
@@ -444,7 +438,7 @@ class TestEmbeddingWorker:
             "parent_document": Mock(
                 title="Mock Parent Document",
                 source_type="localfile",
-                source="demo-project",  # TODO: Discuss with team about test file
+                source="demo-project",
             )
         }
 
@@ -467,4 +461,5 @@ class TestEmbeddingWorker:
             [
                 "[Document: Mock Parent Document | Source: localfile]\n\nRaw chunk content"
             ]
+        )
         )

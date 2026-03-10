@@ -113,7 +113,6 @@ global:
 
   # Contextual embedding configuration
   contextual_embedding:
-    # TODO: Review with team
     enabled: true # Enable contextual enrichment before generating embeddings
     include_title: true # Include the parent document title in the contextual prefix
     include_source_type: true # Include the parent document source type in the contextual prefix
