@@ -443,19 +443,20 @@ class TestExcelSplitter:
             assert len(result) == 1
             assert sheet_title in result[0]
             assert "| Col1 | Col2 |" in result[0]
- 
+
     def test_split_content_no_duplicate_first_table_rows_after_sheet_name(self):
         """Test split_content advances to next table data after chunk with sheet name."""
         rows = [f"| r{i} | v{i} |" for i in range(1, 80)]
         content = "S\n\n| C1 | C2 |\n|----|----|\n" + "\n".join(rows)
- 
+
         result = self.splitter.split_content(content, 63)
- 
+
         assert len(result) >= 2
         assert "S" in result[0]
         assert "| r1 | v1 |" in result[0]
         assert "| r1 | v1 |" not in result[1]
- 
+
+
 class TestSectionSplitter:
     """Test main SectionSplitter class."""
 
