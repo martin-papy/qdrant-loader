@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "qdrant_loader",
+  "project_id": "0c5f45f9-1409-45c0-a02c-7142ea8dc416"
+}
