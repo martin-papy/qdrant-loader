@@ -5,11 +5,11 @@ used across the application. These types provide type safety and documentation
 for configuration data structures.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TypedDict
 
 
-class SourceType(str, Enum):
+class SourceType(StrEnum):
     """Enum for supported source types."""
 
     PUBLICDOCS = "publicdocs"
