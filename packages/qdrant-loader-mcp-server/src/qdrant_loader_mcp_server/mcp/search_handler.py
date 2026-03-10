@@ -3,6 +3,8 @@
 import inspect
 from typing import Any
 
+from qdrant_loader_mcp_server.config import QdrantConfig
+
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
@@ -16,6 +18,7 @@ from .handlers.search import (
     organize_by_hierarchy,
 )
 from .protocol import MCPProtocol
+from qdrant_client import QdrantClient, models
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
@@ -405,8 +408,8 @@ class SearchHandler:
     async def handle_expand_document(
         self, request_id: str | int | None, params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Handle expand document request for lazy loading using standard search format."""
-        logger.debug("Handling expand document with params", params=params)
+        """Return all chunks belonging to a document_id."""
+        logger.debug("Handling expand_document", params=params)
 
         # Validate required parameter
         if (
@@ -427,59 +430,62 @@ class SearchHandler:
         document_id = params["document_id"]
 
         try:
-            logger.info(f"Expanding document with ID: {document_id}")
+            logger.info(f"Fetching chunks for document_id={document_id}")
 
-            # Search for the document - field search doesn't guarantee exact matches
-            # Try document_id field search first, but get more results to filter
-            results = await self.search_engine.search(
-                query=f"document_id:{document_id}",
-                limit=10,  # Get more results to ensure we find the exact match
+            # Create Qdrant filter
+            query_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="document_id",
+                        match=models.MatchValue(value=document_id),
+                    )
+                ]
             )
 
-            # Filter for exact document_id matches
-            exact_matches = [r for r in results if r.document_id == document_id]
-            if exact_matches:
-                results = exact_matches[:1]  # Take only the first exact match
-            else:
-                # Fallback to general search if no exact match in field search
-                results = await self.search_engine.search(query=document_id, limit=10)
-                # Filter again for exact document_id matches
-                exact_matches = [r for r in results if r.document_id == document_id]
-                if exact_matches:
-                    results = exact_matches[:1]
-                else:
-                    results = []
+            all_points = []
+            next_offset = None
 
-            if not results:
-                logger.warning(f"Document not found with ID: {document_id}")
+            qdrant_config = QdrantConfig()
+            collection_name = qdrant_config.collection_name
+            # Scroll to retrieve all chunks
+            qdrant_client = QdrantClient()
+            while True:
+                points, next_offset = qdrant_client.scroll(
+                    collection_name= collection_name,
+                    scroll_filter=query_filter,
+                    limit=100,
+                    offset=next_offset,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+
+                all_points.extend(points)
+
+                if next_offset is None:
+                    break
+
+            if not all_points:
+                logger.warning(f"No chunks found for document_id={document_id}")
                 return self.protocol.create_response(
                     request_id,
                     error={
                         "code": -32604,
                         "message": "Document not found",
-                        "data": f"No document found with ID: {document_id}",
+                        "data": f"No chunks found for document_id: {document_id}",
                     },
                 )
 
-            logger.info(f"Successfully found document: {results[0].source_title}")
+            logger.info(f"Retrieved {len(all_points)} chunks")
 
-            # Use the existing search result formatting - exactly the same as standard search
-            formatted_results = (
-                "Found 1 document:\n\n"
-                + self.formatters.format_search_result(results[0])
-            )
-            structured_results_list = self.formatters.create_structured_search_results(
-                results
-            )
+            # Extract chunk payloads
+            chunks = [p.payload for p in all_points]
 
-            # Create the same structure as standard search
             structured_results = {
-                "results": structured_results_list,
-                "total_found": len(results),
+                "document_id": document_id,
+                "total_chunks": len(chunks),
+                "chunks": chunks,
                 "query_context": {
                     "original_query": f"expand_document:{document_id}",
-                    "source_types_filtered": [],
-                    "project_ids_filtered": [],
                     "is_document_expansion": True,
                 },
             }
@@ -490,7 +496,7 @@ class SearchHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": formatted_results,
+                            "text": f"Retrieved {len(chunks)} chunks for document {document_id}",
                         }
                     ],
                     "structuredContent": structured_results,
@@ -500,7 +506,12 @@ class SearchHandler:
 
         except Exception as e:
             logger.error("Error expanding document", exc_info=True)
+
             return self.protocol.create_response(
                 request_id,
-                error={"code": -32603, "message": "Internal error", "data": str(e)},
+                error={
+                    "code": -32603,
+                    "message": "Internal error",
+                    "data": str(e),
+                },
             )
