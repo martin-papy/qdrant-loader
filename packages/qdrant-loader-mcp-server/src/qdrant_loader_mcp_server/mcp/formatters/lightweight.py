@@ -172,10 +172,10 @@ class LightweightResultFormatters:
             formatted_clusters.append(
                 {
                     "cluster_id": cluster.get(
-                        "id", f"cluster_{len(formatted_clusters)+1}"
+                        "id", f"cluster_{len(formatted_clusters) + 1}"
                     ),
                     "cluster_name": cluster.get(
-                        "name", f"Cluster {len(formatted_clusters)+1}"
+                        "name", f"Cluster {len(formatted_clusters) + 1}"
                     ),
                     "coherence_score": cluster.get("coherence_score", 0),
                     "document_count": len(cluster.get("documents", [])),
@@ -216,7 +216,7 @@ class LightweightResultFormatters:
             "query": query,
             "clusters": [
                 {
-                    "cluster_id": cluster.get("id", f"cluster_{i+1}"),
+                    "cluster_id": cluster.get("id", f"cluster_{i + 1}"),
                     "documents": [
                         FormatterUtils.extract_minimal_doc_fields(doc)
                         for doc in cluster.get("documents", [])[
@@ -423,7 +423,7 @@ class LightweightResultFormatters:
                 ),
             },
             "lazy_loading_enabled": False,
-            "expand_document_hint": "Use tools/call with 'search' to get full document details",
+            "expand_document_hint": "Use tools/call with 'expand_document' and document_id to get full document details",
         }
 
         # Only include target_document if available; shape must match schema
