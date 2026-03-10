@@ -4,7 +4,6 @@ import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 from qdrant_loader.core.pipeline.workers.embedding_worker import EmbeddingWorker
 
 
@@ -461,5 +460,4 @@ class TestEmbeddingWorker:
             [
                 "[Document: Mock Parent Document | Source: localfile]\n\nRaw chunk content"
             ]
-        )
         )
