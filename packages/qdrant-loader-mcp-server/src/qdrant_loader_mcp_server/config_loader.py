@@ -72,6 +72,8 @@ def _overlay_env_llm(llm: dict[str, Any]) -> None:
 
 
 def _overlay_env_qdrant(qdrant: dict[str, Any]) -> None:
+    # Mirrors qdrant_loader.config.Settings._auto_resolve_env_vars() QDRANT_* handling.
+    # Priority: config file value > environment variable > QdrantConfig default.
     if os.getenv("QDRANT_URL"):
         qdrant["url"] = os.getenv("QDRANT_URL")
     if os.getenv("QDRANT_API_KEY"):

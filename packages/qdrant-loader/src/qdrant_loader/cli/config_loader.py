@@ -53,6 +53,10 @@ def load_config_with_workspace(
             load_config(config_path, env_path, skip_validation)
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
+        # Lazy import to avoid slowing CLI startup
+        from qdrant_loader.config.error_formatter import print_config_error
+
+        print_config_error(e)
         raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
 
 
@@ -118,4 +122,8 @@ def load_config(
         raise
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
+        # Lazy import to avoid slowing CLI startup
+        from qdrant_loader.config.error_formatter import print_config_error
+
+        print_config_error(e)
         raise ClickException(f"Failed to load configuration: {str(e)!s}") from e

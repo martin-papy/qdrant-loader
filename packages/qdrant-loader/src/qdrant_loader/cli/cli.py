@@ -372,6 +372,21 @@ async def ingest(
 
 @cli.command()
 @option(
+    "--output-dir",
+    type=ClickPath(path_type=Path),
+    default=".",
+    help="Directory to write config.yaml and .env files to.",
+    show_default=True,
+)
+def setup(output_dir: Path) -> None:
+    """Interactive setup wizard to generate config.yaml and .env files."""
+    from qdrant_loader.cli.commands.setup_cmd import run_setup_wizard
+
+    run_setup_wizard(Path(output_dir))
+
+
+@cli.command()
+@option(
     "--workspace",
     type=ClickPath(path_type=Path),
     help="Workspace directory containing config.yaml and .env files. All output will be stored here.",

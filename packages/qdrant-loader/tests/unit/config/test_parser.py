@@ -188,3 +188,86 @@ class TestMultiProjectConfigParser:
 
         for invalid_id in invalid_ids:
             assert parser._is_valid_project_id(invalid_id) is False
+
+    # --- Tests for _normalize_config ---
+
+    def test_normalize_config_wraps_top_level_sources(self, parser):
+        """When config has top-level 'sources' but no 'projects', it should be
+        wrapped into projects.default."""
+        config_data = {
+            "global": {"chunking": {"chunk_size": 500}},
+            "sources": {
+                "git": {
+                    "my-repo": {"url": "https://github.com/example/repo.git"}
+                }
+            },
+        }
+
+        result = parser._normalize_config(config_data)
+
+        assert "projects" in result
+        assert "sources" not in result
+        assert "default" in result["projects"]
+        assert result["projects"]["default"]["sources"] == {
+            "git": {"my-repo": {"url": "https://github.com/example/repo.git"}}
+        }
+
+    def test_normalize_config_preserves_projects(self, parser):
+        """When config already has 'projects', _normalize_config should not change it."""
+        original_projects = {
+            "my_project": {
+                "display_name": "My Project",
+                "sources": {},
+            }
+        }
+        config_data = {
+            "global": {},
+            "projects": original_projects,
+        }
+
+        result = parser._normalize_config(config_data)
+
+        assert result["projects"] == original_projects
+        assert "sources" not in result
+
+    def test_normalize_config_sources_takes_priority_when_no_projects(self, parser):
+        """Sources without projects gets a default project with display_name 'Default Project'."""
+        config_data = {
+            "sources": {
+                "localfile": {
+                    "docs": {"path": "/some/path"}
+                }
+            }
+        }
+
+        result = parser._normalize_config(config_data)
+
+        assert "projects" in result
+        assert "default" in result["projects"]
+        assert result["projects"]["default"]["display_name"] == "Default Project"
+        assert result["projects"]["default"]["sources"] == {
+            "localfile": {"docs": {"path": "/some/path"}}
+        }
+
+    def test_normalize_config_projects_preserved_when_both_exist(self, parser):
+        """When both 'projects' and 'sources' exist, 'projects' is kept and 'sources'
+        is not moved (the method only acts when sources exists WITHOUT projects)."""
+        existing_projects = {
+            "proj_a": {
+                "display_name": "Project A",
+                "sources": {},
+            }
+        }
+        config_data = {
+            "projects": existing_projects,
+            "sources": {
+                "git": {"repo": {"url": "https://github.com/example/repo.git"}}
+            },
+        }
+
+        result = parser._normalize_config(config_data)
+
+        # projects must remain untouched
+        assert result["projects"] == existing_projects
+        # sources is left in place (not consumed) because has_projects was True
+        assert "sources" in result
