@@ -1,0 +1,66 @@
+# Simplified Configuration Template
+# Most settings use smart defaults - you only need to define your data sources.
+#
+# Smart Defaults (no need to configure unless you want to override):
+#   - Qdrant URL: http://localhost:6333
+#   - Collection name: "documents" (or set QDRANT_COLLECTION_NAME env var)
+#   - Embedding model: text-embedding-3-small
+#   - Chunk size: 1500 chars, overlap: 200
+#   - State DB: in-memory (or set STATE_DB_PATH env var)
+#
+# Environment Variables (auto-resolved):
+#   - OPENAI_API_KEY  → fills embedding + LLM API key
+#   - QDRANT_URL      → overrides default Qdrant URL
+#   - QDRANT_API_KEY  → sets Qdrant authentication
+#   - QDRANT_COLLECTION_NAME → overrides default collection name
+#
+# Usage:
+#   1. Copy this file to config.yaml
+#   2. Set OPENAI_API_KEY in your .env file
+#   3. Define your sources below
+#   4. Run: qdrant-loader init && qdrant-loader ingest
+
+# Define your data sources directly (no 'global' or 'projects' wrapper needed):
+sources:
+  # --- Local Files ---
+  localfile:
+    my-docs:
+      base_url: "file:///path/to/your/documents"
+      file_types:
+        - "*.md"
+        - "*.txt"
+        - "*.py"
+      max_file_size: 1048576  # 1MB
+
+  # --- Git Repository (uncomment to enable) ---
+  # git:
+  #   my-repo:
+  #     base_url: "https://github.com/your-org/your-repo.git"
+  #     branch: "main"
+  #     token: "${REPO_TOKEN}"
+  #     file_types:
+  #       - "*.md"
+  #       - "*.py"
+
+  # --- Confluence (uncomment to enable) ---
+  # confluence:
+  #   my-wiki:
+  #     base_url: "https://your-domain.atlassian.net/wiki"
+  #     space_key: "YOUR_SPACE"
+  #     token: "${CONFLUENCE_TOKEN}"
+  #     email: "${CONFLUENCE_EMAIL}"
+
+  # --- Jira (uncomment to enable) ---
+  # jira:
+  #   my-project:
+  #     base_url: "https://your-domain.atlassian.net"
+  #     project_key: "YOUR_PROJECT"
+  #     token: "${JIRA_TOKEN}"
+  #     email: "${JIRA_EMAIL}"
+
+  # --- Public Documentation (uncomment to enable) ---
+  # publicdocs:
+  #   my-docs:
+  #     base_url: "https://docs.example.com/"
+  #     version: "1.0"
+  #     content_type: "html"
