@@ -89,30 +89,35 @@ class LocalFileConnector(BaseConnector):
                 try:
                     # Get relative path from base directory
                     rel_path = os.path.relpath(file_path, self.base_path)
+                    file_extension = os.path.splitext(file)[1].lower()
 
-                    needs_conversion = False
+                    if self.config.enable_file_conversion and file_extension in {
+                        ".doc",
+                        ".ppt",
+                    }:
+                        file_info = (
+                            self.file_detector.get_file_type_info(file_path)
+                            if self.file_detector
+                            else {
+                                "mime_type": None,
+                                "file_extension": file_extension,
+                            }
+                        )
+                        self.logger.warning(
+                            "Skipping file: old doc/ppt are not supported for MarkItDown conversion",
+                            file_path=rel_path.replace("\\", "/"),
+                            mime_type=file_info.get("mime_type"),
+                            file_extension=file_info.get("file_extension"),
+                        )
+                        continue
 
-                    if self.config.enable_file_conversion:
-                        if not self.file_detector or not self.file_converter:
-                            self.logger.warning(
-                                "Skipping file: file conversion is enabled but converter is not initialized",
-                                file_path=rel_path.replace("\\", "/"),
-                            )
-                            continue
-
-                        if not self.file_detector.is_supported_for_conversion(
-                            file_path
-                        ):
-                            file_info = self.file_detector.get_file_type_info(file_path)
-                            self.logger.warning(
-                                "Skipping file: file type is not supported for MarkItDown conversion",
-                                file_path=rel_path.replace("\\", "/"),
-                                mime_type=file_info.get("mime_type"),
-                                file_extension=file_info.get("file_extension"),
-                            )
-                            continue
-
-                        needs_conversion = True
+                    # Check if file needs conversion
+                    needs_conversion = (
+                        self.config.enable_file_conversion
+                        and self.file_detector
+                        and self.file_converter
+                        and self.file_detector.is_supported_for_conversion(file_path)
+                    )
 
                     if needs_conversion:
                         self.logger.debug(

@@ -289,7 +289,7 @@ class TestLocalFileIdConsistency:
 
     @pytest.mark.asyncio
     async def test_skip_unsupported_files_when_conversion_enabled(self, temp_dir):
-        """Test unsupported files are skipped instead of UTF-8 fallback ingestion when conversion is enabled."""
+        """Test legacy .doc/.ppt files are skipped when conversion is enabled."""
         # Create unsupported legacy files
         (Path(temp_dir) / "legacy.doc").write_bytes(b"legacy-doc-content")
         (Path(temp_dir) / "slides.ppt").write_bytes(b"legacy-ppt-content")
@@ -311,11 +311,43 @@ class TestLocalFileIdConsistency:
             async with connector:
                 documents = await connector.get_documents()
 
-        assert len(documents) == 0
+        document_titles = {doc.title for doc in documents}
+        assert "legacy.doc" not in document_titles
+        assert "slides.ppt" not in document_titles
         warning_messages = [
             call.args[0] for call in mock_warning.call_args_list if call.args
         ]
         assert any(
-            "not supported for MarkItDown conversion" in message
+            "old doc/ppt are not supported for MarkItDown conversion" in message
             for message in warning_messages
         )
+
+    @pytest.mark.asyncio
+    async def test_excluded_files_use_normal_read_path_when_conversion_enabled(
+        self, temp_dir
+    ):
+        """Test excluded file types are ingested through normal read path when conversion is enabled."""
+        excluded_file = Path(temp_dir) / "excluded.txt"
+        excluded_content = "excluded-file-should-be-read-normally"
+        excluded_file.write_text(excluded_content, encoding="utf-8")
+
+        config = LocalFileConfig(
+            base_url=AnyUrl(f"file://{temp_dir}"),
+            source="test-localfile",
+            source_type=SourceType.LOCALFILE,
+            file_types=[],
+            include_paths=["*"],
+            exclude_paths=[],
+            enable_file_conversion=True,
+        )
+
+        connector = LocalFileConnector(config)
+        connector.set_file_conversion_config(FileConversionConfig())
+
+        async with connector:
+            documents = await connector.get_documents()
+
+        excluded_doc = next((d for d in documents if d.title == "excluded.txt"), None)
+        assert excluded_doc is not None
+        assert excluded_doc.content == excluded_content
+        assert "conversion_method" not in excluded_doc.metadata
