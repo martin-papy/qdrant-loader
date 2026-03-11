@@ -90,13 +90,29 @@ class LocalFileConnector(BaseConnector):
                     # Get relative path from base directory
                     rel_path = os.path.relpath(file_path, self.base_path)
 
-                    # Check if file needs conversion
-                    needs_conversion = (
-                        self.config.enable_file_conversion
-                        and self.file_detector
-                        and self.file_converter
-                        and self.file_detector.is_supported_for_conversion(file_path)
-                    )
+                    needs_conversion = False
+
+                    if self.config.enable_file_conversion:
+                        if not self.file_detector or not self.file_converter:
+                            self.logger.error(
+                                "Skipping file: file conversion is enabled but converter is not initialized",
+                                file_path=rel_path.replace("\\", "/"),
+                            )
+                            continue
+
+                        if not self.file_detector.is_supported_for_conversion(
+                            file_path
+                        ):
+                            file_info = self.file_detector.get_file_type_info(file_path)
+                            self.logger.error(
+                                "Skipping file: file type is not supported for MarkItDown conversion",
+                                file_path=rel_path.replace("\\", "/"),
+                                mime_type=file_info.get("mime_type"),
+                                file_extension=file_info.get("file_extension"),
+                            )
+                            continue
+
+                        needs_conversion = True
 
                     if needs_conversion:
                         self.logger.debug(
