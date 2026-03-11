@@ -11,10 +11,17 @@ from qdrant_loader.cli.commands.setup_cmd import (
     _collect_localfile_config,
     _escape_env_value,
     _source_name_to_env_suffix,
+    _write_config_file_advanced,
     _write_config_file_multi,
     _write_env_file,
+    run_setup,
+    run_setup_advanced,
+    run_setup_default,
     run_setup_wizard,
 )
+
+# Module path for patching _select_source_type inside setup_cmd
+_SST = "qdrant_loader.cli.commands.setup_cmd._select_source_type"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -44,53 +51,31 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_creates_files(self, tmp_path: Path) -> None:
         """Mock all prompts for a single git source and verify output files exist."""
         prompt_side_effects = [
-            # Step 1 – core settings
-            "sk-test-key",  # OpenAI API Key
-            "http://localhost:6333",  # Qdrant URL (default)
-            "",  # Qdrant API Key (empty)
-            "documents",  # Collection name (default)
-            # Step 2 – source type
-            "git",
-            # Step 3 – source name
+            "sk-test-key", "http://localhost:6333", "", "documents",
             "my-git",
-            # _collect_git_config
-            "https://github.com/org/repo.git",  # url
-            "main",  # branch
-            "",  # token (empty)
-            "*.md,*.txt",  # file types
+            "https://github.com/org/repo.git", "main", "", "*.md,*.txt",
         ]
-        confirm_side_effects = [
-            False,  # "Add another source?" -> no
-        ]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="git"),
         ):
             run_setup_wizard(tmp_path)
 
-        assert (tmp_path / "config.yaml").exists(), "config.yaml was not created"
-        assert (tmp_path / ".env").exists(), ".env was not created"
+        assert (tmp_path / "config.yaml").exists()
+        assert (tmp_path / ".env").exists()
 
     def test_run_setup_wizard_git_source(self, tmp_path: Path) -> None:
         """Test that git source is written correctly into config.yaml."""
         prompt_side_effects = [
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            "git",
+            "sk-openai", "http://localhost:6333", "", "documents",
             "my-git",
-            "https://github.com/org/repo.git",
-            "develop",
-            "",
-            "*.md,*.rst",
+            "https://github.com/org/repo.git", "develop", "", "*.md,*.rst",
         ]
-        confirm_side_effects = [False]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="git"),
         ):
             run_setup_wizard(tmp_path)
 
@@ -101,27 +86,20 @@ class TestRunSetupWizardCreatesFiles:
         assert src["base_url"] == "https://github.com/org/repo.git"
         assert src["branch"] == "develop"
         assert src["file_types"] == ["*.md", "*.rst"]
-        assert "token" not in src  # no token provided
+        assert "token" not in src
 
     def test_run_setup_wizard_confluence_source(self, tmp_path: Path) -> None:
         """Test that confluence source config and extra env vars are written."""
         prompt_side_effects = [
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            "confluence",
+            "sk-openai", "http://localhost:6333", "", "documents",
             "my-confluence",
-            "https://mycompany.atlassian.net/wiki",
-            "DOCS",
-            "user@example.com",
-            "secret-confluence-token",
+            "https://mycompany.atlassian.net/wiki", "DOCS",
+            "user@example.com", "secret-confluence-token",
         ]
-        confirm_side_effects = [False]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="confluence"),
         ):
             run_setup_wizard(tmp_path)
 
@@ -139,22 +117,15 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_jira_source(self, tmp_path: Path) -> None:
         """Test that jira source config and extra env vars are written."""
         prompt_side_effects = [
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            "jira",
+            "sk-openai", "http://localhost:6333", "", "documents",
             "my-jira",
-            "https://mycompany.atlassian.net",
-            "PROJ",
-            "jira@example.com",
-            "secret-jira-token",
+            "https://mycompany.atlassian.net", "PROJ",
+            "jira@example.com", "secret-jira-token",
         ]
-        confirm_side_effects = [False]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="jira"),
         ):
             run_setup_wizard(tmp_path)
 
@@ -172,21 +143,14 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_publicdocs_source(self, tmp_path: Path) -> None:
         """Test that publicdocs source config is written correctly."""
         prompt_side_effects = [
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            "publicdocs",
+            "sk-openai", "http://localhost:6333", "", "documents",
             "my-publicdocs",
-            "https://docs.example.com/",
-            "latest",
-            "html",
+            "https://docs.example.com/", "latest", "html",
         ]
-        confirm_side_effects = [False]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="publicdocs"),
         ):
             run_setup_wizard(tmp_path)
 
@@ -199,20 +163,14 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_localfile_source(self, tmp_path: Path) -> None:
         """Test that localfile source gets the file:// prefix applied."""
         prompt_side_effects = [
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            "localfile",
+            "sk-openai", "http://localhost:6333", "", "documents",
             "my-localfile",
-            "/home/user/docs",  # no file:// prefix
-            "*.md,*.txt",
+            "/home/user/docs", "*.md,*.txt",
         ]
-        confirm_side_effects = [False]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="localfile"),
         ):
             run_setup_wizard(tmp_path)
 
@@ -224,32 +182,18 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_multiple_sources(self, tmp_path: Path) -> None:
         """Test adding multiple sources in one wizard run."""
         prompt_side_effects = [
-            # Core settings
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
+            "sk-openai", "http://localhost:6333", "", "documents",
             # First source: git
-            "git",
             "repo-one",
-            "https://github.com/org/repo.git",
-            "main",
-            "",
-            "*.md",
+            "https://github.com/org/repo.git", "main", "", "*.md",
             # Second source: localfile
-            "localfile",
             "local-docs",
-            "file:///data/docs",
-            "*.txt",
+            "file:///data/docs", "*.txt",
         ]
-        confirm_side_effects = [
-            True,  # "Add another source?" -> yes
-            False,  # "Add another source?" -> no
-        ]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[True, False, True]),
+            patch(_SST, side_effect=["git", "localfile"]),
         ):
             run_setup_wizard(tmp_path)
 
@@ -261,37 +205,265 @@ class TestRunSetupWizardCreatesFiles:
 
     def test_run_setup_wizard_cancelled_on_overwrite(self, tmp_path: Path) -> None:
         """Test that setup exits without writing when user declines overwrite."""
-        # Pre-create config.yaml so the overwrite prompt is triggered.
         config_path = tmp_path / "config.yaml"
         config_path.write_text("existing: true\n", encoding="utf-8")
 
         prompt_side_effects = [
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            "git",
+            "sk-openai", "http://localhost:6333", "", "documents",
             "my-git",
-            "https://github.com/org/repo.git",
-            "main",
-            "",
-            "*.md",
+            "https://github.com/org/repo.git", "main", "", "*.md",
         ]
-        confirm_side_effects = [
-            False,  # "Add another source?" -> no
-            False,  # "config.yaml already exists. Overwrite?" -> no (cancel)
-        ]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            # "Add another source?" → False, overwrite prompt → False
+            patch("click.confirm", side_effect=[False, False]),
+            patch(_SST, return_value="git"),
         ):
             run_setup_wizard(tmp_path)
 
-        # The original file must be untouched.
         assert config_path.read_text(encoding="utf-8") == "existing: true\n"
-        # .env must NOT have been created.
         assert not (tmp_path / ".env").exists()
+
+
+# ---------------------------------------------------------------------------
+# run_setup mode selector tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunSetup:
+    """Verify that run_setup dispatches to the correct mode."""
+
+    def test_mode_default_creates_files(self, tmp_path: Path) -> None:
+        """run_setup with explicit output_dir and mode='default'."""
+        ws = tmp_path / "ws"
+        with patch("click.confirm", return_value=True):
+            run_setup(ws, mode="default")
+
+        assert (ws / "config.yaml").exists()
+        assert (ws / ".env").exists()
+
+    def test_mode_default_uses_workspace_subdir(self, tmp_path: Path, monkeypatch) -> None:
+        """Default mode without output_dir should use ./workspace automatically."""
+        monkeypatch.chdir(tmp_path)
+        with patch("click.confirm", return_value=True):
+            run_setup(None, mode="default")
+
+        assert (tmp_path / "workspace" / "config.yaml").exists()
+        assert (tmp_path / "workspace" / ".env").exists()
+
+    def test_mode_normal_dispatches_to_wizard(self, tmp_path: Path) -> None:
+        """run_setup with mode='normal' should run the interactive wizard."""
+        ws = tmp_path / "ws"
+        prompt_side_effects = [
+            "sk-test", "http://localhost:6333", "", "documents",
+            "my-localfile", "file:///tmp/data", "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup(ws, mode="normal")
+
+        config = yaml.safe_load((ws / "config.yaml").read_text(encoding="utf-8"))
+        assert "sources" in config
+
+    def test_mode_normal_prompts_workspace(self, tmp_path: Path) -> None:
+        """Normal mode without output_dir should prompt for workspace folder."""
+        prompt_side_effects = [
+            str(tmp_path / "my-ws"),
+            "sk-test", "http://localhost:6333", "", "documents",
+            "my-localfile", "file:///tmp/data", "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch("click.confirm", side_effect=[False, True]),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup(None, mode="normal")
+
+        assert (tmp_path / "my-ws" / "config.yaml").exists()
+
+    def test_mode_advanced_dispatches(self, tmp_path: Path) -> None:
+        """run_setup with mode='advanced' should run the advanced wizard."""
+        ws = tmp_path / "ws"
+        prompt_side_effects = [
+            "sk-test", "http://localhost:6333", "", "documents",
+            "text-embedding-3-small", "", 1536,
+            1500, 200,
+            "my-project", "My Project", "desc",
+            "my-localfile", "file:///tmp/data", "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch("click.confirm", side_effect=[False, False, True]),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup(ws, mode="advanced")
+
+        config = yaml.safe_load((ws / "config.yaml").read_text(encoding="utf-8"))
+        assert "global" in config
+        assert "projects" in config
+
+    def test_mode_none_prompts_mode_then_workspace(self, tmp_path: Path) -> None:
+        """run_setup without mode should prompt mode first, then workspace."""
+        with (
+            patch("qdrant_loader.cli.commands.setup_cmd._select_setup_mode", return_value="default"),
+            patch("click.confirm", return_value=True),
+        ):
+            run_setup(tmp_path / "ws", mode=None)
+
+        assert (tmp_path / "ws" / "config.yaml").exists()
+
+    def test_mode_cancel_exits_cleanly(self, tmp_path: Path) -> None:
+        """run_setup with mode selector returning None should exit without writing."""
+        with patch("qdrant_loader.cli.commands.setup_cmd._select_setup_mode", return_value=None):
+            run_setup(tmp_path / "ws", mode=None)
+
+        assert not (tmp_path / "ws").exists()
+
+    def test_output_dir_is_file_raises(self, tmp_path: Path) -> None:
+        """Should raise BadParameter if output_dir is a file."""
+        import click
+
+        file_path = tmp_path / "not-a-dir"
+        file_path.write_text("I am a file", encoding="utf-8")
+
+        try:
+            run_setup(file_path, mode="default")
+            raise AssertionError("Expected BadParameter")
+        except click.BadParameter:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# run_setup_default tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunSetupDefault:
+    """Verify that run_setup_default writes minimal config without prompts."""
+
+    def test_creates_files(self, tmp_path: Path) -> None:
+        with patch("click.confirm", return_value=True):
+            run_setup_default(tmp_path)
+
+        assert (tmp_path / "config.yaml").exists()
+        assert (tmp_path / ".env").exists()
+
+    def test_config_has_localfile_source(self, tmp_path: Path) -> None:
+        with patch("click.confirm", return_value=True):
+            run_setup_default(tmp_path)
+
+        config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert "localfile" in config["sources"]
+        assert "my-docs" in config["sources"]["localfile"]
+        src = config["sources"]["localfile"]["my-docs"]
+        assert src["base_url"].startswith("file:///")
+        # Should point to the docs subdirectory of the workspace
+        assert src["base_url"].endswith("/docs")
+        assert src["file_types"] == ["*.md", "*.txt", "*.py"]
+        # docs directory should be created
+        assert (tmp_path / "docs").is_dir()
+
+    def test_env_has_placeholder_key(self, tmp_path: Path) -> None:
+        with patch("click.confirm", return_value=True):
+            run_setup_default(tmp_path)
+
+        env = _read_env(tmp_path / ".env")
+        assert env["OPENAI_API_KEY"] == "your_openai_api_key_here"
+
+    def test_cancelled_on_overwrite(self, tmp_path: Path) -> None:
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("existing: true\n", encoding="utf-8")
+
+        with patch("click.confirm", return_value=False):
+            run_setup_default(tmp_path)
+
+        assert config_path.read_text(encoding="utf-8") == "existing: true\n"
+
+
+# ---------------------------------------------------------------------------
+# run_setup_advanced tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunSetupAdvanced:
+    """Verify that run_setup_advanced writes multi-project config."""
+
+    def test_creates_advanced_config(self, tmp_path: Path) -> None:
+        prompt_side_effects = [
+            "sk-test", "http://localhost:6333", "", "my-collection",
+            "text-embedding-3-small", "", 1536,
+            1500, 200,
+            "proj-1", "Project One", "A test project",
+            "my-localfile", "file:///tmp/data", "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch("click.confirm", side_effect=[False, False, True]),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup_advanced(tmp_path)
+
+        config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert "global" in config
+        assert "projects" in config
+        assert "proj-1" in config["projects"]
+        proj = config["projects"]["proj-1"]
+        assert proj["project_id"] == "proj-1"
+        assert proj["display_name"] == "Project One"
+        assert "localfile" in proj["sources"]
+
+    def test_advanced_global_settings(self, tmp_path: Path) -> None:
+        prompt_side_effects = [
+            "sk-test", "https://cloud.qdrant.io", "qdrant-key", "my-docs",
+            "text-embedding-ada-002", "https://custom-embedding.example.com/v1", 768,
+            2000, 300,
+            "proj-1", "proj-1", "",
+            "my-localfile", "file:///tmp/data", "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch("click.confirm", side_effect=[False, False, True]),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup_advanced(tmp_path)
+
+        config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        g = config["global"]
+        assert g["embedding"]["model"] == "text-embedding-ada-002"
+        assert g["embedding"]["endpoint"] == "https://custom-embedding.example.com/v1"
+        assert g["embedding"]["vector_size"] == 768
+        assert g["chunking"]["chunk_size"] == 2000
+        assert g["chunking"]["chunk_overlap"] == 300
+
+    def test_advanced_multiple_projects(self, tmp_path: Path) -> None:
+        prompt_side_effects = [
+            "sk-test", "http://localhost:6333", "", "documents",
+            "text-embedding-3-small", "", 1536,
+            1500, 200,
+            "proj-a", "Project A", "",
+            "local-a", "file:///tmp/a", "*.md",
+            "proj-b", "Project B", "",
+            "local-b", "file:///tmp/b", "*.txt",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch("click.confirm", side_effect=[
+                False,  # no more sources for proj-a
+                True,   # add another project
+                False,  # no more sources for proj-b
+                False,  # no more projects
+                True,   # write files confirmation
+            ]),
+            patch(_SST, side_effect=["localfile", "localfile"]),
+        ):
+            run_setup_advanced(tmp_path)
+
+        config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert "proj-a" in config["projects"]
+        assert "proj-b" in config["projects"]
 
 
 # ---------------------------------------------------------------------------
@@ -303,7 +475,6 @@ class TestWriteEnvFile:
     """Tests for the _write_env_file helper."""
 
     def test_write_env_file_minimal(self, tmp_path: Path) -> None:
-        """Only OPENAI_API_KEY is written when defaults are used."""
         env_path = tmp_path / ".env"
         _write_env_file(
             env_path,
@@ -317,7 +488,6 @@ class TestWriteEnvFile:
         assert env == {"OPENAI_API_KEY": "sk-minimal"}
 
     def test_write_env_file_with_extras(self, tmp_path: Path) -> None:
-        """All non-default values and extra_vars are written."""
         env_path = tmp_path / ".env"
         _write_env_file(
             env_path,
@@ -340,7 +510,6 @@ class TestWriteEnvFile:
         assert env["CONFLUENCE_EMAIL"] == "user@co.com"
 
     def test_write_env_file_default_url_not_written(self, tmp_path: Path) -> None:
-        """Default Qdrant URL must not appear in the .env file."""
         env_path = tmp_path / ".env"
         _write_env_file(
             env_path,
@@ -356,7 +525,6 @@ class TestWriteEnvFile:
         assert "QDRANT_COLLECTION_NAME" not in env
 
     def test_write_env_file_ends_with_newline(self, tmp_path: Path) -> None:
-        """The generated .env must end with a trailing newline."""
         env_path = tmp_path / ".env"
         _write_env_file(
             env_path,
@@ -379,7 +547,6 @@ class TestWriteConfigFileMulti:
     """Tests for the _write_config_file_multi helper."""
 
     def test_write_config_file_multi(self, tmp_path: Path) -> None:
-        """Verify YAML output structure matches input sources dict."""
         config_path = tmp_path / "config.yaml"
         sources = {
             "git": {
@@ -407,7 +574,6 @@ class TestWriteConfigFileMulti:
         assert parsed["sources"]["localfile"]["my-files"]["base_url"] == "file:///data"
 
     def test_write_config_file_has_header_comment(self, tmp_path: Path) -> None:
-        """Generated config.yaml must start with the generator comment."""
         config_path = tmp_path / "config.yaml"
         _write_config_file_multi(config_path, sources={"git": {}})
 
@@ -415,7 +581,6 @@ class TestWriteConfigFileMulti:
         assert raw.startswith("# Generated by qdrant-loader setup")
 
     def test_write_config_file_empty_sources(self, tmp_path: Path) -> None:
-        """Empty sources dict produces a valid YAML file with sources key."""
         config_path = tmp_path / "config.yaml"
         _write_config_file_multi(config_path, sources={})
 
@@ -433,7 +598,6 @@ class TestCollectGitConfig:
     """Tests for the _collect_git_config helper."""
 
     def test_collect_git_config_with_token(self) -> None:
-        """Token should map to a source-scoped env var."""
         prompt_side_effects = [
             "https://github.com/org/repo.git",
             "main",
@@ -451,7 +615,6 @@ class TestCollectGitConfig:
         assert config["file_types"] == ["*.md", "*.txt"]
 
     def test_collect_git_config_no_token(self) -> None:
-        """When token is empty, no token entry should appear in config or env."""
         prompt_side_effects = [
             "https://github.com/org/public-repo.git",
             "main",
@@ -475,13 +638,7 @@ class TestCollectLocalfileConfig:
     """Tests for the _collect_localfile_config helper."""
 
     def test_collect_localfile_adds_file_prefix(self) -> None:
-        """Paths without file:// prefix get converted via Path.as_uri()."""
-        prompt_side_effects = [
-            "/home/user/docs",
-            "*.md,*.rst",
-        ]
-
-        with patch("click.prompt", side_effect=prompt_side_effects):
+        with patch("click.prompt", side_effect=["/home/user/docs", "*.md,*.rst"]):
             config, extra_env = _collect_localfile_config("my-local")
 
         assert config["base_url"].startswith("file:///")
@@ -489,40 +646,21 @@ class TestCollectLocalfileConfig:
         assert extra_env == {}
 
     def test_collect_localfile_preserves_existing_prefix(self) -> None:
-        """Paths already starting with file:// must not be double-prefixed."""
-        prompt_side_effects = [
-            "file:///data/docs",
-            "*.txt",
-        ]
-
-        with patch("click.prompt", side_effect=prompt_side_effects):
+        with patch("click.prompt", side_effect=["file:///data/docs", "*.txt"]):
             config, extra_env = _collect_localfile_config("my-local")
 
         assert config["base_url"] == "file:///data/docs"
 
     def test_collect_localfile_parses_file_types(self) -> None:
-        """Comma-separated file types must be split into a list."""
-        prompt_side_effects = [
-            "/tmp/data",
-            "*.md, *.txt, *.py",
-        ]
-
-        with patch("click.prompt", side_effect=prompt_side_effects):
+        with patch("click.prompt", side_effect=["/tmp/data", "*.md, *.txt, *.py"]):
             config, _ = _collect_localfile_config("my-local")
 
         assert config["file_types"] == ["*.md", "*.txt", "*.py"]
 
     def test_collect_localfile_resolves_relative_path(self) -> None:
-        """Relative paths must be resolved to absolute file:// URIs."""
-        prompt_side_effects = [
-            "relative/docs",
-            "*.md",
-        ]
-
-        with patch("click.prompt", side_effect=prompt_side_effects):
+        with patch("click.prompt", side_effect=["relative/docs", "*.md"]):
             config, _ = _collect_localfile_config("my-local")
 
-        # Path.as_uri() resolves to absolute, so must start with file:///
         assert config["base_url"].startswith("file:///")
         assert config["base_url"].endswith("relative/docs")
 
@@ -542,13 +680,11 @@ class TestSourceNameToEnvSuffix:
         assert _source_name_to_env_suffix("my.repo@v2") == "MY_REPO_V2"
 
     def test_collision_detection(self) -> None:
-        """Names that differ only by separator produce the same suffix."""
         assert _source_name_to_env_suffix("my-repo") == _source_name_to_env_suffix(
             "my_repo"
         )
 
     def test_empty_suffix_fallback(self) -> None:
-        """Source name with only special chars should return 'DEFAULT'."""
         assert _source_name_to_env_suffix("---") == "DEFAULT"
         assert _source_name_to_env_suffix("...") == "DEFAULT"
 
@@ -564,35 +700,19 @@ class TestDuplicateSourceNameRejection:
     def test_duplicate_name_rejected_then_accepted(self, tmp_path: Path) -> None:
         """Adding two git sources with the same name should re-prompt."""
         prompt_side_effects = [
-            # Core settings
-            "sk-openai",
-            "http://localhost:6333",
-            "",
-            "documents",
-            # First source: git/my-git
-            "git",
+            "sk-openai", "http://localhost:6333", "", "documents",
+            # First source
             "my-git",
-            "https://github.com/org/repo1.git",
-            "main",
-            "",
-            "*.md",
-            # Second source: git — first try "my-git" (duplicate), then "my-git-2"
-            "git",
-            "my-git",  # duplicate → rejected
+            "https://github.com/org/repo1.git", "main", "", "*.md",
+            # Second source — first try "my-git" (duplicate), then "my-git-2"
+            "my-git",  # duplicate -> rejected
             "my-git-2",  # accepted
-            "https://github.com/org/repo2.git",
-            "main",
-            "",
-            "*.py",
+            "https://github.com/org/repo2.git", "main", "", "*.py",
         ]
-        confirm_side_effects = [
-            True,  # "Add another source?" → yes
-            False,  # "Add another source?" → no
-        ]
-
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=confirm_side_effects),
+            patch("click.confirm", side_effect=[True, False, True]),
+            patch(_SST, side_effect=["git", "git"]),
         ):
             run_setup_wizard(tmp_path)
 
@@ -611,7 +731,6 @@ class TestEnvFilePermissions:
     """Tests for .env file permission hardening."""
 
     def test_env_file_permissions_restricted(self, tmp_path: Path) -> None:
-        """Generated .env should have 0o600 permissions on POSIX."""
         import os
         import stat
 
@@ -625,11 +744,10 @@ class TestEnvFilePermissions:
         )
 
         mode = os.stat(env_path).st_mode
-        # Owner read+write only (0o600)
-        assert mode & stat.S_IRUSR  # owner read
-        assert mode & stat.S_IWUSR  # owner write
-        assert not (mode & stat.S_IRGRP)  # no group read
-        assert not (mode & stat.S_IROTH)  # no other read
+        assert mode & stat.S_IRUSR
+        assert mode & stat.S_IWUSR
+        assert not (mode & stat.S_IRGRP)
+        assert not (mode & stat.S_IROTH)
 
 
 # ---------------------------------------------------------------------------
@@ -644,12 +762,10 @@ class TestEscapeEnvValue:
         assert _escape_env_value("sk-abc123") == "sk-abc123"
 
     def test_value_with_equals_is_quoted(self) -> None:
-        result = _escape_env_value("key=value")
-        assert result == '"key=value"'
+        assert _escape_env_value("key=value") == '"key=value"'
 
     def test_value_with_quotes_is_escaped(self) -> None:
-        result = _escape_env_value('has"quote')
-        assert result == '"has\\"quote"'
+        assert _escape_env_value('has"quote') == '"has\\"quote"'
 
     def test_value_with_newline_is_quoted(self) -> None:
         result = _escape_env_value("line1\nline2")
@@ -674,7 +790,6 @@ class TestOutputDirValidation:
     """Tests for output_dir fail-fast when it's a file."""
 
     def test_output_dir_is_file_raises(self, tmp_path: Path) -> None:
-        """run_setup_wizard should raise BadParameter if output_dir is a file."""
         import click
 
         file_path = tmp_path / "not-a-dir"
@@ -685,7 +800,7 @@ class TestOutputDirValidation:
             patch("click.confirm", side_effect=Exception("should not reach confirms")),
         ):
             try:
-                run_setup_wizard(file_path)
+                run_setup(file_path, mode="default")
                 raise AssertionError("Expected BadParameter")
             except click.BadParameter:
                 pass
