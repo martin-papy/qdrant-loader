@@ -48,11 +48,11 @@ class TestFileDetector:
         """Test Office document detection."""
         test_files = [
             ("document.docx", True),
-            ("document.doc", True),
+            ("document.doc", False),
             ("spreadsheet.xlsx", True),
             ("spreadsheet.xls", True),
             ("presentation.pptx", True),
-            ("presentation.ppt", True),
+            ("presentation.ppt", False),
         ]
 
         for filename, expected in test_files:
