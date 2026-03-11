@@ -307,15 +307,15 @@ class TestLocalFileIdConsistency:
         connector = LocalFileConnector(config)
         connector.set_file_conversion_config(FileConversionConfig())
 
-        with patch.object(connector.logger, "error") as mock_error:
+        with patch.object(connector.logger, "warning") as mock_warning:
             async with connector:
                 documents = await connector.get_documents()
 
         assert len(documents) == 0
-        error_messages = [
-            call.args[0] for call in mock_error.call_args_list if call.args
+        warning_messages = [
+            call.args[0] for call in mock_warning.call_args_list if call.args
         ]
         assert any(
             "not supported for MarkItDown conversion" in message
-            for message in error_messages
+            for message in warning_messages
         )
