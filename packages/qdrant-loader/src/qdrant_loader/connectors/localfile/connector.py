@@ -94,7 +94,7 @@ class LocalFileConnector(BaseConnector):
 
                     if self.config.enable_file_conversion:
                         if not self.file_detector or not self.file_converter:
-                            self.logger.error(
+                            self.logger.warning(
                                 "Skipping file: file conversion is enabled but converter is not initialized",
                                 file_path=rel_path.replace("\\", "/"),
                             )
@@ -104,7 +104,7 @@ class LocalFileConnector(BaseConnector):
                             file_path
                         ):
                             file_info = self.file_detector.get_file_type_info(file_path)
-                            self.logger.error(
+                            self.logger.warning(
                                 "Skipping file: file type is not supported for MarkItDown conversion",
                                 file_path=rel_path.replace("\\", "/"),
                                 mime_type=file_info.get("mime_type"),
