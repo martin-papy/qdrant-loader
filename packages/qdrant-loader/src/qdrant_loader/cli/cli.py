@@ -472,7 +472,5 @@ if __name__ == "__main__":
     _add_project_commands()
     cli()
 else:
-    # For when imported as a module, add commands on first access
-    import atexit
-
-    atexit.register(_add_project_commands)
+    # Register project commands immediately so they are available when CLI parses args
+    _add_project_commands()

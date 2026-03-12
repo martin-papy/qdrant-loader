@@ -59,7 +59,7 @@ def load_config_with_workspace(
         from qdrant_loader.config.error_formatter import print_config_error
 
         print_config_error(e)
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        raise SystemExit(1) from e
 
 
 def create_database_directory(path: Path) -> bool:
@@ -128,4 +128,4 @@ def load_config(
         from qdrant_loader.config.error_formatter import print_config_error
 
         print_config_error(e)
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        raise SystemExit(1) from e
