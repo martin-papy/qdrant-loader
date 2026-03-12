@@ -178,7 +178,6 @@ class MultiProjectConfigParser:
         # Extract basic project information
         display_name = project_data.get("display_name", project_id)
         description = project_data.get("description")
-        project_data.get("collection_name")
 
         # Parse project-specific sources with automatic field injection
         sources_data = project_data.get("sources", {})
