@@ -300,6 +300,15 @@ class Settings(BaseSettings):
         if collection and self.global_config.qdrant.collection_name == "documents":
             self.global_config.qdrant.collection_name = collection
 
+        # STATE_DB_PATH → state_management.database_path
+        # Note: In workspace mode this is overridden by workspace_config.database_path
+        state_db = os.getenv("STATE_DB_PATH")
+        if (
+            state_db
+            and self.global_config.state_management.database_path == "./state.db"
+        ):
+            self.global_config.state_management.database_path = state_db
+
     @property
     def qdrant_url(self) -> str:
         """Get the Qdrant URL from global configuration."""

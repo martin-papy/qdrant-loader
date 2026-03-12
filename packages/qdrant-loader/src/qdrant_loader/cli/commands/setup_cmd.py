@@ -380,7 +380,15 @@ def run_setup_advanced(output_dir: Path) -> None:
     while True:
         _get_console().print("\n[bold cyan]Step 4: Project Configuration[/bold cyan]")
 
-        project_id: str = click.prompt("Project ID", default="my-project")
+        while True:
+            project_id: str = click.prompt("Project ID", default="my-project")
+            if project_id in projects:
+                _get_console().print(
+                    f"[red]Project '{project_id}' already exists. "
+                    f"Pick a different ID.[/red]"
+                )
+                continue
+            break
         display_name: str = click.prompt("Display name", default=project_id)
         description: str = click.prompt("Description", default="")
 
@@ -544,8 +552,6 @@ def _select_source_type() -> str | None:
     except (EOFError, KeyboardInterrupt):
         result = None
 
-    if result is None:
-        return "localfile"
     return result
 
 
@@ -567,6 +573,8 @@ def _collect_sources_loop(
         _get_console().print("\n[bold cyan]Data Source[/bold cyan]")
 
         source_type = _select_source_type()
+        if source_type is None:
+            break
 
         _get_console().print(
             f"\n[bold cyan]Configure {SOURCE_TYPES[source_type]}[/bold cyan]"
