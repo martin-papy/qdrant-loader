@@ -1,7 +1,7 @@
 """Configuration for Jira connector."""
 
 import os
-from enum import Enum
+from enum import StrEnum
 from typing import Self
 
 from pydantic import ConfigDict, Field, HttpUrl, field_validator, model_validator
@@ -9,7 +9,7 @@ from pydantic import ConfigDict, Field, HttpUrl, field_validator, model_validato
 from qdrant_loader.config.source_config import SourceConfig
 
 
-class JiraDeploymentType(str, Enum):
+class JiraDeploymentType(StrEnum):
     """Jira deployment types."""
 
     CLOUD = "cloud"
