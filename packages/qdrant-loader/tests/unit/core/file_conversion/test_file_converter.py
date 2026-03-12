@@ -279,6 +279,22 @@ class TestFileValidation:
         finally:
             temp_path.unlink(missing_ok=True)
 
+    @pytest.mark.parametrize("suffix", [".doc", ".ppt"])
+    def test_validate_legacy_office_file_type_unsupported(self, file_converter, suffix):
+        """Test validation rejects legacy Office binary formats."""
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(b"legacy office content")
+
+        try:
+            with pytest.raises(UnsupportedFileTypeError) as exc_info:
+                file_converter._validate_file(str(temp_path))
+
+            assert "not supported for conversion" in str(exc_info.value)
+            assert suffix.lstrip(".") in str(exc_info.value)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
 
 class TestFileConversion:
     """Test file conversion functionality."""
