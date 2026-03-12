@@ -70,9 +70,10 @@ class MCPSchemas:
                             "type": "object",
                             "additionalProperties": True,
                             "properties": {
-                                "score": {"type": "number"},
+                                "document_id": {"type": "string"},
                                 "title": {"type": "string"},
                                 "content": {"type": "string"},
+                                "content_snippet": {"type": "string"},
                                 "source_type": {
                                     "type": "string",
                                     "enum": [
@@ -81,22 +82,37 @@ class MCPSchemas:
                                         "jira",
                                         "documentation",
                                         "localfile",
+                                        "unknown",
                                     ],
+                                },
+                                "source_url": {"type": ["string", "null"]},
+                                "file_path": {"type": ["string", "null"]},
+                                "score": {"type": "number"},
+                                "created_at": {
+                                    "type": ["string", "null"],
+                                    "format": "date-time",
+                                },
+                                "updated_at": {
+                                    "type": ["string", "null"],
+                                    "format": "date-time",
                                 },
                                 "metadata": {
                                     "type": "object",
                                     "additionalProperties": True,
                                     "properties": {
-                                        "file_path": {"type": "string"},
+                                        "breadcrumb": {"type": ["string", "null"]},
+                                        "hierarchy_context": {
+                                            "type": ["string", "null"]
+                                        },
+                                        "project_info": {"type": ["string", "null"]},
                                         "project_id": {"type": "string"},
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time",
-                                        },
-                                        "last_modified": {
-                                            "type": "string",
-                                            "format": "date-time",
-                                        },
+                                        "file_path": {"type": ["string", "null"]},
+                                        "word_count": {"type": ["integer", "null"]},
+                                        "chunk_index": {"type": ["integer", "null"]},
+                                        "total_chunks": {"type": ["integer", "null"]},
+                                        "is_attachment": {"type": "boolean"},
+                                        "depth": {"type": ["integer", "null"]},
+                                        "has_children": {"type": ["boolean", "null"]},
                                     },
                                 },
                             },
