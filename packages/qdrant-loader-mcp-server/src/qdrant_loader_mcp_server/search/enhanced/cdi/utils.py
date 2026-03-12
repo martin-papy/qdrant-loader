@@ -2,14 +2,11 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable
-from typing import TypeVar
 
 import numpy as np
 
-T = TypeVar("T")
 
-
-def jaccard_similarity(a: Iterable[T], b: Iterable[T]) -> float:
+def jaccard_similarity[T](a: Iterable[T], b: Iterable[T]) -> float:
     """Compute Jaccard similarity for two iterables (as sets).
 
     Provided as a pure helper. Not wired into the legacy module yet.
