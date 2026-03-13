@@ -1,12 +1,18 @@
 """Keyword search service for hybrid search."""
 
-import asyncio
-import re
-from typing import Any
+from __future__ import annotations
 
+import asyncio
+from typing import TYPE_CHECKING, Any
+
+import nltk
 import numpy as np
-from qdrant_client import QdrantClient
+from nltk.stem import SnowballStemmer
+from nltk.tokenize import RegexpTokenizer
 from rank_bm25 import BM25Okapi
+
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
@@ -17,7 +23,7 @@ class KeywordSearchService:
 
     def __init__(
         self,
-        qdrant_client: QdrantClient,
+        qdrant_client: AsyncQdrantClient,
         collection_name: str,
     ):
         """Initialize the keyword search service.
@@ -30,6 +36,17 @@ class KeywordSearchService:
         self.collection_name = collection_name
         self.field_parser = FieldQueryParser()
         self.logger = LoggingConfig.get_logger(__name__)
+        self._stemmer = SnowballStemmer(language="english")
+
+        try:
+            from nltk.corpus import stopwords
+
+            nltk.data.find("corpora/stopwords")
+
+        except LookupError:
+            nltk.download("stopwords")
+        finally:
+            self._stop_words = set(stopwords.words("english"))
 
     async def keyword_search(
         self,
@@ -174,18 +191,25 @@ class KeywordSearchService:
         return results
 
     # Note: _build_filter method removed - now using FieldQueryParser.create_qdrant_filter()
+    def _tokenize(self, text: str) -> list[str]:
+        """Tokenize text using NLTK RegexpTokenizer word tokenization.
 
-    @staticmethod
-    def _tokenize(text: str) -> list[str]:
-        """Tokenize text using regex-based word tokenization and lowercasing."""
+        See: https://www.nltk.org/api/nltk.tokenize.regexp.html
+        """
+
         if not isinstance(text, str):
             return []
-        return re.findall(r"\b\w+\b", text.lower())
+        tokenized_text: list[str] = RegexpTokenizer(r"\b\w+\b").tokenize(text)
+        return [
+            self._stemmer.stem(word)
+            for word in tokenized_text
+            if word.lower() not in self._stop_words
+        ]
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.
 
-        Tokenizes documents and query with regex word tokenization and lowercasing.
+        Tokenizes documents and query with NLTK regex word tokenization.
         """
         tokenized_docs = [self._tokenize(doc) for doc in documents]
         bm25 = BM25Okapi(tokenized_docs)

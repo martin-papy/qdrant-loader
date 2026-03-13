@@ -20,8 +20,7 @@ reviews:
     - "**/*"
     # Exclude markdown files (mostly documentation)
     - "!**/*.md"
-    # Exclude test files
-    - "!**/*.test.py"
+    # Exclude test directories
     - "!**/tests/**"
 
 # Chat settings

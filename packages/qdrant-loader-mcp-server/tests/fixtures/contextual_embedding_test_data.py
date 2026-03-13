@@ -68,8 +68,8 @@ All developers should follow these guidelines when building new services.
 
 ## Token Management
 
-Tokens should be rotated every 24 hours to minimize risk exposure. Store them in 
-httpOnly cookies rather than localStorage to prevent XSS attacks. Always validate 
+Tokens should be rotated every 24 hours to minimize risk exposure. Store them in
+httpOnly cookies rather than localStorage to prevent XSS attacks. Always validate
 the signature before processing any request. Implement proper expiration handling
 and refresh flows to maintain seamless user experience.
 
@@ -78,8 +78,8 @@ refresh token. Never store sensitive data in the token payload.
 
 ## Session Handling
 
-Sessions should timeout after 30 minutes of inactivity. Use secure, randomly 
-generated session identifiers with at least 128 bits of entropy. Never expose 
+Sessions should timeout after 30 minutes of inactivity. Use secure, randomly
+generated session identifiers with at least 128 bits of entropy. Never expose
 internal database IDs in URLs or responses.
 
 Implement proper session invalidation on logout. Clear all related cookies and
@@ -88,7 +88,7 @@ server-side session data.
 ## Rate Limiting
 
 Implement progressive delays after failed attempts. Start with 1 second delay,
-doubling after each failure. Block IPs after 10 consecutive failures within 
+doubling after each failure. Block IPs after 10 consecutive failures within
 5 minutes. Use CAPTCHA challenges for suspicious patterns.
 
 Monitor for distributed attacks that rotate source IPs. Consider implementing
@@ -116,7 +116,7 @@ status page if this is a major release.
 ## Rolling Update Process
 
 Gradually replace old pods with new ones to maintain availability. Ensure
-at least 2 replicas remain healthy during the entire process. Monitor 
+at least 2 replicas remain healthy during the entire process. Monitor
 error rates and latency closely during the transition.
 
 Use readiness probes to ensure traffic only routes to healthy instances.
@@ -336,7 +336,7 @@ def get_contextual_chunk(doc: TestDocument, chunk_content: str) -> str:
 EXAMPLE_CONTEXTUAL_CHUNK = """
 [Document: API Security & Authentication Guide | Source: confluence | Topics: security, authentication, API, access control]
 
-Tokens should be rotated every 24 hours to minimize risk exposure. Store them in 
-httpOnly cookies rather than localStorage to prevent XSS attacks. Always validate 
+Tokens should be rotated every 24 hours to minimize risk exposure. Store them in
+httpOnly cookies rather than localStorage to prevent XSS attacks. Always validate
 the signature before processing any request.
 """

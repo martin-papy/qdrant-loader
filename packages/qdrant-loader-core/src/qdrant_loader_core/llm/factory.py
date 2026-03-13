@@ -2,13 +2,6 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-from .providers.ollama import OllamaProvider
-from .providers.openai import OpenAIProvider
-
-try:
-    from .providers.azure_openai import AzureOpenAIProvider  # type: ignore
-except Exception:  # pragma: no cover - optional dependency surface
-    AzureOpenAIProvider = None  # type: ignore
 from .settings import LLMSettings
 from .types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 
@@ -37,6 +30,23 @@ class _NoopProvider(LLMProvider):
 
     def tokenizer(self) -> TokenCounter:
         return _NoopTokenizer()
+
+
+_SENTINEL = object()
+_azure_provider_class: type | None | object = _SENTINEL
+
+
+def _get_azure_provider_class():  # type: ignore[return]
+    """Lazily resolve the optional AzureOpenAIProvider (cached after first call)."""
+    global _azure_provider_class
+    if _azure_provider_class is _SENTINEL:
+        try:
+            from .providers.azure_openai import AzureOpenAIProvider  # type: ignore
+
+            _azure_provider_class = AzureOpenAIProvider
+        except Exception:  # pragma: no cover - optional dependency surface
+            _azure_provider_class = None
+    return _azure_provider_class
 
 
 def _safe_hostname(url: str | None) -> str | None:
@@ -69,19 +79,25 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
             or base_host.endswith(".cognitiveservices.azure.com")
         )
     )
-    if is_azure and AzureOpenAIProvider is not None:  # type: ignore[truthy-bool]
-        try:
-            return AzureOpenAIProvider(settings)  # type: ignore[misc]
-        except Exception:
-            return _NoopProvider()
+    if is_azure:
+        azure_cls = _get_azure_provider_class()
+        if azure_cls is not None:
+            try:
+                return azure_cls(settings)  # type: ignore[misc]
+            except Exception:
+                return _NoopProvider()
 
     if "openai" in provider_name or "openai" in base_url.lower():
+        from .providers.openai import OpenAIProvider
+
         try:
             return OpenAIProvider(settings)
         except Exception:
             return _NoopProvider()
 
     if provider_name == "ollama" or (base_host in ("localhost", "127.0.0.1")):
+        from .providers.ollama import OllamaProvider
+
         return OllamaProvider(settings)
 
     return _NoopProvider()

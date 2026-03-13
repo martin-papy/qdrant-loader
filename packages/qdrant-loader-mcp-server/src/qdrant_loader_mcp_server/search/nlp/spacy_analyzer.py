@@ -1,8 +1,14 @@
 """spaCy-powered query analysis for intelligent search."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any
 
+# Note: spacy is imported at module level because:
+# 1. This module (spacy_analyzer) is only imported when SpaCyQueryAnalyzer is needed
+# 2. Tests need to be able to patch spacy.load
+# The lazy loading happens at a higher level - this module is not imported at MCP startup
 import spacy
 from spacy.cli.download import download as spacy_download
 from spacy.tokens import Doc

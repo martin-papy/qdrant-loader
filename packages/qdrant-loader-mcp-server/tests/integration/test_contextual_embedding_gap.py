@@ -237,9 +237,9 @@ class TestContextualEmbeddingGap:
         print(f"\n  Results: {passed}/{len(PASSING_QUERIES)} passed")
 
         # Most passing queries should actually pass
-        assert passed >= len(PASSING_QUERIES) * 0.8, (
-            f"Too many passing queries failed: {failed}/{len(PASSING_QUERIES)}"
-        )
+        assert (
+            passed >= len(PASSING_QUERIES) * 0.8
+        ), f"Too many passing queries failed: {failed}/{len(PASSING_QUERIES)}"
 
     @pytest.mark.asyncio
     async def test_03_failing_queries_demonstrate_gap(self):
@@ -297,9 +297,9 @@ class TestContextualEmbeddingGap:
 
         # Most failing queries should actually fail
         # If they don't, the test data might need adjustment
-        assert failures_as_expected >= len(FAILING_QUERIES) * 0.7, (
-            "Too many queries unexpectedly passed - test data may need adjustment"
-        )
+        assert (
+            failures_as_expected >= len(FAILING_QUERIES) * 0.7
+        ), "Too many queries unexpectedly passed - test data may need adjustment"
 
     @pytest.mark.asyncio
     async def test_04_summary_report(self):
@@ -567,10 +567,10 @@ class TestContextualEmbeddingWithFix:
         print(f"  (Compare to 0/{len(FAILING_QUERIES)} without context)")
 
         # Most should now pass
-        assert passed >= len(FAILING_QUERIES) * 0.7, (
-            f"Contextual embeddings didn't fix enough queries: {passed}/{len(FAILING_QUERIES)}"
-        )
+        assert (
+            passed >= len(FAILING_QUERIES) * 0.7
+        ), f"Contextual embeddings didn't fix enough queries: {passed}/{len(FAILING_QUERIES)}"
         # Most should now pass
-        assert passed >= len(FAILING_QUERIES) * 0.7, (
-            f"Contextual embeddings didn't fix enough queries: {passed}/{len(FAILING_QUERIES)}"
-        )
+        assert (
+            passed >= len(FAILING_QUERIES) * 0.7
+        ), f"Contextual embeddings didn't fix enough queries: {passed}/{len(FAILING_QUERIES)}"
