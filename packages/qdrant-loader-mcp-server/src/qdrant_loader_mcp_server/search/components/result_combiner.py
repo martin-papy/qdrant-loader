@@ -15,6 +15,7 @@ from .search_result_models import HybridSearchResult, create_hybrid_search_resul
 
 WRRF_CONSTANT = 60
 
+
 class ResultCombiner:
     """Combines and ranks search results from multiple sources."""
 
@@ -50,7 +51,11 @@ class ResultCombiner:
             metadata_weight=self.metadata_weight,
         )
 
-    def merge_results_with_wrrf(self, vector_results: list[dict[str, Any]], keyword_results: list[dict[str, Any]]) -> dict:
+    def merge_results_with_wrrf(
+        self,
+        vector_results: list[dict[str, Any]],
+        keyword_results: list[dict[str, Any]],
+    ) -> dict:
         """
         Merge and rerank results using Weighted Recipocal Rerank Fusion from vector (dense) and keyword (sparse) search.
         """
@@ -73,7 +78,8 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
-                    "wrrf_score": self._scorer.vector_weight * (1 / (rank + WRRF_CONSTANT))
+                    "wrrf_score": self._scorer.vector_weight
+                    * (1 / (rank + WRRF_CONSTANT)),
                 }
 
         # Process keyword results
@@ -82,7 +88,9 @@ class ResultCombiner:
             if text in combined_dict:
                 combined_dict[text]["keyword_score"] = result["score"]
                 # Sum
-                combined_dict[text]["wrrf_score"] += self._scorer.keyword_weight * (1 / (rank + WRRF_CONSTANT))
+                combined_dict[text]["wrrf_score"] += self._scorer.keyword_weight * (
+                    1 / (rank + WRRF_CONSTANT)
+                )
             else:
                 metadata = result["metadata"]
                 combined_dict[text] = {
@@ -97,12 +105,14 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
-                    "wrrf_score": self._scorer.keyword_weight * (1 / (rank + WRRF_CONSTANT))
+                    "wrrf_score": self._scorer.keyword_weight
+                    * (1 / (rank + WRRF_CONSTANT)),
                 }
         return combined_dict
 
-
-    def extract_chunk_title(self, info: dict, metadata: dict, chunk_index: int, total_chunks: int) -> str:
+    def extract_chunk_title(
+        self, info: dict, metadata: dict, chunk_index: int, total_chunks: int
+    ) -> str:
         # Extract fields from both direct payload fields and nested metadata
         # Use direct fields from Qdrant payload when available, fallback to metadata
         title = info.get("title", "") or metadata.get("title", "")
@@ -110,7 +120,6 @@ class ResultCombiner:
         # Extract rich metadata from nested metadata object
         file_name = metadata.get("file_name", "")
         metadata.get("file_type", "")
-
 
         # Enhanced title generation using actual Qdrant structure
         # Priority: root title > nested section_title > file_name + chunk info > source
@@ -132,9 +141,7 @@ class ResultCombiner:
             sub_chunk_index = metadata.get("sub_chunk_index")
             total_sub_chunks = metadata.get("total_sub_chunks")
             if sub_chunk_index is not None and total_sub_chunks is not None:
-                title += (
-                    f" - Chunk {int(sub_chunk_index) + 1}/{total_sub_chunks}"
-                )
+                title += f" - Chunk {int(sub_chunk_index) + 1}/{total_sub_chunks}"
             elif chunk_index is not None and total_chunks is not None:
                 title += f" - Chunk {int(chunk_index) + 1}/{total_chunks}"
         else:
@@ -152,7 +159,14 @@ class ResultCombiner:
                 title = "Untitled"
         return title
 
-    def merge_rich_and_enhanced_metadata(self, info: dict, metadata: dict, metadata_components: dict, chunk_index: int, total_chunks: int) -> dict:
+    def merge_rich_and_enhanced_metadata(
+        self,
+        info: dict,
+        metadata: dict,
+        metadata_components: dict,
+        chunk_index: int,
+        total_chunks: int,
+    ) -> dict:
         # Create enhanced metadata dict with rich Qdrant fields
         enhanced_metadata = {
             # Core fields from root level of Qdrant payload
@@ -208,10 +222,12 @@ class ResultCombiner:
 
         return enhanced_metadata
 
-
     def is_result_filtered(self, use_wrrf: bool, wrrf_score: float, chunk_score: float):
         # Scale minimum threshold
-        wrrf_min_score = self.min_score * ((self._scorer.vector_weight + self._scorer.keyword_weight) / (WRRF_CONSTANT + 1))
+        wrrf_min_score = self.min_score * (
+            (self._scorer.vector_weight + self._scorer.keyword_weight)
+            / (WRRF_CONSTANT + 1)
+        )
         # Filter low wrrf
         if use_wrrf and wrrf_score <= wrrf_min_score:
             return True
@@ -244,7 +260,9 @@ class ResultCombiner:
         Returns:
             List of combined and ranked HybridSearchResult objects
         """
-        combined_dict = self.merge_results_with_wrrf(vector_results=vector_results, keyword_results=keyword_results)
+        combined_dict = self.merge_results_with_wrrf(
+            vector_results=vector_results, keyword_results=keyword_results
+        )
 
         # Calculate combined scores and create results
         combined_results = []
@@ -267,9 +285,11 @@ class ResultCombiner:
                 if should_skip_result(metadata, result_filters, query_context):
                     continue
 
-            wrrf_score = info['wrrf_score']
+            wrrf_score = info["wrrf_score"]
             # Fallback to standard weighting scoring
-            chunk_score = (info['keyword_score'] * self._scorer.keyword_weight) + (info['vector_score'] * self._scorer.vector_weight)
+            chunk_score = (info["keyword_score"] * self._scorer.keyword_weight) + (
+                info["vector_score"] * self._scorer.vector_weight
+            )
 
             # Filter based on WRRF or standard scores and weighting
             if self.is_result_filtered(use_wrrf, wrrf_score, chunk_score):
@@ -278,9 +298,7 @@ class ResultCombiner:
             score = wrrf_score if use_wrrf else chunk_score
 
             # Extract all metadata components
-            metadata_components = self.metadata_extractor.extract_all_metadata(
-                metadata
-            )
+            metadata_components = self.metadata_extractor.extract_all_metadata(metadata)
 
             # TODO: Evaluate metadata score boosting with WRRF and in general - Boost score with metadata
             boosted_score = boost_score_with_metadata(
@@ -292,8 +310,19 @@ class ResultCombiner:
             chunk_index = metadata.get("chunk_index")
             total_chunks = metadata.get("total_chunks")
 
-            title = self.extract_chunk_title(info=info, metadata=metadata, chunk_index=chunk_index, total_chunks=total_chunks)
-            enhanced_metadata = self.merge_rich_and_enhanced_metadata(info=info, metadata=metadata, metadata_components=metadata_components, chunk_index=chunk_index, total_chunks=total_chunks)
+            title = self.extract_chunk_title(
+                info=info,
+                metadata=metadata,
+                chunk_index=chunk_index,
+                total_chunks=total_chunks,
+            )
+            enhanced_metadata = self.merge_rich_and_enhanced_metadata(
+                info=info,
+                metadata=metadata,
+                metadata_components=metadata_components,
+                chunk_index=chunk_index,
+                total_chunks=total_chunks,
+            )
 
             # NOTE: No additional fallback; root payload project_id is authoritative
 

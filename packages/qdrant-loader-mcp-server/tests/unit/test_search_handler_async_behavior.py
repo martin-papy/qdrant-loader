@@ -388,40 +388,47 @@ class TestAsyncExpandDocumentBehavior:
     """Test async behavior in document expansion operations."""
 
     @pytest.mark.asyncio
-    async def test_expand_document_async_search_sequence(
-        self, async_search_handler, sample_async_results
-    ):
-        """Test async behavior with document expansion search sequence."""
-        target_document = sample_async_results[0]
+    async def test_expand_document_async_scroll_sequence(self, async_search_handler):
+        """Test async behavior when scrolling multiple pages from Qdrant."""
 
-        # Setup sequential async searches
-        async def sequential_search(query, **kwargs):
-            if "document_id:" in query:
-                await asyncio.sleep(0.02)  # First search delay
-                return []  # No exact match
+        point1 = Mock()
+        point1.payload = {"document_id": "async-doc-0", "chunk_index": 0}
+
+        point2 = Mock()
+        point2.payload = {"document_id": "async-doc-0", "chunk_index": 1}
+
+        def sequential_scroll(**kwargs):
+            if not hasattr(sequential_scroll, "called"):
+                sequential_scroll.called = True
+                time.sleep(0.02)  # simulate first page delay
+                return ([point1], "next_offset")
             else:
-                await asyncio.sleep(0.03)  # Second search delay
-                return [target_document]
+                time.sleep(0.03)  # simulate second page delay
+                return ([point2], None)
 
-        async_search_handler.search_engine.search = sequential_search
-        async_search_handler.protocol.create_response.return_value = {
-            "jsonrpc": "2.0",
-            "id": 1,
-        }
+        async_search_handler.qdrant_client.scroll = Mock(side_effect=sequential_scroll)
 
-        with patch.object(async_search_handler.formatters, "format_search_result"):
-            with patch.object(
-                async_search_handler.formatters, "create_structured_search_results"
-            ):
-                start_time = time.time()
-                params = {"document_id": "async-doc-0"}
-                result = await async_search_handler.handle_expand_document(1, params)
-                end_time = time.time()
+        async_search_handler.protocol.create_response.side_effect = (
+            lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
+        )
 
-                # Should wait for both search attempts
-                assert end_time - start_time >= 0.05
-                assert result["jsonrpc"] == "2.0"
+        start = time.monotonic()
 
+        params = {"document_id": "async-doc-0"}
+        result = await async_search_handler.handle_expand_document(1, params)
+
+        elapsed = time.monotonic() - start
+
+        # Should wait for both scroll calls
+        assert elapsed >= 0.04
+        assert result["jsonrpc"] == "2.0"
+        assert result["result"]["structuredContent"]["total_chunks"] == 2
+        
     @pytest.mark.asyncio
     async def test_concurrent_document_expansions(
         self, async_search_handler, sample_async_results

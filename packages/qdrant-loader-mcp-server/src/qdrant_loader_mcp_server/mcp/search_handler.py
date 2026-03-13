@@ -3,6 +3,7 @@
 import inspect
 from typing import Any
 
+from qdrant_client import QdrantClient, models
 from qdrant_loader_mcp_server.config import QdrantConfig
 
 from ..search.engine import SearchEngine
@@ -18,7 +19,6 @@ from .handlers.search import (
     organize_by_hierarchy,
 )
 from .protocol import MCPProtocol
-from qdrant_client import QdrantClient, models
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
@@ -38,6 +38,8 @@ class SearchHandler:
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self.qdrant_config = QdrantConfig()
+        self.qdrant_client = QdrantClient()
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -445,13 +447,11 @@ class SearchHandler:
             all_points = []
             next_offset = None
 
-            qdrant_config = QdrantConfig()
-            collection_name = qdrant_config.collection_name
+            collection_name = self.qdrant_config.collection_name
             # Scroll to retrieve all chunks
-            qdrant_client = QdrantClient()
             while True:
-                points, next_offset = qdrant_client.scroll(
-                    collection_name= collection_name,
+                points, next_offset = self.qdrant_client.scroll(
+                    collection_name=collection_name,
                     scroll_filter=query_filter,
                     limit=100,
                     offset=next_offset,

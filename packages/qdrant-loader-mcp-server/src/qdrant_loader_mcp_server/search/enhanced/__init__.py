@@ -22,9 +22,11 @@ from .cross_document_intelligence import (
     DocumentClusterAnalyzer,
     DocumentSimilarity,
     DocumentSimilarityCalculator,
-    SimilarityMetric,
 )
 from .cross_document_intelligence import RelationshipType as CrossDocRelationshipType
+from .cross_document_intelligence import (
+    SimilarityMetric,
+)
 
 # 🔥 Dynamic Faceted Search Interface
 from .faceted_search import (
