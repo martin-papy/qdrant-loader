@@ -3,7 +3,6 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
-import chardet
 import git
 
 from qdrant_loader.connectors.git.config import GitRepoConfig
@@ -433,21 +432,13 @@ class GitMetadataExtractor:
         return ""
 
     def _detect_encoding(self, content: str) -> str:
-        """Detect file encoding."""
-        if not content:
-            return "utf-8"
+        """Return encoding label for already-decoded text content.
 
-        try:
-            result = chardet.detect(content.encode())
-            if (
-                result["encoding"]
-                and result["encoding"].lower() != "ascii"
-                and result["confidence"] > 0.8
-            ):
-                return result["encoding"].lower()
-        except Exception as e:
-            self.logger.error({"event": "Failed to detect encoding", "error": str(e)})
-
+        The connector passes `content` as Python `str`, so bytes-level charset detection
+        is not meaningful here and can vary across environments (e.g. `windows-1252`
+        vs `utf-8` for ASCII-only content). We normalize to UTF-8 for deterministic
+        metadata and stable tests across platforms.
+        """
         return "utf-8"
 
     def _detect_language(self, file_path: str) -> str:

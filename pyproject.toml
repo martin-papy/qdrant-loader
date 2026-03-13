@@ -109,8 +109,6 @@ testpaths = [
     "tests",
 ]
 
-[tool.pylint."messages control"]
-disable = ["all"]
 
 norecursedirs = [
     "packages",
