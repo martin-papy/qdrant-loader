@@ -90,3 +90,49 @@ def test_config_integration(monkeypatch):
     assert config.qdrant.url == "http://localhost:6333"
     assert config.qdrant.collection_name == "test_collection"
     assert config.openai.api_key == "test_key"
+
+
+def test_openai_config_api_key_optional():
+    """OpenAIConfig() without api_key should not raise."""
+    # api_key is Optional[str] with a default of None; instantiation must succeed
+    config = OpenAIConfig()
+    assert config is not None
+
+
+def test_openai_config_api_key_none_by_default():
+    """OpenAIConfig().api_key is None when not provided."""
+    config = OpenAIConfig()
+    assert config.api_key is None
+
+
+def test_openai_config_with_api_key_explicit():
+    """OpenAIConfig(api_key='test').api_key equals the supplied value."""
+    config = OpenAIConfig(api_key="test")
+    assert config.api_key == "test"
+
+
+def test_config_without_openai_env_var(monkeypatch):
+    """Config() should work when OPENAI_API_KEY env var is not set."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    config = Config()
+    assert config is not None
+    assert config.openai.api_key is None
+
+
+def test_qdrant_config_defaults_aligned(monkeypatch):
+    """QdrantConfig() defaults match the expected canonical values.
+
+    Defaults must stay aligned with qdrant_loader.config.qdrant.QdrantConfig:
+      url            -> http://localhost:6333
+      collection_name -> documents
+      api_key        -> None
+    """
+    monkeypatch.delenv("QDRANT_URL", raising=False)
+    monkeypatch.delenv("QDRANT_API_KEY", raising=False)
+    monkeypatch.delenv("QDRANT_COLLECTION_NAME", raising=False)
+
+    config = QdrantConfig()
+    assert config.url == "http://localhost:6333"
+    assert config.collection_name == "documents"
+    assert config.api_key is None
