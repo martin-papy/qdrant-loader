@@ -766,40 +766,17 @@ class MCPSchemas:
             "outputSchema": {
                 "type": "object",
                 "properties": {
-                    "results": {
+                    "document_id": {"type": "string"},
+                    "total_chunks": {"type": "integer"},
+                    "chunks": {
                         "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "score": {"type": "number"},
-                                "title": {"type": "string"},
-                                "content": {"type": "string"},
-                                "source_type": {"type": "string"},
-                                "metadata": {
-                                    "type": "object",
-                                    "properties": {
-                                        "file_path": {"type": "string"},
-                                        "project_id": {"type": "string"},
-                                        "created_at": {"type": "string"},
-                                        "last_modified": {"type": "string"},
-                                    },
-                                },
-                            },
-                        },
+                        "items": {"type": "object"},  # chunk payload structure
                     },
-                    "total_found": {"type": "integer"},
                     "query_context": {
                         "type": "object",
                         "properties": {
                             "original_query": {"type": "string"},
-                            "source_types_filtered": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
-                            "project_ids_filtered": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
+                            "is_document_expansion": {"type": "boolean"},
                         },
                     },
                 },

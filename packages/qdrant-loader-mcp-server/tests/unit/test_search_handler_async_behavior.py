@@ -405,11 +405,17 @@ class TestAsyncExpandDocumentBehavior:
             else:
                 time.sleep(0.03)  # simulate second page delay
                 return ([point2], None)
+            
+        async_search_handler.async_qdrant_client = Mock()
+        async_search_handler.async_qdrant_client.scroll = AsyncMock(
+            side_effect=sequential_scroll
+        )
 
-        async_search_handler.qdrant_client.scroll = Mock(side_effect=sequential_scroll)
+        async_search_handler.qdrant_config = Mock()
+        async_search_handler.qdrant_config.collection_name = "test_collection"
 
-        async_search_handler.protocol.create_response.side_effect = (
-            lambda request_id, result=None, error=None: {
+        async_search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": result,

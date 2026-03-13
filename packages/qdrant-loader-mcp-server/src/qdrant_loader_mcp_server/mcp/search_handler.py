@@ -3,7 +3,7 @@
 import inspect
 from typing import Any
 
-from qdrant_client import QdrantClient, models
+from qdrant_client import AsyncQdrantClient, models
 from qdrant_loader_mcp_server.config import QdrantConfig
 
 from ..search.engine import SearchEngine
@@ -38,8 +38,8 @@ class SearchHandler:
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self.async_qdrant_client = AsyncQdrantClient()
         self.qdrant_config = QdrantConfig()
-        self.qdrant_client = QdrantClient()
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -448,9 +448,10 @@ class SearchHandler:
             next_offset = None
 
             collection_name = self.qdrant_config.collection_name
+            MAX_CHUNKS = 500  # Reasonable upper bound
             # Scroll to retrieve all chunks
             while True:
-                points, next_offset = self.qdrant_client.scroll(
+                points, next_offset = await self.async_qdrant_client.scroll(
                     collection_name=collection_name,
                     scroll_filter=query_filter,
                     limit=100,
@@ -461,7 +462,7 @@ class SearchHandler:
 
                 all_points.extend(points)
 
-                if next_offset is None:
+                if next_offset is None or len(all_points) >= MAX_CHUNKS:
                     break
 
             if not all_points:
@@ -469,7 +470,7 @@ class SearchHandler:
                 return self.protocol.create_response(
                     request_id,
                     error={
-                        "code": -32604,
+                        "code": -32601,
                         "message": "Document not found",
                         "data": f"No chunks found for document_id: {document_id}",
                     },

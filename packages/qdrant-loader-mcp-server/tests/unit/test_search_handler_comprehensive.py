@@ -425,7 +425,6 @@ class TestHandleAttachmentSearch:
             },
         )
 
-
 class TestHandleExpandDocument:
     """Test document expansion functionality."""
 
@@ -442,7 +441,13 @@ class TestHandleExpandDocument:
             "text": "Sample chunk",
         }
 
-        search_handler.qdrant_client.scroll = Mock(return_value=([point], None))
+        search_handler.async_qdrant_client = Mock()
+        search_handler.async_qdrant_client.scroll = AsyncMock(
+            return_value=([point], None)
+        )
+
+        search_handler.qdrant_config = Mock()
+        search_handler.qdrant_config.collection_name = "test_collection"
 
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
@@ -468,7 +473,13 @@ class TestHandleExpandDocument:
 
         params = {"document_id": "missing-doc"}
 
-        search_handler.qdrant_client.scroll = Mock(return_value=([], None))
+        search_handler.async_qdrant_client = Mock()
+        search_handler.async_qdrant_client.scroll = AsyncMock(
+            return_value=([], None)
+        )
+
+        search_handler.qdrant_config = Mock()
+        search_handler.qdrant_config.collection_name = "test_collection"
 
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
@@ -481,8 +492,10 @@ class TestHandleExpandDocument:
 
         result = await search_handler.handle_expand_document(1, params)
 
-        assert result["error"]["code"] == -32604
+        assert result["result"] is None
+        assert result["error"]["code"] == -32601
         assert result["error"]["message"] == "Document not found"
+
 
     @pytest.mark.asyncio
     async def test_expand_document_missing_document_id(self, search_handler):
@@ -502,6 +515,7 @@ class TestHandleExpandDocument:
         assert result["error"]["code"] == -32602
         assert result["error"]["message"] == "Invalid params"
 
+
     @pytest.mark.asyncio
     async def test_expand_document_multiple_scroll_pages(self, search_handler):
         """Should collect chunks across multiple scroll pages."""
@@ -514,12 +528,16 @@ class TestHandleExpandDocument:
         point2 = Mock()
         point2.payload = {"document_id": "doc1", "chunk_index": 1}
 
-        search_handler.qdrant_client.scroll = Mock(
+        search_handler.async_qdrant_client = Mock()
+        search_handler.async_qdrant_client.scroll = AsyncMock(
             side_effect=[
                 ([point1], "next_offset"),
                 ([point2], None),
             ]
         )
+
+        search_handler.qdrant_config = Mock()
+        search_handler.qdrant_config.collection_name = "test_collection"
 
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
@@ -529,6 +547,7 @@ class TestHandleExpandDocument:
                 "error": error,
             }
         )
+
         result = await search_handler.handle_expand_document(1, params)
 
         content = result["result"]["structuredContent"]
@@ -536,7 +555,7 @@ class TestHandleExpandDocument:
         assert content["total_chunks"] == 2
         assert content["chunks"][0]["chunk_index"] == 0
         assert content["chunks"][1]["chunk_index"] == 1
-
+        
 class TestHierarchyFilters:
     """Test hierarchy filtering methods."""
 
