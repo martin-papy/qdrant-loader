@@ -446,15 +446,20 @@ class SearchHandler:
 
             all_points = []
             next_offset = None
+            truncated = False
 
             collection_name = self.qdrant_config.collection_name
             MAX_CHUNKS = 500  # Reasonable upper bound
             # Scroll to retrieve all chunks
             while True:
+                remaining = MAX_CHUNKS - len(all_points)
+                if remaining <= 0:
+                    truncated = next_offset is not None
+                    break
                 points, next_offset = await self.async_qdrant_client.scroll(
                     collection_name=collection_name,
                     scroll_filter=query_filter,
-                    limit=100,
+                    limit=min(100, remaining),
                     offset=next_offset,
                     with_payload=True,
                     with_vectors=False,
@@ -462,9 +467,11 @@ class SearchHandler:
 
                 all_points.extend(points)
 
-                if next_offset is None or len(all_points) >= MAX_CHUNKS:
+                if next_offset is None:
                     break
-
+                if len(all_points) >= MAX_CHUNKS:
+                    truncated = True
+                    break
             if not all_points:
                 logger.warning(f"No chunks found for document_id={document_id}")
                 return self.protocol.create_response(
