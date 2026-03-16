@@ -1,3 +1,7 @@
+"""
+Hybrid search pipeline.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +16,18 @@ from .interfaces import KeywordSearcher, Reranker, ResultCombinerLike, VectorSea
 
 @dataclass
 class HybridPipeline:
+    """Hybrid search pipeline.
+
+    Args:
+        vector_searcher: Vector searcher
+        keyword_searcher: Keyword searcher
+        result_combiner: Result combiner
+        reranker: Reranker
+        booster: Result booster
+        normalizer: Score normalizer
+        deduplicator: Result deduplicator
+    """
+
     vector_searcher: VectorSearcher
     keyword_searcher: KeywordSearcher
     result_combiner: ResultCombinerLike
@@ -31,6 +47,9 @@ class HybridPipeline:
         vector_query: str | None = None,
         keyword_query: str | None = None,
     ) -> list[HybridSearchResult]:
+        """
+        Run the hybrid search pipeline.
+        """
         effective_vector_query = vector_query if vector_query is not None else query
         effective_keyword_query = keyword_query if keyword_query is not None else query
         vector_results, keyword_results = await asyncio.gather(
@@ -62,5 +81,5 @@ class HybridPipeline:
         if self.deduplicator is not None:
             results = self.deduplicator.deduplicate(results)
         if self.reranker is not None:
-            return self.reranker.rerank(results)
+            return self.reranker.rerank(results=results, query=query)
         return results
