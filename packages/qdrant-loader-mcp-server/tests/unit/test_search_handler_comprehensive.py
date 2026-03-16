@@ -34,7 +34,17 @@ def mock_protocol():
 @pytest.fixture
 def search_handler(mock_search_engine, mock_query_processor, mock_protocol):
     """Create a SearchHandler instance for testing."""
-    return SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+    # mock qdrant client
+    mock_search_engine.client = Mock()
+    mock_search_engine.client.scroll = AsyncMock()
+
+    handler = SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+
+    # mock config dùng trong expand_document
+    handler.qdrant_config = Mock()
+    handler.qdrant_config.collection_name = "test_collection"
+
+    return handler
 
 
 @pytest.fixture
@@ -425,111 +435,121 @@ class TestHandleAttachmentSearch:
             },
         )
 
-
 class TestHandleExpandDocument:
     """Test document expansion functionality."""
 
     @pytest.mark.asyncio
-    async def test_handle_expand_document_success(
-        self, search_handler, sample_search_results
-    ):
-        """Test successful document expansion."""
-        target_result = sample_search_results[0]
-        search_handler.search_engine.search.return_value = [target_result]
-        search_handler.protocol.create_response.return_value = {
-            "jsonrpc": "2.0",
-            "id": 1,
+    async def test_expand_document_success(self, search_handler):
+        """Should return all chunks for a document."""
+
+        params = {"document_id": "doc1"}
+
+        point = Mock()
+        point.payload = {
+            "document_id": "doc1",
+            "chunk_index": 0,
+            "text": "Sample chunk",
         }
 
-        with patch.object(
-            search_handler.formatters, "format_search_result"
-        ) as mock_format:
-            with patch.object(
-                search_handler.formatters, "create_structured_search_results"
-            ) as mock_structured:
-                mock_format.return_value = "Formatted result"
-                mock_structured.return_value = []
+        search_handler.search_engine.client.scroll.return_value = ([point], None)
 
-                params = {"document_id": "doc1"}
-
-                await search_handler.handle_expand_document(1, params)
-
-                # Verify search was called with document_id field search
-                search_handler.search_engine.search.assert_called_with(
-                    query="document_id:doc1", limit=10
-                )
-
-    @pytest.mark.asyncio
-    async def test_handle_expand_document_not_found(self, search_handler):
-        """Test document expansion when document is not found."""
-        search_handler.search_engine.search.return_value = []
-        search_handler.protocol.create_response.return_value = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "error": {"code": -32604, "message": "Document not found"},
-        }
-
-        params = {"document_id": "nonexistent"}
-
-        await search_handler.handle_expand_document(1, params)
-
-        search_handler.protocol.create_response.assert_called_once_with(
-            1,
-            error={
-                "code": -32604,
-                "message": "Document not found",
-                "data": "No document found with ID: nonexistent",
-            },
+        # mock protocol response
+        search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
         )
 
+        result = await search_handler.handle_expand_document(1, params)
+
+        content = result["result"]["structuredContent"]
+
+        assert content["document_id"] == "doc1"
+        assert content["total_chunks"] == 1
+        assert content["chunks"][0]["text"] == "Sample chunk"
+
+
     @pytest.mark.asyncio
-    async def test_handle_expand_document_missing_id(self, search_handler):
-        """Test document expansion with missing document_id parameter."""
-        search_handler.protocol.create_response.return_value = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "error": {"code": -32602, "message": "Invalid params"},
-        }
+    async def test_expand_document_not_found(self, search_handler):
+        """Should return error when document does not exist."""
 
-        params = {}
+        params = {"document_id": "missing-doc"}
 
-        await search_handler.handle_expand_document(1, params)
+       
+        search_handler.search_engine.client.scroll.return_value = ([], None)
 
-        search_handler.protocol.create_response.assert_called_once_with(
-            1,
-            error={
-                "code": -32602,
-                "message": "Invalid params",
-                "data": "Missing required parameter: document_id",
-            },
+        search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
         )
 
+        result = await search_handler.handle_expand_document(1, params)
+
+        assert result["error"]["code"] == -32001
+        assert result["error"]["message"] == "Document not found"
+
+
     @pytest.mark.asyncio
-    async def test_handle_expand_document_fallback_search(
-        self, search_handler, sample_search_results
-    ):
-        """Test document expansion with fallback to general search."""
-        target_result = sample_search_results[0]
+    async def test_expand_document_missing_document_id(self, search_handler):
+        """Should return error if document_id is missing."""
 
-        # First search returns no exact matches, second search returns the document
-        search_handler.search_engine.search.side_effect = [[], [target_result]]
-        search_handler.protocol.create_response.return_value = {
-            "jsonrpc": "2.0",
-            "id": 1,
-        }
+        search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
+        )
 
-        with patch.object(search_handler.formatters, "format_search_result"):
-            with patch.object(
-                search_handler.formatters, "create_structured_search_results"
-            ):
-                params = {"document_id": "doc1"}
+        result = await search_handler.handle_expand_document(1, {})
 
-                await search_handler.handle_expand_document(1, params)
-
-                # Verify both searches were called
-                assert search_handler.search_engine.search.call_count == 2
+        assert result["error"]["code"] == -32602
+        assert result["error"]["message"] == "Invalid params"
 
 
+    @pytest.mark.asyncio
+    async def test_expand_document_multiple_scroll_pages(self, search_handler):
+        """Should collect chunks across multiple scroll pages."""
+
+        params = {"document_id": "doc1"}
+
+        point1 = Mock()
+        point1.payload = {"document_id": "doc1", "chunk_index": 0}
+
+        point2 = Mock()
+        point2.payload = {"document_id": "doc1", "chunk_index": 1}
+
+        search_handler.search_engine.client.scroll.side_effect = [
+            ([point1], "next_offset"),
+            ([point2], None),
+        ]
+        
+
+        search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
+        )
+
+        result = await search_handler.handle_expand_document(1, params)
+
+        content = result["result"]["structuredContent"]
+
+        assert content["total_chunks"] == 2
+        assert content["chunks"][0]["chunk_index"] == 0
+        assert content["chunks"][1]["chunk_index"] == 1
+        
 class TestHierarchyFilters:
     """Test hierarchy filtering methods."""
 
