@@ -485,6 +485,15 @@ class SearchHandler:
             logger.info(f"Retrieved {len(all_points)} chunks")
 
             # Extract chunk payloads
+            def _chunk_sort_key(point):
+                payload = point.payload or {}
+                metadata = payload.get("metadata") or {}
+                idx = metadata.get("chunk_index", payload.get("chunk_index"))
+                if isinstance(idx, int):
+                    return (0, idx, str(point.id))
+                return (1, 0, str(point.id))
+
+            all_points.sort(key=_chunk_sort_key)
             chunks = [p.payload for p in all_points]
 
             structured_results = {
