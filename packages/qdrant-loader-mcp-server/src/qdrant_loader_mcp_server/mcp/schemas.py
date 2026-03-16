@@ -772,6 +772,7 @@ class MCPSchemas:
                         "type": "array",
                         "items": {"type": "object"},  # chunk payload structure
                     },
+                    "truncated": {"type": "bool"},
                     "query_context": {
                         "type": "object",
                         "properties": {

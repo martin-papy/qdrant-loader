@@ -492,6 +492,7 @@ class SearchHandler:
                 "document_id": document_id,
                 "total_chunks": len(chunks),
                 "chunks": chunks,
+                "truncated": truncated,
                 "query_context": {
                     "original_query": f"expand_document:{document_id}",
                     "is_document_expansion": True,
