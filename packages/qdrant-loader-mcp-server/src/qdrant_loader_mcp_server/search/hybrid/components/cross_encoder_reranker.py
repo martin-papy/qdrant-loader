@@ -6,6 +6,7 @@ Uses the CrossEncoder class from the sentence-transformers library to rerank sea
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import types
 from typing import TYPE_CHECKING, Any
@@ -88,7 +89,7 @@ class CrossEncoderReranker:
             self.enabled = False
             self.model = None
 
-    def rerank(
+    async def rerank(
         self,
         query: str,
         results: list[Any],
@@ -110,10 +111,15 @@ class CrossEncoderReranker:
 
             pairs = [(query, text) for (_idx, text) in texts_with_indices]
 
-            scores = self.model.predict(
-                pairs,
-                batch_size=self.batch_size,
-                show_progress_bar=False,
+            loop = asyncio.get_running_loop()
+
+            scores = await loop.run_in_executor(
+                None,
+                lambda: self.model.predict(
+                    pairs,
+                    batch_size=self.batch_size,
+                    show_progress_bar=False,
+                ),
             )
 
             # Map scores back to original results using saved indices
