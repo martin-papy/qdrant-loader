@@ -17,17 +17,22 @@ class HybridReranker:
         batch_size: int = 32,
     ):
         self.logger = logging.getLogger(__name__)
+        self.cross_encoder = None
 
         if enabled:
-            self.cross_encoder = CrossEncoderReranker(
-                model_name=model,
-                device=device,
-                batch_size=batch_size,
-                enabled=True,
-            )
-            self.logger.info("Cross-encoder reranker enabled")
+            try:
+                self.cross_encoder = CrossEncoderReranker(
+                    model_name=model,
+                    device=device,
+                    batch_size=batch_size,
+                    enabled=True,
+                )
+                self.logger.info("Cross-encoder reranker enabled")
+            except Exception:
+                self.logger.exception(
+                    "Failed to initialize cross-encoder reranker; continuing without reranking"
+                )
         else:
-            self.cross_encoder = None
             self.logger.info("Cross-encoder reranker disabled")
 
     def rerank(
@@ -41,9 +46,15 @@ class HybridReranker:
         if not results or self.cross_encoder is None:
             return results
 
-        return self.cross_encoder.rerank(
-            query=query,
-            results=results,
-            top_k=top_k,
-            text_key=text_key,
-        )
+        try:
+            return self.cross_encoder.rerank(
+                query=query,
+                results=results,
+                top_k=top_k,
+                text_key=text_key,
+            )
+        except Exception:
+            self.logger.exception(
+                "Cross-encoder reranking failed; returning original ranking"
+            )
+            return results
