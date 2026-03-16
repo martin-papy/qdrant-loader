@@ -69,11 +69,18 @@ class LightweightResultFormatters:
             "comparison_query": comparison_query,
             "similar_documents": [
                 {
-                    "document": FormatterUtils.extract_minimal_doc_fields(
-                        doc_info.get("document")
+                    "document": (
+                        FormatterUtils.extract_minimal_doc_fields(doc)
+                        if (doc := doc_info.get("document")) is not None
+                        else {
+                            "document_id": "",
+                            "title": "Untitled",
+                            "source_type": "unknown",
+                            "score": 0.0,
+                        }
                     ),
                     "similarity_score": doc_info.get("similarity_score", 0),
-                    "similarity_reasons": doc_info.get("similarity_reasons", []),
+                    "similarity_reasons": doc_info.get("similarity_reasons") or [],
                 }
                 for doc_info in similar_docs[:10]  # Limit to top 10
             ],
@@ -84,7 +91,7 @@ class LightweightResultFormatters:
     def create_lightweight_conflict_results(
         conflicts: dict[str, Any],
         query: str = "",
-        documents: list = None,
+        documents: list[Any] | None = None,
     ) -> dict[str, Any]:
         """Create lightweight conflict analysis results."""
         # Handle both new format ("conflicts") and old format ("conflicting_pairs")
@@ -334,7 +341,7 @@ class LightweightResultFormatters:
     @staticmethod
     def create_lightweight_complementary_results(
         complementary_recommendations: list[dict[str, Any]],
-        target_document: "HybridSearchResult" = None,
+        target_document: "HybridSearchResult | None" = None,
         context_documents_analyzed: int = 0,
         target_query: str = "",
     ) -> dict[str, Any]:
