@@ -81,5 +81,5 @@ class HybridPipeline:
         if self.deduplicator is not None:
             results = self.deduplicator.deduplicate(results)
         if self.reranker is not None:
-            return await self.reranker.rerank(results=results, query=query)
+            return self.reranker.rerank(results=results, query=query)
         return results
