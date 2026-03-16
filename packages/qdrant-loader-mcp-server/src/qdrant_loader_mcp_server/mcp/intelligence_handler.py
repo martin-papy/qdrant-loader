@@ -74,8 +74,8 @@ class IntelligenceHandler:
             analysis_results = await self.search_engine.analyze_document_relationships(
                 query=params["query"],
                 limit=params.get("limit", 20),
-                source_types=params.get("source_types") or [],
-                project_ids=params.get("project_ids") or [],
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
             )
 
             logger.info("Analysis completed successfully")
@@ -192,10 +192,10 @@ class IntelligenceHandler:
             similar_docs_raw = await self.search_engine.find_similar_documents(
                 target_query=params["target_query"],
                 comparison_query=params["comparison_query"],
-                similarity_metrics=params.get("similarity_metrics") or [],
+                similarity_metrics=params.get("similarity_metrics"),
                 max_similar=params.get("max_similar", 5),
-                source_types=params.get("source_types") or [],
-                project_ids=params.get("project_ids") or [],
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
                 similarity_threshold=params.get(
                     "similarity_threshold", 0.7
                 ),  # Default 0.7
@@ -394,8 +394,8 @@ class IntelligenceHandler:
             conflict_kwargs: dict[str, Any] = {
                 "query": params["query"],
                 "limit": params.get("limit"),
-                "source_types": params.get("source_types") or [],
-                "project_ids": params.get("project_ids") or [],
+                "source_types": params.get("source_types"),
+                "project_ids": params.get("project_ids"),
             }
             for opt in (
                 "use_llm",
@@ -470,8 +470,8 @@ class IntelligenceHandler:
                 target_query=params["target_query"],
                 context_query=params["context_query"],
                 max_recommendations=params.get("max_recommendations", 5),
-                source_types=params.get("source_types") or [],
-                project_ids=params.get("project_ids") or [],
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
             )
 
             # Defensive check to ensure we received the expected result type
@@ -556,8 +556,8 @@ class IntelligenceHandler:
                 max_clusters=params.get("max_clusters", 10),
                 min_cluster_size=params.get("min_cluster_size", 2),
                 strategy=params.get("strategy", "mixed_features"),
-                source_types=params.get("source_types") or [],
-                project_ids=params.get("project_ids") or [],
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
             )
 
             logger.info("Document clustering completed successfully")
