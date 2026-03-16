@@ -1,0 +1,5 @@
+Contextual embedding test document.
+
+This file is used to verify that chunks are embedded with a contextual prefix
+such as "[Document: sample_doc.txt | Source: localfile]" when contextual_embedding
+is enabled. After ingest, search for "contextual embedding test" to find this content.
