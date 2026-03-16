@@ -108,7 +108,10 @@ class TestGlobalConfig:
         assert config.sources is not None
         assert config.state_management is not None
         assert config.file_conversion is not None
-        assert config.qdrant is None  # Should be None by default
+        # Qdrant has sensible defaults
+        assert config.qdrant is not None
+        assert config.qdrant.url == "http://localhost:6333"
+        assert config.qdrant.collection_name == "documents"
 
     def test_custom_configuration(self):
         """Test GlobalConfig with custom settings."""
@@ -156,13 +159,14 @@ class TestGlobalConfig:
         assert result["qdrant"]["api_key"] is None
         assert result["qdrant"]["collection_name"] == "test_collection"
 
-    def test_to_dict_without_qdrant(self):
-        """Test converting GlobalConfig to dictionary without qdrant configuration."""
+    def test_to_dict_with_default_qdrant(self):
+        """Test converting GlobalConfig to dictionary with default qdrant configuration."""
         config = GlobalConfig(skip_validation=True)
         result = config.to_dict()
 
         assert "qdrant" in result
-        assert result["qdrant"] is None
+        assert result["qdrant"]["url"] == "http://localhost:6333"
+        assert result["qdrant"]["collection_name"] == "documents"
 
     def test_validation_with_qdrant(self):
         """Test that GlobalConfig validates qdrant configuration properly."""

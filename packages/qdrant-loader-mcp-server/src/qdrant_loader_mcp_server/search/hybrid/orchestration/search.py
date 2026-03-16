@@ -72,6 +72,7 @@ async def run_search(
                 local_combiner.min_score = adaptive_config.min_score_threshold
                 fetch_limit = min(adaptive_config.max_results, limit * 2)
 
+        # TODO: Evaluate the expanded_query logic to see it's impacts on vector and keyword searches
         expanded_query = await engine._expand_query(query)
         if adaptive_config and getattr(adaptive_config, "expand_query", False):
             aggressiveness = getattr(adaptive_config, "expansion_aggressiveness", None)
@@ -98,32 +99,32 @@ async def run_search(
             local_combiner.min_score = engine_min_score
 
         if plan.use_pipeline and engine.hybrid_pipeline is not None:
-            p = engine.hybrid_pipeline
-            if isinstance(p, HybridPipeline):
+            hybrid_pipeline: HybridPipeline = engine.hybrid_pipeline
+            if isinstance(hybrid_pipeline, HybridPipeline):
                 # Clone pipeline for this request with the local combiner to avoid shared mutation
                 local_pipeline = HybridPipeline(
-                    vector_searcher=p.vector_searcher,
-                    keyword_searcher=p.keyword_searcher,
+                    vector_searcher=hybrid_pipeline.vector_searcher,
+                    keyword_searcher=hybrid_pipeline.keyword_searcher,
                     result_combiner=local_combiner,
-                    reranker=p.reranker,
-                    booster=p.booster,
-                    normalizer=p.normalizer,
-                    deduplicator=p.deduplicator,
+                    reranker=hybrid_pipeline.reranker,
+                    booster=hybrid_pipeline.booster,
+                    normalizer=hybrid_pipeline.normalizer,
+                    deduplicator=hybrid_pipeline.deduplicator,
                 )
-                combined_results = await engine._orchestrator.run_pipeline(
+                combined_results: list[HybridSearchResult] = await engine._orchestrator.run_pipeline(
                     local_pipeline,
                     query=query,
                     limit=fetch_limit,
                     query_context=query_context,
                     source_types=source_types,
                     project_ids=project_ids,
-                    vector_query=plan.expanded_query,
+                    vector_query=query,
                     keyword_query=query,
                 )
             else:
                 # Custom or mocked pipeline: honor its run override without cloning
-                combined_results = await engine._orchestrator.run_pipeline(
-                    p,
+                combined_results: HybridSearchResult = await engine._orchestrator.run_pipeline(
+                    hybrid_pipeline,
                     query=query,
                     limit=fetch_limit,
                     query_context=query_context,

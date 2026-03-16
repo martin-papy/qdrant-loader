@@ -96,39 +96,51 @@ def test_env_path(tmp_path: Path) -> Path:
 
 def test_config_initialization(test_config_path: Path, test_env_path: Path):
     """Test basic configuration initialization."""
+    import os
+
     # Load environment variables
     from dotenv import load_dotenv
 
     load_dotenv(test_env_path, override=True)
 
-    # Initialize config
-    initialize_config(test_config_path, skip_validation=True)
+    # Remove QDRANT_* env vars so _auto_resolve_env_vars doesn't override config
+    saved_qdrant = {
+        k: os.environ.pop(k)
+        for k in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME")
+        if k in os.environ
+    }
 
-    # Get settings
-    settings = get_settings()
+    try:
+        # Initialize config
+        initialize_config(test_config_path, skip_validation=True)
 
-    # Verify basic settings
-    assert settings.qdrant_url == "http://localhost:6333"
-    assert settings.qdrant_collection_name == "test_collection"
-    assert settings.global_config.embedding.api_key == "test_key"
-    assert settings.state_db_path == "./data/state.db"
+        # Get settings
+        settings = get_settings()
 
-    # Verify global config
-    assert settings.global_config.chunking.chunk_size == 1000
-    assert settings.global_config.chunking.chunk_overlap == 200
-    assert settings.global_config.embedding.model == "text-embedding-3-small"
-    assert settings.global_config.embedding.vector_size == 1536
+        # Verify basic settings
+        assert settings.qdrant_url == "http://localhost:6333"
+        assert settings.qdrant_collection_name == "test_collection"
+        assert settings.global_config.embedding.api_key == "test_key"
+        assert settings.state_db_path == "./data/state.db"
 
-    # Verify sources config - access through projects
-    default_project = settings.projects_config.projects.get("default")
-    assert default_project is not None
-    assert "example" in default_project.sources.publicdocs
-    assert (
-        str(default_project.sources.publicdocs["example"].base_url)
-        == "https://example.com/"
-    )
-    assert default_project.sources.publicdocs["example"].version == "1.0"
-    assert default_project.sources.publicdocs["example"].content_type == "html"
+        # Verify global config
+        assert settings.global_config.chunking.chunk_size == 1000
+        assert settings.global_config.chunking.chunk_overlap == 200
+        assert settings.global_config.embedding.model == "text-embedding-3-small"
+        assert settings.global_config.embedding.vector_size == 1536
+
+        # Verify sources config - access through projects
+        default_project = settings.projects_config.projects.get("default")
+        assert default_project is not None
+        assert "example" in default_project.sources.publicdocs
+        assert (
+            str(default_project.sources.publicdocs["example"].base_url)
+            == "https://example.com/"
+        )
+        assert default_project.sources.publicdocs["example"].version == "1.0"
+        assert default_project.sources.publicdocs["example"].content_type == "html"
+    finally:
+        os.environ.update(saved_qdrant)
 
 
 def test_missing_required_fields(test_config_path: Path):

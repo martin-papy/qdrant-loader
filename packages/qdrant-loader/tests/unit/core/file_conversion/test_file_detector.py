@@ -163,6 +163,20 @@ class TestSupportedForConversion:
         finally:
             temp_path.unlink(missing_ok=True)
 
+    @pytest.mark.parametrize("suffix", [".doc", ".ppt"])
+    def test_is_supported_for_conversion_legacy_office_unsupported(
+        self, file_detector, suffix
+    ):
+        """Test that legacy Office binary formats are unsupported."""
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(b"fake legacy office content")
+
+        try:
+            assert file_detector.is_supported_for_conversion(str(temp_path)) is False
+        finally:
+            temp_path.unlink(missing_ok=True)
+
     def test_is_supported_for_conversion_excluded_html(self, file_detector):
         """Test that HTML files are excluded from conversion."""
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as temp_file:
