@@ -180,7 +180,10 @@ Final paragraph with special characters: éñüñøß
         test_cases = [
             ("ASCII content", ("utf-8", "windows-1252")),  # chardet may vary for ASCII
             ("Unicode content: éñüñøß 🌍", "utf-8"),
-            ("Mixed content with numbers: 123 and symbols: !@#$%", ("utf-8", "windows-1252")),  # chardet may vary for ASCII
+            (
+                "Mixed content with numbers: 123 and symbols: !@#$%",
+                ("utf-8", "windows-1252"),
+            ),  # chardet may vary for ASCII
         ]
 
         for content, expected_encoding in test_cases:
@@ -512,7 +515,10 @@ Instructions here.
         test_cases = [
             ("", "utf-8"),  # Empty string
             ("a", ("utf-8", "windows-1252")),  # Single character - chardet may vary
-            ("Hello World", ("utf-8", "windows-1252")),  # Simple ASCII - chardet may vary
+            (
+                "Hello World",
+                ("utf-8", "windows-1252"),
+            ),  # Simple ASCII - chardet may vary
             ("日本語", "utf-8"),  # Japanese characters
             ("مرحبا", "utf-8"),  # Arabic characters
             ("🚀🌟💻", "utf-8"),  # Emojis

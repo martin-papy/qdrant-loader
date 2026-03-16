@@ -8,7 +8,7 @@ Connect QDrant Loader to your local file system to index documents, research mat
 
 When you configure local file processing, QDrant Loader can handle:
 
-- **Documents** - PDFs, Word docs, PowerPoint, Excel files (with file conversion)
+- **Documents** - PDFs, Word (.docx), PowerPoint (.pptx), Excel files (with file conversion)
 - **Text files** - Markdown, plain text, and other text formats
 - **Code files** - Python, JavaScript, Java, C++, and more
 - **Data files** - JSON, CSV, XML, YAML configuration files
@@ -45,14 +45,14 @@ projects:
             - "**/~*"
             - "**/*.tmp"
           file_types:
-            - "*.pdf"
             - "*.docx"
             - "*.md"
-            - "*.txt"
-          max_file_size: 52428800  # 50MB
+          max_file_size: 52428800 # 50MB
 ```
 
 ### Advanced Configuration
+
+> Legacy Office binary formats `.doc` and `.ppt` are not supported by MarkItDown in this workflow. When `enable_file_conversion: true`, these files are skipped during ingest.
 
 ```yaml
 global:
@@ -76,22 +76,20 @@ projects:
           base_url: "file:///path/to/documents"
           # File filtering
           include_paths:
-            - "**"  # Include all files recursively
+            - "**" # Include all files recursively
           exclude_paths:
-            - "**/.*"  # Hidden files
-            - "**/~*"  # Temporary files
-            - "**/*.tmp"  # Temporary files
-            - "**/node_modules/**"  # Dependencies
-            - "**/__pycache__/**"  # Python cache
-            - "**/build/**"  # Build artifacts
-            - "**/dist/**"  # Distribution files
+            - "**/.*" # Hidden files
+            - "**/~*" # Temporary files
+            - "**/*.tmp" # Temporary files
+            - "**/node_modules/**" # Dependencies
+            - "**/__pycache__/**" # Python cache
+            - "**/build/**" # Build artifacts
+            - "**/dist/**" # Distribution files
           # File types to process
           file_types:
             - "*.pdf"
             - "*.docx"
-            - "*.doc"
             - "*.pptx"
-            - "*.ppt"
             - "*.xlsx"
             - "*.xls"
             - "*.md"
@@ -102,7 +100,7 @@ projects:
             - "*.yaml"
             - "*.yml"
           # Size limits
-          max_file_size: 52428800  # 50MB
+          max_file_size: 52428800 # 50MB
           # File conversion (requires global file_conversion config)
           enable_file_conversion: true
 ```
@@ -133,7 +131,7 @@ projects:
           file_types:
             - "*.pdf"
             - "*.tex"
-          max_file_size: 104857600  # 100MB
+          max_file_size: 104857600 # 100MB
         # Project documentation
         project-docs:
           base_url: "file:///home/user/projects/docs"
@@ -168,23 +166,23 @@ projects:
 
 ### Connection Settings
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
+| Option     | Type   | Description                          | Default  |
+| ---------- | ------ | ------------------------------------ | -------- |
 | `base_url` | string | Directory path with `file://` prefix | Required |
 
 ### File Filtering
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `include_paths` | list | Glob patterns for paths to include | `[]` |
-| `exclude_paths` | list | Glob patterns for paths to exclude | `[]` |
-| `file_types` | list | File extensions to process | `[]` |
-| `max_file_size` | int | Maximum file size in bytes | `1048576` (1MB) |
+| Option          | Type | Description                        | Default         |
+| --------------- | ---- | ---------------------------------- | --------------- |
+| `include_paths` | list | Glob patterns for paths to include | `[]`            |
+| `exclude_paths` | list | Glob patterns for paths to exclude | `[]`            |
+| `file_types`    | list | File extensions to process         | `[]`            |
+| `max_file_size` | int  | Maximum file size in bytes         | `1048576` (1MB) |
 
 ### Processing Options
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
+| Option                   | Type | Description                                  | Default |
+| ------------------------ | ---- | -------------------------------------------- | ------- |
 | `enable_file_conversion` | bool | Enable file conversion for supported formats | `false` |
 
 ## 🚀 Usage Examples
@@ -217,7 +215,7 @@ projects:
             - "*.tex"
             - "*.bib"
             - "*.md"
-          max_file_size: 104857600  # 100MB for large papers
+          max_file_size: 104857600 # 100MB for large papers
           enable_file_conversion: true
         # Datasets and data files
         research-data:
@@ -228,8 +226,8 @@ projects:
             - "*.xml"
             - "*.xlsx"
           exclude_paths:
-            - "**/raw/**"  # Skip raw data
-            - "**/temp/**"  # Skip temporary files
+            - "**/raw/**" # Skip raw data
+            - "**/temp/**" # Skip temporary files
 ```
 
 ### Documentation Team
@@ -264,13 +262,11 @@ projects:
         legacy-docs:
           base_url: "file:///docs/legacy"
           file_types:
-            - "*.doc"
             - "*.docx"
             - "*.pdf"
-            - "*.ppt"
             - "*.pptx"
           enable_file_conversion: true
-          max_file_size: 20971520  # 20MB
+          max_file_size: 20971520 # 20MB
 ```
 
 ### Software Development
@@ -356,7 +352,7 @@ projects:
           file_types:
             - "*.pdf"
             - "*.epub"
-          max_file_size: 104857600  # 100MB (maximum allowed)
+          max_file_size: 104857600 # 100MB (maximum allowed)
           enable_file_conversion: true
 ```
 
@@ -429,7 +425,7 @@ projects:
         my-docs:
           base_url: "file:///large_files"
           # Increase size limits
-          max_file_size: 104857600  # 100MB (maximum allowed)
+          max_file_size: 104857600 # 100MB (maximum allowed)
           # Skip very large files
           exclude_paths:
             - "**/*.iso"
@@ -477,8 +473,8 @@ projects:
             - "**"
           # Check exclude patterns
           exclude_paths:
-            - "**/.*"  # Hidden files
-            - "**/~*"  # Temporary files
+            - "**/.*" # Hidden files
+            - "**/~*" # Temporary files
 ```
 
 ### Debugging Commands
@@ -550,17 +546,17 @@ projects:
           base_url: "file:///documents"
           # Include patterns - be specific
           include_paths:
-            - "**/*.pdf"      # All PDFs recursively
-            - "docs/**/*.md"  # Markdown in docs folder
-            - "reports/2024/**"  # 2024 reports only
+            - "**/*.pdf" # All PDFs recursively
+            - "docs/**/*.md" # Markdown in docs folder
+            - "reports/2024/**" # 2024 reports only
           # Exclude patterns - avoid unnecessary files
           exclude_paths:
-            - "**/.*"            # Hidden files
-            - "**/*.tmp"      # Temporary files
-            - "**/*.log"      # Log files
-            - "**/node_modules/**"  # Dependencies
-            - "**/build/**"   # Build artifacts
-            - "**/cache/**"   # Cache directories
+            - "**/.*" # Hidden files
+            - "**/*.tmp" # Temporary files
+            - "**/*.log" # Log files
+            - "**/node_modules/**" # Dependencies
+            - "**/build/**" # Build artifacts
+            - "**/cache/**" # Cache directories
 ```
 
 ### Security Considerations

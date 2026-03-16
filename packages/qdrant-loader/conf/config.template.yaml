@@ -1,4 +1,6 @@
-# Template for multi-project configuration
+# Advanced Template for multi-project configuration
+# For a simpler setup, see config.simplified.template.yaml
+#
 # Copy this file to config.yaml and customize it for your needs
 # Environment variables can be used with ${VARIABLE_NAME} syntax
 
@@ -25,10 +27,10 @@
 #    - Recommended for tokens, passwords, and URLs
 #    - Set environment variables before running the application
 #
-# 5. Migration from Legacy Format:
-#    - Legacy single-project configurations are no longer supported
-#    - Convert by wrapping existing sources in a project structure
-#    - Move global settings to global_config section
+# 5. Simplified Format:
+#    - For single-project use, you can use top-level 'sources' instead of 'projects'
+#    - See config.simplified.template.yaml for examples
+#    - The system auto-wraps top-level sources into a default project
 
 # Global configuration shared across all projects
 global:
@@ -151,6 +153,23 @@ global:
                                      # Options: en_core_web_sm (15MB, no vectors)
                                      #          en_core_web_md (50MB, 20k vectors) - recommended
                                      #          en_core_web_lg (750MB, 514k vectors)
+
+  # Cross-encoder re-ranking configuration
+  # Controls fine-grained re-ranking using cross-encoders for improved precision
+  reranking:
+    enabled: false                                         # Enable cross-encoder re-ranking (improves precision)
+    model: "cross-encoder/ms-marco-MiniLM-L-12-v2"        # Cross-encoder model to use
+                                                            # Other options:
+                                                            #  - cross-encoder/ms-marco-TinyBERT-L-2-v2 (ultra-fast, low quality)
+                                                            #  - cross-encoder/ms-marco-MiniLM-L-12-v2 (fast, good quality) - recommended
+                                                            #  - cross-encoder/ms-marco-MiniLM-L-6-v2 (faster, slightly lower quality)
+                                                            #  - cross-encoder/qnli-distilroberta-base (very fast)
+    device: "cpu"                                         # Cross-encoder device to use
+                                                            # Other options:
+                                                            # - cpu: slow, stable, no GPU required
+                                                            # - cuda: fastest, requires NVIDIA GPU
+                                                            # - mps: medium speed, Apple Silicon (M1/M2/M3)
+    batch_size: 32                                        # Batch size for scoring (higher = faster but more memory)
 
   # State management configuration
   # Controls how document ingestion state is tracked

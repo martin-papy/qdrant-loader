@@ -51,9 +51,15 @@ def load_config_with_workspace(
                 "Loading configuration in traditional mode"
             )
             load_config(config_path, env_path, skip_validation)
+    except ClickException:
+        raise
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        # Lazy import to avoid slowing CLI startup
+        from qdrant_loader.config.error_formatter import print_config_error
+
+        print_config_error(e)
+        raise SystemExit(1) from e
 
 
 def create_database_directory(path: Path) -> bool:
@@ -118,4 +124,8 @@ def load_config(
         raise
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        # Lazy import to avoid slowing CLI startup
+        from qdrant_loader.config.error_formatter import print_config_error
+
+        print_config_error(e)
+        raise SystemExit(1) from e
