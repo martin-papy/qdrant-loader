@@ -9,19 +9,40 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
-from qdrant_loader.cli.async_utils import cancel_all_tasks as _cancel_all_tasks_helper
-from qdrant_loader.cli.asyncio import async_command
-from qdrant_loader.cli.commands import run_init as _commands_run_init
-from qdrant_loader.cli.config_loader import setup_workspace as _setup_workspace_impl
-from qdrant_loader.cli.logging_utils import get_logger as _get_logger_impl  # noqa: F401
-from qdrant_loader.cli.logging_utils import (  # noqa: F401
-    setup_logging as _setup_logging_impl,
-)
-from qdrant_loader.cli.path_utils import (
-    create_database_directory as _create_db_dir_helper,
-)
-from qdrant_loader.cli.update_check import check_for_updates as _check_updates_helper
-from qdrant_loader.cli.version import get_version_str as _get_version_str
+# async_command is needed at module level for @async_command decorator on commands.
+from qdrant_loader.cli.asyncio import async_command  # noqa: F401
+
+# Heavy modules are lazy-imported to keep CLI startup fast.
+
+
+def _get_version_str():
+    from qdrant_loader.cli.version import get_version_str
+
+    return get_version_str()
+
+
+def _check_updates_helper(version):
+    from qdrant_loader.cli.update_check import check_for_updates
+
+    check_for_updates(version)
+
+
+def _setup_workspace_impl(workspace_path):
+    from qdrant_loader.cli.config_loader import setup_workspace
+
+    return setup_workspace(workspace_path)
+
+
+def _create_db_dir_helper(abs_path):
+    from qdrant_loader.cli.path_utils import create_database_directory
+
+    return create_database_directory(abs_path)
+
+
+async def _commands_run_init(settings, force):
+    from qdrant_loader.cli.commands import run_init
+
+    return await run_init(settings, force)
 
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
@@ -67,7 +88,10 @@ def _setup_logging(log_level: str, workspace_config=None) -> None:
 
 
 def _check_for_updates() -> None:
-    _check_updates_helper(_get_version())
+    try:
+        _check_updates_helper(_get_version())
+    except Exception:
+        pass
 
 
 def _setup_workspace(workspace_path: Path):
@@ -276,7 +300,9 @@ async def init(
 
 
 async def _cancel_all_tasks():
-    await _cancel_all_tasks_helper()
+    from qdrant_loader.cli.async_utils import cancel_all_tasks
+
+    await cancel_all_tasks()
 
 
 @cli.command()
@@ -372,6 +398,32 @@ async def ingest(
 
 @cli.command()
 @option(
+    "--output-dir",
+    type=ClickPath(path_type=Path),
+    default=None,
+    help="Workspace directory to write config.yaml and .env files to. "
+    "If omitted, you will be prompted to choose a workspace folder.",
+)
+@option(
+    "--mode",
+    type=Choice(["default", "normal", "advanced"], case_sensitive=False),
+    default=None,
+    help="Setup mode: default (quick start), normal (interactive wizard), advanced (full control). "
+    "If omitted, you will be prompted to choose.",
+)
+def setup(output_dir: Path | None, mode: str | None) -> None:
+    """Setup wizard to generate config.yaml and .env files.
+
+    When run without flags, presents a TUI to choose a workspace folder and
+    setup mode (Default / Normal / Advanced).
+    """
+    from qdrant_loader.cli.commands.setup_cmd import run_setup
+
+    run_setup(output_dir, mode=mode)
+
+
+@cli.command()
+@option(
     "--workspace",
     type=ClickPath(path_type=Path),
     help="Workspace directory containing config.yaml and .env files. All output will be stored here.",
@@ -420,7 +472,5 @@ if __name__ == "__main__":
     _add_project_commands()
     cli()
 else:
-    # For when imported as a module, add commands on first access
-    import atexit
-
-    atexit.register(_add_project_commands)
+    # Register project commands immediately so they are available when CLI parses args
+    _add_project_commands()

@@ -27,7 +27,9 @@ class QueryProcessor:
         """
         # Expose patchable AsyncOpenAI alias to align with engine pattern
         self.openai_client: Any | None = (
-            AsyncOpenAI(api_key=openai_config.api_key) if AsyncOpenAI else None
+            AsyncOpenAI(api_key=openai_config.api_key)
+            if AsyncOpenAI and openai_config.api_key
+            else None
         )
         self.logger = LoggingConfig.get_logger(__name__)
 

@@ -1,4 +1,6 @@
-# Template for multi-project configuration
+# Advanced Template for multi-project configuration
+# For a simpler setup, see config.simplified.template.yaml
+#
 # Copy this file to config.yaml and customize it for your needs
 # Environment variables can be used with ${VARIABLE_NAME} syntax
 
@@ -25,10 +27,10 @@
 #    - Recommended for tokens, passwords, and URLs
 #    - Set environment variables before running the application
 #
-# 5. Migration from Legacy Format:
-#    - Legacy single-project configurations are no longer supported
-#    - Convert by wrapping existing sources in a project structure
-#    - Move global settings to global_config section
+# 5. Simplified Format:
+#    - For single-project use, you can use top-level 'sources' instead of 'projects'
+#    - See config.simplified.template.yaml for examples
+#    - The system auto-wraps top-level sources into a default project
 
 # Global configuration shared across all projects
 global:

@@ -449,9 +449,10 @@ class FileConverter:
 
         if not self.file_detector.is_supported_for_conversion(file_path):
             file_info = self.file_detector.get_file_type_info(file_path)
-            raise UnsupportedFileTypeError(
-                file_info.get("normalized_type", "unknown"), file_path
-            )
+            unsupported_type = file_info.get("normalized_type")
+            if not unsupported_type:
+                unsupported_type = Path(file_path).suffix.lstrip(".") or "unknown"
+            raise UnsupportedFileTypeError(unsupported_type, file_path)
 
     def create_fallback_document(self, file_path: str, error: Exception) -> str:
         """Create a fallback Markdown document when conversion fails."""

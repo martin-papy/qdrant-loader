@@ -608,6 +608,47 @@ class TestSectionSplitter:
         assert 1 in levels
         assert 2 in levels
 
+    def test_determine_optimal_split_levels_xls_document(self):
+        """Test determine_optimal_split_levels for legacy Excel .xls documents."""
+        mock_document = Mock()
+        mock_document.metadata = {"original_file_type": "xls"}
+
+        text = """
+        # Excel Document
+
+        ## Sheet 1
+        Data
+
+        ## Sheet 2
+        Data
+        """
+
+        levels = self.splitter.determine_optimal_split_levels(text, mock_document)
+
+        # Legacy Excel documents should follow the same split behavior
+        assert 1 in levels
+        assert 2 in levels
+
+    def test_determine_optimal_split_levels_xls_document_with_dot_prefix(self):
+        """Test determine_optimal_split_levels handles extension metadata with dot prefix."""
+        mock_document = Mock()
+        mock_document.metadata = {"original_file_type": ".xls"}
+
+        text = """
+        # Excel Document
+
+        ## Sheet 1
+        Data
+
+        ## Sheet 2
+        Data
+        """
+
+        levels = self.splitter.determine_optimal_split_levels(text, mock_document)
+
+        assert 1 in levels
+        assert 2 in levels
+
     def test_determine_optimal_split_levels_h3_only_document(self):
         """Test determine_optimal_split_levels for documents with only H3+ headers."""
         text = """

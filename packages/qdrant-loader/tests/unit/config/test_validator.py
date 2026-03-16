@@ -55,12 +55,13 @@ class TestConfigValidator:
         with pytest.raises(ValueError, match="Configuration must be a dictionary"):
             validator.validate_structure("not a dict")
 
-    def test_validate_structure_missing_projects(self, validator):
-        """Test validation with missing projects section."""
+    def test_validate_structure_missing_projects_and_sources(self, validator):
+        """Test validation with missing both projects and sources sections."""
         config = {"global": {}}
 
         with pytest.raises(
-            ValueError, match="Configuration must contain 'projects' section"
+            ValueError,
+            match="Configuration must contain either 'projects' section or top-level 'sources' section",
         ):
             validator.validate_structure(config)
 
@@ -302,12 +303,14 @@ class TestConfigValidator:
 
     def test_validate_project_id_reserved_id(self, validator):
         """Test project ID validation with reserved ID."""
+        # 'default' is allowed (used for simplified config format)
+        # 'admin' is still reserved
         with patch("qdrant_loader.config.validator._get_logger") as mock_get_logger:
             mock_logger = Mock()
             mock_get_logger.return_value = mock_logger
-            validator._validate_project_id("default")
+            validator._validate_project_id("admin")
             mock_logger.warning.assert_called_with(
-                "Project ID 'default' is reserved and may cause conflicts"
+                "Project ID 'admin' is reserved and may cause conflicts"
             )
 
     def test_validate_project_id_reserved_id_case_insensitive(self, validator):
