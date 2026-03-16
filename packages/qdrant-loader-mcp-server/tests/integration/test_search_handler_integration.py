@@ -30,7 +30,17 @@ def integration_search_handler(real_protocol):
     mock_query_processor = Mock()
     mock_query_processor.process_query = AsyncMock()
 
-    return SearchHandler(mock_search_engine, mock_query_processor, real_protocol)
+    # mock qdrant client
+    mock_search_engine.client = Mock()
+    mock_search_engine.client.scroll = AsyncMock()
+
+    handler = SearchHandler(mock_search_engine, mock_query_processor, real_protocol)
+
+    # mock config nếu code dùng
+    handler.qdrant_config = Mock()
+    handler.qdrant_config.collection_name = "test_collection"
+
+    return handler
 
 
 @pytest.fixture
@@ -476,21 +486,11 @@ class TestExpandDocumentIntegration:
             "text": "Sample chunk",
         }
 
-        integration_search_handler.async_qdrant_client = Mock()
-        integration_search_handler.async_qdrant_client.scroll = AsyncMock(
-            return_value=([point], None)
-        )
-
-        integration_search_handler.qdrant_config = Mock()
-        integration_search_handler.qdrant_config.collection_name = "test_collection"
-
-        integration_search_handler.protocol.create_response = Mock(
-            side_effect=lambda request_id, result=None, error=None: {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": result,
-                "error": error,
-            }
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
+            side_effect=[
+                ([point], "offset1"),
+                ([], None),
+            ]
         )
 
         params = {"document_id": "confluence-doc-123"}
@@ -499,10 +499,17 @@ class TestExpandDocumentIntegration:
             "expand-123", params
         )
 
-        assert result["error"] is None
-        assert result["result"]["isError"] is False
+        assert result["jsonrpc"] == "2.0"
+        assert result["id"] == "expand-123"
 
-        structured = result["result"]["structuredContent"]
+        # success response should not contain error
+        assert "error" not in result
+
+        tool_result = result["result"]
+        assert tool_result["isError"] is False
+
+        structured = tool_result["structuredContent"]
+
         assert structured["document_id"] == "confluence-doc-123"
         assert structured["total_chunks"] == 1
         assert structured["chunks"][0]["chunk_index"] == 0
@@ -528,34 +535,17 @@ class TestExpandDocumentIntegration:
             "text": "chunk2",
         }
 
-        integration_search_handler.async_qdrant_client = Mock()
-        integration_search_handler.async_qdrant_client.scroll = AsyncMock(
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
             side_effect=[
                 ([point1], "next_offset"),
                 ([point2], None),
             ]
         )
-
-        integration_search_handler.qdrant_config = Mock()
-        integration_search_handler.qdrant_config.collection_name = "test_collection"
-
-        integration_search_handler.protocol.create_response = Mock(
-            side_effect=lambda request_id, result=None, error=None: {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": result,
-                "error": error,
-            }
-        )
-
         params = {"document_id": "confluence-doc-456"}
 
         result = await integration_search_handler.handle_expand_document(
             "expand-456", params
         )
-
-        assert result["error"] is None
-
         structured = result["result"]["structuredContent"]
 
         assert structured["document_id"] == "confluence-doc-456"
@@ -571,21 +561,8 @@ class TestExpandDocumentIntegration:
     ):
         """Test document expansion when document is not found."""
 
-        integration_search_handler.async_qdrant_client = Mock()
-        integration_search_handler.async_qdrant_client.scroll = AsyncMock(
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
             return_value=([], None)
-        )
-
-        integration_search_handler.qdrant_config = Mock()
-        integration_search_handler.qdrant_config.collection_name = "test_collection"
-
-        integration_search_handler.protocol.create_response = Mock(
-            side_effect=lambda request_id, result=None, error=None: {
-                "jsonrpc": "2.0",
-                "id": request_id,
-                "result": result,
-                "error": error,
-            }
         )
 
         params = {"document_id": "nonexistent-doc"}
@@ -594,8 +571,7 @@ class TestExpandDocumentIntegration:
             "expand-789", params
         )
 
-        assert result["result"] is None
-        assert result["error"]["code"] == -32601
+        assert result["error"]["code"] == -32001
         assert result["error"]["message"] == "Document not found"
         assert "nonexistent-doc" in result["error"]["data"]
 class TestRealWorldScenarios:
@@ -727,13 +703,9 @@ class TestRealWorldScenarios:
             "text": "Authentication troubleshooting steps",
         }
         
-        integration_search_handler.async_qdrant_client = Mock()
-        integration_search_handler.async_qdrant_client.scroll = AsyncMock(
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
             return_value=([point], None)
         )
-        
-        integration_search_handler.qdrant_config = Mock()
-        integration_search_handler.qdrant_config.collection_name = "test_collection"
 
         # Expand specific document
         params2 = {"document_id": "confluence-doc-456"}

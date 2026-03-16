@@ -406,8 +406,8 @@ class TestAsyncExpandDocumentBehavior:
                 time.sleep(0.03)  # simulate second page delay
                 return ([point2], None)
             
-        async_search_handler.async_qdrant_client = Mock()
-        async_search_handler.async_qdrant_client.scroll = AsyncMock(
+        async_search_handler.search_engine.client = Mock()
+        async_search_handler.search_engine.client.scroll = AsyncMock(
             side_effect=sequential_scroll
         )
 

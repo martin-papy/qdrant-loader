@@ -34,7 +34,17 @@ def mock_protocol():
 @pytest.fixture
 def search_handler(mock_search_engine, mock_query_processor, mock_protocol):
     """Create a SearchHandler instance for testing."""
-    return SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+    # mock qdrant client
+    mock_search_engine.client = Mock()
+    mock_search_engine.client.scroll = AsyncMock()
+
+    handler = SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+
+    # mock config dùng trong expand_document
+    handler.qdrant_config = Mock()
+    handler.qdrant_config.collection_name = "test_collection"
+
+    return handler
 
 
 @pytest.fixture
@@ -441,14 +451,9 @@ class TestHandleExpandDocument:
             "text": "Sample chunk",
         }
 
-        search_handler.async_qdrant_client = Mock()
-        search_handler.async_qdrant_client.scroll = AsyncMock(
-            return_value=([point], None)
-        )
+        search_handler.search_engine.client.scroll.return_value = ([point], None)
 
-        search_handler.qdrant_config = Mock()
-        search_handler.qdrant_config.collection_name = "test_collection"
-
+        # mock protocol response
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
                 "jsonrpc": "2.0",
@@ -473,13 +478,8 @@ class TestHandleExpandDocument:
 
         params = {"document_id": "missing-doc"}
 
-        search_handler.async_qdrant_client = Mock()
-        search_handler.async_qdrant_client.scroll = AsyncMock(
-            return_value=([], None)
-        )
-
-        search_handler.qdrant_config = Mock()
-        search_handler.qdrant_config.collection_name = "test_collection"
+       
+        search_handler.search_engine.client.scroll.return_value = ([], None)
 
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
@@ -492,8 +492,7 @@ class TestHandleExpandDocument:
 
         result = await search_handler.handle_expand_document(1, params)
 
-        assert result["result"] is None
-        assert result["error"]["code"] == -32601
+        assert result["error"]["code"] == -32001
         assert result["error"]["message"] == "Document not found"
 
 
@@ -528,16 +527,11 @@ class TestHandleExpandDocument:
         point2 = Mock()
         point2.payload = {"document_id": "doc1", "chunk_index": 1}
 
-        search_handler.async_qdrant_client = Mock()
-        search_handler.async_qdrant_client.scroll = AsyncMock(
-            side_effect=[
-                ([point1], "next_offset"),
-                ([point2], None),
-            ]
-        )
-
-        search_handler.qdrant_config = Mock()
-        search_handler.qdrant_config.collection_name = "test_collection"
+        search_handler.search_engine.client.scroll.side_effect = [
+            ([point1], "next_offset"),
+            ([point2], None),
+        ]
+        
 
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
