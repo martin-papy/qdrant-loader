@@ -38,15 +38,23 @@ class KeywordSearchService:
         self.logger = LoggingConfig.get_logger(__name__)
         self._stemmer = SnowballStemmer(language="english")
 
+        from nltk.corpus import stopwords
         try:
-            from nltk.corpus import stopwords
-
             nltk.data.find("corpora/stopwords")
-
         except LookupError:
-            nltk.download("stopwords")
-        finally:
+            downloaded = nltk.download("stopwords", quiet=True)
+            if not downloaded:
+                self.logger.warning(
+                    "NLTK stopwords download failed; continuing without stopword filtering."
+                )
+
+        try:
             self._stop_words = set(stopwords.words("english"))
+        except LookupError:
+            self.logger.warning(
+                "NLTK stopwords corpus unavailable; continuing without stopword filtering."
+            )
+            self._stop_words = set()
 
     async def keyword_search(
         self,

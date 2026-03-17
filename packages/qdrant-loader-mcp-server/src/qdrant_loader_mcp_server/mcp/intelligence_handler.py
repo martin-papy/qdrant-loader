@@ -780,7 +780,12 @@ class IntelligenceHandler:
 
         clusters = self._clustering_cache.get("clusters") or []
         cluster = next(
-            (c for c in clusters if str(c.get("id", "")) == cluster_id), None
+            (
+                c
+                for idx, c in enumerate(clusters)
+                if str(c.get("id", f"cluster_{idx + 1}")) == cluster_id
+            ),
+            None,
         )
 
         if cluster is None:

@@ -52,7 +52,8 @@ class MultiProjectConfigParser:
         _get_logger().debug("Starting configuration parsing")
 
         # Auto-wrap simplified format: top-level 'sources' → projects.default
-        config_data = self._normalize_config(config_data)
+        if isinstance(config_data, dict):
+            config_data = self._normalize_config(config_data)
 
         # Validate configuration structure
         self.validator.validate_structure(config_data)
