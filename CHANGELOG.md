@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-17
+
+### Fixed
+
+#### Qdrant-loader
+
+- Removed .doc/.ppt from the list of file types supported, improves the unsupported type fallback [#145]
+- Resolved excel chunking overlap [#142]
+- Fixed chunking strategy and metadata for xls file as an Excel file [#141]
+
+#### Qdrant-loader-mcp-server
+
+- Added missing get search tool schema [#147]
+- Fixed Key word search by applying NLP to only the keyword search [#134]
+- Fixed lazy load qdrant-client, spacy and networkx imports in MCP server [#132]
+- Reduced CLI startup time by fixed lazy load openai SDK [#131]
+
+### Added
+
+#### Qdrant-loader-mcp-server
+
+- Implemented cross-encoder–based reranking to improve the relevance of retrieved results [#151]
+- Executed the expand_document MCP tool to expand context around a specific chunk within a document [#149]
+- Explored document clusters with detailed analysis, showing how documents are grouped and their relationships [#146]
+- Simplified configuration by adding smart defaults and a setup wizard [#144]
+- Added WRRF For Hybrid Search to improve the quality of results returned [#133]
+
 ## [0.7.6] - 2026-01-22
 
 ### Changed
