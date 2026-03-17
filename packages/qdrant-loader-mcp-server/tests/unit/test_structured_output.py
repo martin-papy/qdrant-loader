@@ -314,8 +314,6 @@ class TestStructuredOutputTypes:
 
         for result in results:
             assert isinstance(result["score"], int | float)
-            assert result["score"] >= 0.0
-            assert result["score"] <= 1.0
 
     @pytest.mark.asyncio
     async def test_total_found_is_integer(

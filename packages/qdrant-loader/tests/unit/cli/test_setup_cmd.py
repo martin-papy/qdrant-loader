@@ -11,7 +11,6 @@ from qdrant_loader.cli.commands.setup_cmd import (
     _collect_localfile_config,
     _escape_env_value,
     _source_name_to_env_suffix,
-    _write_config_file_advanced,
     _write_config_file_multi,
     _write_env_file,
     run_setup,
@@ -51,9 +50,15 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_creates_files(self, tmp_path: Path) -> None:
         """Mock all prompts for a single git source and verify output files exist."""
         prompt_side_effects = [
-            "sk-test-key", "http://localhost:6333", "", "documents",
+            "sk-test-key",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-git",
-            "https://github.com/org/repo.git", "main", "", "*.md,*.txt",
+            "https://github.com/org/repo.git",
+            "main",
+            "",
+            "*.md,*.txt",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -68,9 +73,15 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_git_source(self, tmp_path: Path) -> None:
         """Test that git source is written correctly into config.yaml."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-git",
-            "https://github.com/org/repo.git", "develop", "", "*.md,*.rst",
+            "https://github.com/org/repo.git",
+            "develop",
+            "",
+            "*.md,*.rst",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -91,10 +102,15 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_confluence_source(self, tmp_path: Path) -> None:
         """Test that confluence source config and extra env vars are written."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-confluence",
-            "https://mycompany.atlassian.net/wiki", "DOCS",
-            "user@example.com", "secret-confluence-token",
+            "https://mycompany.atlassian.net/wiki",
+            "DOCS",
+            "user@example.com",
+            "secret-confluence-token",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -117,10 +133,15 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_jira_source(self, tmp_path: Path) -> None:
         """Test that jira source config and extra env vars are written."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-jira",
-            "https://mycompany.atlassian.net", "PROJ",
-            "jira@example.com", "secret-jira-token",
+            "https://mycompany.atlassian.net",
+            "PROJ",
+            "jira@example.com",
+            "secret-jira-token",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -143,9 +164,14 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_publicdocs_source(self, tmp_path: Path) -> None:
         """Test that publicdocs source config is written correctly."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-publicdocs",
-            "https://docs.example.com/", "latest", "html",
+            "https://docs.example.com/",
+            "latest",
+            "html",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -163,9 +189,13 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_localfile_source(self, tmp_path: Path) -> None:
         """Test that localfile source gets the file:// prefix applied."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-localfile",
-            "/home/user/docs", "*.md,*.txt",
+            "/home/user/docs",
+            "*.md,*.txt",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -182,13 +212,20 @@ class TestRunSetupWizardCreatesFiles:
     def test_run_setup_wizard_multiple_sources(self, tmp_path: Path) -> None:
         """Test adding multiple sources in one wizard run."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             # First source: git
             "repo-one",
-            "https://github.com/org/repo.git", "main", "", "*.md",
+            "https://github.com/org/repo.git",
+            "main",
+            "",
+            "*.md",
             # Second source: localfile
             "local-docs",
-            "file:///data/docs", "*.txt",
+            "file:///data/docs",
+            "*.txt",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -209,9 +246,15 @@ class TestRunSetupWizardCreatesFiles:
         config_path.write_text("existing: true\n", encoding="utf-8")
 
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             "my-git",
-            "https://github.com/org/repo.git", "main", "", "*.md",
+            "https://github.com/org/repo.git",
+            "main",
+            "",
+            "*.md",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -242,7 +285,9 @@ class TestRunSetup:
         assert (ws / "config.yaml").exists()
         assert (ws / ".env").exists()
 
-    def test_mode_default_uses_workspace_subdir(self, tmp_path: Path, monkeypatch) -> None:
+    def test_mode_default_uses_workspace_subdir(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         """Default mode without output_dir should use ./workspace automatically."""
         monkeypatch.chdir(tmp_path)
         with patch("click.confirm", return_value=True):
@@ -255,8 +300,13 @@ class TestRunSetup:
         """run_setup with mode='normal' should run the interactive wizard."""
         ws = tmp_path / "ws"
         prompt_side_effects = [
-            "sk-test", "http://localhost:6333", "", "documents",
-            "my-localfile", "file:///tmp/data", "*.md",
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "documents",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -272,8 +322,13 @@ class TestRunSetup:
         """Normal mode without output_dir should prompt for workspace folder."""
         prompt_side_effects = [
             str(tmp_path / "my-ws"),
-            "sk-test", "http://localhost:6333", "", "documents",
-            "my-localfile", "file:///tmp/data", "*.md",
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "documents",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
@@ -288,15 +343,33 @@ class TestRunSetup:
         """run_setup with mode='advanced' should run the advanced wizard."""
         ws = tmp_path / "ws"
         prompt_side_effects = [
-            "sk-test", "http://localhost:6333", "", "documents",
-            "text-embedding-3-small", "", 1536,
-            1500, 200,
-            "my-project", "My Project", "desc",
-            "my-localfile", "file:///tmp/data", "*.md",
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "documents",
+            "text-embedding-3-small",
+            "",
+            1536,
+            1500,
+            200,
+            "my-project",
+            "My Project",
+            "desc",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[False, False, True]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
             patch(_SST, return_value="localfile"),
         ):
             run_setup(ws, mode="advanced")
@@ -308,7 +381,10 @@ class TestRunSetup:
     def test_mode_none_prompts_mode_then_workspace(self, tmp_path: Path) -> None:
         """run_setup without mode should prompt mode first, then workspace."""
         with (
-            patch("qdrant_loader.cli.commands.setup_cmd._select_setup_mode", return_value="default"),
+            patch(
+                "qdrant_loader.cli.commands.setup_cmd._select_setup_mode",
+                return_value="default",
+            ),
             patch("click.confirm", return_value=True),
         ):
             run_setup(tmp_path / "ws", mode=None)
@@ -317,7 +393,9 @@ class TestRunSetup:
 
     def test_mode_cancel_exits_cleanly(self, tmp_path: Path) -> None:
         """run_setup with mode selector returning None should exit without writing."""
-        with patch("qdrant_loader.cli.commands.setup_cmd._select_setup_mode", return_value=None):
+        with patch(
+            "qdrant_loader.cli.commands.setup_cmd._select_setup_mode", return_value=None
+        ):
             run_setup(tmp_path / "ws", mode=None)
 
         assert not (tmp_path / "ws").exists()
@@ -393,15 +471,33 @@ class TestRunSetupAdvanced:
 
     def test_creates_advanced_config(self, tmp_path: Path) -> None:
         prompt_side_effects = [
-            "sk-test", "http://localhost:6333", "", "my-collection",
-            "text-embedding-3-small", "", 1536,
-            1500, 200,
-            "proj-1", "Project One", "A test project",
-            "my-localfile", "file:///tmp/data", "*.md",
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "my-collection",
+            "text-embedding-3-small",
+            "",
+            1536,
+            1500,
+            200,
+            "proj-1",
+            "Project One",
+            "A test project",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[False, False, True]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
             patch(_SST, return_value="localfile"),
         ):
             run_setup_advanced(tmp_path)
@@ -414,18 +510,37 @@ class TestRunSetupAdvanced:
         assert proj["project_id"] == "proj-1"
         assert proj["display_name"] == "Project One"
         assert "localfile" in proj["sources"]
+        assert config["global"]["reranking"]["enabled"] is True
 
     def test_advanced_global_settings(self, tmp_path: Path) -> None:
         prompt_side_effects = [
-            "sk-test", "https://cloud.qdrant.io", "qdrant-key", "my-docs",
-            "text-embedding-ada-002", "https://custom-embedding.example.com/v1", 768,
-            2000, 300,
-            "proj-1", "proj-1", "",
-            "my-localfile", "file:///tmp/data", "*.md",
+            "sk-test",
+            "https://cloud.qdrant.io",
+            "qdrant-key",
+            "my-docs",
+            "text-embedding-ada-002",
+            "https://custom-embedding.example.com/v1",
+            768,
+            2000,
+            300,
+            "proj-1",
+            "proj-1",
+            "",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[False, False, True]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
             patch(_SST, return_value="localfile"),
         ):
             run_setup_advanced(tmp_path)
@@ -437,26 +552,45 @@ class TestRunSetupAdvanced:
         assert g["embedding"]["vector_size"] == 768
         assert g["chunking"]["chunk_size"] == 2000
         assert g["chunking"]["chunk_overlap"] == 300
+        assert g["reranking"]["enabled"] is True
 
     def test_advanced_multiple_projects(self, tmp_path: Path) -> None:
         prompt_side_effects = [
-            "sk-test", "http://localhost:6333", "", "documents",
-            "text-embedding-3-small", "", 1536,
-            1500, 200,
-            "proj-a", "Project A", "",
-            "local-a", "file:///tmp/a", "*.md",
-            "proj-b", "Project B", "",
-            "local-b", "file:///tmp/b", "*.txt",
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "documents",
+            "text-embedding-3-small",
+            "",
+            1536,
+            1500,
+            200,
+            "proj-a",
+            "Project A",
+            "",
+            "local-a",
+            "file:///tmp/a",
+            "*.md",
+            "proj-b",
+            "Project B",
+            "",
+            "local-b",
+            "file:///tmp/b",
+            "*.txt",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[
-                False,  # no more sources for proj-a
-                True,   # add another project
-                False,  # no more sources for proj-b
-                False,  # no more projects
-                True,   # write files confirmation
-            ]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources for proj-a
+                    True,  # add another project
+                    False,  # no more sources for proj-b
+                    False,  # no more projects
+                    True,  # write files confirmation
+                ],
+            ),
             patch(_SST, side_effect=["localfile", "localfile"]),
         ):
             run_setup_advanced(tmp_path)
@@ -464,6 +598,43 @@ class TestRunSetupAdvanced:
         config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
         assert "proj-a" in config["projects"]
         assert "proj-b" in config["projects"]
+
+    def test_advanced_reranking_disabled(self, tmp_path: Path) -> None:
+        """Test that reranking can be disabled in advanced mode."""
+        prompt_side_effects = [
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "documents",
+            "text-embedding-3-small",
+            "",
+            1536,
+            1500,
+            200,
+            "proj-1",
+            "proj-1",
+            "",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    False,  # disable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup_advanced(tmp_path)
+
+        config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert config["global"]["reranking"]["enabled"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -700,14 +871,23 @@ class TestDuplicateSourceNameRejection:
     def test_duplicate_name_rejected_then_accepted(self, tmp_path: Path) -> None:
         """Adding two git sources with the same name should re-prompt."""
         prompt_side_effects = [
-            "sk-openai", "http://localhost:6333", "", "documents",
+            "sk-openai",
+            "http://localhost:6333",
+            "",
+            "documents",
             # First source
             "my-git",
-            "https://github.com/org/repo1.git", "main", "", "*.md",
+            "https://github.com/org/repo1.git",
+            "main",
+            "",
+            "*.md",
             # Second source — first try "my-git" (duplicate), then "my-git-2"
             "my-git",  # duplicate -> rejected
             "my-git-2",  # accepted
-            "https://github.com/org/repo2.git", "main", "", "*.py",
+            "https://github.com/org/repo2.git",
+            "main",
+            "",
+            "*.py",
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),

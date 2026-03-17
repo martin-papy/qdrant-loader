@@ -35,7 +35,14 @@ def mock_protocol():
 @pytest.fixture
 def search_handler_with_mocks(mock_search_engine, mock_query_processor, mock_protocol):
     """Create a SearchHandler with all mocked dependencies."""
-    return SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+    from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+    return SearchHandler(
+        mock_search_engine,
+        mock_query_processor,
+        mock_protocol,
+        reranking_config=MCPReranking(enabled=False),
+    )
 
 
 class TestSearchErrorHandling:
@@ -367,6 +374,8 @@ class TestAttachmentSearchErrorHandling:
                     "data": "Cannot organize invalid attachment",
                 },
             )
+
+
 class TestFilterErrorHandling:
     """Test error handling in filter methods."""
 

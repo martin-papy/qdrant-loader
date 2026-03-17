@@ -46,8 +46,7 @@ class KeywordSearchService:
         except LookupError:
             nltk.download("stopwords")
         finally:
-            self._stop_words = set(stopwords.words('english'))
-
+            self._stop_words = set(stopwords.words("english"))
 
     async def keyword_search(
         self,
@@ -201,7 +200,11 @@ class KeywordSearchService:
         if not isinstance(text, str):
             return []
         tokenized_text: list[str] = RegexpTokenizer(r"\b\w+\b").tokenize(text)
-        return [self._stemmer.stem(word) for word in tokenized_text if word.lower() not in self._stop_words]
+        return [
+            self._stemmer.stem(word)
+            for word in tokenized_text
+            if word.lower() not in self._stop_words
+        ]
 
     def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
         """Compute BM25 scores for documents against the query.

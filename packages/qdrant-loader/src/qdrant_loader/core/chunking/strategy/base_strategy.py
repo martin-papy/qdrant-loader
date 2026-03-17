@@ -166,11 +166,9 @@ class BaseChunkingStrategy(ABC):
         # Skip NLP for binary/encoded content
         binary_extensions = {
             ".pdf",
-            ".doc",
             ".docx",
             ".xls",
             ".xlsx",
-            ".ppt",
             ".pptx",
             ".zip",
             ".tar",

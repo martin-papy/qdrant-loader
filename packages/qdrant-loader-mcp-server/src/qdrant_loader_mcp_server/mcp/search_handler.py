@@ -5,7 +5,9 @@ import inspect
 from typing import Any
 
 from qdrant_client import models
+
 from qdrant_loader_mcp_server.config import QdrantConfig
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 from ..search.engine import SearchEngine
 from ..search.hybrid.components.reranking import HybridReranker
@@ -24,8 +26,6 @@ from .protocol import MCPProtocol
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
-
-from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 
 class SearchHandler:
@@ -50,12 +50,20 @@ class SearchHandler:
             reranking_config = MCPReranking()
 
         if reranking_config.enabled:
-            self.reranker = HybridReranker(
-                enabled=reranking_config.enabled,
-                model=reranking_config.model,
-                device=reranking_config.device,
-                batch_size=reranking_config.batch_size,
-            )
+            try:
+                self.reranker = HybridReranker(
+                    enabled=reranking_config.enabled,
+                    model=reranking_config.model,
+                    device=reranking_config.device,
+                    batch_size=reranking_config.batch_size,
+                )
+            except Exception as e:
+                logger = LoggingConfig.get_logger(__name__)
+                logger.warning(
+                    "Failed to initialize reranker, continuing without reranking",
+                    error=str(e),
+                )
+                self.reranker = None
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]

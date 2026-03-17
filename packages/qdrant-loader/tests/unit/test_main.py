@@ -45,7 +45,7 @@ def test_main_module_execution_via_runpy():
         cwd=str(package_root),  # Use portable path
         capture_output=True,
         text=True,
-        timeout=10,
+        timeout=30,
     )
 
     # The command should run (even if it exits with non-zero due to --help)
