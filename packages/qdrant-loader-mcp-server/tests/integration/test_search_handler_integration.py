@@ -34,7 +34,14 @@ def integration_search_handler(real_protocol):
     mock_search_engine.client = Mock()
     mock_search_engine.client.scroll = AsyncMock()
 
-    handler = SearchHandler(mock_search_engine, mock_query_processor, real_protocol)
+    from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+    handler = SearchHandler(
+        mock_search_engine,
+        mock_query_processor,
+        real_protocol,
+        reranking_config=MCPReranking(enabled=False),
+    )
 
     # mock config nếu code dùng
     handler.qdrant_config = Mock()

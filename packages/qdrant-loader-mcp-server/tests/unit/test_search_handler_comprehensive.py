@@ -38,7 +38,14 @@ def search_handler(mock_search_engine, mock_query_processor, mock_protocol):
     mock_search_engine.client = Mock()
     mock_search_engine.client.scroll = AsyncMock()
 
-    handler = SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+    from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+    handler = SearchHandler(
+        mock_search_engine,
+        mock_query_processor,
+        mock_protocol,
+        reranking_config=MCPReranking(enabled=False),
+    )
 
     # mock config dùng trong expand_document
     handler.qdrant_config = Mock()
@@ -161,7 +168,14 @@ class TestSearchHandlerInit:
         self, mock_search_engine, mock_query_processor, mock_protocol
     ):
         """Test that SearchHandler initializes correctly with all components."""
-        handler = SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+        from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+        handler = SearchHandler(
+            mock_search_engine,
+            mock_query_processor,
+            mock_protocol,
+            reranking_config=MCPReranking(enabled=False),
+        )
 
         assert handler.search_engine == mock_search_engine
         assert handler.query_processor == mock_query_processor

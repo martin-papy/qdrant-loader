@@ -361,7 +361,15 @@ class TestRunSetup:
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[False, False, True]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
             patch(_SST, return_value="localfile"),
         ):
             run_setup(ws, mode="advanced")
@@ -481,7 +489,15 @@ class TestRunSetupAdvanced:
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[False, False, True]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
             patch(_SST, return_value="localfile"),
         ):
             run_setup_advanced(tmp_path)
@@ -494,6 +510,7 @@ class TestRunSetupAdvanced:
         assert proj["project_id"] == "proj-1"
         assert proj["display_name"] == "Project One"
         assert "localfile" in proj["sources"]
+        assert config["global"]["reranking"]["enabled"] is True
 
     def test_advanced_global_settings(self, tmp_path: Path) -> None:
         prompt_side_effects = [
@@ -515,7 +532,15 @@ class TestRunSetupAdvanced:
         ]
         with (
             patch("click.prompt", side_effect=prompt_side_effects),
-            patch("click.confirm", side_effect=[False, False, True]),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    True,  # enable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
             patch(_SST, return_value="localfile"),
         ):
             run_setup_advanced(tmp_path)
@@ -527,6 +552,7 @@ class TestRunSetupAdvanced:
         assert g["embedding"]["vector_size"] == 768
         assert g["chunking"]["chunk_size"] == 2000
         assert g["chunking"]["chunk_overlap"] == 300
+        assert g["reranking"]["enabled"] is True
 
     def test_advanced_multiple_projects(self, tmp_path: Path) -> None:
         prompt_side_effects = [
@@ -557,6 +583,7 @@ class TestRunSetupAdvanced:
             patch(
                 "click.confirm",
                 side_effect=[
+                    True,  # enable reranking
                     False,  # no more sources for proj-a
                     True,  # add another project
                     False,  # no more sources for proj-b
@@ -571,6 +598,43 @@ class TestRunSetupAdvanced:
         config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
         assert "proj-a" in config["projects"]
         assert "proj-b" in config["projects"]
+
+    def test_advanced_reranking_disabled(self, tmp_path: Path) -> None:
+        """Test that reranking can be disabled in advanced mode."""
+        prompt_side_effects = [
+            "sk-test",
+            "http://localhost:6333",
+            "",
+            "documents",
+            "text-embedding-3-small",
+            "",
+            1536,
+            1500,
+            200,
+            "proj-1",
+            "proj-1",
+            "",
+            "my-localfile",
+            "file:///tmp/data",
+            "*.md",
+        ]
+        with (
+            patch("click.prompt", side_effect=prompt_side_effects),
+            patch(
+                "click.confirm",
+                side_effect=[
+                    False,  # disable reranking
+                    False,  # no more sources
+                    False,  # no more projects
+                    True,  # write files
+                ],
+            ),
+            patch(_SST, return_value="localfile"),
+        ):
+            run_setup_advanced(tmp_path)
+
+        config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert config["global"]["reranking"]["enabled"] is False
 
 
 # ---------------------------------------------------------------------------
