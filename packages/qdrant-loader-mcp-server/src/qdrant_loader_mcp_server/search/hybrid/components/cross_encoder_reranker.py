@@ -6,25 +6,12 @@ Uses the CrossEncoder class from the sentence-transformers library to rerank sea
 
 from __future__ import annotations
 
+import threading
 import logging
-import types
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from sentence_transformers import CrossEncoder
-
-_torch: types.ModuleType | None = None
-try:
-    import torch as _torch
-except ImportError:
-    pass
-
-CrossEncoder: type[CrossEncoder] | None = None
-try:
-    from sentence_transformers import CrossEncoder
-except ImportError:
-    CrossEncoder = None
-
 
 class CrossEncoderReranker:
     """Re-rank search results using a cross-encoder model."""
@@ -42,29 +29,23 @@ class CrossEncoderReranker:
         self.enabled = enabled
 
         self.model: CrossEncoder | None = None
+        self._model_lock = threading.Lock()
         self.logger = logging.getLogger(__name__)
 
         if not self.enabled:
             self.logger.info("Cross-encoder reranking disabled")
             return
 
-        if CrossEncoder is None:
-            self.logger.warning(
-                "sentence-transformers not installed. "
-                "Install with: pip install sentence-transformers"
-            )
-            self.enabled = False
-
     def _get_optimal_device(self) -> str:
-        """Check the device to run reranking on: CUDA -> MPS -> CPU"""
-        if _torch is None:
+        try:
+            import torch
+        except ImportError:
             return "cpu"
 
-        if _torch.cuda.is_available():
+        if torch.cuda.is_available():
             return "cuda"
 
-        # torch >= 1.12 and macOS supports Metal
-        if hasattr(_torch.backends, "mps") and _torch.backends.mps.is_available():
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             return "mps"
 
         return "cpu"
@@ -74,19 +55,30 @@ class CrossEncoderReranker:
         if self.model is not None:
             return
 
-        if CrossEncoder is None:
-            return
+        with self._model_lock:
+            if self.model is not None:
+                return
 
-        try:
-            self.logger.info(
-                f"Loading cross-encoder model: {self.model_name} on {self.device}"
-            )
-            self.model = CrossEncoder(self.model_name, device=self.device)
-            self.logger.info("Cross-encoder model loaded")
-        except Exception as e:
-            self.logger.error(f"Failed to load cross-encoder model: {e}")
-            self.enabled = False
-            self.model = None
+            try:
+                from sentence_transformers import CrossEncoder
+            except ImportError:
+                self.logger.warning(
+                    "sentence-transformers not installed. "
+                    "Install with: pip install sentence-transformers"
+                )
+                self.enabled = False
+                return
+
+            try:
+                self.logger.info(
+                    f"Loading cross-encoder model: {self.model_name} on {self.device}"
+                )
+                self.model = CrossEncoder(self.model_name, device=self.device)
+                self.logger.info("Cross-encoder model loaded")
+            except Exception as e:
+                self.logger.error(f"Failed to load cross-encoder model: {e}")
+                self.enabled = False
+                self.model = None
 
     def rerank(
         self,
