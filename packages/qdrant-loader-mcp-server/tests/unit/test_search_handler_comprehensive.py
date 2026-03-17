@@ -449,6 +449,7 @@ class TestHandleAttachmentSearch:
             },
         )
 
+
 class TestHandleExpandDocument:
     """Test document expansion functionality."""
 
@@ -485,14 +486,12 @@ class TestHandleExpandDocument:
         assert content["total_chunks"] == 1
         assert content["chunks"][0]["text"] == "Sample chunk"
 
-
     @pytest.mark.asyncio
     async def test_expand_document_not_found(self, search_handler):
         """Should return error when document does not exist."""
 
         params = {"document_id": "missing-doc"}
 
-       
         search_handler.search_engine.client.scroll.return_value = ([], None)
 
         search_handler.protocol.create_response = Mock(
@@ -508,7 +507,6 @@ class TestHandleExpandDocument:
 
         assert result["error"]["code"] == -32001
         assert result["error"]["message"] == "Document not found"
-
 
     @pytest.mark.asyncio
     async def test_expand_document_missing_document_id(self, search_handler):
@@ -528,7 +526,6 @@ class TestHandleExpandDocument:
         assert result["error"]["code"] == -32602
         assert result["error"]["message"] == "Invalid params"
 
-
     @pytest.mark.asyncio
     async def test_expand_document_multiple_scroll_pages(self, search_handler):
         """Should collect chunks across multiple scroll pages."""
@@ -545,7 +542,6 @@ class TestHandleExpandDocument:
             ([point1], "next_offset"),
             ([point2], None),
         ]
-        
 
         search_handler.protocol.create_response = Mock(
             side_effect=lambda request_id, result=None, error=None: {
@@ -563,7 +559,8 @@ class TestHandleExpandDocument:
         assert content["total_chunks"] == 2
         assert content["chunks"][0]["chunk_index"] == 0
         assert content["chunks"][1]["chunk_index"] == 1
-        
+
+
 class TestHierarchyFilters:
     """Test hierarchy filtering methods."""
 

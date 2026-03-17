@@ -473,9 +473,6 @@ class TestAttachmentSearchIntegration:
             # Verify file type extraction was called
             assert mock_extract.called
 
-import pytest
-from unittest.mock import Mock, AsyncMock
-
 
 class TestExpandDocumentIntegration:
     """Integration tests for document expansion functionality."""
@@ -521,7 +518,6 @@ class TestExpandDocumentIntegration:
         assert structured["total_chunks"] == 1
         assert structured["chunks"][0]["chunk_index"] == 0
 
-
     @pytest.mark.asyncio
     async def test_expand_document_integration_multiple_scroll_pages(
         self, integration_search_handler
@@ -561,7 +557,6 @@ class TestExpandDocumentIntegration:
         assert structured["chunks"][0]["chunk_index"] == 0
         assert structured["chunks"][1]["chunk_index"] == 1
 
-
     @pytest.mark.asyncio
     async def test_expand_document_integration_not_found(
         self, integration_search_handler
@@ -581,6 +576,8 @@ class TestExpandDocumentIntegration:
         assert result["error"]["code"] == -32001
         assert result["error"]["message"] == "Document not found"
         assert "nonexistent-doc" in result["error"]["data"]
+
+
 class TestRealWorldScenarios:
     """Integration tests simulating real-world usage scenarios."""
 
@@ -709,7 +706,7 @@ class TestRealWorldScenarios:
             "chunk_index": 0,
             "text": "Authentication troubleshooting steps",
         }
-        
+
         integration_search_handler.search_engine.client.scroll = AsyncMock(
             return_value=([point], None)
         )
@@ -735,6 +732,7 @@ class TestRealWorldScenarios:
         )
 
         assert result3["result"]["isError"] is False
+
 
 class TestPerformanceScenarios:
     """Integration tests for performance-related scenarios."""

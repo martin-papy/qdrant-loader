@@ -412,7 +412,7 @@ class TestAsyncExpandDocumentBehavior:
             else:
                 time.sleep(0.03)  # simulate second page delay
                 return ([point2], None)
-            
+
         async_search_handler.search_engine.client = Mock()
         async_search_handler.search_engine.client.scroll = AsyncMock(
             side_effect=sequential_scroll
@@ -441,7 +441,7 @@ class TestAsyncExpandDocumentBehavior:
         assert elapsed >= 0.04
         assert result["jsonrpc"] == "2.0"
         assert result["result"]["structuredContent"]["total_chunks"] == 2
-        
+
     @pytest.mark.asyncio
     async def test_concurrent_document_expansions(
         self, async_search_handler, sample_async_results

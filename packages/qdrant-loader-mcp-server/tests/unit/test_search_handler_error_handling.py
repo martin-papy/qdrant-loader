@@ -374,6 +374,8 @@ class TestAttachmentSearchErrorHandling:
                     "data": "Cannot organize invalid attachment",
                 },
             )
+
+
 class TestFilterErrorHandling:
     """Test error handling in filter methods."""
 

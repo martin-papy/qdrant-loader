@@ -11,9 +11,7 @@ from qdrant_loader.config.base import BaseConfig
 class QdrantConfig(BaseConfig):
     """Configuration for Qdrant vector database."""
 
-    url: str = Field(
-        default="http://localhost:6333", description="Qdrant server URL"
-    )
+    url: str = Field(default="http://localhost:6333", description="Qdrant server URL")
     api_key: str | None = Field(default=None, description="Qdrant API key")
     collection_name: str = Field(
         default="documents", description="Qdrant collection name"

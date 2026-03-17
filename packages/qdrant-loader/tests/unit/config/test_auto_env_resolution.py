@@ -165,12 +165,12 @@ class TestAutoEnvResolution:
                 settings = Settings.from_yaml(config_path, skip_validation=True)
             assert settings.global_config.qdrant.url == "http://localhost:6333"
             assert settings.global_config.qdrant.collection_name == "documents"
-            assert settings.global_config.qdrant.api_key is None, (
-                "qdrant.api_key should be None when no env vars are set"
-            )
-            assert settings.global_config.embedding.api_key is None, (
-                "embedding.api_key should be None when no env vars are set"
-            )
+            assert (
+                settings.global_config.qdrant.api_key is None
+            ), "qdrant.api_key should be None when no env vars are set"
+            assert (
+                settings.global_config.embedding.api_key is None
+            ), "embedding.api_key should be None when no env vars are set"
         finally:
             os.unlink(config_path)
 
