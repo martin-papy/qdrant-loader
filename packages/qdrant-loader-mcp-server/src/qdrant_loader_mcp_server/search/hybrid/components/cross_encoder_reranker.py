@@ -110,21 +110,19 @@ class CrossEncoderReranker:
 
             # Map scores back to original results using saved indices
             mapped = [
-                (results[idx], float(score))
+                (idx, results[idx], float(score))
                 for (idx, _), score in zip(texts_with_indices, scores, strict=False)
             ]
 
             ranked = sorted(
                 mapped,
-                key=lambda x: x[1],
+                key=lambda x: x[2],
                 reverse=True,
             )
 
-            if top_k is not None:
-                ranked = ranked[:top_k]
-
             output = []
-            for rank, (item, score) in enumerate(ranked, start=1):
+            scored_indices = {idx for idx, _, _ in ranked}
+            for rank, (_idx, item, score) in enumerate(ranked, start=1):
                 if isinstance(item, dict):
                     item["cross_encoder_score"] = float(score)
                     item["cross_encoder_rank"] = rank
@@ -134,7 +132,14 @@ class CrossEncoderReranker:
                     item.score = float(score)
                 output.append(item)
 
-            return output
+            if top_k is None or len(output) < top_k:
+                output.extend(
+                    item
+                    for idx, item in enumerate(results)
+                    if idx not in scored_indices
+                )
+
+            return output if top_k is None else output[:top_k]
 
         except Exception as e:
             self.logger.error(f"Cross-encoder reranking failed: {e}")
