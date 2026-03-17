@@ -497,7 +497,7 @@ class SearchHandler:
             next_offset = None
             truncated = False
 
-            collection_name = self.qdrant_config.collection_name
+            collection_name = self.query_processor.collection_name
             MAX_CHUNKS = 500  # Reasonable upper bound
             # Scroll to retrieve all chunks
             while True:
