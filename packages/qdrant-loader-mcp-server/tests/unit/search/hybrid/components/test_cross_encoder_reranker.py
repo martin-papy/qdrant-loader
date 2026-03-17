@@ -19,9 +19,7 @@ def mock_cross_encoder():
     return mock
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_disabled_reranker_returns_results_unchanged(mock_ce):
     reranker = CrossEncoderReranker(
         model_name="test-model",
@@ -35,9 +33,7 @@ def test_disabled_reranker_returns_results_unchanged(mock_ce):
     mock_ce.assert_not_called()
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_model_loads_once(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
 
@@ -50,9 +46,7 @@ def test_model_loads_once(mock_ce, mock_cross_encoder):
     mock_ce.assert_called_once_with("test-model", device="cpu")
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_rerank_sorts_results_by_score(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
 
@@ -74,9 +68,7 @@ def test_rerank_sorts_results_by_score(mock_ce, mock_cross_encoder):
     assert output[0]["cross_encoder_score"] == 0.9
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_top_k_is_respected(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
 
@@ -95,9 +87,7 @@ def test_top_k_is_respected(mock_ce, mock_cross_encoder):
     assert output[1]["cross_encoder_rank"] == 2
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_object_results_supported(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
 
@@ -116,9 +106,7 @@ def test_object_results_supported(mock_ce, mock_cross_encoder):
     assert output[0].cross_encoder_rank == 1
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_extract_texts_empty_results_short_circuit(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
 
@@ -132,9 +120,7 @@ def test_extract_texts_empty_results_short_circuit(mock_ce, mock_cross_encoder):
     mock_cross_encoder.predict.assert_not_called()
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_skipped_empty_texts_preserve_alignment(mock_ce, mock_cross_encoder):
     mock_ce.return_value = mock_cross_encoder
     # Only two non-empty texts at indices 1 and 3
@@ -154,9 +140,7 @@ def test_skipped_empty_texts_preserve_alignment(mock_ce, mock_cross_encoder):
     assert len(output) == 2
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_model_failure_disables_reranker(mock_ce):
     mock_ce.side_effect = RuntimeError("boom")
 
@@ -170,9 +154,7 @@ def test_model_failure_disables_reranker(mock_ce):
     assert reranker.model is None
 
 
-@patch(
-    "qdrant_loader_mcp_server.search.hybrid.components.cross_encoder_reranker.CrossEncoder"
-)
+@patch("sentence_transformers.CrossEncoder")
 def test_predict_exception_returns_original_results(mock_ce, mock_cross_encoder):
     mock_cross_encoder.predict.side_effect = RuntimeError("predict failed")
     mock_ce.return_value = mock_cross_encoder
