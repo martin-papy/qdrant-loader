@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Qdrant-loader
 
 - Unsupported-type fallback now skips ingestion for legacy `.doc`/`.ppt` files [#145]
-- Excel chunk overlap consistence [#142]
+- Excel chunk overlap consistency [#142]
 - `.xls` inputs now treated as Excel files for chunking strategy and metadata [#141]
 
 #### Qdrant-loader-mcp-server
@@ -547,12 +547,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.6]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.5...qdrant-loader-v0.4.6
 [0.4.5]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.4...qdrant-loader-v0.4.5
 [0.4.4]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.2...qdrant-loader-v0.4.4
-[0.8.0-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.7.6...qdrant-loader-mcp-server-v0.8.0
-[0.7.5-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.7.4...qdrant-loader-mcp-server-v0.7.5
-[0.7.4-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.7.3...qdrant-loader-mcp-server-v0.7.4
-[0.7.3-core]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-core-v0.7.2...qdrant-loader-core-v0.7.3
-[0.7.1-core]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-core-v0.7.0...qdrant-loader-core-v0.7.1
-[0.7.1-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.6.1...qdrant-loader-mcp-server-v0.7.1
-[0.6.1-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.6.0...qdrant-loader-mcp-server-v0.6.1
-[0.6.0-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.5.1...qdrant-loader-mcp-server-v0.6.0
-[0.5.0-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.4.14...qdrant-loader-mcp-server-v0.5.0
