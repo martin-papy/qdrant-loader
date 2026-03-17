@@ -9,33 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2026-03-17
 
+### Removed
+
+#### Qdrant-loader
+
+- Legacy binary Office formats (`.doc`/`.ppt`) no longer supported [#145]
+
 ### Fixed
 
 #### Qdrant-loader
 
-- Removed .doc/.ppt from the list of file types supported, improves the unsupported type fallback [#145]
-- Resolved excel chunking overlap [#142]
-- Fixed chunking strategy and metadata for xls file as an Excel file [#141]
+- Unsupported-type fallback now skips ingestion for legacy `.doc`/`.ppt` files [#145]
+- Excel chunk overlap consistent [#142]
+- `.xls` inputs now treated as Excel files for chunking strategy and metadata [#141]
 
 #### Qdrant-loader-mcp-server
 
-- Added missing get search tool schema [#147]
-- Fixed keyword search by applying NLP to only the keyword search [#134]
-- Fixed lazy load qdrant-client, spacy and networkx imports in MCP server [#132]
-- Reduced CLI startup time by fixed lazy load openai SDK [#131]
+- Applied NLP processing only to keyword-search flow [#134]
+- Lazily loaded `qdrant-client`, `spaCy`, and network imports in MCP server [#132]
+- Reduced CLI startup time by lazily loading the OpenAI SDK [#131]
 
 ### Added
 
 #### Qdrant-loader-mcp-server
 
-- Added Cross-encoder-based reranking to improve relevance of retrieved results [#151]
-- New expand_document MCP tool for expanding context around a specific chunk [#149]
-- New expand_cluster MCP tool with detailed analysis for showing how documents are grouped and their relationships [#146]
-- Added WRRF for hybrid search to improve the quality of results returned [#133]
+- Cross-encoder reranking to improve retrieval relevance [#151]
+- `expand_document` MCP tool to expand context around a specific chunk [#149]
+- `expand_cluster` MCP tool with detailed analysis of document grouping and relationships [#146]
+- WRRF ranking for hybrid search to improve result quality [#133]
 
 ### Changed
 
-- Simplified configuration by adding smart defaults and a setup wizard [#144]
+- Simplified configuration with smart defaults and a setup wizard [#144]
 
 ## [0.7.6] - 2026-01-22
 
@@ -519,24 +524,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change detection for incremental updates [#21]
 - Signal handling for graceful shutdown [#21]
 
-[0.7.5]: https://github.com/martin-papy/qdrant-loader/compare/v0.7.4...v0.7.5
-[0.7.4]: https://github.com/martin-papy/qdrant-loader/compare/v0.7.3...v0.7.4
-[0.7.3]: https://github.com/martin-papy/qdrant-loader/compare/v0.7.2...v0.7.3
-[0.7.2]: https://github.com/martin-papy/qdrant-loader/compare/v0.7.1...v0.7.2
-[0.7.1]: https://github.com/martin-papy/qdrant-loader/compare/v0.6.1...v0.7.1
-[0.6.1]: https://github.com/martin-papy/qdrant-loader/compare/v0.6.0...v0.6.1
-[0.6.0]: https://github.com/martin-papy/qdrant-loader/compare/v0.5.1...v0.6.0
-[0.5.1]: https://github.com/martin-papy/qdrant-loader/compare/v0.5.0...v0.5.1
-[0.5.0]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.15...v0.5.0
-[0.4.15]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.14...v0.4.15
-[0.4.14]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.13...v0.4.14
-[0.4.13]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.12...v0.4.13
-[0.4.12]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.11...v0.4.12
-[0.4.11]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.10...v0.4.11
-[0.4.10]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.9...v0.4.10
-[0.4.9]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.8...v0.4.9
-[0.4.8]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.7...v0.4.8
-[0.4.7]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.6...v0.4.7
-[0.4.6]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.5...v0.4.6
-[0.4.5]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.4...v0.4.5
-[0.4.4]: https://github.com/martin-papy/qdrant-loader/compare/v0.4.3...v0.4.4
+[0.8.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.6...qdrant-loader-v0.8.0
+[0.7.6]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.5...qdrant-loader-v0.7.6
+[0.7.5]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.4...qdrant-loader-v0.7.5
+[0.7.4]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.3...qdrant-loader-v0.7.4
+[0.7.3]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.2...qdrant-loader-v0.7.3
+[0.7.2]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.1...qdrant-loader-v0.7.2
+[0.7.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.6.1...qdrant-loader-v0.7.1
+[0.6.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.6.0...qdrant-loader-v0.6.1
+[0.6.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.5.1...qdrant-loader-v0.6.0
+[0.5.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.5.0...qdrant-loader-v0.5.1
+[0.5.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.15...qdrant-loader-v0.5.0
+[0.4.15]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.14...qdrant-loader-v0.4.15
+[0.4.14]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.13...qdrant-loader-v0.4.14
+[0.4.13]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.12...qdrant-loader-v0.4.13
+[0.4.12]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.11...qdrant-loader-v0.4.12
+[0.4.11]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.10...qdrant-loader-v0.4.11
+[0.4.10]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.9...qdrant-loader-v0.4.10
+[0.4.9]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.8...qdrant-loader-v0.4.9
+[0.4.8]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.7...qdrant-loader-v0.4.8
+[0.4.7]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.6...qdrant-loader-v0.4.7
+[0.4.6]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.5...qdrant-loader-v0.4.6
+[0.4.5]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.4...qdrant-loader-v0.4.5
+[0.4.4]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.4.2...qdrant-loader-v0.4.4
+[0.8.0-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.7.6...qdrant-loader-mcp-server-v0.8.0
+[0.7.5-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.7.4...qdrant-loader-mcp-server-v0.7.5
+[0.7.4-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.7.3...qdrant-loader-mcp-server-v0.7.4
+[0.7.3-core]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-core-v0.7.2...qdrant-loader-core-v0.7.3
+[0.7.1-core]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-core-v0.7.0...qdrant-loader-core-v0.7.1
+[0.7.1-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.6.1...qdrant-loader-mcp-server-v0.7.1
+[0.6.1-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.6.0...qdrant-loader-mcp-server-v0.6.1
+[0.6.0-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.5.1...qdrant-loader-mcp-server-v0.6.0
+[0.5.0-mcp]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-mcp-server-v0.4.14...qdrant-loader-mcp-server-v0.5.0
