@@ -50,12 +50,20 @@ class SearchHandler:
             reranking_config = MCPReranking()
 
         if reranking_config.enabled:
-            self.reranker = HybridReranker(
-                enabled=reranking_config.enabled,
-                model=reranking_config.model,
-                device=reranking_config.device,
-                batch_size=reranking_config.batch_size,
-            )
+            try:
+                self.reranker = HybridReranker(
+                    enabled=reranking_config.enabled,
+                    model=reranking_config.model,
+                    device=reranking_config.device,
+                    batch_size=reranking_config.batch_size,
+                )
+            except Exception as e:
+                logger = LoggingConfig.get_logger(__name__)
+                logger.warning(
+                    "Failed to initialize reranker, continuing without reranking",
+                    error=str(e),
+                )
+                self.reranker = None
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]

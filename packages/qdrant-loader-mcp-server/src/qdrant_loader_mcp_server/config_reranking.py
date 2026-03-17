@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class MCPReranking(BaseModel):
     """Reranking model."""
 
-    enabled: bool = Field(default=False, description="Enable or disable reranking")
+    enabled: bool = Field(default=True, description="Enable or disable reranking")
     model: str = Field(
         default="cross-encoder/ms-marco-MiniLM-L-12-v2",
         description="Reranking model to use",
