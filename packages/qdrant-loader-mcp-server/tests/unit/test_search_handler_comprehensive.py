@@ -182,6 +182,30 @@ class TestSearchHandlerInit:
         assert handler.protocol == mock_protocol
         assert handler.formatters is not None
 
+    def test_init_disables_hybrid_pipeline_reranker_when_handler_reranking_enabled(
+        self, mock_query_processor, mock_protocol
+    ):
+        from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+        search_engine = Mock()
+        pipeline_mock = Mock()
+        pipeline_mock.reranker = Mock()
+        search_engine.hybrid_pipeline = pipeline_mock
+
+        handler = SearchHandler(
+            search_engine,
+            mock_query_processor,
+            mock_protocol,
+            reranking_config=MCPReranking(enabled=True),
+        )
+
+        assert search_engine.hybrid_pipeline.reranker is None
+
+        assert handler.search_engine == search_engine
+        assert handler.query_processor == mock_query_processor
+        assert handler.protocol == mock_protocol
+        assert handler.formatters is not None
+
 
 class TestHandleSearch:
     """Test the main search functionality."""

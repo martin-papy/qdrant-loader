@@ -31,6 +31,8 @@ class MCPHandler:
         self.query_processor = query_processor
 
         # Initialize specialized handlers
+        # SearchHandler enforces reranking exclusivity: if an MCP-level reranker is enabled,
+        # it disables pipeline-level reranking to avoid double reranking of results.
         self.search_handler = SearchHandler(
             search_engine,
             query_processor,
