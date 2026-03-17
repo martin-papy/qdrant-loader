@@ -140,11 +140,10 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
 
     # Build reranking config from global section if present
     reranking_cfg = None
-    if isinstance(global_data.get("reranking"), dict):
-        try:
-            reranking_cfg = MCPReranking(**global_data.get("reranking") or {})
-        except Exception:
-            logger.warning("Invalid reranking config in file; using defaults")
+    if "reranking" in global_data:
+        if not isinstance(global_data["reranking"], dict):
+            raise ValueError("global.reranking must be a mapping")
+        reranking_cfg = MCPReranking(**global_data["reranking"])
 
     cfg = Config(
         qdrant=QdrantConfig(**qdrant) if qdrant else QdrantConfig(),
