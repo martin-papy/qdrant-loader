@@ -9,6 +9,7 @@ import yaml
 from qdrant_loader.cli.commands.setup_cmd import (
     _collect_git_config,
     _collect_localfile_config,
+    _collect_sources_loop,
     _escape_env_value,
     _source_name_to_env_suffix,
     _write_config_file_multi,
@@ -635,6 +636,39 @@ class TestRunSetupAdvanced:
 
         config = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
         assert config["global"]["reranking"]["enabled"] is False
+
+
+# ---------------------------------------------------------------------------
+# _collect_sources_loop – cross-project env-var collision detection
+# ---------------------------------------------------------------------------
+
+
+class TestCollectSourcesLoopEnvCollision:
+    """Verify that _collect_sources_loop rejects source names whose env-var
+    suffix collides with keys already present in all_extra_env (from a
+    previous project)."""
+
+    def test_rejects_duplicate_suffix_across_projects(self, tmp_path: Path) -> None:
+        """When project-1 already registered CONFLUENCE_TOKEN_MY_WIKI,
+        project-2 should not be allowed to reuse the name 'my-wiki'."""
+        all_sources: dict = {}
+        all_extra_env: dict = {"CONFLUENCE_TOKEN_MY_WIKI": "secret-1"}
+
+        # Simulate: user picks confluence, enters "my-wiki" (rejected),
+        # then "my-wiki-2" (accepted), then stops.
+        prompts = iter(["my-wiki", "my-wiki-2", "https://x.atlassian.net/wiki", "SP", "u@c.com", "tok"])
+        confirms = iter([False])  # don't add another source
+
+        with (
+            patch(_SST, side_effect=["confluence", None]),
+            patch("click.prompt", side_effect=lambda *a, **kw: next(prompts)),
+            patch("click.confirm", side_effect=lambda *a, **kw: next(confirms)),
+        ):
+            _collect_sources_loop(all_sources, all_extra_env, workspace_dir=tmp_path)
+
+        # "my-wiki" must have been rejected; "my-wiki-2" accepted
+        assert "my-wiki-2" in all_sources.get("confluence", {})
+        assert "CONFLUENCE_TOKEN_MY_WIKI_2" in all_extra_env
 
 
 # ---------------------------------------------------------------------------

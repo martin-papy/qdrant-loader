@@ -594,7 +594,9 @@ def _collect_sources_loop(
             f"\n[bold cyan]Configure {SOURCE_TYPES[source_type]}[/bold cyan]"
         )
         existing_names = all_sources.get(source_type, {})
-        existing_suffixes = {_source_name_to_env_suffix(n) for n in existing_names}
+        # Collect suffixes from ALL already-registered env vars (across all
+        # source types and projects) to prevent silent overwrites.
+        existing_env_keys = set(all_extra_env.keys())
         while True:
             source_name = click.prompt(
                 "Source name (identifier)", default=f"my-{source_type}"
@@ -606,10 +608,12 @@ def _collect_sources_loop(
                     f"Pick a different name.[/red]"
                 )
                 continue
-            if suffix in existing_suffixes:
+            # Check if any env key with this suffix already exists
+            if any(k.endswith(f"_{suffix}") for k in existing_env_keys):
                 _get_console().print(
                     f"[red]'{source_name}' collides with an existing "
-                    f"env var suffix. Pick a different name.[/red]"
+                    f"env var suffix across projects. "
+                    f"Pick a different name.[/red]"
                 )
                 continue
             break
