@@ -46,11 +46,9 @@ class PublicDocsSourceConfig(SourceConfig):
     attachment_selectors: list[str] = Field(
         default=[
             "a[href$='.pdf']",
-            "a[href$='.doc']",
             "a[href$='.docx']",
             "a[href$='.xls']",
             "a[href$='.xlsx']",
-            "a[href$='.ppt']",
             "a[href$='.pptx']",
         ],
         description="CSS selectors for finding downloadable attachments",
