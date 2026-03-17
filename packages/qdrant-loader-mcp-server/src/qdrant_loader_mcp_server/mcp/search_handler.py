@@ -5,7 +5,9 @@ import inspect
 from typing import Any
 
 from qdrant_client import models
+
 from qdrant_loader_mcp_server.config import QdrantConfig
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 from ..search.engine import SearchEngine
 from ..search.hybrid.components.reranking import HybridReranker
@@ -24,8 +26,6 @@ from .protocol import MCPProtocol
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
-
-from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 
 class SearchHandler:

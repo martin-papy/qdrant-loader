@@ -11,7 +11,10 @@ class MCPReranking(BaseModel):
         default="cross-encoder/ms-marco-MiniLM-L-12-v2",
         description="Reranking model to use",
     )
-    device: str | None = Field(default=None, description="Device to run the reranking model (auto-detects if not specified)")
+    device: str | None = Field(
+        default=None,
+        description="Device to run the reranking model (auto-detects if not specified)",
+    )
     batch_size: int = Field(
         default=32, description="Batch size for reranking model inference"
     )

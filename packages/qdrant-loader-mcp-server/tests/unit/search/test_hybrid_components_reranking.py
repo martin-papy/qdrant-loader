@@ -11,6 +11,7 @@ def sample_results():
         {"text": "doc2"},
     ]
 
+
 def test_disabled_hybrid_reranker_returns_results_unchanged(sample_results):
     reranker = HybridReranker(
         enabled=False,
@@ -23,7 +24,9 @@ def test_disabled_hybrid_reranker_returns_results_unchanged(sample_results):
     assert reranker.cross_encoder is None
 
 
-@patch("qdrant_loader_mcp_server.search.hybrid.components.reranking.CrossEncoderReranker")
+@patch(
+    "qdrant_loader_mcp_server.search.hybrid.components.reranking.CrossEncoderReranker"
+)
 def test_enabled_hybrid_reranker_calls_cross_encoder(
     mock_cross_encoder_cls,
     sample_results,
@@ -63,7 +66,9 @@ def test_enabled_hybrid_reranker_calls_cross_encoder(
     assert output == ["reranked"]
 
 
-@patch("qdrant_loader_mcp_server.search.hybrid.components.reranking.CrossEncoderReranker")
+@patch(
+    "qdrant_loader_mcp_server.search.hybrid.components.reranking.CrossEncoderReranker"
+)
 def test_empty_results_short_circuits(
     mock_cross_encoder_cls,
 ):
@@ -79,7 +84,9 @@ def test_empty_results_short_circuits(
     reranker.cross_encoder.rerank.assert_not_called()
 
 
-@patch("qdrant_loader_mcp_server.search.hybrid.components.reranking.CrossEncoderReranker")
+@patch(
+    "qdrant_loader_mcp_server.search.hybrid.components.reranking.CrossEncoderReranker"
+)
 def test_cross_encoder_none_returns_results(
     mock_cross_encoder_cls,
     sample_results,

@@ -20,6 +20,7 @@ def _get_console():
         _console = Console()
     return _console
 
+
 SOURCE_TYPES: dict[str, str] = {
     "git": "Git Repository",
     "confluence": "Confluence Wiki",
@@ -137,17 +138,14 @@ def _select_setup_mode() -> str | None:
 
     _get_console().print(
         Panel(
-            "[bold]qdrant-loader Setup[/bold]\n"
-            "Choose a setup mode to get started.",
+            "[bold]qdrant-loader Setup[/bold]\n" "Choose a setup mode to get started.",
             style="blue",
         )
     )
 
     _CANCEL = "__cancel__"
     choices = [
-        questionary.Choice(
-            title=f"{key.capitalize():<10} - {desc}", value=key
-        )
+        questionary.Choice(title=f"{key.capitalize():<10} - {desc}", value=key)
         for key, desc in SETUP_MODES.items()
     ]
     choices.append(questionary.Choice(title="Cancel", value=_CANCEL))
@@ -176,6 +174,7 @@ def run_setup_default(output_dir: Path) -> None:
         output_dir: Directory in which the generated files are placed.
     """
     from rich.panel import Panel
+
     output_dir = Path(output_dir).resolve()
 
     config_path = output_dir / "config.yaml"
@@ -359,9 +358,7 @@ def run_setup_advanced(output_dir: Path) -> None:
         "Embedding endpoint (leave empty for OpenAI default)",
         default="",
     )
-    vector_size: int = click.prompt(
-        "Vector size", default=1536, type=int
-    )
+    vector_size: int = click.prompt("Vector size", default=1536, type=int)
 
     # ------------------------------------------------------------------
     # Step 3: Chunking settings
@@ -369,7 +366,9 @@ def run_setup_advanced(output_dir: Path) -> None:
     _get_console().print("\n[bold cyan]Step 3: Chunking Configuration[/bold cyan]")
 
     chunk_size: int = click.prompt("Chunk size (characters)", default=1500, type=int)
-    chunk_overlap: int = click.prompt("Chunk overlap (characters)", default=200, type=int)
+    chunk_overlap: int = click.prompt(
+        "Chunk overlap (characters)", default=200, type=int
+    )
 
     # ------------------------------------------------------------------
     # Step 4: Projects with sources
@@ -493,7 +492,9 @@ def _show_file_preview(output_dir: Path, *paths: Path) -> None:
 
     lines = [f"[bold]Workspace:[/bold] {output_dir}"]
     for path in paths:
-        status = "[yellow](overwrite)[/yellow]" if path.exists() else "[green](new)[/green]"
+        status = (
+            "[yellow](overwrite)[/yellow]" if path.exists() else "[green](new)[/green]"
+        )
         lines.append(f"  {path.name} {status}")
 
     _get_console().print(

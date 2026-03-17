@@ -44,6 +44,7 @@ async def _commands_run_init(settings, force):
 
     return await run_init(settings, force)
 
+
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
 

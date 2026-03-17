@@ -111,27 +111,31 @@ async def run_search(
                     normalizer=hybrid_pipeline.normalizer,
                     deduplicator=hybrid_pipeline.deduplicator,
                 )
-                combined_results: list[HybridSearchResult] = await engine._orchestrator.run_pipeline(
-                    local_pipeline,
-                    query=query,
-                    limit=fetch_limit,
-                    query_context=query_context,
-                    source_types=source_types,
-                    project_ids=project_ids,
-                    vector_query=query,
-                    keyword_query=query,
+                combined_results: list[HybridSearchResult] = (
+                    await engine._orchestrator.run_pipeline(
+                        local_pipeline,
+                        query=query,
+                        limit=fetch_limit,
+                        query_context=query_context,
+                        source_types=source_types,
+                        project_ids=project_ids,
+                        vector_query=query,
+                        keyword_query=query,
+                    )
                 )
             else:
                 # Custom or mocked pipeline: honor its run override without cloning
-                combined_results: HybridSearchResult = await engine._orchestrator.run_pipeline(
-                    hybrid_pipeline,
-                    query=query,
-                    limit=fetch_limit,
-                    query_context=query_context,
-                    source_types=source_types,
-                    project_ids=project_ids,
-                    vector_query=plan.expanded_query,
-                    keyword_query=query,
+                combined_results: HybridSearchResult = (
+                    await engine._orchestrator.run_pipeline(
+                        hybrid_pipeline,
+                        query=query,
+                        limit=fetch_limit,
+                        query_context=query_context,
+                        source_types=source_types,
+                        project_ids=project_ids,
+                        vector_query=plan.expanded_query,
+                        keyword_query=query,
+                    )
                 )
         else:
             vector_results = await engine._vector_search(

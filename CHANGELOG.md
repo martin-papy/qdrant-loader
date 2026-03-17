@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Qdrant-loader
 
 - Unsupported-type fallback now skips ingestion for legacy `.doc`/`.ppt` files [#145]
-- Excel chunk overlap consistent [#142]
+- Excel chunk overlap consistence [#142]
 - `.xls` inputs now treated as Excel files for chunking strategy and metadata [#141]
 
 #### Qdrant-loader-mcp-server

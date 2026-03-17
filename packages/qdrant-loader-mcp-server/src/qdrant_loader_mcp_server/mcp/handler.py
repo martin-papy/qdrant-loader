@@ -32,7 +32,10 @@ class MCPHandler:
 
         # Initialize specialized handlers
         self.search_handler = SearchHandler(
-            search_engine, query_processor, self.protocol, reranking_config=reranking_config
+            search_engine,
+            query_processor,
+            self.protocol,
+            reranking_config=reranking_config,
         )
         self.intelligence_handler = IntelligenceHandler(search_engine, self.protocol)
 
