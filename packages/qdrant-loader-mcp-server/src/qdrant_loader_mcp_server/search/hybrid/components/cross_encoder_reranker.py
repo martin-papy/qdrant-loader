@@ -132,13 +132,6 @@ class CrossEncoderReranker:
                     item.score = float(score)
                 output.append(item)
 
-            if top_k is None or len(output) < top_k:
-                output.extend(
-                    item
-                    for idx, item in enumerate(results)
-                    if idx not in scored_indices
-                )
-
             return output if top_k is None else output[:top_k]
 
         except Exception as e:
