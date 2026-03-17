@@ -99,3 +99,6 @@ internal/
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Beads issue tracking
+.beads/

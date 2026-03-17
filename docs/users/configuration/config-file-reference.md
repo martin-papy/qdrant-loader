@@ -57,15 +57,15 @@ global:
     collection_name: "documents"
   # New unified LLM configuration (provider-agnostic)
   llm:
-    provider: ${LLM_PROVIDER}              # openai | ollama | openai_compat | custom
-    base_url: ${LLM_BASE_URL}              # e.g. https://api.openai.com/v1, http://localhost:11434/v1
-    api_key: ${LLM_API_KEY}                # optional for local providers like Ollama
+    provider: ${LLM_PROVIDER} # openai | ollama | openai_compat | custom
+    base_url: ${LLM_BASE_URL} # e.g. https://api.openai.com/v1, http://localhost:11434/v1
+    api_key: ${LLM_API_KEY} # optional for local providers like Ollama
     models:
-      embeddings: ${LLM_EMBEDDING_MODEL}   # e.g. text-embedding-3-small | nomic-embed-text | bge-small-en-v1.5
-      chat: ${LLM_CHAT_MODEL}              # e.g. gpt-4o-mini | llama3.1:8b-instruct
-    tokenizer: cl100k_base                 # cl100k_base | none
+      embeddings: ${LLM_EMBEDDING_MODEL} # e.g. text-embedding-3-small | nomic-embed-text | bge-small-en-v1.5
+      chat: ${LLM_CHAT_MODEL} # e.g. gpt-4o-mini | llama3.1:8b-instruct
+    tokenizer: cl100k_base # cl100k_base | none
     embeddings:
-      vector_size: 1536                    # set according to chosen embedding model
+      vector_size: 1536 # set according to chosen embedding model
 
 projects:
   my-project:
@@ -477,7 +477,7 @@ global:
     table_prefix: "qdrant_loader_"
     # Optional: Connection pool settings
     connection_pool:
-      size: 5     # Maximum connections (default: 5)
+      size: 5 # Maximum connections (default: 5)
       timeout: 30 # Connection timeout in seconds (default: 30)
 ```
 
@@ -515,7 +515,7 @@ global:
 projects:
   project-id:
     # Unique project identifier
-    project_id: "project-id"  # Must match the key above
+    project_id: "project-id" # Must match the key above
     display_name: "Project Name"
     description: "Description"
     sources:
@@ -606,7 +606,7 @@ sources:
         - "*.md"
       exclude_paths:
         - "tmp/**"
-        - ".*"  # Hidden files
+        - ".*" # Hidden files
       file_types:
         - "*.md"
         - "*.pdf"
@@ -623,7 +623,7 @@ sources:
     source-name:
       base_url: "https://docs.example.com"
       version: "1.0"
-      content_type: "html"  # Options: html, markdown, rst
+      content_type: "html" # Options: html, markdown, rst
       path_pattern: "/docs/{version}/**"
       exclude_paths:
         - "/api/**"
@@ -640,11 +640,9 @@ sources:
       download_attachments: true
       attachment_selectors:
         - "a[href$='.pdf']"
-        - "a[href$='.doc']"
         - "a[href$='.docx']"
         - "a[href$='.xls']"
         - "a[href$='.xlsx']"
-        - "a[href$='.ppt']"
         - "a[href$='.pptx']"
 ```
 
@@ -684,8 +682,8 @@ qdrant-loader --config /path/to/config.yaml --env /path/to/.env ingest
 # Display current configuration (shows all projects and their status)
 qdrant-loader config --workspace .
 
-# Note: Dedicated project management commands (list, status, validate) 
-# are not currently implemented. All project information is displayed 
+# Note: Dedicated project management commands (list, status, validate)
+# are not currently implemented. All project information is displayed
 # through the config command.
 ```
 
@@ -695,7 +693,7 @@ qdrant-loader config --workspace .
 # View all configured projects and their information
 qdrant-loader config --workspace .
 
-# Note: Project-specific filtering (--project-id) is not currently 
+# Note: Project-specific filtering (--project-id) is not currently
 # supported in the CLI. All project information is shown together.
 ```
 

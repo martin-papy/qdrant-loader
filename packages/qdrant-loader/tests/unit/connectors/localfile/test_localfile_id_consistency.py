@@ -4,12 +4,14 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from pydantic import AnyUrl
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.localfile import LocalFileConnector
 from qdrant_loader.connectors.localfile.config import LocalFileConfig
+from qdrant_loader.core.file_conversion import FileConversionConfig
 
 
 class TestLocalFileIdConsistency:
@@ -284,3 +286,68 @@ class TestLocalFileIdConsistency:
         assert (
             doc1.id == doc2.id
         ), f"Document IDs differ for different path representations: {doc1.id} != {doc2.id}"
+
+    @pytest.mark.asyncio
+    async def test_skip_unsupported_files_when_conversion_enabled(self, temp_dir):
+        """Test legacy .doc/.ppt files are skipped when conversion is enabled."""
+        # Create unsupported legacy files
+        (Path(temp_dir) / "legacy.doc").write_bytes(b"legacy-doc-content")
+        (Path(temp_dir) / "slides.ppt").write_bytes(b"legacy-ppt-content")
+
+        config = LocalFileConfig(
+            base_url=AnyUrl(f"file://{temp_dir}"),
+            source="test-localfile",
+            source_type=SourceType.LOCALFILE,
+            file_types=[],
+            include_paths=["*"],
+            exclude_paths=[],
+            enable_file_conversion=True,
+        )
+
+        connector = LocalFileConnector(config)
+        connector.set_file_conversion_config(FileConversionConfig())
+
+        with patch.object(connector.logger, "warning") as mock_warning:
+            async with connector:
+                documents = await connector.get_documents()
+
+        document_titles = {doc.title for doc in documents}
+        assert "legacy.doc" not in document_titles
+        assert "slides.ppt" not in document_titles
+        warning_messages = [
+            call.args[0] for call in mock_warning.call_args_list if call.args
+        ]
+        assert any(
+            "old doc/ppt are not supported for MarkItDown conversion" in message
+            for message in warning_messages
+        )
+
+    @pytest.mark.asyncio
+    async def test_excluded_files_use_normal_read_path_when_conversion_enabled(
+        self, temp_dir
+    ):
+        """Test excluded file types are ingested through normal read path when conversion is enabled."""
+        excluded_file = Path(temp_dir) / "excluded.txt"
+        excluded_content = "excluded-file-should-be-read-normally"
+        excluded_file.write_text(excluded_content, encoding="utf-8")
+
+        config = LocalFileConfig(
+            base_url=AnyUrl(f"file://{temp_dir}"),
+            source="test-localfile",
+            source_type=SourceType.LOCALFILE,
+            file_types=[],
+            include_paths=["*"],
+            exclude_paths=[],
+            enable_file_conversion=True,
+        )
+
+        connector = LocalFileConnector(config)
+        connector.set_file_conversion_config(FileConversionConfig())
+
+        async with connector:
+            documents = await connector.get_documents()
+
+        excluded_doc = next((d for d in documents if d.title == "excluded.txt"), None)
+        assert excluded_doc is not None
+        assert excluded_doc.content == excluded_content
+        assert "conversion_method" not in excluded_doc.metadata

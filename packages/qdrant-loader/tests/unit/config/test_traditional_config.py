@@ -63,36 +63,34 @@ sources: {}
         if temp_path.exists():
             temp_path.unlink()
 
-    def test_traditional_config_initialization(self, temp_config_file):
+    def test_traditional_config_initialization(self, temp_config_file, monkeypatch):
         """Test traditional configuration initialization."""
+        # Isolate from CI env vars that would override config values
+        for var in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME"):
+            monkeypatch.delenv(var, raising=False)
+
         # Set required environment variables
-        os.environ["OPENAI_API_KEY"] = "traditional_test_key"
+        monkeypatch.setenv("OPENAI_API_KEY", "traditional_test_key")
 
-        try:
-            # Initialize configuration in traditional mode
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
+        # Initialize configuration in traditional mode
+        initialize_config(temp_config_file, skip_validation=True)
+        settings = get_settings()
 
-            # Test basic configuration access
-            assert settings.qdrant_url == "http://localhost:6333"
-            assert settings.qdrant_collection_name == "traditional_test"
+        # Test basic configuration access
+        assert settings.qdrant_url == "http://localhost:6333"
+        assert settings.qdrant_collection_name == "traditional_test"
 
-            # Test that database path is set to memory
-            assert settings.state_db_path == ":memory:"
+        # Test that database path is set to memory
+        assert settings.state_db_path == ":memory:"
 
-            # Test embedding configuration
-            assert settings.global_config.embedding.api_key == "traditional_test_key"
-            assert settings.global_config.embedding.model == "text-embedding-3-small"
-            assert settings.global_config.embedding.batch_size == 100
+        # Test embedding configuration
+        assert settings.global_config.embedding.api_key == "traditional_test_key"
+        assert settings.global_config.embedding.model == "text-embedding-3-small"
+        assert settings.global_config.embedding.batch_size == 100
 
-            # Test chunking configuration
-            assert settings.global_config.chunking.chunk_size == 1500
-            assert settings.global_config.chunking.chunk_overlap == 200
-
-        finally:
-            # Clean up environment variables
-            if "OPENAI_API_KEY" in os.environ:
-                del os.environ["OPENAI_API_KEY"]
+        # Test chunking configuration
+        assert settings.global_config.chunking.chunk_size == 1500
+        assert settings.global_config.chunking.chunk_overlap == 200
 
     def test_traditional_config_home_expansion(self, temp_config_file):
         """Test traditional configuration with environment variable expansion."""

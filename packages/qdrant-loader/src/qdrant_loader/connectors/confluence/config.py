@@ -1,7 +1,7 @@
 """Configuration for Confluence connector."""
 
 import os
-from enum import Enum
+from enum import StrEnum
 from typing import Self
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
@@ -9,7 +9,7 @@ from pydantic import ConfigDict, Field, field_validator, model_validator
 from qdrant_loader.config.source_config import SourceConfig
 
 
-class ConfluenceDeploymentType(str, Enum):
+class ConfluenceDeploymentType(StrEnum):
     """Confluence deployment types."""
 
     CLOUD = "cloud"

@@ -24,16 +24,8 @@ from .extractors import (
     extract_keywords_from_result,
     extract_topics_from_result,
 )
-from .models import (
-    GraphEdge,
-    GraphNode,
-    NodeType,
-    RelationshipType,
-)
-from .utils import (
-    SIMILARITY_EDGE_THRESHOLD,
-    calculate_node_similarity,
-)
+from .models import GraphEdge, GraphNode, NodeType, RelationshipType
+from .utils import SIMILARITY_EDGE_THRESHOLD, calculate_node_similarity
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -367,7 +359,8 @@ class GraphBuilder:
         return edges
 
     def _create_similarity_relationships(
-        self, graph: Any  # KnowledgeGraph - avoiding circular import
+        self,
+        graph: Any,  # KnowledgeGraph - avoiding circular import
     ) -> list[GraphEdge]:
         """Create semantic similarity relationships between nodes."""
 

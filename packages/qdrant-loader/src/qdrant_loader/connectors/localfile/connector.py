@@ -89,6 +89,27 @@ class LocalFileConnector(BaseConnector):
                 try:
                     # Get relative path from base directory
                     rel_path = os.path.relpath(file_path, self.base_path)
+                    file_extension = os.path.splitext(file)[1].lower()
+
+                    if self.config.enable_file_conversion and file_extension in {
+                        ".doc",
+                        ".ppt",
+                    }:
+                        file_info = (
+                            self.file_detector.get_file_type_info(file_path)
+                            if self.file_detector
+                            else {
+                                "mime_type": None,
+                                "file_extension": file_extension,
+                            }
+                        )
+                        self.logger.warning(
+                            "Skipping file: old doc/ppt are not supported for MarkItDown conversion",
+                            file_path=rel_path.replace("\\", "/"),
+                            mime_type=file_info.get("mime_type"),
+                            file_extension=file_info.get("file_extension"),
+                        )
+                        continue
 
                     # Check if file needs conversion
                     needs_conversion = (

@@ -1,9 +1,14 @@
 """Search operations handler for MCP server."""
 
+import asyncio
 import inspect
 from typing import Any
 
+from qdrant_client import models
+from qdrant_loader_mcp_server.config import QdrantConfig
+
 from ..search.engine import SearchEngine
+from ..search.hybrid.components.reranking import HybridReranker
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
@@ -20,6 +25,8 @@ from .protocol import MCPProtocol
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
 
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 
 class SearchHandler:
     """Handler for search-related operations."""
@@ -29,12 +36,26 @@ class SearchHandler:
         search_engine: SearchEngine,
         query_processor: QueryProcessor,
         protocol: MCPProtocol,
+        reranking_config: MCPReranking | None = None,
     ):
         """Initialize search handler."""
         self.search_engine = search_engine
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self.qdrant_config = QdrantConfig()
+        self.reranker = None
+
+        if reranking_config is None:
+            reranking_config = MCPReranking()
+
+        if reranking_config.enabled:
+            self.reranker = HybridReranker(
+                enabled=reranking_config.enabled,
+                model=reranking_config.model,
+                device=reranking_config.device,
+                batch_size=reranking_config.batch_size,
+            )
 
     async def handle_search(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -106,6 +127,17 @@ class SearchHandler:
                 project_ids=project_ids,
                 limit=limit,
             )
+
+            # Apply reranking if enabled
+            if self.reranker:
+                results = await asyncio.to_thread(
+                    self.reranker.rerank,
+                    query=query,
+                    results=results,
+                    top_k=limit,
+                    text_key="text",
+                )
+
             logger.info(
                 "Search completed successfully",
                 result_count=len(results),
@@ -405,8 +437,8 @@ class SearchHandler:
     async def handle_expand_document(
         self, request_id: str | int | None, params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Handle expand document request for lazy loading using standard search format."""
-        logger.debug("Handling expand document with params", params=params)
+        """Return all chunks belonging to a document_id."""
+        logger.debug("Handling expand_document", params=params)
 
         # Validate required parameter
         if (
@@ -427,59 +459,78 @@ class SearchHandler:
         document_id = params["document_id"]
 
         try:
-            logger.info(f"Expanding document with ID: {document_id}")
+            logger.info(f"Fetching chunks for document_id={document_id}")
 
-            # Search for the document - field search doesn't guarantee exact matches
-            # Try document_id field search first, but get more results to filter
-            results = await self.search_engine.search(
-                query=f"document_id:{document_id}",
-                limit=10,  # Get more results to ensure we find the exact match
+            # Create Qdrant filter
+            query_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="document_id",
+                        match=models.MatchValue(value=document_id),
+                    )
+                ]
             )
 
-            # Filter for exact document_id matches
-            exact_matches = [r for r in results if r.document_id == document_id]
-            if exact_matches:
-                results = exact_matches[:1]  # Take only the first exact match
-            else:
-                # Fallback to general search if no exact match in field search
-                results = await self.search_engine.search(query=document_id, limit=10)
-                # Filter again for exact document_id matches
-                exact_matches = [r for r in results if r.document_id == document_id]
-                if exact_matches:
-                    results = exact_matches[:1]
-                else:
-                    results = []
+            all_points = []
+            next_offset = None
+            truncated = False
 
-            if not results:
-                logger.warning(f"Document not found with ID: {document_id}")
+            collection_name = self.qdrant_config.collection_name
+            MAX_CHUNKS = 500  # Reasonable upper bound
+            # Scroll to retrieve all chunks
+            while True:
+                remaining = MAX_CHUNKS - len(all_points)
+                if remaining <= 0:
+                    truncated = next_offset is not None
+                    break
+                points, next_offset = await self.search_engine.client.scroll(
+                    collection_name=collection_name,
+                    scroll_filter=query_filter,
+                    limit=min(100, remaining),
+                    offset=next_offset,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+
+                all_points.extend(points)
+
+                if next_offset is None:
+                    break
+                if len(all_points) >= MAX_CHUNKS:
+                    truncated = True
+                    break
+            if not all_points:
+                logger.warning(f"No chunks found for document_id={document_id}")
                 return self.protocol.create_response(
                     request_id,
                     error={
-                        "code": -32604,
+                        "code": -32001,
                         "message": "Document not found",
-                        "data": f"No document found with ID: {document_id}",
+                        "data": f"No chunks found for document_id: {document_id}",
                     },
                 )
 
-            logger.info(f"Successfully found document: {results[0].source_title}")
+            logger.info(f"Retrieved {len(all_points)} chunks")
 
-            # Use the existing search result formatting - exactly the same as standard search
-            formatted_results = (
-                "Found 1 document:\n\n"
-                + self.formatters.format_search_result(results[0])
-            )
-            structured_results_list = self.formatters.create_structured_search_results(
-                results
-            )
+            # Extract chunk payloads
+            def _chunk_sort_key(point):
+                payload = point.payload or {}
+                metadata = payload.get("metadata") or {}
+                idx = metadata.get("chunk_index", payload.get("chunk_index"))
+                if isinstance(idx, int):
+                    return (0, idx, str(point.id))
+                return (1, 0, str(point.id))
 
-            # Create the same structure as standard search
+            all_points.sort(key=_chunk_sort_key)
+            chunks = [p.payload for p in all_points]
+
             structured_results = {
-                "results": structured_results_list,
-                "total_found": len(results),
+                "document_id": document_id,
+                "total_chunks": len(chunks),
+                "chunks": chunks,
+                "truncated": truncated,
                 "query_context": {
                     "original_query": f"expand_document:{document_id}",
-                    "source_types_filtered": [],
-                    "project_ids_filtered": [],
                     "is_document_expansion": True,
                 },
             }
@@ -490,7 +541,7 @@ class SearchHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": formatted_results,
+                            "text": f"Retrieved {len(chunks)} chunks for document {document_id}",
                         }
                     ],
                     "structuredContent": structured_results,
@@ -500,7 +551,12 @@ class SearchHandler:
 
         except Exception as e:
             logger.error("Error expanding document", exc_info=True)
+
             return self.protocol.create_response(
                 request_id,
-                error={"code": -32603, "message": "Internal error", "data": str(e)},
+                error={
+                    "code": -32603,
+                    "message": "Internal error",
+                    "data": str(e),
+                },
             )

@@ -8,6 +8,9 @@ from typing import Annotated
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+# Import reranking Pydantic model from MCP models
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -118,8 +121,15 @@ class ServerConfig(BaseModel):
 
 
 class QdrantConfig(BaseModel):
-    """Qdrant configuration settings."""
+    """Qdrant configuration settings.
 
+    Defaults are aligned with qdrant_loader.config.qdrant.QdrantConfig to ensure
+    consistent behavior between the loader and MCP server. The MCP server depends on
+    qdrant-loader-core (not qdrant-loader directly), so this class is kept local but
+    mirrors the same field names, types, and defaults.
+    """
+
+    # Aligned with qdrant_loader.config.qdrant.QdrantConfig defaults
     url: str = "http://localhost:6333"
     api_key: str | None = None
     collection_name: str = "documents"
@@ -265,13 +275,21 @@ class SearchConfig(BaseModel):
 class OpenAIConfig(BaseModel):
     """OpenAI configuration settings."""
 
-    api_key: str
+    # Optional to avoid startup crashes when OPENAI_API_KEY is not yet set;
+    # downstream callers are expected to validate presence before use.
+    api_key: str | None = None
     model: str = "text-embedding-3-small"
     chat_model: str = "gpt-3.5-turbo"
 
 
 class Config(BaseModel):
-    """Main configuration class."""
+    """Main configuration class.
+
+    Note: QdrantConfig defaults are aligned with qdrant_loader.config.qdrant.QdrantConfig
+    to ensure consistent behavior between the loader and MCP server. The MCP server
+    cannot import from qdrant-loader directly (it only depends on qdrant-loader-core),
+    so alignment is maintained by convention rather than import.
+    """
 
     server: ServerConfig = Field(default_factory=ServerConfig)
     qdrant: QdrantConfig = Field(default_factory=QdrantConfig)
@@ -279,3 +297,5 @@ class Config(BaseModel):
         default_factory=lambda: OpenAIConfig(api_key=os.getenv("OPENAI_API_KEY"))
     )
     search: SearchConfig = Field(default_factory=SearchConfig)
+    # Reranking configuration (loaded from global.reranking in config.yaml)
+    reranking: MCPReranking = Field(default_factory=MCPReranking)
