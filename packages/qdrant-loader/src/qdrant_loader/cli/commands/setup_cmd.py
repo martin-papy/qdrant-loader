@@ -372,13 +372,20 @@ def run_setup_advanced(output_dir: Path) -> None:
     chunk_overlap: int = click.prompt("Chunk overlap (characters)", default=200, type=int)
 
     # ------------------------------------------------------------------
-    # Step 4: Projects with sources
+    # Step 4: Reranking settings
+    # ------------------------------------------------------------------
+    _get_console().print("\n[bold cyan]Step 4: Reranking Configuration[/bold cyan]")
+
+    enable_reranking: bool = click.confirm("Enable cross-encoder reranking?", default=True)
+
+    # ------------------------------------------------------------------
+    # Step 5: Projects with sources
     # ------------------------------------------------------------------
     projects: dict[str, dict[str, Any]] = {}
     all_extra_env: dict[str, str] = {}
 
     while True:
-        _get_console().print("\n[bold cyan]Step 4: Project Configuration[/bold cyan]")
+        _get_console().print("\n[bold cyan]Step 5: Project Configuration[/bold cyan]")
 
         while True:
             project_id: str = click.prompt("Project ID", default="my-project")
@@ -408,7 +415,7 @@ def run_setup_advanced(output_dir: Path) -> None:
             break
 
     # ------------------------------------------------------------------
-    # Step 5: Write files
+    # Step 6: Write files
     # ------------------------------------------------------------------
     config_path = output_dir / "config.yaml"
     env_path = output_dir / ".env"
@@ -449,6 +456,10 @@ def run_setup_advanced(output_dir: Path) -> None:
 
     if embedding_endpoint:
         global_config["embedding"]["endpoint"] = embedding_endpoint
+
+    global_config["reranking"] = {
+        "enabled": enable_reranking,
+    }
 
     _write_config_file_advanced(
         config_path,

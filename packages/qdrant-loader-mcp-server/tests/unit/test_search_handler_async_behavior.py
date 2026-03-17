@@ -35,8 +35,15 @@ def mock_protocol():
 
 @pytest.fixture
 def async_search_handler(async_search_engine, async_query_processor, mock_protocol):
-    """Create a SearchHandler with async components."""
-    return SearchHandler(async_search_engine, async_query_processor, mock_protocol)
+    """Create a SearchHandler with async components (reranking disabled for async tests)."""
+    from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+    return SearchHandler(
+        async_search_engine,
+        async_query_processor,
+        mock_protocol,
+        reranking_config=MCPReranking(enabled=False),
+    )
 
 
 @pytest.fixture

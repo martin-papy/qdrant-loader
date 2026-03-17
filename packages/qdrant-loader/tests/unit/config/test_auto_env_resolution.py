@@ -158,12 +158,19 @@ class TestAutoEnvResolution:
                 "QDRANT_API_KEY",
                 "QDRANT_COLLECTION_NAME",
             )
-            with patch.dict(os.environ, clean, clear=True):
+            with (
+                patch.dict(os.environ, clean, clear=True),
+                patch("qdrant_loader.config.load_dotenv"),
+            ):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
             assert settings.global_config.qdrant.url == "http://localhost:6333"
             assert settings.global_config.qdrant.collection_name == "documents"
-            assert settings.global_config.qdrant.api_key is None
-            assert settings.global_config.embedding.api_key is None
+            assert settings.global_config.qdrant.api_key is None, (
+                "qdrant.api_key should be None when no env vars are set"
+            )
+            assert settings.global_config.embedding.api_key is None, (
+                "embedding.api_key should be None when no env vars are set"
+            )
         finally:
             os.unlink(config_path)
 
