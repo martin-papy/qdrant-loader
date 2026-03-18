@@ -89,6 +89,9 @@ async def run_search(
             expanded_query=expanded_query,
         )
 
+        resolved_vector_query = plan.expanded_query
+        resolved_keyword_query = query
+
         # Ensure combiner threshold honors engine-level minimum when applicable
         engine_min_score = getattr(engine, "min_score", None)
         if engine_min_score is not None and (
@@ -119,8 +122,8 @@ async def run_search(
                         query_context=query_context,
                         source_types=source_types,
                         project_ids=project_ids,
-                        vector_query=query,
-                        keyword_query=query,
+                        vector_query=resolved_vector_query,
+                        keyword_query=resolved_keyword_query,
                     )
                 )
             else:
@@ -133,8 +136,8 @@ async def run_search(
                         query_context=query_context,
                         source_types=source_types,
                         project_ids=project_ids,
-                        vector_query=plan.expanded_query,
-                        keyword_query=query,
+                        vector_query=resolved_vector_query,
+                        keyword_query=resolved_keyword_query,
                     )
                 )
         else:
