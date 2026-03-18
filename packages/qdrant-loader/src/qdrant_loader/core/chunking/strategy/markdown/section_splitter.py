@@ -104,6 +104,17 @@ class SectionSplitter:
         self.excel_splitter = ExcelSplitter(settings)
         self.fallback_splitter = FallbackSplitter(settings)
 
+    def _is_excel_document(self, document: Any) -> bool:
+        """Check whether a document originated from an Excel file (.xls/.xlsx)."""
+        if not document:
+            return False
+
+        metadata = getattr(document, "metadata", None) or {}
+        original_file_type = str(metadata.get("original_file_type", "")).lower()
+        normalized_file_type = original_file_type.lstrip(".")
+
+        return normalized_file_type in {"xls", "xlsx"}
+
     def analyze_header_distribution(self, text: str) -> HeaderAnalysis:
         """Analyze header distribution to guide splitting decisions.
 
@@ -165,9 +176,7 @@ class SectionSplitter:
         header_analysis = self.analyze_header_distribution(text)
 
         # Check if this is a converted Excel file
-        is_converted_excel = (
-            document and document.metadata.get("original_file_type") == "xlsx"
-        )
+        is_converted_excel = self._is_excel_document(document)
 
         if is_converted_excel:
             # Excel files: H1 (document) + H2 (sheets) + potentially H3 for large sheets
@@ -359,10 +368,7 @@ class SectionSplitter:
             extra={
                 "split_levels": list(split_levels),
                 "document_type": (
-                    "excel"
-                    if document
-                    and document.metadata.get("original_file_type") == "xlsx"
-                    else "markdown"
+                    "excel" if self._is_excel_document(document) else "markdown"
                 ),
             },
         )
@@ -379,9 +385,7 @@ class SectionSplitter:
                                 "level": current_level,
                                 "title": current_title,
                                 "path": list(current_path),
-                                "is_excel_sheet": document
-                                and document.metadata.get("original_file_type")
-                                == "xlsx"
+                                "is_excel_sheet": self._is_excel_document(document)
                                 and level == 2,
                             }
                         )
@@ -400,10 +404,7 @@ class SectionSplitter:
                     current_level = 0
                     current_title = (
                         "Preamble"
-                        if not (
-                            document
-                            and document.metadata.get("original_file_type") == "xlsx"
-                        )
+                        if not self._is_excel_document(document)
                         else "Sheet Data"
                     )
                     current_path = []
@@ -415,8 +416,7 @@ class SectionSplitter:
                     "level": current_level,
                     "title": current_title,
                     "path": list(current_path),
-                    "is_excel_sheet": document
-                    and document.metadata.get("original_file_type") == "xlsx"
+                    "is_excel_sheet": self._is_excel_document(document)
                     and current_level == 2,
                 }
             )

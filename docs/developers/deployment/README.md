@@ -412,7 +412,7 @@ systemctl status mcp-qdrant-loader
 QDrant Loader includes built-in Prometheus metrics support:
 
 ```python
-# Available metrics (from prometheus_metrics.py)
+# Available metrics (from )
 INGESTED_DOCUMENTS = Counter("qdrant_ingested_documents_total", "Total number of documents ingested")
 CHUNKING_DURATION = Histogram("qdrant_chunking_duration_seconds", "Time spent chunking documents")
 EMBEDDING_DURATION = Histogram("qdrant_embedding_duration_seconds", "Time spent embedding chunks")

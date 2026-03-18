@@ -8,9 +8,7 @@ from .formatters import MCPFormatters
 from .handlers.intelligence import (
     get_or_create_document_id as _get_or_create_document_id_fn,
 )
-from .handlers.intelligence import (
-    process_analysis_results,
-)
+from .handlers.intelligence import process_analysis_results
 from .protocol import MCPProtocol
 
 # Get logger for this module
@@ -25,9 +23,28 @@ class IntelligenceHandler:
         self.search_engine = search_engine
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self._clustering_cache: dict[str, Any] | None = None
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
+
+    def _expand_cluster_docs_to_schema(
+        self, docs: list[Any], include_metadata: bool
+    ) -> list[dict[str, Any]]:
+        """Build documents array to match expand_cluster outputSchema (id, text, metadata)."""
+        result = []
+        for doc in docs:
+            doc_id = getattr(doc, "document_id", None) or getattr(doc, "id", None) or ""
+            item = {"id": str(doc_id), "text": getattr(doc, "text", "") or ""}
+            if include_metadata:
+                item["metadata"] = {
+                    "title": getattr(doc, "source_title", ""),
+                    "source_type": getattr(doc, "source_type", ""),
+                    "source_url": getattr(doc, "source_url", None),
+                    "file_path": getattr(doc, "file_path", None),
+                }
+            result.append(item)
+        return result
 
     async def handle_analyze_document_relationships(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -300,9 +317,13 @@ class IntelligenceHandler:
                             if isinstance(v, int | float)
                         },
                         "similarity_reason": (
-                            ", ".join(item.get("similarity_reasons", []))
-                            if isinstance(item.get("similarity_reasons", []), list)
-                            else item.get("similarity_reason", "")
+                            ", ".join(reasons)
+                            if isinstance(
+                                reasons := item.get("similarity_reasons"), list
+                            )
+                            else (
+                                item.get("similarity_reason", "") or str(reasons or "")
+                            )
                         ),
                         "content_preview": content_preview,
                     }
@@ -440,9 +461,10 @@ class IntelligenceHandler:
                 )
 
         try:
-            logger.info("🔍 About to call search_engine.find_complementary_content")
-            logger.info(f"🔍 search_engine type: {type(self.search_engine)}")
-            logger.info(f"🔍 search_engine is None: {self.search_engine is None}")
+            logger.debug(
+                "Calling search_engine.find_complementary_content (%s)",
+                type(self.search_engine).__name__,
+            )
 
             result = await self.search_engine.find_complementary_content(
                 target_query=params["target_query"],
@@ -469,8 +491,9 @@ class IntelligenceHandler:
             target_document = result.get("target_document")
             context_documents_analyzed = result.get("context_documents_analyzed", 0)
 
-            logger.info(
-                f"✅ search_engine.find_complementary_content completed, got {len(complementary_recommendations)} results"
+            logger.debug(
+                "find_complementary_content completed, got %s results",
+                len(complementary_recommendations),
             )
 
             # Create lightweight structured content using the new formatter
@@ -546,6 +569,14 @@ class IntelligenceHandler:
                 )
             )
 
+            # Store for expand_cluster call (keep full document object)
+            self._clustering_cache = {
+                "clusters": clustering_results.get("clusters", []),
+                "clustering_metadata": clustering_results.get(
+                    "clustering_metadata", {}
+                ),
+            }
+
             # Build schema-compliant clustering response
             schema_clusters: list[dict[str, Any]] = []
             for idx, cluster in enumerate(clustering_results.get("clusters", []) or []):
@@ -602,8 +633,8 @@ class IntelligenceHandler:
 
                 schema_clusters.append(
                     {
-                        "cluster_id": str(cluster.get("id", f"cluster_{idx+1}")),
-                        "cluster_name": cluster.get("name") or f"Cluster {idx+1}",
+                        "cluster_id": str(cluster.get("id", f"cluster_{idx + 1}")),
+                        "cluster_name": cluster.get("name") or f"Cluster {idx + 1}",
                         "cluster_theme": theme_str,
                         "document_count": int(
                             cluster.get(
@@ -732,70 +763,88 @@ class IntelligenceHandler:
                 },
             )
 
-        try:
-            cluster_id = params["cluster_id"]
-            limit = params.get("limit", 20)
-            offset = params.get("offset", 0)
-            params.get("include_metadata", True)
+        cluster_id = str(params["cluster_id"]).strip()
+        limit = max(1, min(100, int(params.get("limit", 20))))  # clamp (1, 100)
+        offset = max(0, int(params.get("offset", 0)))
+        include_metadata = params.get("include_metadata", True)
 
-            logger.info(
-                f"Expanding cluster {cluster_id} with limit={limit}, offset={offset}"
-            )
-
-            # For now, we need to re-run clustering to get cluster data
-            # In a production system, this would be cached or stored
-            # This is a placeholder implementation
-
-            # Since we don't have cluster data persistence yet, return a helpful message
-            # In the future, this would retrieve stored cluster data and expand it
-
-            # Build schema-compliant placeholder payload
-            page_num = (
-                (int(offset) // int(limit)) + 1
-                if isinstance(limit, int) and limit > 0
-                else 1
-            )
-            expansion_result = {
-                "cluster_id": str(cluster_id),
-                "cluster_info": {
-                    "cluster_name": "",
-                    "cluster_theme": "",
-                    "document_count": 0,
-                },
-                "documents": [],
-                "pagination": {
-                    "page": page_num,
-                    "page_size": int(limit) if isinstance(limit, int) else 20,
-                    "total": 0,
-                    "has_more": False,
-                },
-            }
-
-            return self.protocol.create_response(
-                request_id,
-                result={
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"🔄 **Cluster Expansion Request**\n\nCluster ID: {cluster_id}\n\n"
-                            + "Currently, cluster expansion requires re-running the clustering operation. "
-                            + "The lightweight cluster response provides the first 5 documents per cluster. "
-                            + "For complete cluster content, please run `cluster_documents` again.\n\n"
-                            + "💡 **Future Enhancement**: Cluster data will be cached to enable true lazy loading.",
-                        }
-                    ],
-                    "structuredContent": expansion_result,
-                    "isError": False,
-                },
-            )
-
-        except Exception as e:
-            logger.error("Error expanding cluster", exc_info=True)
+        if self._clustering_cache is None:
             return self.protocol.create_response(
                 request_id,
                 error={
-                    "code": -32603,
-                    "message": "Internal server error",
-                    "data": str(e),
+                    "code": -32604,
+                    "message": "Cluster not found",
+                    "data": "No clustering result in cache. Run cluster_documents first, then expand_cluster with the same cluster_id.",
                 },
             )
+
+        clusters = self._clustering_cache.get("clusters") or []
+        cluster = next(
+            (
+                c
+                for idx, c in enumerate(clusters)
+                if str(c.get("id", f"cluster_{idx + 1}")) == cluster_id
+            ),
+            None,
+        )
+
+        if cluster is None:
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32604,
+                    "message": "Cluster not found",
+                    "data": f"No cluster with id '{cluster_id}' found. Use a cluster_id from the last cluster_documents output",
+                },
+            )
+
+        all_docs = cluster.get("documents") or []
+        total = len(all_docs)
+        page_size = limit
+        page = (offset // limit) + 1 if page_size > 0 else 1
+        slice_docs = all_docs[offset : offset + limit]
+        has_more = offset + len(slice_docs) < total
+
+        doc_schema_list = self._expand_cluster_docs_to_schema(
+            slice_docs, include_metadata
+        )
+
+        theme = cluster.get("cluster_summary") or ", ".join(
+            (cluster.get("shared_entities") or cluster.get("centroid_topics") or [])[:3]
+        )
+
+        expansion_result = {
+            "cluster_id": cluster_id,
+            "cluster_info": {
+                "cluster_name": cluster.get("name") or f"Cluster {cluster_id}",
+                "cluster_theme": theme,
+                "document_count": total,
+            },
+            "documents": doc_schema_list,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+                "has_more": has_more,
+            },
+        }
+
+        # Format content block to be human-readable
+        text_block = (
+            f"**Cluster: {expansion_result['cluster_info']['cluster_name']}**\n"
+            f"Theme: {theme}\nDocuments: {total}\n\n"
+        )
+        for i, d in enumerate(doc_schema_list[:5], 1):
+            title = d.get("metadata", {}).get("title", d["id"])
+            text_block += f"{i}. {title}\n"
+        if total > 5:
+            text_block += f"... and {total - 5} more.\n"
+
+        return self.protocol.create_response(
+            request_id,
+            result={
+                "content": [{"type": "text", "text": text_block}],
+                "structuredContent": expansion_result,
+                "isError": False,
+            },
+        )
