@@ -6,7 +6,6 @@ from typing import Any
 
 from qdrant_client import models
 
-from qdrant_loader_mcp_server.config import QdrantConfig
 from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 from ..search.engine import SearchEngine
@@ -43,7 +42,6 @@ class SearchHandler:
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
-        self.qdrant_config = QdrantConfig()
         self.reranker = None
 
         if reranking_config is None:
@@ -502,7 +500,7 @@ class SearchHandler:
             next_offset = None
             truncated = False
 
-            collection_name = self.qdrant_config.collection_name
+            collection_name = self.search_engine.config.collection_name
             MAX_CHUNKS = 500  # Reasonable upper bound
             # Scroll to retrieve all chunks
             while True:
