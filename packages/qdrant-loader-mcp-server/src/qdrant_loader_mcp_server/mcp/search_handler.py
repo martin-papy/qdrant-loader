@@ -53,11 +53,17 @@ class SearchHandler:
         if reranking_config.enabled:
             # If handler-level reranking is active, disable pipeline-level reranking
             # to avoid running the cross-encoder twice.
-            if hasattr(search_engine, "hybrid_pipeline") and search_engine.hybrid_pipeline is not None:
+            if (
+                hasattr(search_engine, "hybrid_pipeline")
+                and search_engine.hybrid_pipeline is not None
+            ):
                 if hasattr(search_engine.hybrid_pipeline, "reranker"):
                     search_engine.hybrid_pipeline.reranker = None
 
-            if hasattr(search_engine, "pipeline") and search_engine.pipeline is not None:
+            if (
+                hasattr(search_engine, "pipeline")
+                and search_engine.pipeline is not None
+            ):
                 if hasattr(search_engine.pipeline, "reranker"):
                     search_engine.pipeline.reranker = None
 
@@ -149,7 +155,6 @@ class SearchHandler:
             )
 
             # Apply reranking if enabled
-
 
             if self.reranker:
                 results = await asyncio.to_thread(
@@ -497,7 +502,7 @@ class SearchHandler:
             next_offset = None
             truncated = False
 
-            collection_name = self.query_processor.collection_name
+            collection_name = self.qdrant_config.collection_name
             MAX_CHUNKS = 500  # Reasonable upper bound
             # Scroll to retrieve all chunks
             while True:
