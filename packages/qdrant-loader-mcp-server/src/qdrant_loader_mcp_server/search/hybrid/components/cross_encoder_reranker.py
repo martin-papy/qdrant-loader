@@ -6,8 +6,8 @@ Uses the CrossEncoder class from the sentence-transformers library to rerank sea
 
 from __future__ import annotations
 
-import threading
 import logging
+import threading
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -121,7 +121,6 @@ class CrossEncoderReranker:
             )
 
             output = []
-            scored_indices = {idx for idx, _, _ in ranked}
             for rank, (_idx, item, score) in enumerate(ranked, start=1):
                 if isinstance(item, dict):
                     item["cross_encoder_score"] = float(score)

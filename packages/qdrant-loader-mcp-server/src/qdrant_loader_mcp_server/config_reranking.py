@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt
 
+
 class MCPReranking(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
