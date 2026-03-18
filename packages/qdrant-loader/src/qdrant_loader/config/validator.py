@@ -24,6 +24,10 @@ class ConfigValidator:
     def validate_structure(self, config_data: dict[str, Any]) -> None:
         """Validate the overall configuration structure.
 
+        Supports two formats:
+        1. Standard: config with 'projects' section
+        2. Simplified: config with top-level 'sources' section (auto-wrapped into a default project)
+
         Args:
             config_data: Raw configuration data
 
@@ -36,12 +40,23 @@ class ConfigValidator:
         if not isinstance(config_data, dict):
             raise ValueError("Configuration must be a dictionary")
 
-        # Validate that we have projects section
-        if "projects" not in config_data:
-            raise ValueError("Configuration must contain 'projects' section")
+        # Accept either 'projects' or top-level 'sources' (simplified format)
+        has_projects = "projects" in config_data
+        has_sources = "sources" in config_data
 
-        # Validate projects section
-        self._validate_projects_section(config_data["projects"])
+        if not has_projects and not has_sources:
+            raise ValueError(
+                "Configuration must contain either 'projects' section "
+                "or top-level 'sources' section"
+            )
+
+        if has_projects:
+            # Validate projects section
+            self._validate_projects_section(config_data["projects"])
+
+        if has_sources and not has_projects:
+            # Simplified format: validate top-level sources
+            self._validate_sources_section(config_data["sources"])
 
         # Validate global section if present
         if "global" in config_data:
@@ -232,8 +247,8 @@ class ConfigValidator:
                 "letters, numbers, underscores, and hyphens."
             )
 
-        # Check for reserved project IDs
-        reserved_ids = {"default", "global", "admin", "system"}
+        # Check for reserved project IDs ('default' is allowed for simplified config)
+        reserved_ids = {"global", "admin", "system"}
         if project_id.lower() in reserved_ids:
             _get_logger().warning(
                 f"Project ID '{project_id}' is reserved and may cause conflicts"

@@ -1,7 +1,5 @@
 """Tests for the config.py module."""
 
-import pytest
-from pydantic import ValidationError
 from qdrant_loader.config import (
     ChunkingConfig,
     GlobalConfig,
@@ -225,11 +223,14 @@ class TestSettings:
         assert isinstance(settings.global_config, GlobalConfig)
         assert isinstance(settings.projects_config, ProjectsConfig)
 
-    def test_settings_validation_requires_qdrant(self):
-        """Test that Settings validation requires Qdrant configuration."""
-        # Test that Settings fails without Qdrant config
-        with pytest.raises(ValidationError, match="Qdrant configuration is required"):
-            Settings(global_config=GlobalConfig())
+    def test_settings_has_default_qdrant(self):
+        """Test that Settings provides default Qdrant configuration."""
+        # Qdrant config now has sensible defaults (url=localhost:6333, collection=documents)
+        # Note: env vars like QDRANT_URL, QDRANT_COLLECTION_NAME may override defaults
+        settings = Settings(global_config=GlobalConfig())
+        assert settings.global_config.qdrant is not None
+        assert settings.global_config.qdrant.url is not None
+        assert settings.global_config.qdrant.collection_name is not None
 
     def test_settings_to_dict(self):
         """Test converting Settings to dictionary."""
@@ -244,21 +245,32 @@ class TestSettings:
 
     def test_settings_properties_exist(self):
         """Test that expected properties exist on Settings."""
-        global_config = self._create_valid_global_config()
-        settings = Settings(global_config=global_config)
+        import os
 
-        # These properties should exist based on the Settings class
-        assert hasattr(settings, "global_config")
-        assert hasattr(settings, "projects_config")
+        # Temporarily remove QDRANT_* env vars that _auto_resolve_env_vars picks up
+        saved = {
+            k: os.environ.pop(k)
+            for k in ("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME")
+            if k in os.environ
+        }
+        try:
+            global_config = self._create_valid_global_config()
+            settings = Settings(global_config=global_config)
 
-        # Check if property methods exist and work
-        assert hasattr(Settings, "qdrant_url")
-        assert hasattr(Settings, "qdrant_api_key")
-        assert hasattr(Settings, "qdrant_collection_name")
-        assert hasattr(Settings, "openai_api_key")
-        assert hasattr(Settings, "state_db_path")
+            # These properties should exist based on the Settings class
+            assert hasattr(settings, "global_config")
+            assert hasattr(settings, "projects_config")
 
-        # Test that properties work
-        assert settings.qdrant_url == "http://localhost:6333"
-        assert settings.qdrant_collection_name == "test_collection"
-        assert settings.qdrant_api_key is None
+            # Check if property methods exist and work
+            assert hasattr(Settings, "qdrant_url")
+            assert hasattr(Settings, "qdrant_api_key")
+            assert hasattr(Settings, "qdrant_collection_name")
+            assert hasattr(Settings, "openai_api_key")
+            assert hasattr(Settings, "state_db_path")
+
+            # Test that properties work
+            assert settings.qdrant_url == "http://localhost:6333"
+            assert settings.qdrant_collection_name == "test_collection"
+            assert settings.qdrant_api_key is None
+        finally:
+            os.environ.update(saved)

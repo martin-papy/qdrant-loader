@@ -10,6 +10,10 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
+# Note: networkx is imported at module level because:
+# 1. This module (kg/graph) is only imported when KnowledgeGraph is needed
+# 2. Tests need to be able to patch nx functions
+# The lazy loading happens at a higher level
 import networkx as nx
 
 from ....utils.logging import LoggingConfig

@@ -1,7 +1,5 @@
 """Tests for QdrantConfig class."""
 
-import pytest
-from pydantic import ValidationError
 from qdrant_loader.config.qdrant import QdrantConfig
 
 
@@ -76,31 +74,24 @@ class TestQdrantConfig:
         }
         assert result == expected
 
-    def test_missing_required_fields(self):
-        """Test that missing required fields raise ValidationError."""
-        with pytest.raises(ValidationError) as exc_info:
-            QdrantConfig()  # type: ignore
+    def test_default_values(self):
+        """Test that QdrantConfig has sensible defaults."""
+        config = QdrantConfig()
+        assert config.url == "http://localhost:6333"
+        assert config.collection_name == "documents"
+        assert config.api_key is None
 
-        errors = exc_info.value.errors()
-        error_fields = {error["loc"][0] for error in errors}
-        assert "url" in error_fields
-        assert "collection_name" in error_fields
+    def test_override_url(self):
+        """Test that URL can be overridden."""
+        config = QdrantConfig(url="https://cloud.qdrant.io")
+        assert config.url == "https://cloud.qdrant.io"
+        assert config.collection_name == "documents"  # default
 
-    def test_missing_url(self):
-        """Test that missing URL raises ValidationError."""
-        with pytest.raises(ValidationError) as exc_info:
-            QdrantConfig(collection_name="test")  # type: ignore
-
-        errors = exc_info.value.errors()
-        assert any(error["loc"][0] == "url" for error in errors)
-
-    def test_missing_collection_name(self):
-        """Test that missing collection name raises ValidationError."""
-        with pytest.raises(ValidationError) as exc_info:
-            QdrantConfig(url="http://localhost:6333")  # type: ignore
-
-        errors = exc_info.value.errors()
-        assert any(error["loc"][0] == "collection_name" for error in errors)
+    def test_override_collection_name(self):
+        """Test that collection name can be overridden."""
+        config = QdrantConfig(collection_name="my_custom_collection")
+        assert config.url == "http://localhost:6333"  # default
+        assert config.collection_name == "my_custom_collection"
 
     # Note: Empty string validation is not implemented in the base QdrantConfig class
     # This would require custom field validators if needed in the future

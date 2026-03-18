@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig, get_version
@@ -17,15 +19,25 @@ logger = LoggingConfig.get_logger("src.mcp.handler")
 class MCPHandler:
     """MCP Handler for processing RAG requests."""
 
-    def __init__(self, search_engine: SearchEngine, query_processor: QueryProcessor):
+    def __init__(
+        self,
+        search_engine: SearchEngine,
+        query_processor: QueryProcessor,
+        reranking_config: MCPReranking | None = None,
+    ):
         """Initialize MCP Handler."""
         self.protocol = MCPProtocol()
         self.search_engine = search_engine
         self.query_processor = query_processor
 
         # Initialize specialized handlers
+        # SearchHandler enforces reranking exclusivity: if an MCP-level reranker is enabled,
+        # it disables pipeline-level reranking to avoid double reranking of results.
         self.search_handler = SearchHandler(
-            search_engine, query_processor, self.protocol
+            search_engine,
+            query_processor,
+            self.protocol,
+            reranking_config=reranking_config,
         )
         self.intelligence_handler = IntelligenceHandler(search_engine, self.protocol)
 

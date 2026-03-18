@@ -34,7 +34,9 @@ class IngestionStatus:
 class StateManagementConfig(BaseConfig):
     """Configuration for state management."""
 
-    database_path: str = Field(..., description="Path to SQLite database file")
+    database_path: str = Field(
+        default="./state.db", description="Path to SQLite database file"
+    )
     table_prefix: str = Field(
         default="qdrant_loader_", description="Prefix for database tables"
     )
@@ -142,7 +144,7 @@ class StateManagementConfig(BaseConfig):
 
     def __init__(self, **data):
         """Initialize state management configuration."""
-        # If database_path is not provided, use in-memory database
+        # If database_path is not provided, use default file-based database
         if "database_path" not in data:
-            data["database_path"] = ":memory:"
+            data["database_path"] = "./state.db"
         super().__init__(**data)

@@ -421,6 +421,41 @@ class TestExcelSplitter:
             result = self.splitter.split_content(table_format, 1000)
             assert len(result) >= 1
 
+    def test_split_content_no_overlap_for_two_unit_non_table_then_table(self):
+        """Test split_content avoids overlap duplication for non-table then table sections."""
+        cases = [
+            "## Sheet 1",
+            "Sheet 1",
+        ]
+
+        for sheet_title in cases:
+            content = f"""
+        {sheet_title}
+
+        | Col1 | Col2 |
+        |------|------|
+        | a    | b    |
+        | c    | d    |
+        """
+
+            result = self.splitter.split_content(content, 500)
+
+            assert len(result) == 1
+            assert sheet_title in result[0]
+            assert "| Col1 | Col2 |" in result[0]
+
+    def test_split_content_no_duplicate_first_table_rows_after_sheet_name(self):
+        """Test split_content advances to next table data after chunk with sheet name."""
+        rows = [f"| r{i} | v{i} |" for i in range(1, 80)]
+        content = "S\n\n| C1 | C2 |\n|----|----|\n" + "\n".join(rows)
+
+        result = self.splitter.split_content(content, 63)
+
+        assert len(result) >= 2
+        assert "S" in result[0]
+        assert "| r1 | v1 |" in result[0]
+        assert "| r1 | v1 |" not in result[1]
+
 
 class TestSectionSplitter:
     """Test main SectionSplitter class."""
@@ -570,6 +605,47 @@ class TestSectionSplitter:
         levels = self.splitter.determine_optimal_split_levels(text, mock_document)
 
         # Excel documents should split on H1 and H2 (document and sheets)
+        assert 1 in levels
+        assert 2 in levels
+
+    def test_determine_optimal_split_levels_xls_document(self):
+        """Test determine_optimal_split_levels for legacy Excel .xls documents."""
+        mock_document = Mock()
+        mock_document.metadata = {"original_file_type": "xls"}
+
+        text = """
+        # Excel Document
+
+        ## Sheet 1
+        Data
+
+        ## Sheet 2
+        Data
+        """
+
+        levels = self.splitter.determine_optimal_split_levels(text, mock_document)
+
+        # Legacy Excel documents should follow the same split behavior
+        assert 1 in levels
+        assert 2 in levels
+
+    def test_determine_optimal_split_levels_xls_document_with_dot_prefix(self):
+        """Test determine_optimal_split_levels handles extension metadata with dot prefix."""
+        mock_document = Mock()
+        mock_document.metadata = {"original_file_type": ".xls"}
+
+        text = """
+        # Excel Document
+
+        ## Sheet 1
+        Data
+
+        ## Sheet 2
+        Data
+        """
+
+        levels = self.splitter.determine_optimal_split_levels(text, mock_document)
+
         assert 1 in levels
         assert 2 in levels
 
