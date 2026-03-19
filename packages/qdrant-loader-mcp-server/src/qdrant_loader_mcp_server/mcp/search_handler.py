@@ -5,7 +5,6 @@ import inspect
 from typing import Any
 
 from qdrant_client import models
-
 from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 from ..search.engine import SearchEngine

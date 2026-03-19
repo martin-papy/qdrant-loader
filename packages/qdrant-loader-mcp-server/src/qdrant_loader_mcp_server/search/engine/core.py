@@ -825,7 +825,6 @@ class SearchEngine:
                 project_ids = set()
 
                 for doc in documents:
-
                     # Hierarchical structure
                     breadcrumb = get_doc_attr(doc, "breadcrumb_text", "")
                     if breadcrumb and breadcrumb.strip():

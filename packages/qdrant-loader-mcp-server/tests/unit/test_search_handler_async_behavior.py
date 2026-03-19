@@ -59,7 +59,7 @@ def sample_async_results():
         result.text = f"Content for async document {i}"
         result.score = 0.9 - (i * 0.1)
         result.depth = i
-        result.parent_title = None if i == 0 else f"Async Document {i-1}"
+        result.parent_title = None if i == 0 else f"Async Document {i - 1}"
         result.is_attachment = False
         result.original_filename = None
         result.file_path = None
@@ -579,8 +579,8 @@ class TestAsyncPerformance:
         async_search_handler.query_processor.process_query.return_value = {
             "query": "parallel_test"
         }
-        async_search_handler.search_engine.search.side_effect = (
-            lambda **kwargs: slow_operation(0.1)
+        async_search_handler.search_engine.search.side_effect = lambda **kwargs: (
+            slow_operation(0.1)
         )
         async_search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0"}
 

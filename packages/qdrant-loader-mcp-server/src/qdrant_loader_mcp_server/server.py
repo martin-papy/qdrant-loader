@@ -32,8 +32,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .transport import mcp_router
 from .utils import LoggingConfig
@@ -116,7 +116,9 @@ async def _lifespan(app: FastAPI):
             try:
                 await search_engine.cleanup()
             except Exception:
-                logger.error("Error cleaning up search engine during failed start", exc_info=True)
+                logger.error(
+                    "Error cleaning up search engine during failed start", exc_info=True
+                )
         if executor:
             executor.shutdown(wait=False)
         raise

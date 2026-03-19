@@ -98,8 +98,9 @@ class TestOriginValidation:
     @pytest.mark.asyncio
     async def test_invalid_origins(self):
         """Test that invalid origins are rejected."""
-        from fastapi import HTTPException
         from unittest.mock import MagicMock
+
+        from fastapi import HTTPException
 
         invalid_origins = [
             "http://example.com",
