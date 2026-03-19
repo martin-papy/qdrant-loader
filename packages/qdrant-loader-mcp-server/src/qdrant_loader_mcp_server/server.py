@@ -14,9 +14,12 @@ Architecture:
     Configuration is passed to workers via environment variables so each
     forked process can reconstruct it independently.
 
-Usage:
-    python -m qdrant_loader_mcp_server.server
-    python -m qdrant_loader_mcp_server.server --host 0.0.0.0 --port 9090 --workers 4
+Usage (via an ASGI server such as uvicorn):
+    uvicorn qdrant_loader_mcp_server.server:app --host 0.0.0.0 --port 9090 --workers 4
+    python -m uvicorn qdrant_loader_mcp_server.server:app --host 0.0.0.0 --port 9090
+
+This module exposes the ASGI application object ``app``.  It is not
+intended to be run directly with ``python -m``.
 """
 
 from __future__ import annotations
@@ -29,6 +32,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .transport import mcp_router
@@ -105,6 +109,16 @@ async def _lifespan(app: FastAPI):
 
     except Exception:
         logger.error("Worker failed to start", pid=os.getpid(), exc_info=True)
+        # Clean up partially-initialised resources before re-raising
+        if hasattr(app.state, "mcp_handler"):
+            app.state.mcp_handler = None
+        if search_engine:
+            try:
+                await search_engine.cleanup()
+            except Exception:
+                logger.error("Error cleaning up search engine during failed start", exc_info=True)
+        if executor:
+            executor.shutdown(wait=False)
         raise
 
     yield  # ---- app is serving requests ----
@@ -144,11 +158,14 @@ app.include_router(mcp_router)
 
 @app.get("/health")
 async def health_check(request: Request):
-    """Health check -- available even before full init completes."""
+    """Health check -- returns 503 while the worker is still initialising."""
     ready = getattr(request.app.state, "mcp_handler", None) is not None
-    return {
+    body = {
         "status": "healthy" if ready else "starting",
         "transport": "http",
         "protocol": "mcp",
         "pid": os.getpid(),
     }
+    if not ready:
+        return JSONResponse(content=body, status_code=503)
+    return body

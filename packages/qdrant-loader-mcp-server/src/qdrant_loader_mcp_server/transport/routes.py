@@ -27,6 +27,7 @@ async def handle_mcp_post(
         logger.error("Invalid JSON in request body")
         return {
             "jsonrpc": "2.0",
+            "id": None,
             "error": {"code": -32700, "message": "Invalid JSON in request"},
         }
 
@@ -39,11 +40,12 @@ async def handle_mcp_post(
         logger.error("Error processing MCP request", exc_info=True)
         return {
             "jsonrpc": "2.0",
+            "id": body.get("id") if isinstance(body, dict) else None,
             "error": {"code": -32603, "message": "Internal server error"},
         }
 
 
-@mcp_router.get("/mcp")
+@mcp_router.get("/mcp", dependencies=[Depends(validate_origin)])
 async def handle_mcp_get():
     """SSE stub -- heartbeat-only stream for keep-alive."""
 
