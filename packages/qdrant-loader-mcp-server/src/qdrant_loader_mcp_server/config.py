@@ -157,6 +157,10 @@ class SearchConfig(BaseModel):
     hnsw_ef: Annotated[int, Field(ge=1, le=32_768)] = 128  # HNSW search parameter
     use_exact_search: bool = False  # Use exact search when needed
 
+    # Concurrency control: limits simultaneous search operations to prevent
+    # overwhelming the shared Qdrant client connection pool under concurrent MCP calls.
+    max_concurrent_searches: Annotated[int, Field(ge=1, le=50)] = 4
+
     # Conflict detection performance controls (defaults calibrated for P95 ~8–10s)
     conflict_limit_default: Annotated[int, Field(ge=2, le=50)] = 10
     conflict_max_pairs_total: Annotated[int, Field(ge=1, le=200)] = 24
@@ -197,6 +201,10 @@ class SearchConfig(BaseModel):
             )
         if "use_exact_search" not in data:
             data["use_exact_search"] = parse_bool_env("SEARCH_USE_EXACT", False)
+        if "max_concurrent_searches" not in data:
+            data["max_concurrent_searches"] = parse_int_env(
+                "SEARCH_MAX_CONCURRENT", 4, min_value=1, max_value=50
+            )
 
         # Conflict detection env overrides (optional; safe defaults used if unset)
         def _get_env_dict(name: str, default: dict) -> dict:

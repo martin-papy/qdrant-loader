@@ -1,5 +1,6 @@
 """Comprehensive tests for SearchHandler class to achieve 80%+ coverage."""
 
+import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -37,6 +38,7 @@ def search_handler(mock_search_engine, mock_query_processor, mock_protocol):
     # mock qdrant client
     mock_search_engine.client = Mock()
     mock_search_engine.client.scroll = AsyncMock()
+    mock_search_engine._search_semaphore = asyncio.Semaphore(10)
 
     from qdrant_loader_mcp_server.config_reranking import MCPReranking
 

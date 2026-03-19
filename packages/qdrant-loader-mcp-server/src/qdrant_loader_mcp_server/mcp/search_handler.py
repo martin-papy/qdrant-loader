@@ -5,7 +5,6 @@ import inspect
 from typing import Any
 
 from qdrant_client import models
-
 from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 from ..search.engine import SearchEngine
@@ -502,28 +501,31 @@ class SearchHandler:
 
             collection_name = self.search_engine.config.collection_name
             MAX_CHUNKS = 500  # Reasonable upper bound
-            # Scroll to retrieve all chunks
-            while True:
-                remaining = MAX_CHUNKS - len(all_points)
-                if remaining <= 0:
-                    truncated = next_offset is not None
-                    break
-                points, next_offset = await self.search_engine.client.scroll(
-                    collection_name=collection_name,
-                    scroll_filter=query_filter,
-                    limit=min(100, remaining),
-                    offset=next_offset,
-                    with_payload=True,
-                    with_vectors=False,
-                )
 
-                all_points.extend(points)
+            # Acquire the search semaphore to prevent overwhelming the
+            # shared Qdrant client connection pool under concurrent load.
+            async with self.search_engine._search_semaphore:
+                while True:
+                    remaining = MAX_CHUNKS - len(all_points)
+                    if remaining <= 0:
+                        truncated = next_offset is not None
+                        break
+                    points, next_offset = await self.search_engine.client.scroll(
+                        collection_name=collection_name,
+                        scroll_filter=query_filter,
+                        limit=min(100, remaining),
+                        offset=next_offset,
+                        with_payload=True,
+                        with_vectors=False,
+                    )
 
-                if next_offset is None:
-                    break
-                if len(all_points) >= MAX_CHUNKS:
-                    truncated = True
-                    break
+                    all_points.extend(points)
+
+                    if next_offset is None:
+                        break
+                    if len(all_points) >= MAX_CHUNKS:
+                        truncated = True
+                        break
             if not all_points:
                 logger.warning(f"No chunks found for document_id={document_id}")
                 return self.protocol.create_response(

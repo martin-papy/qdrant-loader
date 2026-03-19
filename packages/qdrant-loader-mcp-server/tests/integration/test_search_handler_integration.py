@@ -33,6 +33,7 @@ def integration_search_handler(real_protocol):
     # mock qdrant client
     mock_search_engine.client = Mock()
     mock_search_engine.client.scroll = AsyncMock()
+    mock_search_engine._search_semaphore = asyncio.Semaphore(10)
 
     from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
@@ -753,13 +754,13 @@ class TestPerformanceScenarios:
             result.original_filename = None
             result.file_path = None
             result.breadcrumb_text = (
-                f"Root > Category {i//10} > Document {i}" if i > 0 else ""
+                f"Root > Category {i // 10} > Document {i}" if i > 0 else ""
             )
             result.hierarchy_context = (
-                f"Root > Category {i//10} > Document {i}" if i > 0 else None
+                f"Root > Category {i // 10} > Document {i}" if i > 0 else None
             )
             result.depth = i // 20 + 1  # Varying depths
-            result.parent_title = f"Category {i//10}" if i > 0 else None
+            result.parent_title = f"Category {i // 10}" if i > 0 else None
             result.children_count = 3 if i < 10 else 0
             result.is_root_document = Mock(return_value=i < 10)
             result.has_children = Mock(return_value=i < 5)
