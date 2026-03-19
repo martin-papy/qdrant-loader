@@ -1,7 +1,8 @@
 """Cross-document intelligence operations handler for MCP server."""
 
 import time
-from typing import Any, Optional
+import uuid
+from typing import Any
 
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
@@ -24,7 +25,8 @@ class IntelligenceHandler:
         self.search_engine = search_engine
         self.protocol = protocol
         self.formatters = MCPFormatters()
-        self._clustering_cache: dict[str | int, dict[str, Any]] = {}
+        self._cluster_store = {}
+        self._ttl = 300
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
@@ -569,13 +571,19 @@ class IntelligenceHandler:
                     clustering_results, params.get("query", "")
                 )
             )
+            # cleanup before add new session
+            self._cleanup_expired_sessions()
 
             # Store for expand_cluster call (keep full document object)
-            self._clustering_cache = {
-                "clusters": clustering_results.get("clusters", []),
-                "clustering_metadata": clustering_results.get(
-                    "clustering_metadata", {}
-                ),
+            cluster_session_id = str(uuid.uuid4())
+            self._cluster_store[cluster_session_id] = {
+                "data": {
+                    "clusters": clustering_results.get("clusters", []),
+                    "clustering_metadata": clustering_results.get(
+                        "clustering_metadata"
+                    ),
+                },
+                "expires_at": time.time() + self._ttl,
             }
 
             # Build schema-compliant clustering response
@@ -735,7 +743,10 @@ class IntelligenceHandler:
                             ),
                         }
                     ],
-                    "structuredContent": mcp_clustering_results,
+                    "structuredContent": {
+                        **mcp_clustering_results,
+                        "cluster_session_id": cluster_session_id,
+                    },
                     "isError": False,
                 },
             )
@@ -753,68 +764,120 @@ class IntelligenceHandler:
         """Handle cluster expansion request for lazy loading."""
         logger.debug("Handling expand cluster with params", params=params)
 
-        # 1. Validate request_id
-        if request_id is None:
-            return self._error(
+        # 1. Validate cluster_session_id
+        cluster_session_id = params.get("cluster_session_id")
+        if not cluster_session_id:
+            logger.error("Missing required parameter: cluster_session_id")
+            return self.protocol.create_response(
                 request_id,
-                "Invalid request",
-                "request_id is required for clustering context",
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: cluster_session_id",
+                },
             )
 
-        # 2. Validate params
+        # 2. Validate cluster_id
         cluster_id = params.get("cluster_id")
         if not cluster_id:
-            return self._error(
+            logger.error("Missing required parameter: cluster_id")
+            return self.protocol.create_response(
                 request_id,
-                "Invalid params",
-                "Missing required parameter: cluster_id",
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: cluster_id",
+                },
             )
 
         cluster_id = str(cluster_id).strip()
-        limit = self._clamp(int(params.get("limit", 20)), 1, 100)
-        offset = max(0, int(params.get("offset", 0)))
+
+        # 3. Pagination params
+        try:
+            limit = max(1, min(100, int(params.get("limit", 20))))
+        except Exception:
+            limit = 20
+
+        try:
+            offset = max(0, int(params.get("offset", 0)))
+        except Exception:
+            offset = 0
+
         include_metadata = params.get("include_metadata", True)
 
-        # 3. Get cache for this request
-        cache = self._get_cache(request_id)
-        if not cache:
+        # 4. Get cache by cluster_session_id
+        entry = self._cluster_store.get(cluster_session_id)
+
+        if not entry:
             return self.protocol.create_response(
                 request_id,
                 error={
                     "code": -32604,
                     "message": "Cluster not found",
-                    "data": "No clustering result in cache. Run cluster_documents first, then expand_cluster with the same cluster_id.",
+                    "data": "Invalid or expired cluster_session_id",
                 },
             )
 
-        # 4. Find cluster
-        cluster = self._find_cluster(cache, cluster_id)
+        # 5. Check TTL
+        if entry.get("expires_at", 0) < time.time():
+            # expired → cleanup
+            try:
+                del self._cluster_store[cluster_session_id]
+            except KeyError:
+                pass
+
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32604,
+                    "message": "Cluster expired",
+                    "data": "cluster_session_id has expired",
+                },
+            )
+
+        cache = entry.get("data", {})
+
+        # 6. Find cluster
+        clusters = cache.get("clusters", []) or []
+
+        cluster = next(
+            (
+                c
+                for idx, c in enumerate(clusters)
+                if str(c.get("id", f"cluster_{idx + 1}")) == cluster_id
+            ),
+            None,
+        )
+
         if not cluster:
             return self.protocol.create_response(
                 request_id,
                 error={
                     "code": -32604,
                     "message": "Cluster not found",
-                    "data": f"No cluster with id '{cluster_id}' found. Use a cluster_id from the last cluster_documents output",
+                    "data": f"No cluster with id '{cluster_id}' found",
                 },
             )
 
-        # 5. Pagination
-        all_docs = cluster.get("documents", [])
+        # 7. Pagination
+        all_docs = cluster.get("documents", []) or []
         total = len(all_docs)
 
         slice_docs = all_docs[offset : offset + limit]
         has_more = offset + len(slice_docs) < total
         page = (offset // limit) + 1 if limit > 0 else 1
 
-        # 6. Transform documents
+        # 8. Transform documents
         doc_schema_list = self._expand_cluster_docs_to_schema(
             slice_docs, include_metadata
         )
 
-        # 7. Build response
-        theme = self._extract_theme(cluster)
+        # 9. Extract theme
+        theme = cluster.get("cluster_summary") or ", ".join(
+            (cluster.get("shared_entities") or cluster.get("centroid_topics") or [])[:3]
+        )
 
+        # 10. Build result
         result = {
             "cluster_id": cluster_id,
             "cluster_info": {
@@ -831,6 +894,7 @@ class IntelligenceHandler:
             },
         }
 
+        # 11. Return response
         return self.protocol.create_response(
             request_id,
             result={
@@ -843,49 +907,6 @@ class IntelligenceHandler:
                 "structuredContent": result,
                 "isError": False,
             },
-        )
-
-    def store_clustering_result(self, request_id: str | int, clustering_result: dict):
-        """Store clustering result per request."""
-        if request_id is None:
-            raise ValueError("request_id is required")
-
-        self._clustering_cache[request_id] = clustering_result
-
-    def _find_cluster(self, cache: dict, cluster_id: str) -> Optional[dict]:
-        clusters = cache.get("clusters", [])
-        return next(
-            (
-                c
-                for idx, c in enumerate(clusters)
-                if str(c.get("id", f"cluster_{idx + 1}")) == cluster_id
-            ),
-            None,
-        )
-    
-    def _get_cache(self, request_id: str | int) -> Optional[dict]:
-        entry = self._clustering_cache.get(request_id)
-
-        if not entry:
-            return None
-
-        if entry["expires_at"] < time.time():
-            # expired → xoá
-            del self._clustering_cache[request_id]
-            return None
-
-        return entry["data"]
-
-    def _extract_theme(self, cluster: dict) -> str:
-        return (
-            cluster.get("cluster_summary")
-            or ", ".join(
-                (
-                    cluster.get("shared_entities")
-                    or cluster.get("centroid_topics")
-                    or []
-                )[:3]
-            )
         )
 
     def _format_text_block(self, result: dict) -> str:
@@ -908,17 +929,12 @@ class IntelligenceHandler:
 
         return text
 
-    def _clamp(self, value: int, min_v: int, max_v: int) -> int:
-        return max(min_v, min(max_v, value))
+    def _cleanup_expired_sessions(self):
+        now = time.time()
 
-    def _error(self, request_id, message: str, data: str):
-        self.logger.error(message, data=data)
-        return self.protocol.create_response(
-            request_id,
-            error={
-                "code": -32602,
-                "message": message,
-                "data": data,
-            },
-        )
-    
+        expired_keys = [
+            k for k, v in self._cluster_store.items() if v.get("expires_at", 0) < now
+        ]
+
+        for k in expired_keys:
+            del self._cluster_store[k]
