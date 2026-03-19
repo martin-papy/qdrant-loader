@@ -27,6 +27,7 @@ class IntelligenceHandler:
         self.formatters = MCPFormatters()
         self._cluster_store = {}
         self._ttl = 300
+        self._max_sessions = 500
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
@@ -572,7 +573,7 @@ class IntelligenceHandler:
                 )
             )
             # cleanup before add new session
-            self._cleanup_expired_sessions()
+            self._cleanup_sessions()
 
             # Store for expand_cluster call (keep full document object)
             cluster_session_id = str(uuid.uuid4())
@@ -764,6 +765,9 @@ class IntelligenceHandler:
         """Handle cluster expansion request for lazy loading."""
         logger.debug("Handling expand cluster with params", params=params)
 
+        # 0. Cleanup global
+        self._cleanup_sessions()
+
         # 1. Validate cluster_session_id
         cluster_session_id = params.get("cluster_session_id")
         if not cluster_session_id:
@@ -818,13 +822,10 @@ class IntelligenceHandler:
                 },
             )
 
-        # 5. Check TTL
-        if entry.get("expires_at", 0) < time.time():
-            # expired → cleanup
-            try:
-                del self._cluster_store[cluster_session_id]
-            except KeyError:
-                pass
+        # 5. Lazy TTL check
+        now = time.time()
+        if entry.get("expires_at", 0) < now:
+            self._cluster_store.pop(cluster_session_id, None)
 
             return self.protocol.create_response(
                 request_id,
@@ -835,11 +836,10 @@ class IntelligenceHandler:
                 },
             )
 
-        cache = entry.get("data", {})
+        cache = entry.get("data") or {}
+        clusters = cache.get("clusters") or []
 
         # 6. Find cluster
-        clusters = cache.get("clusters", []) or []
-
         cluster = next(
             (
                 c
@@ -860,21 +860,28 @@ class IntelligenceHandler:
             )
 
         # 7. Pagination
-        all_docs = cluster.get("documents", []) or []
+        all_docs = cluster.get("documents") or []
         total = len(all_docs)
 
         slice_docs = all_docs[offset : offset + limit]
         has_more = offset + len(slice_docs) < total
         page = (offset // limit) + 1 if limit > 0 else 1
-
         # 8. Transform documents
         doc_schema_list = self._expand_cluster_docs_to_schema(
             slice_docs, include_metadata
         )
 
         # 9. Extract theme
-        theme = cluster.get("cluster_summary") or ", ".join(
-            (cluster.get("shared_entities") or cluster.get("centroid_topics") or [])[:3]
+        theme = (
+            cluster.get("cluster_summary")
+            or ", ".join(
+                (
+                    cluster.get("shared_entities")
+                    or cluster.get("centroid_topics")
+                    or []
+                )[:3]
+            )
+            or "N/A"
         )
 
         # 10. Build result
@@ -910,18 +917,18 @@ class IntelligenceHandler:
         )
 
     def _format_text_block(self, result: dict) -> str:
-        info = result["cluster_info"]
-        docs = result["documents"]
-        total = info["document_count"]
+        info = result.get("cluster_info", {})
+        docs = result.get("documents", [])
+        total = info.get("document_count", 0)
 
         text = (
-            f"**Cluster: {info['cluster_name']}**\n"
-            f"Theme: {info['cluster_theme']}\n"
+            f"**Cluster: {info.get('cluster_name', 'Unknown')}**\n"
+            f"Theme: {info.get('cluster_theme', 'N/A')}\n"
             f"Documents: {total}\n\n"
         )
 
         for i, d in enumerate(docs[:5], 1):
-            title = d.get("metadata", {}).get("title", d["id"])
+            title = d.get("metadata", {}).get("title", d.get("id", "Unknown"))
             text += f"{i}. {title}\n"
 
         if total > 5:
@@ -929,12 +936,27 @@ class IntelligenceHandler:
 
         return text
 
-    def _cleanup_expired_sessions(self):
+    def _cleanup_sessions(self):
+        """Cleanup expired sessions + enforce max size."""
         now = time.time()
 
+        # 1. Remove expired
         expired_keys = [
             k for k, v in self._cluster_store.items() if v.get("expires_at", 0) < now
         ]
-
         for k in expired_keys:
-            del self._cluster_store[k]
+            self._cluster_store.pop(k, None)
+
+        # 2. Enforce max size (optional but recommended)
+        max_sessions = getattr(self, "_max_sessions", 500)
+
+        if len(self._cluster_store) > max_sessions:
+            # sort by expiry (oldest first)
+            sorted_items = sorted(
+                self._cluster_store.items(), key=lambda x: x[1].get("expires_at", 0)
+            )
+
+            overflow = len(self._cluster_store) - max_sessions
+
+            for k, _ in sorted_items[:overflow]:
+                self._cluster_store.pop(k, None)
