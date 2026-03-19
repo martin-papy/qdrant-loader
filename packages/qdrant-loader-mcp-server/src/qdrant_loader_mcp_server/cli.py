@@ -29,8 +29,8 @@ def _setup_logging(log_level: str, transport: str | None = None) -> None:
     """Set up logging configuration."""
     try:
         # Force-disable console logging in stdio mode to avoid polluting stdout
-        # if transport and transport.lower() == "stdio":
-        #     os.environ["MCP_DISABLE_CONSOLE_LOGGING"] = "true"
+        if transport and transport.lower() == "stdio":
+            os.environ["MCP_DISABLE_CONSOLE_LOGGING"] = "true"
 
         # Check if console logging is disabled via environment variable (after any override)
         disable_console_logging = (
@@ -406,13 +406,64 @@ def cli(
             for sig in (signal.SIGTERM, signal.SIGINT):
                 try:
                     loop.add_signal_handler(sig, signal_handler)
-                except (NotImplementedError, AttributeError):
-                    pass
+                except (NotImplementedError, AttributeError) as e:
+                    try:
+                        logger = LoggingConfig.get_logger(__name__)
+                        logger.debug(
+                            f"Signal handler not supported: {e}; continuing without it."
+                        )
+                    except Exception:
+                        pass
 
             try:
                 loop.run_until_complete(handle_stdio(config_obj, log_level))
+            except Exception:
+                logger = LoggingConfig.get_logger(__name__)
+                logger.error("Error in main", exc_info=True)
+                sys.exit(1)
             finally:
-                loop.close()
+                try:
+                    # Wait for the shutdown task if it exists
+                    if shutdown_task is not None and not shutdown_task.done():
+                        try:
+                            logger = LoggingConfig.get_logger(__name__)
+                            logger.debug("Waiting for shutdown task to complete...")
+                            loop.run_until_complete(
+                                asyncio.wait_for(shutdown_task, timeout=5.0)
+                            )
+                            logger.debug("Shutdown task completed successfully")
+                        except TimeoutError:
+                            logger = LoggingConfig.get_logger(__name__)
+                            logger.warning("Shutdown task timed out, cancelling...")
+                            shutdown_task.cancel()
+                            try:
+                                loop.run_until_complete(shutdown_task)
+                            except asyncio.CancelledError:
+                                logger.debug("Shutdown task cancelled successfully")
+                        except Exception as e:
+                            logger = LoggingConfig.get_logger(__name__)
+                            logger.debug(f"Shutdown task completed with: {e}")
+
+                    # Cancel any remaining tasks
+                    all_tasks = list(asyncio.all_tasks(loop))
+                    cancelled_tasks = []
+                    for task in all_tasks:
+                        if not task.done() and task is not shutdown_task:
+                            task.cancel()
+                            cancelled_tasks.append(task)
+
+                    if cancelled_tasks:
+                        logger = LoggingConfig.get_logger(__name__)
+                        logger.info(
+                            f"Cancelled {len(cancelled_tasks)} remaining tasks for cleanup"
+                        )
+                except Exception:
+                    logger = LoggingConfig.get_logger(__name__)
+                    logger.error("Error during final cleanup", exc_info=True)
+                finally:
+                    loop.close()
+                    logger = LoggingConfig.get_logger(__name__)
+                    logger.info("Server shutdown complete")
         else:
             raise ValueError(f"Unsupported transport: {transport}")
     except Exception:
