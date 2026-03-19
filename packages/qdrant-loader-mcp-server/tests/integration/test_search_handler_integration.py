@@ -33,6 +33,7 @@ def integration_search_handler(real_protocol):
     # mock qdrant client
     mock_search_engine.client = Mock()
     mock_search_engine.client.scroll = AsyncMock()
+    mock_search_engine._search_semaphore = asyncio.Semaphore(10)
 
     from qdrant_loader_mcp_server.config_reranking import MCPReranking
 

@@ -14,6 +14,7 @@ def async_search_engine():
     """Create a mock search engine with async behavior."""
     engine = Mock()
     engine.search = AsyncMock()
+    engine._search_semaphore = asyncio.Semaphore(10)
     return engine
 
 
