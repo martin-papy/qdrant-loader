@@ -656,7 +656,16 @@ class TestCollectSourcesLoopEnvCollision:
 
         # Simulate: user picks confluence, enters "my-wiki" (rejected),
         # then "my-wiki-2" (accepted), then stops.
-        prompts = iter(["my-wiki", "my-wiki-2", "https://x.atlassian.net/wiki", "SP", "u@c.com", "tok"])
+        prompts = iter(
+            [
+                "my-wiki",
+                "my-wiki-2",
+                "https://x.atlassian.net/wiki",
+                "SP",
+                "u@c.com",
+                "tok",
+            ]
+        )
         confirms = iter([False])  # don't add another source
 
         with (

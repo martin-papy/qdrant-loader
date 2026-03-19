@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from sentence_transformers import CrossEncoder
 
+
 class CrossEncoderReranker:
     """Re-rank search results using a cross-encoder model."""
 
