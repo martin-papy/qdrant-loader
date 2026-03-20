@@ -13,6 +13,10 @@ def get_expand_cluster_tool_schema() -> dict[str, Any]:
                     "type": "string",
                     "description": "The ID of the cluster to expand and retrieve all documents",
                 },
+                "cluster_session_id": {
+                    "type": "string",
+                    "description": "UUID representing a clustering session",
+                },
                 "limit": {
                     "type": "integer",
                     "description": "Maximum number of documents to return from cluster (default: 20)",

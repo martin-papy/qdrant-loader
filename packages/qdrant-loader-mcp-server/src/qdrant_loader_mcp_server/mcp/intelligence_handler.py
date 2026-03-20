@@ -948,7 +948,7 @@ class IntelligenceHandler:
             self._cluster_store.pop(k, None)
 
         # 2. Enforce max size (optional but recommended)
-        max_sessions = getattr(self, "_max_sessions", 500)
+        max_sessions = self._max_sessions
 
         if len(self._cluster_store) > max_sessions:
             # sort by expiry (oldest first)
