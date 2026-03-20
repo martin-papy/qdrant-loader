@@ -8,7 +8,7 @@
     color: #0f172a;
   }
   .dh-hero h1 {
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 700;
     letter-spacing: -0.02em;
     margin: 0;
@@ -17,7 +17,7 @@
     max-width: 42rem;
     margin: 1rem auto 0;
     color: #475569;
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
   }
 
   /* cards grid section */
@@ -28,7 +28,7 @@
   .dh-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 5rem;
     max-width: 56rem;
     margin-inline: auto;
   }
@@ -58,7 +58,7 @@
     display: block;
   }
   .dh-card-header h2 {
-    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    font-size: clamp(1.55rem, 2.4vw, 2.25rem);
     font-weight: 700;
     letter-spacing: -0.02em;
     margin: 0.68rem 0 0;
@@ -95,10 +95,11 @@
     display: flex;
     align-items: center;
     gap: 0.44rem;
+    font-size: 1rem;
   }
   .dh-item-left svg {
-    width: 0.74rem;
-    height: 0.74rem;
+    width: 1.5rem;
+    height: 1.5rem;
     flex-shrink: 0;
   }
   .dh-qa-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -106,8 +107,8 @@
   /* tag badges */
   .dh-tag {
     border-radius: 9999px;
-    padding: 0.14rem 0.56rem;
-    font-size: 0.45rem;
+    padding: 0.35rem 1rem;
+    font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.01em;
     white-space: nowrap;
@@ -144,7 +145,7 @@
   }
   .dh-quickactions-inner {
     position: relative;
-    max-width: 62rem;
+    max-width: 70rem;
     margin-inline: auto;
     padding: 0;
     text-align: center;
@@ -168,9 +169,9 @@
     justify-content: center;
     gap: 0.46rem;
     border-radius: 9999px;
-    padding: 0.72rem 1.4rem;
+    padding: 1.25rem 2rem;
     border: 1px solid transparent;
-    font-size: 0.79rem;
+    font-size: 1.125rem;
     font-weight: 500;
     text-decoration: none;
     line-height: 1;
@@ -178,8 +179,8 @@
     white-space: nowrap;
   }
   .dh-qa-btn svg {
-    width: 0.88rem;
-    height: 0.88rem;
+    width: 1.5rem;
+    height: 1.5rem;
     flex-shrink: 0;
   }
   .dh-qa-btn:hover {
@@ -539,22 +540,24 @@
       </a>
       <a href="https://github.com/martin-papy/qdrant-loader" target="_blank" rel="noreferrer"
          class="dh-qa-btn dh-qa-btn-cyan">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M12 3C7.03125 3 3 7.03125 3 12C3 15.975 5.57812 19.35 9.15937 20.5406C9.60937 20.625 9.76875 20.3438 9.76875 20.1V18.7219C7.28437 19.2563 6.75937 17.6531 6.75937 17.6531C6.35625 16.6313 5.775 16.3594 5.775 16.3594C4.96875 15.8062 5.84062 15.8156 5.84062 15.8156C6.73125 15.8813 7.2 16.7344 7.2 16.7344C8.00625 18.1125 9.30937 17.7188 9.80625 17.4844C9.88125 16.9031 10.125 16.5 10.3969 16.2656C8.41875 16.0406 6.3375 15.2625 6.3375 11.7937C6.3375 10.8094 6.68437 10.0031 7.26562 9.36562C7.17187 9.14062 6.8625 8.24062 7.35 7.02187C7.35 7.02187 8.10937 6.77812 9.75 7.88437C10.4719 7.6875 11.2406 7.59375 12 7.59375C12.7594 7.59375 13.5281 7.69688 14.25 7.88437C15.8906 6.76875 16.65 7.02187 16.65 7.02187C17.1375 8.24062 16.8281 9.14062 16.7344 9.36562C17.3156 10.0031 17.6625 10.8094 17.6625 11.7937C17.6625 15.2719 15.5719 16.0312 13.5938 16.2562C13.9406 16.5562 14.25 17.1375 14.25 18.0281V20.1C14.25 20.3438 14.4094 20.6344 14.8594 20.5406C18.4219 19.35 21 15.975 21 12C21 7.03125 16.9688 3 12 3Z" fill="currentColor"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github-icon lucide-github">
+          <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>
         </svg>
         GitHub Repository
       </a>
       <a href="https://pypi.org/project/qdrant-loader/" target="_blank" rel="noreferrer"
          class="dh-qa-btn dh-qa-btn-white">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M19.5 6.75H13.5L11.625 8.625V15.75H9.75V13.875H4.5V19.5H9.75V17.625H13.5L15.375 15.75V8.625H19.5V6.75ZM8.25 18H6V15.375H8.25V18ZM13.875 15H13.125V9.375H13.875V15Z" fill="currentColor"/>
+        <svg width="24" height="24" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#000"
+            d="M24 15a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 15a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm17.94-17.6L25.44 3.37a3 3 0 0 0-2.88 0L6.06 12.41A3 3 0 0 0 4.5 15.03v17.93a3 3 0 0 0 1.56 2.62l16.5 9.03a3 3 0 0 0 2.88 0l16.5-9.03a3 3 0 0 0 1.56-2.62V15.03a3 3 0 0 0-1.56-2.63zM24 42 7.5 32.97V15.03L24 6l16.5 9.03v17.93L24 42z"/>
         </svg>
         QDrant Loader PyPI
       </a>
       <a href="https://pypi.org/project/qdrant-loader-mcp-server/" target="_blank" rel="noreferrer"
          class="dh-qa-btn dh-qa-btn-white">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M4.5 5.25H19.5C19.8978 5.25 20.2794 5.40804 20.5607 5.68934C20.842 5.97064 21 6.35218 21 6.75V17.25C21 17.6478 20.842 18.0294 20.5607 18.3107C20.2794 18.592 19.8978 18.75 19.5 18.75H4.5C4.10218 18.75 3.72064 18.592 3.43934 18.3107C3.15804 18.0294 3 17.6478 3 17.25V6.75C3 6.35218 3.15804 5.97064 3.43934 5.68934C3.72064 5.40804 4.10218 5.25 4.5 5.25ZM7.5 9L10.5 12L7.5 15M12.75 15H16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="24" height="24" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#000"
+            d="M39 6H9a3 3 0 0 0-3 3v30a3 3 0 0 0 3 3h30a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3zM16.5 33a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM9 9h6v18.26a4.5 4.5 0 1 0 3 0V21.62L27 30.62V39H9V9zm30 30h-9v-9c0-.4-.16-.78-.44-1.06L18 17.38V9h6v4.5c0 .4.16.78.44 1.06l3 3A4.5 4.5 0 1 0 30 15c-.67 0-1.33.15-1.94.44L27 12.88V9h12v30zM31.5 21a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
         </svg>
         MCP Server PyPI
       </a>
