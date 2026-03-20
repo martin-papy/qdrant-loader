@@ -102,17 +102,19 @@
 
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
+            --primary-color: #4EDDFD;
+            --secondary-color: #1C1C1C;
             --success-color: #48bb78;
             --danger-color: #f56565;
             --warning-color: #ed8936;
             --info-color: #4299e1;
+            --suface-color: ;
         }
 
         html {
             scroll-behavior: smooth;
             scroll-padding-top: 6rem; /* Account for sticky header height */
+            /* font-size: 62.5%; */
         }
 
         body {
@@ -120,26 +122,56 @@
             line-height: 1.6;
         }
 
+        .header-top  {
+            padding: 32px 88px;
+        }
+
+        .container-custom {
+            width: 100%;
+            max-width: 1913px;
+            margin: 0 auto;
+            /* padding: 0 48px; */
+            padding: 0 clamp(1rem, 5vw, 3rem);
+        }
+
+        a.nav-link-custom {
+            color: #111;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        a.nav-link-custom:hover {
+            color: var(--primary-color);
+        }
+
+        .view-doc-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--secondary-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .view-doc-link:hover {
+            color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .view-doc-link:hover .view-doc-icon {
+            filter: brightness(0) saturate(100%) invert(83%) sepia(10%) saturate(5608%) hue-rotate(159deg) brightness(101%) contrast(98%);
+            transition: filter 0.2s ease;
+        }
+
         .gradient-bg {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
         }
-
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 4rem 0;
-        }
-
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
+        
+        .title-section {
+           font-size: clamp(2rem, 3.5vw, 3rem);
+           font-weight: 700;
         }
 
         .badge-custom {
@@ -192,11 +224,6 @@
             margin-bottom: 1rem;
         }
 
-        .footer {
-            background-color: #2d3748;
-            color: white;
-            margin-top: 4rem;
-        }
 
         .btn-primary {
             background-color: var(--primary-color);
@@ -209,7 +236,7 @@
         }
 
         .text-primary {
-            color: var(--primary-color) !important;
+            color: var(--secondary-color) !important;
         }
 
         @media (max-width: 768px) {
@@ -487,6 +514,118 @@
             line-height: 1.6;
         }
 
+        /* Footer section */
+        .footer-section {
+            padding: 7.5rem 2.5rem 2.5rem;
+        }
+
+        .doc-section-title {
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .doc-description {
+            max-width: 600px;
+            padding-left: 92px;
+            font-size: 1.125rem;
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        .project-support {
+            text-align: center;
+            color: #000;
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+        }
+
+        .support-text {
+            font-size: clamp(0.6rem, 5vw, 1.25rem);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .support-title {
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .support-link {
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem; 
+            text-decoration: none;
+            color: #000;
+        }
+
+        .support-link .indicator {
+            width: 0.9375rem; 
+            height: 0.9375rem;
+        }
+
+        .footer-content {
+            font-family: "Inter", sans-serif;
+            color: #000;
+        }
+
+        .footer-copy {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .footer-analytics {
+            font-size: 0.875rem;
+            font-weight: 400;
+            opacity: 0.75;
+            margin-bottom: 0;
+        }
+
+        .social-links .social-link {
+            font-size: 1.25rem; 
+            color: #8D8D8D;
+            transition: color 0.2s;
+        }
+
+        #build-info {
+            font-size: 1rem;
+            font-weight: 400;
+            white-space: nowrap;
+            color: #8D8D8D;
+            margin-left: 1rem;
+        }
+
+        #build-info::after {
+            content: ""; 
+            display: inline-block;
+            width: 2px;      
+            height: 24px;          
+            background-color: #8D8D8D;
+            margin-left: 0.5rem; 
+            vertical-align: middle; 
+        }
+
+        .vertical-bar {
+            width: 4px; 
+            height: 24px;       
+            background-color: #8D8D8D;
+        }
+
+        @media (max-width: 767.98px) {
+            .footer-section {
+                padding: 4rem 1.5rem 2rem;
+            }
+            .doc-description {
+                padding-left: 20px;
+                 font-size: 1rem;
+            }
+        }       
+
         /* Responsive improvements */
         @media (max-width: 991.98px) {
             .toc {
@@ -568,61 +707,69 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
-        <div class="container">
-            <a class="navbar-brand text-primary d-flex align-items-center" href="{{ base_url }}">
-                <img src="{{ base_url }}assets/logos/qdrant-loader-logo-horizontal.svg" alt="QDrant Loader" height="60"
-                    class="me-2">
-            </a>
+    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
+            <div class="container d-flex align-items-center justify-content-between">
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+                <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
+                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60">
+                </a>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ base_url }}#overview">
-                            <i class="bi bi-house me-1"></i>Overview
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ base_url }}docs/">
-                            <i class="bi bi-book me-1"></i>Documentation
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ base_url }}coverage/">
-                            <i class="bi bi-graph-up me-1"></i>Coverage
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/martin-papy/qdrant-loader" target="_blank">
-                            <i class="bi bi-github me-1"></i>GitHub
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="pypiDropdown" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-box me-1"></i>PyPI
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
-                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/" target="_blank">
-                                    <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader
-                                </a></li>
-                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-mcp-server/"
-                                    target="_blank">
-                                    <i class="bi bi-plug me-2"></i>MCP Server
-                                </a></li>
-                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-core/" target="_blank">
-                                    <i class="bi bi-cpu me-2"></i>Core Library
-                                </a></li>
-                        </ul>
-                    </li>
-                </ul>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto align-items-lg-center align-items-start flex-column flex-lg-row">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom " href="{{ base_url }}#overview">Overview</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" href="{{ base_url }}docs/">Documentation</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" href="{{ base_url }}coverage/">Coverage</a>
+                        </li>
+                        <li class="nav-item d-flex align-items-center">
+                            <a class="nav-link nav-link-custom d-flex align-items-center gap-2"
+                                href="https://github.com/martin-papy/qdrant-loader" target="_blank">
+                                <img src="{{ base_url }}assets/icons/github.svg" width="20" alt="GitHub">
+                                GitHub
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link nav-link-custom dropdown-toggle d-flex align-items-center gap-2" href="#"
+                                id="pypiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="{{ base_url }}assets/icons/bag-pypi.svg" width="20" alt="PyPI"> PyPI
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/"
+                                        target="_blank">
+                                        <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-mcp-server/"
+                                        target="_blank">
+                                        <i class="bi bi-plug me-2"></i>MCP Server
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-core/"
+                                        target="_blank">
+                                        <i class="bi bi-cpu me-2"></i>Core Library
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    <div class="container-custom">
+    <!-- Navigation -->
+          
 
     <!-- Main Content -->
     <main>
@@ -630,82 +777,193 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="text-white mb-3">QDrant Loader</h5>
-                    <p class="text-light">Enterprise-ready vector database toolkit for building searchable knowledge
-                        bases from multiple data sources.</p>
+    <footer class="footer-section">
+        <div class="row">
+            <div class="col-md-6 px-0">
+                <div class="mb-3">
+                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="logo">
                 </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-6">
-                            <h6 class="text-white mb-3">Quick Links</h6>
-                            <ul class="list-unstyled">
-                                <li><a href="{{ base_url }}docs/"
-                                        class="text-light text-decoration-none">Documentation</a></li>
-                                <li><a href="{{ base_url }}coverage/" class="text-light text-decoration-none">Test
-                                        Coverage</a></li>
+                <p class="doc-description">
+                    Enterprise-ready vector database toolkit for building searchable knowledge bases
+                    from multiple data sources.
+                </p>
+            </div>
+
+            <div class="doc-links col-md-6">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="doc-section p-4">
+                            <p class="doc-section-title fw-bold mb-3 d-flex align-items-center">
+                                Quick Links
+                            </p>
+                            <ul class="list-unstyled m-0 d-flex flex-column gap-3">
+
                                 <li>
-                                    <a id="feedback-link" href="#" target="_blank" class="text-light text-decoration-none">
-                                        <i class="bi bi-chat-dots me-1"></i>Was this helpful? Give feedback
+                                    <a href="#"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Documentation</span>
                                     </a>
                                 </li>
-                                <li><a href="{{ base_url }}privacy-policy.html" class="text-light text-decoration-none">
-                                        <i class="bi bi-shield-lock me-1"></i>Privacy Policy</a>
-                                </li>
+
                                 <li>
-                                    <a class="bi bi-gear me-1 clickio-cmp-settings-text clickio-cmp-settings-display text-light text-decoration-none"
-                                        style="display:none;" href="#">
-                                        Your Privacy Choices
+                                    <a href="#"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Test Coverage </span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a href="#" class="d-flex align-items-centertext-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+
+                                        <span>Was this helpful? Give feedback</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Privacy Policy</span>
+                                    </a>
+                                </li>
+
                             </ul>
-                        </div>
-                        <div class="col-6">
-                            <h6 class="text-white mb-3">Packages & Code</h6>
-                            <ul class="list-unstyled">
-                                <li><a href="https://github.com/martin-papy/qdrant-loader"
-                                        class="text-light text-decoration-none">GitHub Repository</a></li>
-                                <li><a href="https://pypi.org/project/qdrant-loader/"
-                                        class="text-light text-decoration-none">QDrant Loader PyPI</a></li>
-                                <li><a href="https://pypi.org/project/qdrant-loader-mcp-server/"
-                                        class="text-light text-decoration-none">MCP Server PyPI</a></li>
-                                <li><a href="https://pypi.org/project/qdrant-loader-core/"
-                                        class="text-light text-decoration-none">Core Library PyPI</a></li>
-                            </ul>
+
                         </div>
                     </div>
+
+                    <div class="col-md-6">
+                        <div class="p-4 doc-section">
+                            <p class="doc-section-title fw-bold mb-3 d-flex align-items-center">
+                                Packages & Code
+                            </p>
+                            <ul class="list-unstyled m-0 d-flex flex-column gap-3">
+
+                                <li>
+                                    <a href="#"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>GitHub Repository</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="#"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+
+
+                                        <span>Qdrant Loader PyPI</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="d-flex align-items-centertext-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+
+                                        <span>MCP Server PyPI</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Core Library PyPI</span>
+                                    </a>
+                                </li>
+
+                            </ul>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            <hr class="my-4 border-light">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <p class="mb-0 text-light">&copy; 2025 QDrant Loader. Built with ❤️ for the AI development
-                        community.</p>
-                    <p class="mb-0 text-light small opacity-75">
-                        <i class="bi bi-info-circle me-1"></i>
-                        This site uses Google Analytics to improve user experience.
-                        <a href="{{ base_url }}privacy-policy.html" class="text-light">Learn more</a>
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="d-flex justify-content-md-end align-items-center mb-2">
-                        <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="text-light me-3"
-                            title="Connect with Martin Papy on LinkedIn">
-                            <i class="bi bi-linkedin"></i>
-                        </a>
-                        <a href="https://github.com/martin-papy" target="_blank" class="text-light"
-                            title="Follow Martin Papy on GitHub">
-                            <i class="bi bi-github"></i>
-                        </a>
-                    </div>
-                    <p class="mb-0 text-light small text-nowrap" id="build-info">Loading build information...</p>
+        </div>
+        <div class="project-support d-flex flex-column gap-2 align-items-center text-center text-black py-4">
+            <p class="support-text">This project is proudly supported and powered by CBTW</p> 
+            <h1 class="support-title text-uppercase">COLLABORATION BETTER THE WOLRD</h1> 
+            <a href="#" class="support-link d-flex align-items-center gap-2 text-decoration-none text-dark">                  
+                <div class="indicator rounded-circle bg-warning"></div>
+                <span>www.cbtw.tech</span> 
+            </a>
+        </div>
+        <hr />
+        <div class="footer-content row align-items-center">
+            <div class="col-md-8">
+                <p class="footer-copy mb-0 text-black">&copy; 2025 QDrant Loader. Built with ❤️ for the AI development
+                    community.</p>
+                <p class="footer-analytic mb-0 text-black small opacity-75">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This site uses Google Analytics to improve user experience.
+                    <a href="{{ base_url }}privacy-policy.html" class="text-black">Learn more</a>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="social-links d-flex justify-content-md-end align-items-center mb-2 gap-2">
+                    <p class="mb-0 ml-2 text-black small text-nowrap" id="build-info">Loading build information...</p>
+                    <div class="vertical-bar"></div>
+                    <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="social-link me-3"
+                        title="Connect with Martin Papy on LinkedIn">
+                        <i class="bi bi-linkedin"></i>
+                    </a>
+                    <a href="https://github.com/martin-papy" target="_blank" class="social-link "
+                        title="Follow Martin Papy on GitHub">
+                        <i class="bi bi-github"></i>
+                    </a>
                 </div>
             </div>
         </div>
     </footer>
+</div>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
