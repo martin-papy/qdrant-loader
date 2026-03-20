@@ -14,6 +14,44 @@ from spacy.tokens import Doc
 logger = logging.getLogger(__name__)
 
 
+def is_meaningful_text(text: str) -> bool:
+    """Check if text contains meaningful content (letters or digits).
+
+    Returns False for text that only contains:
+    - Punctuation marks: ., #, @, |, -, _, etc.
+    - Whitespace characters
+    - Special symbols without semantic meaning (---, ..., |||, etc.)
+
+    This is used to filter both entities and tokens in NLP processing,
+    especially important for Excel/table processing where markdown tables
+    generate excessive pipe characters, commas, and spaces.
+
+    Args:
+        text: Text string to check
+
+    Returns:
+        True if text contains at least one letter or digit, False otherwise
+
+    Example:
+        >>> is_meaningful_text("Apple")
+        True
+        >>> is_meaningful_text("#")
+        False
+        >>> is_meaningful_text("|")
+        False
+        >>> is_meaningful_text("...")
+        False
+        >>> is_meaningful_text("---")
+        False
+        >>> is_meaningful_text("Apple123")
+        True
+        >>> is_meaningful_text("COVID-19")  # Has alphanumeric
+        True
+    """
+    # Check if text contains at least one alphanumeric character
+    return any(c.isalnum() for c in text)
+
+
 @dataclass
 class SemanticAnalysisResult:
     """Container for semantic analysis results."""
@@ -120,7 +158,12 @@ class SemanticAnalyzer:
         return result
 
     def _extract_entities(self, doc: Doc) -> list[dict[str, Any]]:
-        """Extract named entities with linking.
+        """Extract named entities with linking, filtering garbage entities.
+
+        Filters out entities that:
+        - Only contain punctuation/symbols (., #, |, etc.)
+        - Don't have any alphanumeric characters
+        - Are just whitespace
 
         Args:
             doc: spaCy document
@@ -130,6 +173,10 @@ class SemanticAnalyzer:
         """
         entities = []
         for ent in doc.ents:
+            # Filter entities that only contain punctuation/symbols
+            if not is_meaningful_text(ent.text):
+                continue
+
             # Get entity context
             start_sent = ent.sent.start
             end_sent = ent.sent.end
@@ -138,17 +185,19 @@ class SemanticAnalyzer:
             # Get entity description
             description = self.nlp.vocab.strings[ent.label_]
 
-            # Get related entities
+            # Get related entities (also filter meaningless ones)
             related = []
             for token in ent.sent:
                 if token.ent_type_ and token.text != ent.text:
-                    related.append(
-                        {
-                            "text": token.text,
-                            "type": token.ent_type_,
-                            "relation": token.dep_,
-                        }
-                    )
+                    # Only add related entities with meaningful text
+                    if is_meaningful_text(token.text):
+                        related.append(
+                            {
+                                "text": token.text,
+                                "type": token.ent_type_,
+                                "relation": token.dep_,
+                            }
+                        )
 
             entities.append(
                 {
@@ -165,16 +214,32 @@ class SemanticAnalyzer:
         return entities
 
     def _get_pos_tags(self, doc: Doc) -> list[dict[str, Any]]:
-        """Get part-of-speech tags with detailed information.
+        """Get part-of-speech tags with detailed information, filtering noise tokens.
+
+        Filters out multiple types of noise:
+        - Whitespace tokens (is_space=True)
+        - Punctuation tokens (is_punct=True)
+        - Symbol-only tokens without alphanumeric content (e.g., ---, ..., |||)
+
+        This is especially important for Excel tables and structured data.
 
         Args:
             doc: spaCy document
 
         Returns:
-            List of POS tag dictionaries
+            List of POS tag dictionaries (excluding spaces, punctuation, and symbols)
         """
         pos_tags = []
         for token in doc:
+            # Skip whitespace and punctuation - they pollute metadata
+            if token.is_space or token.is_punct:
+                continue
+
+            # Also skip tokens with no meaningful content (e.g., ---, ...)
+            # This catches edge cases where spaCy doesn't mark as punct
+            if not is_meaningful_text(token.text):
+                continue
+
             pos_tags.append(
                 {
                     "text": token.text,
@@ -182,8 +247,6 @@ class SemanticAnalyzer:
                     "tag": token.tag_,
                     "lemma": token.lemma_,
                     "is_stop": token.is_stop,
-                    "is_punct": token.is_punct,
-                    "is_space": token.is_space,
                 }
             )
         return pos_tags
