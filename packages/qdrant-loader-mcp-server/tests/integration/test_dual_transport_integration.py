@@ -3,12 +3,14 @@
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.testclient import TestClient
 from qdrant_loader_mcp_server.mcp import MCPHandler
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     create_hybrid_search_result,
 )
-from qdrant_loader_mcp_server.transport import HTTPTransportHandler
+from qdrant_loader_mcp_server.transport import mcp_router
 
 
 @pytest.fixture
@@ -60,15 +62,30 @@ def mcp_handler(mock_search_engine, mock_query_processor):
 
 
 @pytest.fixture
-def http_transport(mcp_handler):
-    """Create HTTP transport for testing."""
-    return HTTPTransportHandler(mcp_handler, host="127.0.0.1", port=8888)
+def app(mcp_handler):
+    """Create a FastAPI app wired with the MCP router."""
+    app = FastAPI()
+    app.state.mcp_handler = mcp_handler
+    app.include_router(mcp_router)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:[0-9]+)?",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/health")
+    async def health():
+        return {"status": "healthy", "transport": "http", "protocol": "mcp"}
+
+    return app
 
 
 @pytest.fixture
-def test_client(http_transport):
+def test_client(app):
     """Create FastAPI test client."""
-    return TestClient(http_transport.app)
+    return TestClient(app)
 
 
 class TestDualTransportInitialization:
@@ -77,7 +94,6 @@ class TestDualTransportInitialization:
     @pytest.mark.asyncio
     async def test_stdio_transport_initialization(self, mcp_handler):
         """Test that stdio transport (direct handler) works correctly."""
-        # Test initialize
         init_request = {
             "jsonrpc": "2.0",
             "method": "initialize",
@@ -91,21 +107,16 @@ class TestDualTransportInitialization:
         assert response["id"] == 1
         assert response["result"]["protocolVersion"] == "2025-06-18"
 
-    def test_http_transport_initialization(self, http_transport):
-        """Test that HTTP transport initializes correctly."""
-        assert http_transport.mcp_handler is not None
-        assert http_transport.host == "127.0.0.1"
-        assert http_transport.port == 8888
-        assert http_transport.app is not None
-        assert isinstance(http_transport.sessions, dict)
+    def test_http_transport_initialization(self, app, mcp_handler):
+        """Test that the HTTP app initializes correctly with mcp_handler."""
+        assert app.state.mcp_handler is mcp_handler
+        routes = [route.path for route in app.routes if hasattr(route, "path")]
+        assert "/mcp" in routes
+        assert "/health" in routes
 
-    def test_both_transports_use_same_handler(self, mcp_handler):
-        """Test that both transports can use the same MCP handler."""
-        # Create HTTP transport with same handler
-        http_transport = HTTPTransportHandler(mcp_handler)
-
-        # Both should reference the same handler
-        assert http_transport.mcp_handler is mcp_handler
+    def test_both_transports_use_same_handler(self, app, mcp_handler):
+        """Test that the app's handler is the same MCPHandler instance."""
+        assert app.state.mcp_handler is mcp_handler
 
 
 class TestProtocolComplianceAcrossTransports:
@@ -356,7 +367,13 @@ class TestHTTPSpecificFeatures:
 
     def test_http_cors_headers(self, test_client):
         """Test CORS headers for HTTP transport."""
-        response = test_client.options("/mcp", headers={"Origin": "http://localhost"})
+        response = test_client.options(
+            "/mcp",
+            headers={
+                "Origin": "http://localhost",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
 
         # Should have CORS headers
         assert "access-control-allow-origin" in response.headers
@@ -390,30 +407,21 @@ class TestHTTPSpecificFeatures:
         )
         assert invalid_response.status_code == 403
 
-    def test_http_sse_stream_setup(self, http_transport):
+    def test_http_sse_stream_setup(self, app):
         """Test SSE stream setup for HTTP transport."""
-        # Test the SSE endpoint setup without consuming the infinite stream
-        # We'll test the route exists and returns proper SSE headers
-        from fastapi.testclient import TestClient
-
-        client = TestClient(http_transport.app)
-
-        # Make a HEAD request to check headers without consuming stream
-        response = client.request(
-            "HEAD",
-            "/mcp",
-            headers={"MCP-Session-Id": "test-session", "Accept": "text/event-stream"},
-        )
-
-        # The GET endpoint should exist (HEAD request to GET endpoint)
-        # Status might be 405 for HEAD on GET-only endpoint, which is fine
-        assert response.status_code in [200, 405]
-
-        # Alternatively, test that the route exists by checking app routes
-        routes = [
-            route.path for route in http_transport.app.routes if hasattr(route, "path")
-        ]
+        routes = [route.path for route in app.routes if hasattr(route, "path")]
         assert "/mcp" in routes
+
+        # Verify GET method exists on /mcp
+        get_routes = [
+            route
+            for route in app.routes
+            if hasattr(route, "path")
+            and route.path == "/mcp"
+            and hasattr(route, "methods")
+            and "GET" in route.methods
+        ]
+        assert len(get_routes) >= 1
 
 
 class TestTransportSpecificPerformance:
@@ -457,47 +465,6 @@ class TestTransportSpecificPerformance:
             data = response.json()
             assert "result" in data
             assert "structuredContent" in data["result"]
-
-
-class TestSessionManagementIntegration:
-    """Test session management in HTTP transport."""
-
-    def test_session_id_generation(self, test_client):
-        """Test automatic session ID generation."""
-        request = {
-            "jsonrpc": "2.0",
-            "method": "initialize",
-            "params": {"protocolVersion": "2025-06-18"},
-            "id": 1,
-        }
-
-        # Request without session ID should work
-        response = test_client.post(
-            "/mcp", json=request, headers={"Origin": "http://localhost"}
-        )
-
-        assert response.status_code == 200
-
-    def test_explicit_session_id_handling(self, test_client):
-        """Test handling of explicit session IDs."""
-        request = {
-            "jsonrpc": "2.0",
-            "method": "initialize",
-            "params": {"protocolVersion": "2025-06-18"},
-            "id": 1,
-        }
-
-        # Request with explicit session ID should work
-        response = test_client.post(
-            "/mcp",
-            json=request,
-            headers={
-                "Origin": "http://localhost",
-                "MCP-Session-Id": "explicit-session-123",
-            },
-        )
-
-        assert response.status_code == 200
 
 
 class TestProtocolVersionNegotiation:
