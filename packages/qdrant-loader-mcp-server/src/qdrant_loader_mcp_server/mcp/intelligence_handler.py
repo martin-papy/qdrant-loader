@@ -1,5 +1,6 @@
 """Cross-document intelligence operations handler for MCP server."""
 
+import asyncio
 import time
 import uuid
 from typing import Any
@@ -28,6 +29,7 @@ class IntelligenceHandler:
         self._cluster_store = {}
         self._ttl = 300
         self._max_sessions = 500
+        self._lock = asyncio.Lock()
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
@@ -766,7 +768,8 @@ class IntelligenceHandler:
         logger.debug("Handling expand cluster with params", params=params)
 
         # 0. Cleanup global
-        self._cleanup_sessions()
+        if len(self._cluster_store) > self._max_sessions:
+            await self._cleanup_sessions()
 
         # 1. Validate cluster_session_id
         cluster_session_id = params.get("cluster_session_id")
@@ -809,37 +812,30 @@ class IntelligenceHandler:
 
         include_metadata = params.get("include_metadata", True)
 
-        # 4. Get cache by cluster_session_id
-        entry = self._cluster_store.get(cluster_session_id)
-
-        if not entry:
-            return self.protocol.create_response(
-                request_id,
-                error={
-                    "code": -32604,
-                    "message": "Cluster not found",
-                    "data": "Invalid or expired cluster_session_id",
-                },
-            )
-
-        # 5. Lazy TTL check
+        # 4. Get cache (LOCK)
         now = time.time()
-        if entry.get("expires_at", 0) < now:
-            self._cluster_store.pop(cluster_session_id, None)
 
+        async with self._lock:
+            entry = self._cluster_store.get(cluster_session_id)
+
+            if entry and entry.get("expires_at", 0) < now:
+                self._cluster_store.pop(cluster_session_id, None)
+                entry = None
+
+        if entry is None:
             return self.protocol.create_response(
                 request_id,
                 error={
                     "code": -32604,
-                    "message": "Cluster expired",
-                    "data": "cluster_session_id has expired",
+                    "message": "Session not found or expired",
+                    "data": f"Cluster session '{cluster_session_id}' not found or expired",
                 },
             )
 
         cache = entry.get("data") or {}
         clusters = cache.get("clusters") or []
 
-        # 6. Find cluster
+        # 5. Find cluster
         cluster = next(
             (
                 c
@@ -859,19 +855,19 @@ class IntelligenceHandler:
                 },
             )
 
-        # 7. Pagination
+        # 6. Pagination
         all_docs = cluster.get("documents") or []
         total = len(all_docs)
 
         slice_docs = all_docs[offset : offset + limit]
         has_more = offset + len(slice_docs) < total
         page = (offset // limit) + 1 if limit > 0 else 1
-        # 8. Transform documents
+        # 7. Transform documents
         doc_schema_list = self._expand_cluster_docs_to_schema(
             slice_docs, include_metadata
         )
 
-        # 9. Extract theme
+        # 8. Extract theme
         theme = (
             cluster.get("cluster_summary")
             or ", ".join(
@@ -884,7 +880,7 @@ class IntelligenceHandler:
             or "N/A"
         )
 
-        # 10. Build result
+        # 9. Build result
         result = {
             "cluster_id": cluster_id,
             "cluster_info": {
@@ -901,7 +897,7 @@ class IntelligenceHandler:
             },
         }
 
-        # 11. Return response
+        # 10. Return response
         return self.protocol.create_response(
             request_id,
             result={
@@ -936,27 +932,23 @@ class IntelligenceHandler:
 
         return text
 
-    def _cleanup_sessions(self):
-        """Cleanup expired sessions + enforce max size."""
+    async def _cleanup_sessions(self):
         now = time.time()
 
-        # 1. Remove expired
-        expired_keys = [
-            k for k, v in self._cluster_store.items() if v.get("expires_at", 0) < now
-        ]
-        for k in expired_keys:
-            self._cluster_store.pop(k, None)
+        async with self._lock:
+            expired_keys = [
+                k
+                for k, v in self._cluster_store.items()
+                if v.get("expires_at", 0) < now
+            ]
 
-        # 2. Enforce max size (optional but recommended)
-        max_sessions = self._max_sessions
-
-        if len(self._cluster_store) > max_sessions:
-            # sort by expiry (oldest first)
-            sorted_items = sorted(
-                self._cluster_store.items(), key=lambda x: x[1].get("expires_at", 0)
-            )
-
-            overflow = len(self._cluster_store) - max_sessions
-
-            for k, _ in sorted_items[:overflow]:
+            for k in expired_keys:
                 self._cluster_store.pop(k, None)
+
+            if len(self._cluster_store) > self._max_sessions:
+                sorted_items = sorted(
+                    self._cluster_store.items(), key=lambda x: x[1].get("expires_at", 0)
+                )
+                overflow = len(self._cluster_store) - self._max_sessions
+                for k, _ in sorted_items[:overflow]:
+                    self._cluster_store.pop(k, None)

@@ -35,7 +35,7 @@ def get_expand_cluster_tool_schema() -> dict[str, Any]:
                     "default": True,
                 },
             },
-            "required": ["cluster_id"],
+            "required": ["cluster_id", "cluster_session_id"],
             "additionalProperties": False,
         },
         "outputSchema": {
