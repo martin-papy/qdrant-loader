@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 import yaml
 from qdrant_loader.cli.commands.setup_cmd import (
     _collect_git_config,
@@ -953,6 +955,10 @@ class TestDuplicateSourceNameRejection:
 class TestEnvFilePermissions:
     """Tests for .env file permission hardening."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Unix-style permissions not supported on Windows",
+    )
     def test_env_file_permissions_restricted(self, tmp_path: Path) -> None:
         import os
         import stat
