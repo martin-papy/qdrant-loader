@@ -120,11 +120,16 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
 
+      # Skip secret injection for fork PRs and Dependabot — unit tests use mocks (no secrets needed).
       - name: Create .env.test file for loader
+        if: >-
+          github.event_name == 'push' ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+          github.actor != 'dependabot[bot]')
         run: |
           cd packages/qdrant-loader
           cp tests/.env.test.template tests/.env.test
-          
+
           # Check if required secrets are set
           if [ -z "${{ secrets.QDRANT_URL }}" ]; then
             echo "Error: QDRANT_URL secret is not set"
@@ -142,14 +147,14 @@ jobs:
             echo "Error: OPENAI_API_KEY secret is not set"
             exit 1
           fi
-          
+
           # Replace environment variables with proper escaping
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
           sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
           sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=:memory:|g" tests/.env.test
-          
+
           # Optional secrets - only replace if they exist
           if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
             sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
@@ -181,21 +186,25 @@ jobs:
           if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
             sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
           fi
-          
+
           echo "Created .env.test file successfully"
           echo "Contents (with secrets masked):"
           sed 's/=.*/=***/' tests/.env.test
 
       - name: Create config.test.yaml file for loader
+        if: >-
+          github.event_name == 'push' ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+          github.actor != 'dependabot[bot]')
         run: |
           cd packages/qdrant-loader
           cp tests/config.test.template.yaml tests/config.test.yaml
-          
+
           # Replace environment variables in YAML config
           sed -i "s|\${QDRANT_URL}|${{ secrets.QDRANT_URL }}|g" tests/config.test.yaml
           sed -i "s|\${QDRANT_API_KEY}|${{ secrets.QDRANT_API_KEY }}|g" tests/config.test.yaml
           sed -i "s|\${QDRANT_COLLECTION_NAME}|${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/config.test.yaml
-          
+
           # Optional environment variables - only replace if they exist
           if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
             sed -i "s|\${REPO_TOKEN}|${{ secrets.REPO_TOKEN }}|g" tests/config.test.yaml
@@ -227,7 +236,7 @@ jobs:
           if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
             sed -i "s|\${JIRA_PROJECT_KEY}|${{ secrets.JIRA_PROJECT_KEY }}|g" tests/config.test.yaml
           fi
-          
+
           echo "Created config.test.yaml file successfully"
           echo "YAML config structure:"
           head -20 tests/config.test.yaml
@@ -240,6 +249,8 @@ jobs:
       - name: Run loader integration tests
         if: |
           (github.event_name == 'pull_request' &&
+            github.event.pull_request.head.repo.full_name == github.repository &&
+            github.actor != 'dependabot[bot]' &&
           (github.event.pull_request.base.ref == 'develop' ||
             github.event.pull_request.base.ref == 'main')) ||
           (github.event_name == 'push' &&
@@ -306,11 +317,16 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
 
+      # Skip secret injection for fork PRs and Dependabot — unit tests use mocks (no secrets needed).
       - name: Create .env.test file for MCP server
+        if: >-
+          github.event_name == 'push' ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+          github.actor != 'dependabot[bot]')
         run: |
           cd packages/qdrant-loader-mcp-server
           cp tests/.env.test.template tests/.env.test
-          
+
           # Check if required secrets are set
           if [ -z "${{ secrets.QDRANT_URL }}" ]; then
             echo "Error: QDRANT_URL secret is not set"
@@ -328,13 +344,13 @@ jobs:
             echo "Error: OPENAI_API_KEY secret is not set"
             exit 1
           fi
-          
+
           # Replace environment variables with secrets for integration tests
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
           sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
-          
+
           echo "Created .env.test file for MCP server successfully"
           echo "Contents (with secrets masked):"
           sed 's/=.*/=***/' tests/.env.test
@@ -347,6 +363,8 @@ jobs:
       - name: Run MCP server integration tests
         if: |
           (github.event_name == 'pull_request' &&
+            github.event.pull_request.head.repo.full_name == github.repository &&
+            github.actor != 'dependabot[bot]' &&
           (github.event.pull_request.base.ref == 'develop' ||
             github.event.pull_request.base.ref == 'main')) ||
           (github.event_name == 'push' &&
