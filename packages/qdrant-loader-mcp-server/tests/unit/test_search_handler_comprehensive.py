@@ -714,7 +714,7 @@ class TestHandleExpandChunkContext:
         assert "window_size" in result["error"]["data"]
 
     @pytest.mark.asyncio
-    async def expand_chunk_context_sorted_correctly(self, search_handler):
+    async def test_expand_chunk_context_sorted_correctly(self, search_handler):
         """Should sort chunks by metadata.chunk_index."""
 
         params = {
