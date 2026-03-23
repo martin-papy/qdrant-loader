@@ -112,7 +112,6 @@
             --warning-color: #ed8936;
             --info-color: #4299e1;
             --text-color-placeholder-text: #8D8D8D;
-            --suface-color: ;
         }
 
         html {
@@ -579,11 +578,6 @@
             height: 0.9375rem;
         }
 
-        .footer-content {
-            font-family: "Inter", sans-serif;
-            color: #000;
-        }
-
         .footer-copy {
             font-size: 1rem;
             font-weight: 700;
@@ -810,7 +804,7 @@
                             <ul class="list-unstyled m-0 d-flex flex-column gap-3">
 
                                 <li>
-                                    <a href="#"
+                                    <a href="{{ base_url }}docs/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -824,7 +818,7 @@
                                 </li>
 
                                 <li>
-                                    <a href="#"
+                                    <a href="{{ base_url }}coverage/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -850,7 +844,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#"
+                                    <a href="{{ base_url }}privacy-policy.html"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -876,7 +870,7 @@
                             <ul class="list-unstyled m-0 d-flex flex-column gap-3">
 
                                 <li>
-                                    <a href="#"
+                                    <a href="https://github.com/martin-papy/qdrant-loader"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -890,7 +884,7 @@
                                 </li>
 
                                 <li>
-                                    <a href="#"
+                                    <a href="https://pypi.org/project/qdrant-loader/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -905,7 +899,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#" class="d-flex align-items-centertext-decoration-none view-doc-link">
+                                    <a href="https://pypi.org/project/qdrant-loader-mcp-server/" class="d-flex align-items-centertext-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                             stroke-linecap="round" stroke-linejoin="round"
@@ -918,7 +912,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="#"
+                                    <a href="https://pypi.org/project/qdrant-loader-core/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -960,7 +954,8 @@
             </div>
             <div class="col-md-4 text-md-end">
                 <div class="social-links d-flex justify-content-md-end align-items-center mb-2 gap-2">
-                    <p class="mb-0 ml-2 text-black small text-nowrap" id="build-info">Loading build information...</p>
+                    <p class="mb-0 ml-2 small text-nowrap" id="build-info">Loading build information...</p>
+                    <div class="vertical-bar"></div>
                     <a href="https://github.com/martin-papy" target="_blank" class="social-link "
                         title="Follow Martin Papy on GitHub">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
