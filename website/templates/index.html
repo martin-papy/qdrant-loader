@@ -556,19 +556,6 @@
         margin-top: 0.2rem;
     }
 
-    @media (max-width: 900px) {
-        .install-container h2 {
-            font-size: 2.35rem;
-        }
-
-        .install-grid {
-            gap: 1.2rem;
-        }
-
-        .install-card h3 {
-            font-size: 1.95rem;
-        }
-    }
 
     @media (max-width: 640px) {
         .section-install {
@@ -585,7 +572,8 @@
         }
 
         .install-grid {
-            grid-template-columns: 1fr;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
             margin-bottom: 2rem;
         }
@@ -843,6 +831,19 @@
         .community-card-light h3 {
             font-size: 1.8rem;
         }
+
+        .install-container h2 {
+            font-size: 2.35rem;
+        }
+
+        .install-grid {
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
+        }
+
+        .install-card h3 {
+            font-size: 1.95rem;
+        }
     }
 
     @media (max-width: 560px) {
@@ -975,7 +976,7 @@
 </section>
 
 <!-- Getting Started Section -->
-<section class="section-getting-started">
+<section class="section-getting-started" id="overview">
     <div class="d-flex justify-content-between align-items-start gap-4 flex-column flex-md-row ">
         <div class="grow">
             <h2 class="fw-bold text-dark">Getting started</h2>
