@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import time
 from asyncio import Lock
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     from qdrant_client.http import models as qdrant_models
 
 from ...utils.logging import LoggingConfig
+from ..sparse_config import load_sparse_runtime_config
 from .field_query_parser import FieldQueryParser
 
 
@@ -72,6 +74,18 @@ class VectorSearchService:
 
         self.logger = LoggingConfig.get_logger(__name__)
 
+        sparse_runtime = load_sparse_runtime_config(os.getenv("MCP_CONFIG"))
+        self.sparse_enabled = sparse_runtime.enabled
+        self.sparse_model = sparse_runtime.model
+        self.dense_vector_name = sparse_runtime.dense_vector_name
+        self.sparse_vector_name = sparse_runtime.sparse_vector_name
+        self.use_qdrant_hybrid = sparse_runtime.use_qdrant_hybrid
+        self.sparse_auto_fallback = sparse_runtime.auto_fallback
+        self._collection_capabilities: dict[str, Any] | None = None
+        self._capabilities_lock: Lock = Lock()
+        self._last_query_used_qdrant_hybrid = False
+        self._sparse_encoder: Any | None = None
+
         # Qdrant search parameters
         self.hnsw_ef = hnsw_ef
         self.use_exact_search = use_exact_search
@@ -120,6 +134,95 @@ class VectorSearchService:
             items_to_remove = len(self._search_cache) - self.cache_max_size
             for key, _ in sorted_items[:items_to_remove]:
                 del self._search_cache[key]
+
+    @staticmethod
+    def _model_to_dict(value: object) -> dict[str, Any]:
+        if isinstance(value, dict):
+            return value
+        if hasattr(value, "model_dump"):
+            try:
+                dumped = value.model_dump()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except Exception:
+                return {}
+        if hasattr(value, "dict"):
+            try:
+                dumped = value.dict()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except Exception:
+                return {}
+        return {}
+
+    async def _get_collection_capabilities(self) -> dict[str, Any]:
+        if self._collection_capabilities is not None:
+            return self._collection_capabilities
+
+        default_caps = {
+            "has_named_dense": False,
+            "has_sparse": False,
+            "dense_using": None,
+            "hybrid_ready": False,
+        }
+        async with self._capabilities_lock:
+            if self._collection_capabilities is not None:
+                return self._collection_capabilities
+            try:
+                info = await self.qdrant_client.get_collection(
+                    collection_name=self.collection_name
+                )
+                params = getattr(getattr(info, "config", None), "params", None)
+                vectors = getattr(params, "vectors", None)
+                sparse_vectors = getattr(params, "sparse_vectors", None)
+
+                has_named_dense = False
+                if isinstance(vectors, dict):
+                    has_named_dense = self.dense_vector_name in vectors
+                else:
+                    vectors_dict = self._model_to_dict(vectors)
+                    has_named_dense = self.dense_vector_name in vectors_dict
+
+                sparse_dict = self._model_to_dict(sparse_vectors)
+                has_sparse = self.sparse_vector_name in sparse_dict
+                hybrid_ready = (
+                    self.use_qdrant_hybrid and self.sparse_enabled and has_sparse
+                )
+
+                self._collection_capabilities = {
+                    "has_named_dense": has_named_dense,
+                    "has_sparse": has_sparse,
+                    "dense_using": self.dense_vector_name if has_named_dense else None,
+                    "hybrid_ready": hybrid_ready and has_named_dense,
+                }
+            except Exception as e:
+                self.logger.warning(
+                    "Unable to inspect collection vector schema; using dense fallback",
+                    collection=self.collection_name,
+                    error=str(e),
+                )
+                self._collection_capabilities = default_caps
+        return self._collection_capabilities
+
+    def _get_sparse_encoder(self):
+        if self._sparse_encoder is not None:
+            return self._sparse_encoder
+        from qdrant_loader_core.sparse import BM25SparseEncoder
+
+        self._sparse_encoder = BM25SparseEncoder(model=self.sparse_model)
+        return self._sparse_encoder
+
+    def _encode_sparse_query(self, text: str):
+        encoder = self._get_sparse_encoder()
+        sparse = encoder.encode_query(text)
+        if sparse.is_empty():
+            return None
+        from qdrant_client.http import models
+
+        return models.SparseVector(indices=sparse.indices, values=sparse.values)
+
+    def used_qdrant_hybrid_last_query(self) -> bool:
+        return self._last_query_used_qdrant_hybrid
 
     async def get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using OpenAI client when available, else provider.
@@ -211,6 +314,7 @@ class VectorSearchService:
             cache_hits=self._cache_hits,
             cache_misses=self._cache_misses,
         )
+        self._last_query_used_qdrant_hybrid = False
 
         # ✅ Parse query for field-specific filters
         parsed_query = self.field_parser.parse_query(query)
@@ -246,6 +350,7 @@ class VectorSearchService:
 
             search_query = parsed_query.text_query if parsed_query.text_query else query
             query_embedding = await self.get_embedding(search_query)
+            self._last_query_used_qdrant_hybrid = False
 
             search_params = models.SearchParams(
                 hnsw_ef=self.hnsw_ef, exact=bool(self.use_exact_search)
@@ -256,17 +361,79 @@ class VectorSearchService:
                 parsed_query.field_queries, project_ids
             )
 
-            # Use query_points API (qdrant-client 1.10+)
-            query_response = await self.qdrant_client.query_points(
-                collection_name=self.collection_name,
-                query=query_embedding,
-                limit=limit,
-                score_threshold=self.min_score,
-                search_params=search_params,
-                query_filter=query_filter,
-                with_payload=True,  # 🔧 CRITICAL: Explicitly request payload data
-            )
-            results = query_response.points
+            caps = await self._get_collection_capabilities()
+            using_dense = caps.get("dense_using")
+
+            if caps.get("hybrid_ready"):
+                try:
+                    sparse_query = self._encode_sparse_query(search_query)
+                    if sparse_query is None:
+                        raise ValueError(
+                            "Sparse query generation returned empty vector"
+                        )
+
+                    prefetch_limit = max(limit * 3, limit)
+                    query_response = await self.qdrant_client.query_points(
+                        collection_name=self.collection_name,
+                        prefetch=[
+                            models.Prefetch(
+                                query=query_embedding,
+                                using=using_dense,
+                                filter=query_filter,
+                                params=search_params,
+                                limit=prefetch_limit,
+                            ),
+                            models.Prefetch(
+                                query=sparse_query,
+                                using=self.sparse_vector_name,
+                                filter=query_filter,
+                                limit=prefetch_limit,
+                            ),
+                        ],
+                        query=models.FusionQuery(fusion=models.Fusion.RRF),
+                        limit=limit,
+                        with_payload=True,
+                    )
+                    self._last_query_used_qdrant_hybrid = True
+                    results = query_response.points
+                except Exception as hybrid_error:
+                    self.logger.warning(
+                        "Qdrant hybrid query failed; using dense fallback",
+                        error=str(hybrid_error),
+                        collection=self.collection_name,
+                    )
+                    if not self.sparse_auto_fallback:
+                        raise
+                    query_kwargs = {
+                        "collection_name": self.collection_name,
+                        "query": query_embedding,
+                        "limit": limit,
+                        "score_threshold": self.min_score,
+                        "search_params": search_params,
+                        "query_filter": query_filter,
+                        "with_payload": True,
+                    }
+                    if using_dense:
+                        query_kwargs["using"] = using_dense
+                    query_response = await self.qdrant_client.query_points(
+                        **query_kwargs
+                    )
+                    results = query_response.points
+            else:
+                query_kwargs = {
+                    "collection_name": self.collection_name,
+                    "query": query_embedding,
+                    "limit": limit,
+                    "score_threshold": self.min_score,
+                    "search_params": search_params,
+                    "query_filter": query_filter,
+                    "with_payload": True,
+                }
+                if using_dense:
+                    query_kwargs["using"] = using_dense
+                # Use query_points API (qdrant-client 1.10+)
+                query_response = await self.qdrant_client.query_points(**query_kwargs)
+                results = query_response.points
 
         extracted_results = []
         for hit in results:

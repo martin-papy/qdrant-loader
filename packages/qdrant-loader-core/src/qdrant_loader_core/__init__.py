@@ -11,6 +11,7 @@ from .llm import (
     TokenCounter,
     create_provider,
 )
+from .sparse import BM25SparseEncoder, SparseVectorData
 
 __all__ = [
     "EmbeddingsClient",
@@ -22,4 +23,6 @@ __all__ = [
     "RateLimitPolicy",
     "EmbeddingPolicy",
     "create_provider",
+    "BM25SparseEncoder",
+    "SparseVectorData",
 ]

@@ -1,5 +1,7 @@
 import asyncio
-from typing import cast
+import os
+from dataclasses import dataclass
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from qdrant_client import QdrantClient
@@ -13,6 +15,24 @@ from ..config import Settings, get_global_config, get_settings
 from ..utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
+
+_TRUE_VALUES = {"1", "true", "t", "yes", "y", "on"}
+_FALSE_VALUES = {"0", "false", "f", "no", "n", "off"}
+
+
+@dataclass
+class SparseRuntimeConfig:
+    enabled: bool = True
+    model: str = "bm25"
+    dense_vector_name: str = "dense"
+    sparse_vector_name: str = "sparse"
+    auto_fallback: bool = True
+
+
+@dataclass
+class CollectionVectorCapabilities:
+    has_named_dense: bool = False
+    has_sparse: bool = False
 
 
 class QdrantConnectionError(Exception):
@@ -39,6 +59,10 @@ class QdrantManager:
         self.collection_name = self.settings.qdrant_collection_name
         self.logger = LoggingConfig.get_logger(__name__)
         self.batch_size = get_global_config().embedding.batch_size
+        self.sparse_runtime = self._resolve_sparse_runtime_config()
+        self._sparse_encoder: Any | None = None
+        self._collection_vector_capabilities: CollectionVectorCapabilities | None = None
+        self._sparse_fallback_warning_emitted = False
         self.connect()
 
     def _is_api_key_present(self) -> bool:
@@ -50,6 +74,169 @@ class QdrantManager:
         if not api_key:  # Catches None, empty string, etc.
             return False
         return api_key.lower() not in ["none", "null"]
+
+    @staticmethod
+    def _parse_bool(value: object, default: bool) -> bool:
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        normalized = str(value).strip().lower()
+        if normalized in _TRUE_VALUES:
+            return True
+        if normalized in _FALSE_VALUES:
+            return False
+        return default
+
+    def _resolve_sparse_runtime_config(self) -> SparseRuntimeConfig:
+        cfg = SparseRuntimeConfig()
+        try:
+            llm = getattr(get_global_config(), "llm", None)
+            if isinstance(llm, dict):
+                sparse_cfg = {}
+                if isinstance(llm.get("sparse"), dict):
+                    sparse_cfg.update(llm["sparse"])
+                retrieval_cfg = llm.get("retrieval")
+                if isinstance(retrieval_cfg, dict) and isinstance(
+                    retrieval_cfg.get("sparse"), dict
+                ):
+                    sparse_cfg.update(retrieval_cfg["sparse"])
+
+                cfg.enabled = self._parse_bool(sparse_cfg.get("enabled"), cfg.enabled)
+                cfg.model = str(sparse_cfg.get("model") or cfg.model)
+                cfg.dense_vector_name = str(
+                    sparse_cfg.get("dense_vector_name") or cfg.dense_vector_name
+                )
+                cfg.sparse_vector_name = str(
+                    sparse_cfg.get("sparse_vector_name") or cfg.sparse_vector_name
+                )
+                cfg.auto_fallback = self._parse_bool(
+                    sparse_cfg.get("auto_fallback"), cfg.auto_fallback
+                )
+        except Exception:
+            pass
+
+        cfg.enabled = self._parse_bool(os.getenv("LLM_SPARSE_ENABLED"), cfg.enabled)
+        cfg.model = str(os.getenv("LLM_SPARSE_MODEL") or cfg.model)
+        cfg.dense_vector_name = str(
+            os.getenv("LLM_DENSE_VECTOR_NAME") or cfg.dense_vector_name
+        )
+        cfg.sparse_vector_name = str(
+            os.getenv("LLM_SPARSE_VECTOR_NAME") or cfg.sparse_vector_name
+        )
+        cfg.auto_fallback = self._parse_bool(
+            os.getenv("LLM_SPARSE_AUTO_FALLBACK"), cfg.auto_fallback
+        )
+        return cfg
+
+    @staticmethod
+    def _model_to_dict(value: object) -> dict[str, Any]:
+        if isinstance(value, dict):
+            return value
+        if hasattr(value, "model_dump"):
+            try:
+                dumped = value.model_dump()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except Exception:
+                return {}
+        if hasattr(value, "dict"):
+            try:
+                dumped = value.dict()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except Exception:
+                return {}
+        return {}
+
+    def _get_collection_vector_capabilities(self) -> CollectionVectorCapabilities:
+        if self._collection_vector_capabilities is not None:
+            return self._collection_vector_capabilities
+
+        default_caps = CollectionVectorCapabilities()
+        try:
+            client = self._ensure_client_connected()
+            info = client.get_collection(collection_name=self.collection_name)
+            params = getattr(getattr(info, "config", None), "params", None)
+            vectors = getattr(params, "vectors", None)
+            sparse_vectors = getattr(params, "sparse_vectors", None)
+
+            has_named_dense = False
+            if isinstance(vectors, dict):
+                has_named_dense = self.sparse_runtime.dense_vector_name in vectors
+            else:
+                vectors_dict = self._model_to_dict(vectors)
+                has_named_dense = self.sparse_runtime.dense_vector_name in vectors_dict
+
+            sparse_dict = self._model_to_dict(sparse_vectors)
+            has_sparse = self.sparse_runtime.sparse_vector_name in sparse_dict
+
+            self._collection_vector_capabilities = CollectionVectorCapabilities(
+                has_named_dense=has_named_dense, has_sparse=has_sparse
+            )
+            return self._collection_vector_capabilities
+        except Exception:
+            self._collection_vector_capabilities = default_caps
+            return default_caps
+
+    def _dense_query_using(self) -> str | None:
+        caps = self._get_collection_vector_capabilities()
+        if caps.has_named_dense:
+            return self.sparse_runtime.dense_vector_name
+        return None
+
+    def _sparse_upsert_enabled(self) -> bool:
+        if not self.sparse_runtime.enabled:
+            return False
+
+        caps = self._get_collection_vector_capabilities()
+        if caps.has_named_dense and caps.has_sparse:
+            return True
+
+        if not self._sparse_fallback_warning_emitted:
+            self.logger.warning(
+                "Sparse vectors requested but collection schema does not support them; falling back to dense-only upserts",
+                collection=self.collection_name,
+                dense_vector_name=self.sparse_runtime.dense_vector_name,
+                sparse_vector_name=self.sparse_runtime.sparse_vector_name,
+            )
+            self._sparse_fallback_warning_emitted = True
+        return False
+
+    def _get_sparse_encoder(self):
+        if self._sparse_encoder is not None:
+            return self._sparse_encoder
+        from qdrant_loader_core.sparse import BM25SparseEncoder
+
+        self._sparse_encoder = BM25SparseEncoder(model=self.sparse_runtime.model)
+        return self._sparse_encoder
+
+    def build_point_vector(self, dense_embedding: list[float], text: str) -> object:
+        """Build point vector payload for upsert (dense-only or dense+sparse)."""
+        if self._sparse_upsert_enabled():
+            try:
+                encoder = self._get_sparse_encoder()
+                sparse = encoder.encode_document(text)
+                if sparse.is_empty():
+                    return {self.sparse_runtime.dense_vector_name: dense_embedding}
+                return {
+                    self.sparse_runtime.dense_vector_name: dense_embedding,
+                    self.sparse_runtime.sparse_vector_name: models.SparseVector(
+                        indices=sparse.indices, values=sparse.values
+                    ),
+                }
+            except Exception as e:
+                self.logger.warning(
+                    "Failed to generate sparse vectors; falling back to dense-only upsert",
+                    error=str(e),
+                )
+                if self._dense_query_using() is not None:
+                    return {self.sparse_runtime.dense_vector_name: dense_embedding}
+                return dense_embedding
+
+        if self._dense_query_using() is not None:
+            return {self.sparse_runtime.dense_vector_name: dense_embedding}
+        return dense_embedding
 
     def connect(self) -> None:
         """Establish connection to qDrant server."""
@@ -139,10 +326,51 @@ class QdrantManager:
                 )
                 vector_size = 1536
 
-            # Create collection with basic configuration
-            client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+            created_with_sparse = False
+            if self.sparse_runtime.enabled:
+                try:
+                    client.create_collection(
+                        collection_name=self.collection_name,
+                        vectors_config={
+                            self.sparse_runtime.dense_vector_name: VectorParams(
+                                size=vector_size, distance=Distance.COSINE
+                            )
+                        },
+                        sparse_vectors_config={
+                            self.sparse_runtime.sparse_vector_name: (
+                                models.SparseVectorParams()
+                            )
+                        },
+                    )
+                    created_with_sparse = True
+                    self.logger.info(
+                        "Created collection with dense+sparse vector schema",
+                        collection=self.collection_name,
+                        dense_vector_name=self.sparse_runtime.dense_vector_name,
+                        sparse_vector_name=self.sparse_runtime.sparse_vector_name,
+                        sparse_model=self.sparse_runtime.model,
+                    )
+                except Exception as sparse_error:
+                    if not self.sparse_runtime.auto_fallback:
+                        raise
+                    self.logger.warning(
+                        "Sparse collection creation failed; falling back to dense-only schema",
+                        collection=self.collection_name,
+                        error=str(sparse_error),
+                    )
+
+            if not created_with_sparse:
+                # Create collection with basic dense-only configuration
+                client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(
+                        size=vector_size, distance=Distance.COSINE
+                    ),
+                )
+
+            self._collection_vector_capabilities = CollectionVectorCapabilities(
+                has_named_dense=created_with_sparse,
+                has_sparse=created_with_sparse,
             )
 
             # Create payload indexes for optimal search performance
@@ -246,12 +474,16 @@ class QdrantManager:
         """Search for similar vectors in the collection."""
         try:
             client = self._ensure_client_connected()
+            query_kwargs: dict[str, Any] = {
+                "collection_name": self.collection_name,
+                "query": query_vector,
+                "limit": limit,
+            }
+            using = self._dense_query_using()
+            if using:
+                query_kwargs["using"] = using
             # Use query_points API (qdrant-client 1.10+)
-            query_response = client.query_points(
-                collection_name=self.collection_name,
-                query=query_vector,
-                limit=limit,
-            )
+            query_response = client.query_points(**query_kwargs)
             return query_response.points
         except Exception as e:
             logger.error("Failed to search collection", error=str(e))
@@ -282,13 +514,17 @@ class QdrantManager:
                 ]
             )
 
+            query_kwargs: dict[str, Any] = {
+                "collection_name": self.collection_name,
+                "query": query_vector,
+                "query_filter": project_filter,
+                "limit": limit,
+            }
+            using = self._dense_query_using()
+            if using:
+                query_kwargs["using"] = using
             # Use query_points API (qdrant-client 1.10+)
-            query_response = client.query_points(
-                collection_name=self.collection_name,
-                query=query_vector,
-                query_filter=project_filter,
-                limit=limit,
-            )
+            query_response = client.query_points(**query_kwargs)
             return query_response.points
         except Exception as e:
             logger.error(

@@ -137,6 +137,14 @@ global:
       concurrency: 5
     embeddings:
       vector_size: 1536
+    sparse:
+      enabled: true                  # Enable dense+sparse collection schema and sparse upserts
+      model: "bm25"                  # Sparse model family (default: bm25)
+      dense_vector_name: "dense"     # Named dense vector key in Qdrant
+      sparse_vector_name: "sparse"   # Named sparse vector key in Qdrant
+      auto_fallback: true            # Fall back to dense-only when sparse features are unavailable
+    retrieval:
+      use_qdrant_hybrid: true        # MCP retrieval: use Qdrant fusion (dense+sparse) when available
     # Optional provider-specific options
     provider_options:
       # For Azure: set azure_endpoint explicitly if different from base_url
