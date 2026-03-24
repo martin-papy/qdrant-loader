@@ -258,14 +258,15 @@
 
         /* Documentation-specific styles */
         .toc {
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
+            background-color: #ECFCFF;
             padding: 1.5rem;
             border: 1px solid #e9ecef;
+            overflow-y: auto;
+
         }
 
         .toc h3 {
-            margin-top: 0 !important;
+            margin-top: 0;
             font-size: 1.1rem;
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 0.5rem;
@@ -273,18 +274,30 @@
 
         .toc .list-group-item {
             border: none;
-            padding: 0.25rem 0;
+            padding: 0.5rem 1rem;
             background: transparent;
         }
 
         .toc .list-group-item a {
-            color: #495057;
-            font-size: 0.9rem;
+            display: block;
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-decoration: none;
             transition: color 0.2s ease;
         }
 
         .toc .list-group-item a:hover {
             color: var(--primary-color);
+        }
+
+        .toc .list-group-item.active {
+            background: #4EDDFD;
+            border-radius: 16px;
+        }
+
+        .toc .list-group-item.active a {
+            color: var(--secondary-color);
+            font-weight: 500; 
         }
 
         /* Hierarchical TOC styling */
@@ -305,7 +318,7 @@
 
         .toc li a {
             color: #495057;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             text-decoration: none;
             display: block;
             padding: 0.125rem 0;
@@ -319,17 +332,17 @@
         /* Different font weights for different heading levels */
         .toc > ul > li > a {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.875rem; 
         }
 
         .toc ul ul li a {
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
 
         .toc ul ul ul li a {
             font-weight: 400;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             opacity: 0.9;
         }
 
@@ -519,7 +532,7 @@
 
         /* Footer section */
         .footer-section {
-            padding: 7.5rem 2.5rem 2.5rem;
+            padding: 7.5rem 5.5rem 2.5rem;
         }
 
         .doc-section-title {
@@ -623,7 +636,7 @@
 
         @media (max-width: 767.98px) {
             .footer-section {
-                padding: 4rem 1.5rem 2rem;
+                padding: 4rem 2rem 2rem;
             }
             .doc-description {
                 padding-left: 20px;
@@ -638,10 +651,14 @@
             }
         }
 
+        .container-content {
+            padding: 3.25rem  5rem;
+        }
+
         /* Ensure proper spacing for documentation content */
         .col-lg-9 h1, .col-lg-9 h2, .col-lg-9 h3, .col-lg-9 h4, .col-lg-9 h5, .col-lg-9 h6 {
-            margin-top: 2rem;
-            margin-bottom: 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .col-lg-9 h1:first-child {
@@ -738,14 +755,19 @@
                         <li class="nav-item d-flex align-items-center">
                             <a class="nav-link nav-link-custom d-flex align-items-center gap-2"
                                 href="https://github.com/martin-papy/qdrant-loader" target="_blank">
-                                <img src="{{ base_url }}assets/icons/github.svg" width="20" alt="GitHub">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19.5291 7.09501C19.7583 6.35551 19.8318 5.57653 19.745 4.80719C19.6582 4.03785 19.413 3.29484 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0968 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.2407 8.81793 19.9924 7.90381 19.5291 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6516 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.511 8.26475 18.7388 8.9978 18.75 9.75001V10.5Z" fill="#343330" />
+                                </svg>
                                 GitHub
                             </a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link nav-link-custom dropdown-toggle d-flex align-items-center gap-2" href="#"
                                 id="pypiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <img src="{{ base_url }}assets/icons/bag-pypi.svg" width="20" alt="PyPI"> PyPI
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20.25 5.25H16.5V4.5C16.5 3.90326 16.2629 3.33097 15.841 2.90901C15.419 2.48705 14.8467 2.25 14.25 2.25H9.75C9.15326 2.25 8.58097 2.48705 8.15901 2.90901C7.73705 3.33097 7.5 3.90326 7.5 4.5V5.25H3.75C3.35218 5.25 2.97064 5.40804 2.68934 5.68934C2.40804 5.97064 2.25 6.35218 2.25 6.75V18.75C2.25 19.1478 2.40804 19.5294 2.68934 19.8107C2.97064 20.092 3.35218 20.25 3.75 20.25H20.25C20.6478 20.25 21.0294 20.092 21.3107 19.8107C21.592 19.5294 21.75 19.1478 21.75 18.75V6.75C21.75 6.35218 21.592 5.97064 21.3107 5.68934C21.0294 5.40804 20.6478 5.25 20.25 5.25ZM9 4.5C9 4.30109 9.07902 4.11032 9.21967 3.96967C9.36032 3.82902 9.55109 3.75 9.75 3.75H14.25C14.4489 3.75 14.6397 3.82902 14.7803 3.96967C14.921 4.11032 15 4.30109 15 4.5V5.25H9V4.5ZM20.25 6.75V10.6509C17.7185 12.0289 14.8822 12.7505 12 12.75C9.11794 12.7505 6.28165 12.0292 3.75 10.6519V6.75H20.25ZM20.25 18.75H3.75V12.3412C6.31868 13.5977 9.1405 14.2506 12 14.25C14.8596 14.2501 17.6813 13.5969 20.25 12.3403V18.75ZM9.75 10.5C9.75 10.3011 9.82902 10.1103 9.96967 9.96967C10.1103 9.82902 10.3011 9.75 10.5 9.75H13.5C13.6989 9.75 13.8897 9.82902 14.0303 9.96967C14.171 10.1103 14.25 10.3011 14.25 10.5C14.25 10.6989 14.171 10.8897 14.0303 11.0303C13.8897 11.171 13.6989 11.25 13.5 11.25H10.5C10.3011 11.25 10.1103 11.171 9.96967 11.0303C9.82902 10.8897 9.75 10.6989 9.75 10.5Z" fill="#343330" />
+                                </svg>
+                                PyPI
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
                                 <li>
@@ -772,9 +794,7 @@
                 </div>
             </div>
         </nav>
-    <div class="container-custom">
-    <!-- Navigation -->
-          
+  
 
     <!-- Main Content -->
     <main>
@@ -974,11 +994,37 @@
             </div>
         </div>
     </footer>
-</div>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
+    <script>
+        const items = document.querySelectorAll('.toc .list-group-item');
+
+        function setActiveMenu() {
+            const hash = window.location.hash;
+
+            items.forEach(item => item.classList.remove('active'));
+
+            if (hash) {
+                const link = document.querySelector(`.toc a[href="${hash}"]`);
+                if (link) {
+                    link.parentElement.classList.add('active');
+                }
+            }
+        }
+
+        setActiveMenu();
+
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                items.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        window.addEventListener('hashchange', setActiveMenu);
+    </script>
     <!-- Simple syntax highlighting -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {

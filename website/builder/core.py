@@ -631,19 +631,17 @@ Sitemap: {site_base}/sitemap.xml
             toc_html = self.add_bootstrap_classes(toc_html)
 
         wrapped_content = f"""
-<section class=\"py-5\">
-  <div class=\"container\">
+<section>
     <div class=\"row\">
       <aside class=\"col-lg-3 d-none d-lg-block\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9\">
+      <div class=\"col-lg-9 container-content\">
         {html_content}
       </div>
     </div>
-  </div>
 </section>
 """
 
@@ -965,19 +963,17 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                     toc_html = self.add_bootstrap_classes(toc_html)
 
                 wrapped_content = f"""
-<section class=\"py-5\">
-  <div class=\"container\">
+<section>
     <div class=\"row\">
       <aside class=\"col-lg-3 d-none d-lg-block\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9\">
+      <div class=\"col-lg-9 container-content\">
         {html_content}
       </div>
     </div>
-  </div>
 </section>
 """
 
