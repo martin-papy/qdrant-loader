@@ -14,6 +14,9 @@ class TextChunkProcessor(BaseChunkProcessor):
         super().__init__(settings)
         # Get strategy-specific configuration
         self.default_config = settings.global_config.chunking.strategies.default
+        self._semantic_analysis_enabled = (
+            settings.global_config.chunking.enable_semantic_analysis
+        )
 
     def create_chunk_document(
         self,
@@ -65,7 +68,7 @@ class TextChunkProcessor(BaseChunkProcessor):
         }
 
         # Add semantic analysis indicators if enabled
-        if self.default_config.enable_semantic_analysis:
+        if self._semantic_analysis_enabled:
             metadata["semantic_analysis_enabled"] = True
             metadata["semantic_indicators"] = self._extract_semantic_indicators(content)
 

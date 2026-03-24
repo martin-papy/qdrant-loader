@@ -20,18 +20,15 @@ class TestDefaultStrategyConfig:
         """Test default configuration values."""
         config = DefaultStrategyConfig()
         assert config.min_chunk_size == 100
-        assert config.enable_semantic_analysis is True
         assert config.enable_entity_extraction is True
 
     def test_custom_values(self):
         """Test custom configuration values."""
         config = DefaultStrategyConfig(
             min_chunk_size=50,
-            enable_semantic_analysis=False,
             enable_entity_extraction=False,
         )
         assert config.min_chunk_size == 50
-        assert config.enable_semantic_analysis is False
         assert config.enable_entity_extraction is False
 
     def test_validation_min_chunk_size(self):
