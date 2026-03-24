@@ -2,11 +2,11 @@
 
 QDrant Loader supports comprehensive file conversion to extract text content from various file formats using Microsoft's MarkItDown library. This guide covers supported formats, configuration, and best practices.
 
-## 🎯 Supported File Formats
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Supported File Formats"> Supported File Formats
 
 QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of file formats:
 
-### 📄 Document Formats
+### Document Formats
 
 | Format           | Extension              | Description                        | Features                                  |
 | ---------------- | ---------------------- | ---------------------------------- | ----------------------------------------- |
@@ -16,7 +16,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **Excel**        | `.xlsx`, `.xls`        | Microsoft Excel spreadsheets       | Cell data, formulas, sheet names          |
 | **OpenDocument** | `.odt`, `.ods`, `.odp` | LibreOffice/OpenOffice documents   | Text, tables, metadata                    |
 
-### 📝 Text Formats
+### Text Formats
 
 | Format               | Extension          | Description             | Features                              |
 | -------------------- | ------------------ | ----------------------- | ------------------------------------- |
@@ -26,7 +26,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **Rich Text**        | `.rtf`             | Rich Text Format        | Formatted text, basic styling         |
 | **LaTeX**            | `.tex`             | LaTeX documents         | Mathematical content, structured text |
 
-### 🖼️ Image Formats (with OCR)
+### Image Formats (with OCR)
 
 | Format   | Extension       | Description   | Features                              |
 | -------- | --------------- | ------------- | ------------------------------------- |
@@ -36,7 +36,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **TIFF** | `.tiff`, `.tif` | TIFF images   | OCR text extraction, high quality     |
 | **BMP**  | `.bmp`          | Bitmap images | OCR text extraction                   |
 
-### 🎵 Audio Formats (with Transcription)
+### Audio Formats (with Transcription)
 
 | Format   | Extension | Description | Features                     |
 | -------- | --------- | ----------- | ---------------------------- |
@@ -45,7 +45,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **M4A**  | `.m4a`    | M4A audio   | Speech-to-text transcription |
 | **FLAC** | `.flac`   | FLAC audio  | Speech-to-text transcription |
 
-### 📊 Data Formats
+### Data Formats
 
 | Format   | Extension       | Description            | Features                    |
 | -------- | --------------- | ---------------------- | --------------------------- |
@@ -55,7 +55,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **YAML** | `.yaml`, `.yml` | YAML configuration     | Configuration data          |
 | **TOML** | `.toml`         | TOML configuration     | Configuration data          |
 
-### 📦 Archive Formats
+### Archive Formats
 
 | Format    | Extension                 | Description    | Features                     |
 | --------- | ------------------------- | -------------- | ---------------------------- |
@@ -63,7 +63,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **TAR**   | `.tar`, `.tar.gz`, `.tgz` | TAR archives   | Extract and process contents |
 | **7-Zip** | `.7z`                     | 7-Zip archives | Extract and process contents |
 
-## ⚙️ Configuration
+## <img src="../../../../assets/icons/library/setting-icon.svg" width="32" alt="Configuration"> Configuration
 
 ### Global File Conversion Configuration
 
@@ -137,7 +137,7 @@ Each data source can enable or disable file conversion:
 | ------------------------ | ---- | -------------------------------------- | ------- |
 | `enable_file_conversion` | bool | Enable file conversion for this source | `false` |
 
-## 🔧 How File Conversion Works
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="How File Conversion Works"> How File Conversion Works
 
 ### Conversion Process
 
@@ -179,7 +179,7 @@ Each data source can enable or disable file conversion:
    - Preserved formatting where possible
    - Ready for chunking and vector storage
 
-## 🚀 Usage Examples
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Usage Examples"> Usage Examples
 
 ### Basic Document Processing
 
@@ -289,7 +289,7 @@ projects:
           enable_file_conversion: true
 ```
 
-## 🧪 Testing and Validation
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing and Validation"> Testing and Validation
 
 ### Test File Conversion
 
