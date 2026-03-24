@@ -576,12 +576,13 @@ class TestAsyncPerformance:
             await asyncio.sleep(delay)
             return sample_async_results
 
+        async def mock_search(**kwargs):
+            return await slow_operation(0.1)
+
         async_search_handler.query_processor.process_query.return_value = {
             "query": "parallel_test"
         }
-        async_search_handler.search_engine.search.side_effect = lambda **kwargs: (
-            slow_operation(0.1)
-        )
+        async_search_handler.search_engine.search.side_effect = mock_search
         async_search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0"}
 
         with patch.object(
@@ -589,19 +590,26 @@ class TestAsyncPerformance:
         ):
             with patch.object(async_search_handler.formatters, "format_search_result"):
                 # Test parallel execution
-                tasks = []
-                for i in range(3):
-                    params = {"query": f"parallel_query_{i}"}
-                    task = async_search_handler.handle_search(f"par_{i}", params)
-                    tasks.append(task)
-
+                tasks = [
+                    async_search_handler.handle_search(f"par_{i}", {"query": f"q{i}"})
+                    for i in range(3)
+                ]
+                # parallel
                 start_time = time.time()
                 results = await asyncio.gather(*tasks)
                 parallel_time = time.time() - start_time
 
+                # sequential
+                start = time.time()
+                for i in range(3):
+                    await async_search_handler.handle_search(
+                        f"seq_{i}", {"query": f"q{i}"}
+                    )
+                sequential_time = time.time() - start
+
                 # Parallel execution should be faster than 3 * 0.1 seconds
                 # (allowing overhead for CI/slow systems like WSL)
-                assert parallel_time < 0.5  # Much less than 3 * 0.1 = 0.3
+                assert parallel_time < sequential_time
                 assert len(results) == 3
 
     @pytest.mark.asyncio

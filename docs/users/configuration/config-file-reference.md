@@ -142,10 +142,10 @@ global:
     chunk_size: 1500
     chunk_overlap: 200
     max_chunks_per_document: 500
+    enable_semantic_analysis: true
     strategies:
       default:
         min_chunk_size: 100
-        enable_semantic_analysis: true
         enable_entity_extraction: true
       html:
         simple_parsing_threshold: 100000
@@ -357,11 +357,12 @@ global:
     chunk_overlap: 200
     # Optional: Maximum chunks per document - safety limit (default: 500)
     max_chunks_per_document: 500
+    # Optional: Master switch for NLP enrichment (spaCy + LDA) across all strategies (default: true)
+    enable_semantic_analysis: true
     # Optional: Strategy-specific configurations for different content types
     strategies:
       default:
         min_chunk_size: 100
-        enable_semantic_analysis: true
         enable_entity_extraction: true
       html:
         simple_parsing_threshold: 100000
@@ -403,10 +404,13 @@ global:
 
 The `strategies` section allows you to fine-tune how different content types are processed:
 
+**Chunking (top-level flags):**
+
+- `enable_semantic_analysis`: Master switch for NLP enrichment (spaCy + LDA) across **all** chunking strategies. Set to `false` for faster ingestion when semantic enrichment is not needed.
+
 **Default Strategy (Text Files):**
 
 - `min_chunk_size`: Prevents creation of very small chunks that may lack context
-- `enable_semantic_analysis`: Controls topic extraction and semantic analysis
 - `enable_entity_extraction`: Controls named entity recognition processing
 
 **HTML Strategy:**

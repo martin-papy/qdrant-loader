@@ -80,6 +80,7 @@ class GlobalConfig(BaseConfig):
             "chunking": {
                 "chunk_size": self.chunking.chunk_size,
                 "chunk_overlap": self.chunking.chunk_overlap,
+                "enable_semantic_analysis": self.chunking.enable_semantic_analysis,
             },
             "embedding": self.embedding.model_dump(),
             "llm": self.llm,

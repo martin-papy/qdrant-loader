@@ -4,9 +4,8 @@
 # Copy this file to config.yaml and customize it for your needs
 # Environment variables can be used with ${VARIABLE_NAME} syntax
 
-
 # Configuration Notes:
-# 
+#
 # 1. Project Structure:
 #    - Each project has a unique project_id
 #    - All projects use the global collection_name defined in global_config.qdrant.collection_name
@@ -37,95 +36,95 @@ global:
   # Qdrant vector database configuration
   qdrant:
     url: "http://localhost:6333"
-    api_key: null  # Optional API key for Qdrant Cloud
-    collection_name: "default_collection"  # Collection name used by all projects
+    api_key: null # Optional API key for Qdrant Cloud
+    collection_name: "default_collection" # Collection name used by all projects
 
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
   chunking:
-    chunk_size: 1500       # Maximum number of characters per chunk. Be careful not to set it too high to prevent token limits.
-    chunk_overlap: 200      # Number of characters to overlap between chunks
-    max_chunks_per_document: 500  # Maximum number of chunks per document (safety limit)
-    
+    chunk_size: 1500 # Maximum number of characters per chunk. Be careful not to set it too high to prevent token limits.
+    chunk_overlap: 200 # Number of characters to overlap between chunks
+    max_chunks_per_document: 500 # Maximum number of chunks per document (safety limit)
+    enable_semantic_analysis: true # Master switch for NLP enrichment (spaCy + LDA) across all strategies. Disable for faster ingestion.
+
     # Strategy-specific configurations for different content types
     strategies:
       # Default text chunking strategy configuration
       default:
-        min_chunk_size: 100              # Minimum chunk size in characters
-        enable_semantic_analysis: true   # Enable semantic analysis for text chunks
-        enable_entity_extraction: true   # Enable entity extraction from text
-      
+        min_chunk_size: 100 # Minimum chunk size in characters
+        enable_entity_extraction: true # Enable entity extraction from text
+
       # HTML content chunking strategy configuration
       html:
-        simple_parsing_threshold: 100000    # Size threshold for simple vs complex HTML parsing (bytes)
-        max_html_size_for_parsing: 500000   # Maximum HTML size for complex parsing (bytes)
-        max_sections_to_process: 200        # Maximum number of sections to process
-        max_chunk_size_for_nlp: 20000       # Maximum chunk size for NLP processing (characters)
-        preserve_semantic_structure: true   # Preserve HTML semantic structure in chunks
-      
+        simple_parsing_threshold: 100000 # Size threshold for simple vs complex HTML parsing (bytes)
+        max_html_size_for_parsing: 500000 # Maximum HTML size for complex parsing (bytes)
+        max_sections_to_process: 200 # Maximum number of sections to process
+        max_chunk_size_for_nlp: 20000 # Maximum chunk size for NLP processing (characters)
+        preserve_semantic_structure: true # Preserve HTML semantic structure in chunks
+
       # Code file chunking strategy configuration
       code:
-        max_file_size_for_ast: 75000        # Maximum file size for AST parsing (characters)
-        max_elements_to_process: 800        # Maximum number of code elements to process
-        max_recursion_depth: 8              # Maximum AST recursion depth
-        max_element_size: 20000             # Maximum size for individual code elements (characters)
-        enable_ast_parsing: true            # Enable AST parsing for code analysis
-        enable_dependency_analysis: true    # Enable dependency analysis for code
-      
+        max_file_size_for_ast: 75000 # Maximum file size for AST parsing (characters)
+        max_elements_to_process: 800 # Maximum number of code elements to process
+        max_recursion_depth: 8 # Maximum AST recursion depth
+        max_element_size: 20000 # Maximum size for individual code elements (characters)
+        enable_ast_parsing: true # Enable AST parsing for code analysis
+        enable_dependency_analysis: true # Enable dependency analysis for code
+
       # JSON file chunking strategy configuration
       json:
-        max_json_size_for_parsing: 1000000  # Maximum JSON size for parsing (bytes)
-        max_objects_to_process: 200         # Maximum number of JSON objects to process
-        max_chunk_size_for_nlp: 20000       # Maximum chunk size for NLP processing (characters)
-        max_recursion_depth: 5              # Maximum recursion depth for nested structures
-        max_array_items_per_chunk: 50       # Maximum array items to include per chunk
-        max_object_keys_to_process: 100     # Maximum object keys to process
-        enable_schema_inference: true       # Enable JSON schema inference
-      
+        max_json_size_for_parsing: 1000000 # Maximum JSON size for parsing (bytes)
+        max_objects_to_process: 200 # Maximum number of JSON objects to process
+        max_chunk_size_for_nlp: 20000 # Maximum chunk size for NLP processing (characters)
+        max_recursion_depth: 5 # Maximum recursion depth for nested structures
+        max_array_items_per_chunk: 50 # Maximum array items to include per chunk
+        max_object_keys_to_process: 100 # Maximum object keys to process
+        enable_schema_inference: true # Enable JSON schema inference
+
       # Markdown file chunking strategy configuration
       markdown:
-        min_content_length_for_nlp: 100     # Minimum content length for NLP processing (characters)
-        min_word_count_for_nlp: 20          # Minimum word count for NLP processing
-        min_line_count_for_nlp: 3           # Minimum line count for NLP processing
-        min_section_size: 500               # Minimum characters for a standalone section
-        max_chunks_per_section: 1000        # Maximum chunks per section (prevents runaway chunking)
-        max_overlap_percentage: 0.25        # Maximum overlap between chunks as percentage (0.25 = 25%)
-        max_workers: 4                      # Maximum worker threads for parallel processing
-        estimation_buffer: 0.2              # Buffer factor for chunk count estimation (0.2 = 20%)
-        words_per_minute_reading: 200       # Words per minute for reading time estimation
-        header_analysis_threshold_h1: 3     # H1 header count threshold for split level decisions
-        header_analysis_threshold_h3: 8     # H3 header count threshold for split level decisions
-        enable_hierarchical_metadata: true  # Enable extraction of hierarchical section metadata
-  
+        min_content_length_for_nlp: 100 # Minimum content length for NLP processing (characters)
+        min_word_count_for_nlp: 20 # Minimum word count for NLP processing
+        min_line_count_for_nlp: 3 # Minimum line count for NLP processing
+        min_section_size: 500 # Minimum characters for a standalone section
+        max_chunks_per_section: 1000 # Maximum chunks per section (prevents runaway chunking)
+        max_overlap_percentage: 0.25 # Maximum overlap between chunks as percentage (0.25 = 25%)
+        max_workers: 4 # Maximum worker threads for parallel processing
+        estimation_buffer: 0.2 # Buffer factor for chunk count estimation (0.2 = 20%)
+        words_per_minute_reading: 200 # Words per minute for reading time estimation
+        header_analysis_threshold_h1: 3 # H1 header count threshold for split level decisions
+        header_analysis_threshold_h3: 8 # H3 header count threshold for split level decisions
+        enable_hierarchical_metadata: true # Enable extraction of hierarchical section metadata
+
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
     endpoint: "http://localhost:8080/v1" # Optional. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
-    model: "BAAI/bge-small-en-v1.5"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (example for local use) or text-embedding-3-small (for OpenAI use)
-    api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
-    batch_size: 100                  # Number of chunks to process in one batch
-    vector_size: 384                # Optional. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
-    tokenizer: "none"         # Optional. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+    model: "BAAI/bge-small-en-v1.5" # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (example for local use) or text-embedding-3-small (for OpenAI use)
+    api_key: "${OPENAI_API_KEY}" # API key for the embedding service (required for OpenAI models)
+    batch_size: 100 # Number of chunks to process in one batch
+    vector_size: 384 # Optional. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
+    tokenizer: "none" # Optional. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
     # Token limits (adjust based on your embedding model):
     # - OpenAI text-embedding-3-small/large: 8192 tokens max
-    # - OpenAI text-embedding-ada-002: 8192 tokens max  
+    # - OpenAI text-embedding-ada-002: 8192 tokens max
     # - BAAI/bge-small-en-v1.5: 512 tokens max
     # - sentence-transformers models: varies (typically 256-512)
-    max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
-    max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
+    max_tokens_per_request: 8000 # Maximum total tokens per API request (leave buffer below model limit)
+    max_tokens_per_chunk: 8000 # Maximum tokens per individual chunk (should match model's context limit)
 
   # Unified LLM configuration (provider-agnostic)
   # New preferred configuration block; legacy embedding/markitdown fields still work
   llm:
-    provider: "openai"               # openai | ollama | azure_openai | custom
-    base_url: "https://api.openai.com/v1"  # For Azure use the resource root, e.g. https://<resource>.openai.azure.com
+    provider: "openai" # openai | ollama | azure_openai | custom
+    base_url: "https://api.openai.com/v1" # For Azure use the resource root, e.g. https://<resource>.openai.azure.com
     api_key: "${LLM_API_KEY}"
-    api_version: null                 # Required for azure_openai (e.g., 2024-05-01-preview)
+    api_version: null # Required for azure_openai (e.g., 2024-05-01-preview)
     headers: {}
     models:
       embeddings: "text-embedding-3-small"
       chat: "gpt-4o-mini"
-    tokenizer: "none"               # cl100k_base | none
+    tokenizer: "none" # cl100k_base | none
     request:
       timeout_s: 30
       max_retries: 3
@@ -158,38 +157,40 @@ global:
   # Cross-encoder re-ranking configuration
   # Controls fine-grained re-ranking using cross-encoders for improved precision
   reranking:
-    enabled: true                                          # Enable cross-encoder re-ranking (improves precision)
-    model: "cross-encoder/ms-marco-MiniLM-L-12-v2"        # Cross-encoder model to use
-                                                            # Other options:
-                                                            #  - cross-encoder/ms-marco-TinyBERT-L-2-v2 (ultra-fast, low quality)
-                                                            #  - cross-encoder/ms-marco-MiniLM-L-12-v2 (fast, good quality) - recommended
-                                                            #  - cross-encoder/ms-marco-MiniLM-L-6-v2 (faster, slightly lower quality)
-                                                            #  - cross-encoder/qnli-distilroberta-base (very fast)
-    device: "cpu"                                         # Cross-encoder device to use
-                                                            # Other options:
-                                                            # - cpu: slow, stable, no GPU required
-                                                            # - cuda: fastest, requires NVIDIA GPU
-                                                            # - mps: medium speed, Apple Silicon (M1/M2/M3)
-    batch_size: 32                                        # Batch size for scoring (higher = faster but more memory)
+    enabled: true # Enable cross-encoder re-ranking (improves precision)
+    model:
+      "cross-encoder/ms-marco-MiniLM-L-12-v2" # Cross-encoder model to use
+      # Other options:
+      #  - cross-encoder/ms-marco-TinyBERT-L-2-v2 (ultra-fast, low quality)
+      #  - cross-encoder/ms-marco-MiniLM-L-12-v2 (fast, good quality) - recommended
+      #  - cross-encoder/ms-marco-MiniLM-L-6-v2 (faster, slightly lower quality)
+      #  - cross-encoder/qnli-distilroberta-base (very fast)
+    device:
+      "cpu" # Cross-encoder device to use
+      # Other options:
+      # - cpu: slow, stable, no GPU required
+      # - cuda: fastest, requires NVIDIA GPU
+      # - mps: medium speed, Apple Silicon (M1/M2/M3)
+    batch_size: 32 # Batch size for scoring (higher = faster but more memory)
 
   # State management configuration
   # Controls how document ingestion state is tracked
   state_management:
-    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file, ignored in workspace mode
-    table_prefix: "qdrant_loader_"     # Prefix for database tables
-    connection_pool:                   # Connection pool settings
-      size: 5                         # Maximum number of connections
-      timeout: 30                  # Connection timeout in seconds
+    database_path: "${STATE_DB_PATH}" # Path to SQLite database file, ignored in workspace mode
+    table_prefix: "qdrant_loader_" # Prefix for database tables
+    connection_pool: # Connection pool settings
+      size: 5 # Maximum number of connections
+      timeout: 30 # Connection timeout in seconds
 
   # File conversion configuration
   # Controls how non-text files (PDF, Office docs, etc.) are converted to text
   file_conversion:
     # Maximum file size for conversion (in bytes)
-    max_file_size: 52428800  # 50MB
-    
+    max_file_size: 52428800 # 50MB
+
     # Timeout for conversion operations (in seconds)
-    conversion_timeout: 300  # 5 minutes
-    
+    conversion_timeout: 300 # 5 minutes
+
     # MarkItDown specific settings
     markitdown:
       # Enable LLM integration for image descriptions
@@ -210,7 +211,7 @@ projects:
     project_id: "docs-project"
     display_name: "Documentation Project"
     description: "Company documentation and guides"
-    
+
     # Project-specific source configurations
     sources:
       # Public documentation sources (websites, documentation)
@@ -223,32 +224,32 @@ projects:
           # Good: "https://docs.example.com/" or "https://docs.example.com/v1/"
           # Bad: "https://docs.example.com/index.html" (specific file)
           base_url: "https://docs.example.com/"
-          
+
           # Specific version of the documentation to fetch
           version: "1.0"
-          
+
           # Content type of the documentation
-          content_type: "html"  # Options: html, markdown, etc.
-          
+          content_type: "html" # Options: html, markdown, etc.
+
           # Optional: Specific path pattern to match documentation pages
           # Uses glob syntax: ** matches any directory, * matches any file
           # Pattern is matched against the path portion after base_url
-          # Example: if base_url is "https://docs.example.com/" and full URL is 
+          # Example: if base_url is "https://docs.example.com/" and full URL is
           # "https://docs.example.com/guide/intro.html", then path is "guide/intro.html"
-          path_pattern: "*.html"  # Match all HTML files
-          
+          path_pattern: "*.html" # Match all HTML files
+
           # Optional: List of paths to exclude from processing
           exclude_paths:
             - "/docs/{version}/api-reference"
             - "/docs/{version}/changelog"
-          
+
           # Optional: CSS selectors for content extraction
           # Helps identify and extract relevant content from HTML
           selectors:
             # Main content container selector
             content: "article.main-content"
             # Elements to remove (navigation, headers, footers)
-            remove: 
+            remove:
               - "nav"
               - "header"
               - "footer"
@@ -266,21 +267,21 @@ projects:
       git:
         # Example configuration for a documentation repository
         docs-repo:
-          base_url: "https://github.com/example/docs.git"  # Repository URL
-          branch: "main"                             # Branch to process
-          include_paths:                             # Paths to include (glob patterns)
+          base_url: "https://github.com/example/docs.git" # Repository URL
+          branch: "main" # Branch to process
+          include_paths: # Paths to include (glob patterns)
             - "docs/**"
             - "README.md"
-          exclude_paths:                             # Paths to exclude (glob patterns)
+          exclude_paths: # Paths to exclude (glob patterns)
             - "docs/archive/**"
             - "node_modules/**"
-          file_types:                                # File extensions to process
+          file_types: # File extensions to process
             - "*.md"
             - "*.rst"
             - "*.txt"
-          max_file_size: 1048576                    # Maximum file size in bytes (1MB)
-          depth: 1                                  # Maximum directory depth to process
-          token: "${DOCS_REPO_TOKEN}"               # GitHub Personal Access Token or none
+          max_file_size: 1048576 # Maximum file size in bytes (1MB)
+          depth: 1 # Maximum directory depth to process
+          token: "${DOCS_REPO_TOKEN}" # GitHub Personal Access Token or none
 
           # File conversion settings for this source
           # Enable file conversion for this connector
@@ -291,14 +292,14 @@ projects:
     project_id: "code-project"
     display_name: "Code Repository Project"
     description: "Source code and technical documentation"
-    
+
     sources:
       git:
         # Example configuration for a code repository
         main-repo:
-          base_url: "${CODE_REPO_URL}"                   # Use environment variable
+          base_url: "${CODE_REPO_URL}" # Use environment variable
           branch: "main"
-          token: "${CODE_REPO_TOKEN}"                    # GitHub Personal Access Token or none
+          token: "${CODE_REPO_TOKEN}" # GitHub Personal Access Token or none
           include_paths:
             - "src/**"
             - "docs/**"
@@ -325,22 +326,22 @@ projects:
     project_id: "kb-project"
     display_name: "Knowledge Base Project"
     description: "Internal knowledge base and wiki"
-    
+
     sources:
       # Confluence documentation sources
       confluence:
         # Example configuration for Confluence Cloud
         company-wiki:
-          base_url: "https://mycompany.atlassian.net/wiki"  # Confluence Cloud URL
-          deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
-          space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
-          content_types:                            # Types of content to process
+          base_url: "https://mycompany.atlassian.net/wiki" # Confluence Cloud URL
+          deployment_type: "cloud" # Deployment type: cloud, datacenter, or server
+          space_key: "${CONFLUENCE_SPACE_KEY}" # Space to process
+          content_types: # Types of content to process
             - "page"
             - "blogpost"
-          include_labels: []                        # Only process content with these labels
-          exclude_labels: []                        # Skip content with these labels
-          token: "${CONFLUENCE_TOKEN}"              # Confluence API token (from id.atlassian.com)
-          email: "${CONFLUENCE_EMAIL}"              # Confluence user email
+          include_labels: [] # Only process content with these labels
+          exclude_labels: [] # Skip content with these labels
+          token: "${CONFLUENCE_TOKEN}" # Confluence API token (from id.atlassian.com)
+          email: "${CONFLUENCE_EMAIL}" # Confluence user email
 
           # File conversion settings for this source
           # Enable file conversion for this connector
@@ -352,15 +353,15 @@ projects:
       jira:
         # Example configuration for Jira Cloud
         support-project:
-          base_url: "https://mycompany.atlassian.net"  # Jira Cloud URL
-          deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
-          project_key: "${JIRA_PROJECT_KEY}"        # Project to process
-          requests_per_minute: 60                   # Rate limit for API calls
-          page_size: 50                            # Number of issues per API request
-          process_attachments: true                 # Whether to process issue attachments
-          track_last_sync: true                    # Track last sync time for incremental updates
-          token: "${JIRA_TOKEN}"                    # Jira API token (from id.atlassian.com)
-          email: "${JIRA_EMAIL}"                    # Jira user email
+          base_url: "https://mycompany.atlassian.net" # Jira Cloud URL
+          deployment_type: "cloud" # Deployment type: cloud, datacenter, or server
+          project_key: "${JIRA_PROJECT_KEY}" # Project to process
+          requests_per_minute: 60 # Rate limit for API calls
+          page_size: 50 # Number of issues per API request
+          process_attachments: true # Whether to process issue attachments
+          track_last_sync: true # Track last sync time for incremental updates
+          token: "${JIRA_TOKEN}" # Jira API token (from id.atlassian.com)
+          email: "${JIRA_EMAIL}" # Jira user email
 
           # File conversion settings for this source
           # Enable file conversion for this connector
@@ -373,13 +374,13 @@ projects:
     project_id: "local-project"
     display_name: "Local Files Project"
     description: "Local documentation and files"
-    
+
     sources:
       # Local file sources
       localfile:
         # Example configuration for a local file source
         local-docs:
-          base_url: "file:///path/to/local/files"  # Base directory to scan
+          base_url: "file:///path/to/local/files" # Base directory to scan
           include_paths:
             - "docs/**"
             - "README.md"
@@ -392,7 +393,7 @@ projects:
             - "*.py"
             - "*.json"
             - "*.yaml"
-          max_file_size: 1048576  # Maximum file size in bytes (1MB)
+          max_file_size: 1048576 # Maximum file size in bytes (1MB)
 
           # File conversion settings for this source
           # Enable file conversion for this connector
