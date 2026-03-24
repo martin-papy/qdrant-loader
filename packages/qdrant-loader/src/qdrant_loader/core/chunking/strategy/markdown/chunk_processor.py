@@ -81,15 +81,18 @@ class ChunkProcessor:
                 "topics": analysis_result.topics,
                 "key_phrases": analysis_result.key_phrases,
             }
+            self._processed_chunks[chunk] = results
+            logger.debug(
+                "Completed semantic analysis for chunk", chunk_index=chunk_index
+            )
         else:
             results = {
                 "entities": [],
                 "topics": [],
                 "key_phrases": [],
             }
-        self._processed_chunks[chunk] = results
-
-        logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
+            self._processed_chunks[chunk] = results
+            logger.debug("Semantic analysis skipped for chunk", chunk_index=chunk_index)
         return results
 
     def create_chunk_document(
