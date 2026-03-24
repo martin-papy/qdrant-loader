@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
+    from qdrant_loader.config.models import ProjectConfig
     from qdrant_loader.core.document import Document
 
 
@@ -16,13 +17,19 @@ class BaseChunkProcessor(ABC):
     implements its own chunk processing logic while following common patterns.
     """
 
-    def __init__(self, settings: "Settings"):
+    def __init__(
+        self,
+        settings: "Settings",
+        project_config: "ProjectConfig | None" = None,
+    ):
         """Initialize the chunk processor.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         self.settings = settings
+        self.project_config = project_config
         self.chunk_size = settings.global_config.chunking.chunk_size
         self.max_chunks_per_document = (
             settings.global_config.chunking.max_chunks_per_document

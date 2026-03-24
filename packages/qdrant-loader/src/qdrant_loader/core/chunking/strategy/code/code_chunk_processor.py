@@ -22,8 +22,8 @@ logger = structlog.get_logger(__name__)
 class CodeChunkProcessor(BaseChunkProcessor):
     """Chunk processor for code documents with programming language context."""
 
-    def __init__(self, settings):
-        super().__init__(settings)
+    def __init__(self, settings, project_config=None):
+        super().__init__(settings, project_config)
         self.logger = logger
         self.code_config = getattr(
             settings.global_config.chunking.strategies, "code", None

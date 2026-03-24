@@ -1,6 +1,7 @@
 """JSON-specific chunking strategy for structured data using modular architecture."""
 
 import json
+from typing import TYPE_CHECKING
 
 import structlog
 
@@ -21,6 +22,9 @@ from qdrant_loader.core.chunking.strategy.json.json_section_splitter import (
 )
 from qdrant_loader.core.document import Document
 
+if TYPE_CHECKING:
+    from qdrant_loader.config.models import ProjectConfig
+
 logger = structlog.get_logger(__name__)
 
 
@@ -34,13 +38,15 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
     - JSON-specific optimization for NLP processing
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, project_config: "ProjectConfig | None" = None):
         """Initialize the JSON chunking strategy.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         super().__init__(settings)
+        self.project_config = project_config
         self.logger = logger
         self.progress_tracker = ChunkingProgressTracker(logger)
 
@@ -48,7 +54,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         self.document_parser = JSONDocumentParser(settings)
         self.section_splitter = JSONSectionSplitter(settings)
         self.metadata_extractor = JSONMetadataExtractor(settings)
-        self.chunk_processor = JSONChunkProcessor(settings)
+        self.chunk_processor = JSONChunkProcessor(settings, project_config)
 
         # JSON-specific configuration
         self.json_config = settings.global_config.chunking.strategies.json_strategy

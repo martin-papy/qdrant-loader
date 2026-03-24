@@ -12,9 +12,14 @@ from .html_metadata_extractor import HTMLMetadataExtractor
 class HTMLChunkProcessor(BaseChunkProcessor):
     """Chunk processor for HTML documents with semantic and accessibility analysis."""
 
-    def __init__(self, settings: Settings):
-        """Initialize the HTML chunk processor."""
-        super().__init__(settings)
+    def __init__(self, settings: Settings, project_config=None):
+        """Initialize the HTML chunk processor.
+        
+        Args:
+            settings: Configuration settings
+            project_config: Optional project-specific configuration
+        """
+        super().__init__(settings, project_config)
 
         # Initialize HTML-specific metadata extractor
         self.metadata_extractor = HTMLMetadataExtractor()

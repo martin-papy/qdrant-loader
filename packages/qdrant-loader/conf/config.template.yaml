@@ -147,6 +147,7 @@ global:
   # Semantic analysis configuration
   # Controls text processing and topic extraction
   semantic_analysis:
+    enabled: true                    # Enable semantic analysis for text chunks
     num_topics: 3                    # Number of topics to extract using LDA
     lda_passes: 10                   # Number of passes for LDA training
     spacy_model: "en_core_web_md"    # spaCy model for text processing

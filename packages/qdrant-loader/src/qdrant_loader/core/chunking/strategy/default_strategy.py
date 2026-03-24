@@ -22,6 +22,7 @@ from .default import (
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
+    from qdrant_loader.config.models import ProjectConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -43,20 +44,22 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
     - TextChunkProcessor: Coordinates processing and semantic analysis
     """
 
-    def __init__(self, settings: "Settings"):
+    def __init__(self, settings: "Settings", project_config: "ProjectConfig | None" = None):
         """Initialize the default chunking strategy.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         super().__init__(settings)
+        self.project_config = project_config
         self.progress_tracker = ChunkingProgressTracker(logger)
 
         # Initialize modular components
         self.document_parser = TextDocumentParser()
         self.section_splitter = TextSectionSplitter(settings)
         self.metadata_extractor = TextMetadataExtractor()
-        self.chunk_processor = TextChunkProcessor(settings)
+        self.chunk_processor = TextChunkProcessor(settings, project_config)
 
         # Give section splitter access to tokenizer
         self.section_splitter._parent_strategy = self

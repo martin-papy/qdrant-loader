@@ -10,6 +10,7 @@ from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyze
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
+    from qdrant_loader.config.models import ProjectConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -17,20 +18,40 @@ logger = structlog.get_logger(__name__)
 class ChunkProcessor:
     """Handles chunk processing coordination including parallel execution and semantic analysis."""
 
-    def __init__(self, settings: "Settings"):
+    def __init__(
+        self,
+        settings: "Settings",
+        project_config: "ProjectConfig | None" = None,
+    ):
         """Initialize the chunk processor.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         self.settings = settings
+        self.project_config = project_config
 
-        # Initialize semantic analyzer
-        self.semantic_analyzer = SemanticAnalyzer(
-            spacy_model=settings.global_config.semantic_analysis.spacy_model,
-            num_topics=settings.global_config.semantic_analysis.num_topics,
-            passes=settings.global_config.semantic_analysis.lda_passes,
+        # Resolve which semantic analysis config to use
+        # Use project-level override if set, otherwise fall back to global
+        semantic_cfg = (
+            project_config.semantic_analysis
+            if project_config and project_config.semantic_analysis
+            else settings.global_config.semantic_analysis
         )
+        
+        # Store whether semantic analysis is enabled
+        self._semantic_analysis_enabled = semantic_cfg.enabled
+
+        # Initialize semantic analyzer only if enabled
+        if self._semantic_analysis_enabled:
+            self.semantic_analyzer = SemanticAnalyzer(
+                spacy_model=semantic_cfg.spacy_model,
+                num_topics=semantic_cfg.num_topics,
+                passes=semantic_cfg.lda_passes,
+            )
+        else:
+            self.semantic_analyzer = None
 
         # Cache for processed chunks to avoid recomputation
         self._processed_chunks: dict[str, dict[str, Any]] = {}
@@ -50,7 +71,7 @@ class ChunkProcessor:
             total_chunks: Total number of chunks
 
         Returns:
-            Dictionary containing processing results
+            Dictionary containing processing results (empty if semantic analysis disabled)
         """
         logger.debug(
             "Processing chunk",
@@ -58,6 +79,10 @@ class ChunkProcessor:
             total_chunks=total_chunks,
             chunk_length=len(chunk),
         )
+
+        # Return empty results if semantic analysis is disabled
+        if not self._semantic_analysis_enabled or self.semantic_analyzer is None:
+            return {}
 
         # Check cache first
         if chunk in self._processed_chunks:

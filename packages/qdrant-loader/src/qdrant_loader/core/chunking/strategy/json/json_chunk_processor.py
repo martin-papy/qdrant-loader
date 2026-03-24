@@ -15,13 +15,14 @@ logger = structlog.get_logger(__name__)
 class JSONChunkProcessor(BaseChunkProcessor):
     """Chunk processor for JSON documents."""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, project_config=None):
         """Initialize JSON chunk processor.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration
         """
-        super().__init__(settings)
+        super().__init__(settings, project_config)
         self.json_config = settings.global_config.chunking.strategies.json_strategy
 
     def create_chunk_document(

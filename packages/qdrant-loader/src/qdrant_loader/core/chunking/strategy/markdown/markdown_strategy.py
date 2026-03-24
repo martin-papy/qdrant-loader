@@ -15,6 +15,7 @@ from .section_splitter import SectionSplitter
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
+    from qdrant_loader.config.models import ProjectConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -36,20 +37,22 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
     - ChunkProcessor: Coordinates parallel processing and semantic analysis
     """
 
-    def __init__(self, settings: "Settings"):
+    def __init__(self, settings: "Settings", project_config: "ProjectConfig | None" = None):
         """Initialize the Markdown chunking strategy.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         super().__init__(settings)
+        self.project_config = project_config
         self.progress_tracker = ChunkingProgressTracker(logger)
 
         # Initialize modular components
         self.document_parser = DocumentParser()
         self.section_splitter = SectionSplitter(settings)
         self.metadata_extractor = MetadataExtractor(settings)
-        self.chunk_processor = ChunkProcessor(settings)
+        self.chunk_processor = ChunkProcessor(settings, project_config)
 
         # Apply any chunk overlap that was set before components were initialized
         if hasattr(self, "_chunk_overlap"):

@@ -1,6 +1,7 @@
 """HTML-specific chunking strategy with modular architecture."""
 
 import structlog
+from typing import TYPE_CHECKING
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
@@ -13,6 +14,9 @@ from .html import (
     HTMLMetadataExtractor,
     HTMLSectionSplitter,
 )
+
+if TYPE_CHECKING:
+    from qdrant_loader.config.models import ProjectConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -30,13 +34,15 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
     fallbacks for large or malformed documents.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, project_config: "ProjectConfig | None" = None):
         """Initialize the HTML chunking strategy with modular components.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         super().__init__(settings)
+        self.project_config = project_config
         self.logger = logger
         self.progress_tracker = ChunkingProgressTracker(logger)
 
@@ -44,7 +50,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         self.document_parser = HTMLDocumentParser()
         self.section_splitter = HTMLSectionSplitter(settings)
         self.metadata_extractor = HTMLMetadataExtractor()
-        self.chunk_processor = HTMLChunkProcessor(settings)
+        self.chunk_processor = HTMLChunkProcessor(settings, project_config)
 
         # Get configuration settings
         self.html_config = settings.global_config.chunking.strategies.html

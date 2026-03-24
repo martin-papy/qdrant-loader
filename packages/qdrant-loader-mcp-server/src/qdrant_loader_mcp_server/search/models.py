@@ -1,6 +1,6 @@
 """Search result models."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SearchResult(BaseModel):
@@ -71,8 +71,8 @@ class SearchResult(BaseModel):
     # 🔥 NEW: Navigation context
     previous_section: str | None = None
     next_section: str | None = None
-    sibling_sections: list[str] = []
-    subsections: list[str] = []
+    sibling_sections: list[str] = Field(default=[], exclude=True)
+    subsections: list[str] = Field(default=[], exclude=True)
     document_hierarchy: list[str] = []
 
     # 🔥 NEW: Chunking context

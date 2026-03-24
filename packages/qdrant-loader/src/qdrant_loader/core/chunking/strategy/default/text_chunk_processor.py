@@ -10,8 +10,8 @@ from qdrant_loader.core.document import Document
 class TextChunkProcessor(BaseChunkProcessor):
     """Chunk processor for text documents with enhanced text-specific processing."""
 
-    def __init__(self, settings: Settings):
-        super().__init__(settings)
+    def __init__(self, settings: Settings, project_config=None):
+        super().__init__(settings, project_config)
         # Get strategy-specific configuration
         self.default_config = settings.global_config.chunking.strategies.default
 

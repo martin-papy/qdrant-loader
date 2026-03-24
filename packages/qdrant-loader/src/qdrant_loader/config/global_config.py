@@ -20,6 +20,11 @@ from qdrant_loader.core.file_conversion import FileConversionConfig
 class SemanticAnalysisConfig(BaseConfig):
     """Configuration for semantic analysis."""
 
+    enabled: bool = Field(
+        default=True,
+        description="Enable semantic analysis for enhanced document enrichment",
+    )
+
     num_topics: int = Field(
         default=3, description="Number of topics to extract using LDA"
     )
@@ -79,6 +84,7 @@ class GlobalConfig(BaseConfig):
             "embedding": self.embedding.model_dump(),
             "llm": self.llm,
             "semantic_analysis": {
+                "enabled": self.semantic_analysis.enabled,
                 "num_topics": self.semantic_analysis.num_topics,
                 "lda_passes": self.semantic_analysis.lda_passes,
                 "spacy_model": self.semantic_analysis.spacy_model,

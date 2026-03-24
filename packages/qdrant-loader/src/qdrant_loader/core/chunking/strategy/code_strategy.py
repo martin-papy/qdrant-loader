@@ -1,5 +1,7 @@
 """Code-specific chunking strategy for programming languages."""
 
+from typing import TYPE_CHECKING
+
 import structlog
 
 from qdrant_loader.config import Settings
@@ -14,6 +16,9 @@ from .code import (
     CodeSectionSplitter,
 )
 
+if TYPE_CHECKING:
+    from qdrant_loader.config.models import ProjectConfig
+
 logger = structlog.get_logger(__name__)
 
 
@@ -25,13 +30,15 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
     Uses modular components for parsing, splitting, metadata extraction, and chunk processing.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, project_config: "ProjectConfig | None" = None):
         """Initialize the code chunking strategy.
 
         Args:
             settings: Configuration settings
+            project_config: Optional project-specific configuration to override global settings
         """
         super().__init__(settings)
+        self.project_config = project_config
         self.logger = logger
         self.progress_tracker = ChunkingProgressTracker(logger)
 
@@ -39,7 +46,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         self.document_parser = CodeDocumentParser(settings)
         self.section_splitter = CodeSectionSplitter(settings)
         self.metadata_extractor = CodeMetadataExtractor(settings)
-        self.chunk_processor = CodeChunkProcessor(settings)
+        self.chunk_processor = CodeChunkProcessor(settings, project_config)
 
         # Code-specific configuration
         self.code_config = settings.global_config.chunking.strategies.code

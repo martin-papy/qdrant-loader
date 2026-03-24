@@ -10,6 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from .global_config import SemanticAnalysisConfig
 from .sources import SourcesConfig
 
 
@@ -41,6 +42,11 @@ class ProjectConfig(BaseModel):
     description: str | None = Field(None, description="Project description")
     sources: SourcesConfig = Field(
         default_factory=SourcesConfig, description="Project-specific sources"
+    )
+    semantic_analysis: SemanticAnalysisConfig | None = Field(
+        default=None,
+        description="Override global semantic analysis settings for this project. "
+                    "If None, uses global_config.semantic_analysis.",
     )
     overrides: dict[str, Any] = Field(
         default_factory=dict, description="Project-specific configuration overrides"

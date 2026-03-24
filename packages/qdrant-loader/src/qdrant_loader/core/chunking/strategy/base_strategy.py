@@ -11,6 +11,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
+    from qdrant_loader.config.models import ProjectConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -28,6 +29,7 @@ class BaseChunkingStrategy(ABC):
         settings: "Settings",
         chunk_size: int | None = None,
         chunk_overlap: int | None = None,
+        project_config: "ProjectConfig | None" = None,
     ):
         """Initialize the chunking strategy.
 
@@ -35,8 +37,10 @@ class BaseChunkingStrategy(ABC):
             settings: Application settings containing configuration for the strategy
             chunk_size: Maximum number of tokens per chunk (optional, defaults to settings value)
             chunk_overlap: Number of tokens to overlap between chunks (optional, defaults to settings value)
+            project_config: Optional project-specific configuration to override global settings
         """
         self.settings = settings
+        self.project_config = project_config
         self.logger = LoggingConfig.get_logger(self.__class__.__name__)
 
         # Initialize token-based chunking parameters
