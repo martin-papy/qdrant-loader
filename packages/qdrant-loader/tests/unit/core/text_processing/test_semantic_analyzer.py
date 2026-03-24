@@ -1,12 +1,13 @@
 """Tests for SemanticAnalyzer."""
 
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from qdrant_loader.core.text_processing.semantic_analyzer import (
     SemanticAnalysisResult,
     SemanticAnalyzer,
+    is_meaningful_text,
 )
 
 
@@ -37,6 +38,71 @@ class TestSemanticAnalysisResult:
         assert result.topics == topics
         assert result.key_phrases == key_phrases
         assert result.document_similarity == doc_similarity
+
+
+class TestIsMeaningfulText:
+    """Test cases for is_meaningful_text function."""
+
+    def test_text_with_letters_is_meaningful(self):
+        """Test that text with letters is considered meaningful."""
+        assert is_meaningful_text("Apple") is True
+        assert is_meaningful_text("hello") is True
+        assert is_meaningful_text("USA") is True
+
+    def test_text_with_digits_is_meaningful(self):
+        """Test that text with digits is considered meaningful."""
+        assert is_meaningful_text("123") is True
+        assert is_meaningful_text("2024") is True
+
+    def test_text_with_alphanumeric_is_meaningful(self):
+        """Test that text with letters and numbers is meaningful."""
+        assert is_meaningful_text("Apple123") is True
+        assert is_meaningful_text("COVID-19") is True
+        assert is_meaningful_text("Section1.2") is True
+
+    def test_punctuation_only_not_meaningful(self):
+        """Test that punctuation-only text is not meaningful."""
+        assert is_meaningful_text(".") is False
+        assert is_meaningful_text("#") is False
+        assert is_meaningful_text("|") is False
+        assert is_meaningful_text(",") is False
+        assert is_meaningful_text("...") is False
+        assert is_meaningful_text("---") is False
+        assert is_meaningful_text("!!!") is False
+
+    def test_special_symbols_not_meaningful(self):
+        """Test that special symbols without content are not meaningful."""
+        assert is_meaningful_text("@") is False
+        assert is_meaningful_text("$") is False
+        assert is_meaningful_text("%") is False
+        assert is_meaningful_text("&") is False
+        assert is_meaningful_text("*") is False
+        assert is_meaningful_text("~") is False
+
+    def test_whitespace_not_meaningful(self):
+        """Test that whitespace-only text is not meaningful."""
+        assert is_meaningful_text(" ") is False
+        assert is_meaningful_text("  ") is False
+        assert is_meaningful_text("\t") is False
+        assert is_meaningful_text("\n") is False
+
+    def test_mixed_with_punctuation_is_meaningful(self):
+        """Test that text with meaningful content and punctuation is still meaningful."""
+        assert is_meaningful_text("Apple.") is True
+        assert is_meaningful_text("#hashtag") is True
+        assert is_meaningful_text("@username") is True
+        assert is_meaningful_text("(test)") is True
+
+    def test_empty_string_not_meaningful(self):
+        """Test that empty string is not meaningful."""
+        assert is_meaningful_text("") is False
+
+    def test_table_separators_not_meaningful(self):
+        """Test that table separators (common in Excel/markdown) are not meaningful."""
+        assert is_meaningful_text("|") is False
+        assert is_meaningful_text("|-") is False
+        assert is_meaningful_text("|--") is False
+        assert is_meaningful_text("||") is False
 
 
 class TestSemanticAnalyzer:
@@ -236,6 +302,166 @@ class TestSemanticAnalyzer:
             assert "context" in entity
             assert "related_entities" in entity
 
+    def test_extract_entities_filters_punctuation_only(self):
+        """Test that entity extraction filters out punctuation-only entities."""
+        # Create custom mock_nlp with MISC label support
+        mock_nlp = Mock()
+
+        # Mock vocab.strings to support subscripting like a dict
+        vocab_strings_dict = {
+            "ORG": "Organization",
+            "PERSON": "Person",
+            "MISC": "Miscellaneous",
+        }
+        mock_vocab_strings = MagicMock()
+        mock_vocab_strings.__getitem__.side_effect = lambda key: vocab_strings_dict.get(
+            key, "Unknown"
+        )
+        mock_nlp.vocab.strings = mock_vocab_strings
+        mock_nlp.vocab.vectors_length = 0
+
+        with patch("spacy.load", return_value=mock_nlp):
+            # Create mock document with both meaningful and punctuation-only entities
+            mock_doc = MagicMock()
+
+            # Mock doc slicing for context extraction
+            mock_context = Mock()
+            mock_context.text = "Apple is a company"
+            mock_doc.__getitem__.return_value = mock_context
+
+            # Mock entity 1: meaningful (Apple)
+            entity1 = Mock()
+            entity1.text = "Apple"
+            entity1.label_ = "ORG"
+            entity1.start_char = 0
+            entity1.end_char = 5
+            entity1.sent = Mock()
+            entity1.sent.start = 0
+            entity1.sent.end = 10
+            sent_token1 = Mock()
+            sent_token1.text = "Apple"
+            sent_token1.ent_type_ = "ORG"
+            sent_token1.dep_ = "nsubj"
+            entity1.sent.__iter__ = Mock(return_value=iter([sent_token1]))
+
+            # Mock entity 2: punctuation only (should be filtered)
+            entity2 = Mock()
+            entity2.text = "#"
+            entity2.label_ = "MISC"
+            entity2.start_char = 6
+            entity2.end_char = 7
+            entity2.sent = Mock()
+            entity2.sent.start = 0
+            entity2.sent.end = 10
+            entity2.sent.__iter__ = Mock(return_value=iter([]))
+
+            # Mock entity 3: pipe character (should be filtered)
+            entity3 = Mock()
+            entity3.text = "|"
+            entity3.label_ = "MISC"
+            entity3.start_char = 8
+            entity3.end_char = 9
+            entity3.sent = Mock()
+            entity3.sent.start = 0
+            entity3.sent.end = 10
+            entity3.sent.__iter__ = Mock(return_value=iter([]))
+
+            # Mock entity 4: dots only (should be filtered)
+            entity4 = Mock()
+            entity4.text = "..."
+            entity4.label_ = "MISC"
+            entity4.start_char = 10
+            entity4.end_char = 13
+            entity4.sent = Mock()
+            entity4.sent.start = 0
+            entity4.sent.end = 13
+            entity4.sent.__iter__ = Mock(return_value=iter([]))
+
+            mock_doc.ents = [entity1, entity2, entity3, entity4]
+
+            analyzer = SemanticAnalyzer()
+            entities = analyzer._extract_entities(mock_doc)
+
+            # Should only return Apple, filter out #, |, ...
+            assert len(entities) == 1
+            assert entities[0]["text"] == "Apple"
+
+            # Verify no punctuation-only entities
+            entity_texts = [e["text"] for e in entities]
+            assert "#" not in entity_texts
+            assert "|" not in entity_texts
+            assert "..." not in entity_texts
+
+    def test_extract_entities_filters_related_entities(self):
+        """Test that related entities are also filtered for meaningfulness."""
+        # Create custom mock_nlp with MISC label support
+        mock_nlp = Mock()
+
+        # Mock vocab.strings to support subscripting like a dict
+        vocab_strings_dict = {
+            "ORG": "Organization",
+            "PERSON": "Person",
+            "MISC": "Miscellaneous",
+        }
+        mock_vocab_strings = MagicMock()
+        mock_vocab_strings.__getitem__.side_effect = lambda key: vocab_strings_dict.get(
+            key, "Unknown"
+        )
+        mock_nlp.vocab.strings = mock_vocab_strings
+        mock_nlp.vocab.vectors_length = 0
+
+        with patch("spacy.load", return_value=mock_nlp):
+            mock_doc = MagicMock()
+
+            # Mock doc slicing for context extraction
+            mock_context = Mock()
+            mock_context.text = "Apple Inc Company"
+            mock_doc.__getitem__.return_value = mock_context
+
+            # Create entity with mixed related entities
+            entity = Mock()
+            entity.text = "Apple"
+            entity.label_ = "ORG"
+            entity.start_char = 0
+            entity.end_char = 5
+            entity.sent = Mock()
+            entity.sent.start = 0
+            entity.sent.end = 10
+
+            # Related tokens: meaningful and garbage
+            related_token1 = Mock()
+            related_token1.text = "Inc"
+            related_token1.ent_type_ = "ORG"
+            related_token1.dep_ = "compound"
+
+            related_token2 = Mock()
+            related_token2.text = "#"
+            related_token2.ent_type_ = "MISC"
+            related_token2.dep_ = "dep"
+
+            related_token3 = Mock()
+            related_token3.text = "Company"
+            related_token3.ent_type_ = "ORG"
+            related_token3.dep_ = "appos"
+
+            entity.sent.__iter__ = Mock(
+                return_value=iter([related_token1, related_token2, related_token3])
+            )
+            mock_doc.ents = [entity]
+
+            analyzer = SemanticAnalyzer()
+            entities = analyzer._extract_entities(mock_doc)
+
+            assert len(entities) == 1
+            related = entities[0]["related_entities"]
+
+            # Should have 2 related entities (Inc, Company), not #
+            assert len(related) == 2
+            related_texts = [r["text"] for r in related]
+            assert "Inc" in related_texts
+            assert "Company" in related_texts
+            assert "#" not in related_texts
+
     def test_get_pos_tags(self, mock_nlp, mock_doc):
         """Test POS tag extraction."""
         with patch("spacy.load", return_value=mock_nlp):
@@ -251,14 +477,73 @@ class TestSemanticAnalyzer:
             assert tag1["tag"] == "NNP"
             assert tag1["lemma"] == "apple"
             assert tag1["is_stop"] is False
-            assert tag1["is_punct"] is False
-            assert tag1["is_space"] is False
+            # Note: is_punct and is_space are no longer in output (filtered)
 
             # Check second token (is)
             tag2 = pos_tags[1]
             assert tag2["text"] == "is"
             assert tag2["pos"] == "VERB"
             assert tag2["is_stop"] is True
+
+    def test_get_pos_tags_filters_punctuation_and_spaces(self, mock_nlp):
+        """Test that POS tagging filters out punctuation and space tokens."""
+        with patch("spacy.load", return_value=mock_nlp):
+            # Create mock document with tokens including spaces and punctuation
+            mock_doc = Mock()
+
+            # Mock tokens: word, space, punctuation, word
+            token1 = Mock()
+            token1.text = "Hello"
+            token1.pos_ = "NOUN"
+            token1.tag_ = "NN"
+            token1.lemma_ = "hello"
+            token1.is_stop = False
+            token1.is_punct = False
+            token1.is_space = False
+
+            token2 = Mock()
+            token2.text = " "
+            token2.pos_ = "SPACE"
+            token2.tag_ = "_SP"
+            token2.lemma_ = " "
+            token2.is_stop = False
+            token2.is_punct = False
+            token2.is_space = True  # Should be filtered
+
+            token3 = Mock()
+            token3.text = ","
+            token3.pos_ = "PUNCT"
+            token3.tag_ = ","
+            token3.lemma_ = ","
+            token3.is_stop = False
+            token3.is_punct = True  # Should be filtered
+            token3.is_space = False
+
+            token4 = Mock()
+            token4.text = "world"
+            token4.pos_ = "NOUN"
+            token4.tag_ = "NN"
+            token4.lemma_ = "world"
+            token4.is_stop = False
+            token4.is_punct = False
+            token4.is_space = False
+
+            mock_doc.__iter__ = Mock(
+                return_value=iter([token1, token2, token3, token4])
+            )
+
+            analyzer = SemanticAnalyzer()
+            pos_tags = analyzer._get_pos_tags(mock_doc)
+
+            # Should only have 2 tokens (Hello and world), spaces/punct filtered
+            assert len(pos_tags) == 2
+            assert pos_tags[0]["text"] == "Hello"
+            assert pos_tags[1]["text"] == "world"
+
+            # Verify no punctuation or spaces in output
+            for tag in pos_tags:
+                assert not tag["text"].isspace()
+                assert tag["text"] not in [",", ".", "|", ";", ":", "!"]
 
     def test_get_dependencies(self, mock_nlp, mock_doc):
         """Test dependency parsing."""
