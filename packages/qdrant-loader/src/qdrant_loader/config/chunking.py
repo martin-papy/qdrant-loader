@@ -9,9 +9,6 @@ class DefaultStrategyConfig(BaseModel):
     min_chunk_size: int = Field(
         default=100, description="Minimum chunk size in characters", gt=0
     )
-    enable_semantic_analysis: bool = Field(
-        default=True, description="Enable semantic analysis for text chunks"
-    )
     enable_entity_extraction: bool = Field(
         default=True, description="Enable entity extraction from text"
     )
@@ -199,6 +196,11 @@ class ChunkingConfig(BaseModel):
         description="Maximum number of chunks per document (safety limit)",
         gt=0,
         title="Max Chunks Per Document",
+    )
+    enable_semantic_analysis: bool = Field(
+        default=True,
+        description="Master switch for semantic analysis (spaCy + LDA) across all chunking strategies. "
+        "Disable for faster ingestion when NLP enrichment is not needed.",
     )
 
     # Strategy-specific configurations
