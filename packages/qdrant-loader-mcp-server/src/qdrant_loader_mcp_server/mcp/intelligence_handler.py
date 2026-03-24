@@ -1,9 +1,11 @@
 """Cross-document intelligence operations handler for MCP server."""
 
 import asyncio
+import json
 import time
 import uuid
 from typing import Any
+import redis.asyncio as redis
 
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
@@ -26,10 +28,14 @@ class IntelligenceHandler:
         self.search_engine = search_engine
         self.protocol = protocol
         self.formatters = MCPFormatters()
-        self._cluster_store = {}
+        self.redis = redis.Redis(
+            host="localhost",
+            port=6379,
+            db=0,
+            decode_responses=True,
+        )
         self._ttl = 300
-        self._max_sessions = 500
-        self._lock = asyncio.Lock()
+
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
@@ -575,7 +581,7 @@ class IntelligenceHandler:
                 )
             )
             # cleanup before add new session
-            self._cleanup_sessions()
+            await self._cleanup_sessions()
 
             # Store for expand_cluster call (keep full document object)
             cluster_session_id = str(uuid.uuid4())
@@ -761,33 +767,46 @@ class IntelligenceHandler:
                 error={"code": -32603, "message": "Internal server error"},
             )
 
-    async def handle_expand_cluster(
-        self, request_id: str | int | None, params: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Handle cluster expansion request for lazy loading."""
-        logger.debug("Handling expand cluster with params", params=params)
+    def _cluster_key(self, session_id: str) -> str:
+        return f"cluster: {session_id}"
+    
+    async def _set_session(self, session_id: str, data: dict):
+        await self.redis.set(
+            self._cluster_key(session_id),
+            json.dumps(data),
+            ex=self._ttl,
+        )
 
-        # 0. Cleanup global
-        if len(self._cluster_store) > self._max_sessions:
-            await self._cleanup_sessions()
+    async def _get_session(self, session_id: str) -> dict | None:
+        raw = await self.redis.get(self._cluster_key(session_id))
+        if not raw:
+            return None
+        return json.loads(raw)
+    
+    async def _refresh_session(self, session_id: str):
+        await self.redis.expire(self._cluster_key(session_id), self._ttl)
+
+    async def handle_expand_cluster(
+            self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle cluster expansion request for lazy loading"""
+        logger.debug("Handling expand cluster with params", params=params)
 
         # 1. Validate cluster_session_id
         cluster_session_id = params.get("cluster_session_id")
         if not cluster_session_id:
-            logger.error("Missing required parameter: cluster_session_id")
             return self.protocol.create_response(
                 request_id,
                 error={
                     "code": -32602,
                     "message": "Invalid params",
                     "data": "Missing required parameter: cluster_session_id",
-                },
+                }
             )
-
+        
         # 2. Validate cluster_id
         cluster_id = params.get("cluster_id")
         if not cluster_id:
-            logger.error("Missing required parameter: cluster_id")
             return self.protocol.create_response(
                 request_id,
                 error={
@@ -812,15 +831,8 @@ class IntelligenceHandler:
 
         include_metadata = params.get("include_metadata", True)
 
-        # 4. Get cache (LOCK)
-        now = time.time()
-
-        async with self._lock:
-            entry = self._cluster_store.get(cluster_session_id)
-
-            if entry and entry.get("expires_at", 0) < now:
-                self._cluster_store.pop(cluster_session_id, None)
-                entry = None
+        # 4. GET cache from redis 
+        entry = await self._get_session(cluster_session_id)
 
         if entry is None:
             return self.protocol.create_response(
@@ -831,7 +843,8 @@ class IntelligenceHandler:
                     "data": f"Cluster session '{cluster_session_id}' not found or expired",
                 },
             )
-
+        
+        await self._refresh_session(cluster_session_id)
         cache = entry.get("data") or {}
         clusters = cache.get("clusters") or []
 
@@ -854,7 +867,7 @@ class IntelligenceHandler:
                     "data": f"No cluster with id '{cluster_id}' found",
                 },
             )
-
+        
         # 6. Pagination
         all_docs = cluster.get("documents") or []
         total = len(all_docs)
@@ -862,6 +875,7 @@ class IntelligenceHandler:
         slice_docs = all_docs[offset : offset + limit]
         has_more = offset + len(slice_docs) < total
         page = (offset // limit) + 1 if limit > 0 else 1
+
         # 7. Transform documents
         doc_schema_list = self._expand_cluster_docs_to_schema(
             slice_docs, include_metadata
@@ -911,44 +925,3 @@ class IntelligenceHandler:
                 "isError": False,
             },
         )
-
-    def _format_text_block(self, result: dict) -> str:
-        info = result.get("cluster_info", {})
-        docs = result.get("documents", [])
-        total = info.get("document_count", 0)
-
-        text = (
-            f"**Cluster: {info.get('cluster_name', 'Unknown')}**\n"
-            f"Theme: {info.get('cluster_theme', 'N/A')}\n"
-            f"Documents: {total}\n\n"
-        )
-
-        for i, d in enumerate(docs[:5], 1):
-            title = d.get("metadata", {}).get("title", d.get("id", "Unknown"))
-            text += f"{i}. {title}\n"
-
-        if total > 5:
-            text += f"... and {total - 5} more.\n"
-
-        return text
-
-    async def _cleanup_sessions(self):
-        now = time.time()
-
-        async with self._lock:
-            expired_keys = [
-                k
-                for k, v in self._cluster_store.items()
-                if v.get("expires_at", 0) < now
-            ]
-
-            for k in expired_keys:
-                self._cluster_store.pop(k, None)
-
-            if len(self._cluster_store) > self._max_sessions:
-                sorted_items = sorted(
-                    self._cluster_store.items(), key=lambda x: x[1].get("expires_at", 0)
-                )
-                overflow = len(self._cluster_store) - self._max_sessions
-                for k, _ in sorted_items[:overflow]:
-                    self._cluster_store.pop(k, None)
