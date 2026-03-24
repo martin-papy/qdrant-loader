@@ -1,7 +1,8 @@
 """HTML-specific chunking strategy with modular architecture."""
 
-import structlog
 from typing import TYPE_CHECKING
+
+import structlog
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker

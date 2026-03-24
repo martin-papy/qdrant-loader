@@ -39,7 +39,7 @@ class ChunkProcessor:
             if project_config and project_config.semantic_analysis
             else settings.global_config.semantic_analysis
         )
-        
+
         # Store whether semantic analysis is enabled
         self._semantic_analysis_enabled = semantic_cfg.enabled
 
