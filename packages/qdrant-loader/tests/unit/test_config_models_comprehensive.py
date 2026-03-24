@@ -50,11 +50,11 @@ class TestSemanticAnalysisConfig:
     def test_model_dump(self):
         """Test model serialization - covers all lines."""
         config = SemanticAnalysisConfig(
-            num_topics=7, lda_passes=15, spacy_model="en_core_web_lg"
+            enabled=True, num_topics=7, lda_passes=15, spacy_model="en_core_web_sm"
         )
 
         data = config.model_dump()
-        expected = {"num_topics": 7, "lda_passes": 15, "spacy_model": "en_core_web_lg"}
+        expected = {"enabled":True, "num_topics": 7, "lda_passes": 15, "spacy_model": "en_core_web_sm"}
         assert data == expected
 
 
