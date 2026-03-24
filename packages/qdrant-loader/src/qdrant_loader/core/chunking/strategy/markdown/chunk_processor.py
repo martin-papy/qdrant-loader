@@ -29,6 +29,11 @@ class ChunkProcessor:
         self._semantic_analysis_enabled = (
             settings.global_config.chunking.enable_semantic_analysis
         )
+
+        self._enhanced_semantic_analysis_enabled = (
+            settings.global_config.chunking.enable_enhanced_semantic_analysis
+        )
+
         if self._semantic_analysis_enabled:
             self.semantic_analyzer = SemanticAnalyzer(
                 spacy_model=settings.global_config.semantic_analysis.spacy_model,
@@ -85,6 +90,15 @@ class ChunkProcessor:
             logger.debug(
                 "Completed semantic analysis for chunk", chunk_index=chunk_index
             )
+            if self._enhanced_semantic_analysis_enabled:
+                results.update(
+                    {
+                        "pos_tags": analysis_result.pos_tags,
+                        "dependencies": analysis_result.dependencies,
+                        "document_similarity": analysis_result.document_similarity,
+                        "topic_analysis": analysis_result.topic_analysis,
+                    }
+                )
         else:
             results = {
                 "entities": [],

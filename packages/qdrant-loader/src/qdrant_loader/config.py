@@ -35,6 +35,14 @@ class ChunkingConfig(BaseModel):
         "Disable for faster ingestion when semantic enrichment is not needed.",
     )
 
+    enable_enhanced_semantic_analysis: bool = Field(
+        default=False,
+        description="Enable advanced NLP fields: pos_tags, dependencies, "
+        "document_similarity, topic_analysis. "
+        "Requires enable_semantic_analysis=true. "
+        "Increases payload size and ingestion time.",
+    )
+
 
 class GlobalConfig(BaseModel):
     """Global configuration settings."""

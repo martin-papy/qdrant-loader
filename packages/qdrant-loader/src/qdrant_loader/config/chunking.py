@@ -202,6 +202,13 @@ class ChunkingConfig(BaseModel):
         description="Master switch for semantic analysis (spaCy + LDA) across all chunking strategies. "
         "Disable for faster ingestion when NLP enrichment is not needed.",
     )
+    enable_enhanced_semantic_analysis: bool = Field(
+        default=False,
+        description="Enable advanced NLP fields: pos_tags, dependencies, "
+        "document_similarity, topic_analysis. "
+        "Requires enable_semantic_analysis=true. "
+        "Increases payload size and ingestion time.",
+    )
 
     # Strategy-specific configurations
     strategies: StrategySpecificConfig = Field(
