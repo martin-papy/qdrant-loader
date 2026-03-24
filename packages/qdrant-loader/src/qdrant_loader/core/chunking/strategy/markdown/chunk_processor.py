@@ -180,8 +180,8 @@ class ChunkProcessor:
             self._executor.shutdown(wait=True)
             self._executor = None
 
-        if hasattr(self, "semantic_analyzer"):
-            self.semantic_analyzer.shutdown()  # Use shutdown() instead of clear_cache() for complete cleanup
+        if getattr(self, "semantic_analyzer", None) is not None:
+            self.semantic_analyzer.shutdown()
 
     def __del__(self):
         """Cleanup on deletion."""
