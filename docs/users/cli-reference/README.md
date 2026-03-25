@@ -1,5 +1,7 @@
 # Command Line Interface (CLI) Reference
 
+<img src="/assets/icons/library/note-icon.svg" width="32" alt="CLI icon">
+
 QDrant Loader provides a comprehensive command-line interface for managing data ingestion, configuration, and project management. This section covers all available commands, options, and usage patterns.
 
 ## <img src="/assets/icons/library/target-icon.svg" width="32" alt="target icon"> CLI Overview

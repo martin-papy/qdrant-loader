@@ -1,5 +1,7 @@
 # Architecture Overview
 
+<img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Architecture icon">
+
 This section provides a comprehensive overview of QDrant Loader's architecture, including system design principles, component interactions, and data flow patterns.
 
 ## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Design Priciples"> Design Principles

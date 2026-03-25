@@ -1,5 +1,7 @@
 # MCP Server Guide
 
+<img src="/assets/icons/library/note-icon.svg" width="32" alt="MCP icon">
+
 The QDrant Loader MCP (Model Context Protocol) Server enables seamless integration with AI development tools like Cursor IDE, Windsurf, and Claude Desktop. This guide covers everything you need to know about setting up and using our **intelligent search system**.
 
 ## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Overview
