@@ -20,18 +20,15 @@ class TestDefaultStrategyConfig:
         """Test default configuration values."""
         config = DefaultStrategyConfig()
         assert config.min_chunk_size == 100
-        assert config.enable_semantic_analysis is True
         assert config.enable_entity_extraction is True
 
     def test_custom_values(self):
         """Test custom configuration values."""
         config = DefaultStrategyConfig(
             min_chunk_size=50,
-            enable_semantic_analysis=False,
             enable_entity_extraction=False,
         )
         assert config.min_chunk_size == 50
-        assert config.enable_semantic_analysis is False
         assert config.enable_entity_extraction is False
 
     def test_validation_min_chunk_size(self):
@@ -297,6 +294,23 @@ class TestChunkingConfigIntegration:
             ValueError, match="Chunk overlap must be less than chunk size"
         ):
             ChunkingConfig(chunk_size=1000, chunk_overlap=1500)
+
+    def test_enhanced_semantic_analysis_requires_semantic_analysis(self):
+        """Test enhanced semantic analysis requires base semantic analysis."""
+        config = ChunkingConfig(
+            enable_semantic_analysis=True,
+            enable_enhanced_semantic_analysis=True,
+        )
+        assert config.enable_enhanced_semantic_analysis is True
+
+        with pytest.raises(
+            ValueError,
+            match="enable_enhanced_semantic_analysis requires enable_semantic_analysis=True",
+        ):
+            ChunkingConfig(
+                enable_semantic_analysis=False,
+                enable_enhanced_semantic_analysis=True,
+            )
 
     def test_global_config_integration(self):
         """Test that GlobalConfig properly includes all chunking configurations."""

@@ -18,6 +18,8 @@ from typing import Any
 
 import yaml
 
+from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
 from .config import Config, OpenAIConfig, QdrantConfig, SearchConfig
 from .utils.logging import LoggingConfig
 
@@ -72,6 +74,10 @@ def _overlay_env_llm(llm: dict[str, Any]) -> None:
 
 
 def _overlay_env_qdrant(qdrant: dict[str, Any]) -> None:
+    # Override Qdrant settings with environment variables (unconditional).
+    # Note: differs from qdrant_loader's _auto_resolve_env_vars() which only
+    # applies env vars when the config value equals the default.
+    # Priority: environment variable > config file value > QdrantConfig default.
     if os.getenv("QDRANT_URL"):
         qdrant["url"] = os.getenv("QDRANT_URL")
     if os.getenv("QDRANT_API_KEY"):
@@ -132,12 +138,20 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     )
     chat_model = models.get("chat") or os.getenv("LLM_CHAT_MODEL") or "gpt-3.5-turbo"
 
+    # Build reranking config from global section if present
+    reranking_cfg = None
+    if "reranking" in global_data:
+        if not isinstance(global_data["reranking"], dict):
+            raise ValueError("global.reranking must be a mapping")
+        reranking_cfg = MCPReranking(**global_data["reranking"])
+
     cfg = Config(
         qdrant=QdrantConfig(**qdrant) if qdrant else QdrantConfig(),
         openai=OpenAIConfig(
             api_key=api_key, model=embedding_model, chat_model=chat_model
         ),
         search=SearchConfig(**search) if search else SearchConfig(),
+        reranking=reranking_cfg if reranking_cfg is not None else MCPReranking(),
     )
     return cfg
 

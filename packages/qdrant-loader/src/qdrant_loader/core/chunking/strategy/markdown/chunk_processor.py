@@ -25,12 +25,26 @@ class ChunkProcessor:
         """
         self.settings = settings
 
-        # Initialize semantic analyzer
-        self.semantic_analyzer = SemanticAnalyzer(
-            spacy_model=settings.global_config.semantic_analysis.spacy_model,
-            num_topics=settings.global_config.semantic_analysis.num_topics,
-            passes=settings.global_config.semantic_analysis.lda_passes,
+        # Initialize semantic analyzer only if enabled
+        self._semantic_analysis_enabled = (
+            settings.global_config.chunking.enable_semantic_analysis
         )
+
+        self._enhanced_semantic_analysis_enabled = (
+            settings.global_config.chunking.enable_enhanced_semantic_analysis
+        )
+
+        if self._semantic_analysis_enabled:
+            self.semantic_analyzer = SemanticAnalyzer(
+                spacy_model=settings.global_config.semantic_analysis.spacy_model,
+                num_topics=settings.global_config.semantic_analysis.num_topics,
+                passes=settings.global_config.semantic_analysis.lda_passes,
+            )
+        else:
+            self.semantic_analyzer = None
+            logger.info(
+                "Semantic analysis disabled — skipping spaCy/LDA initialization"
+            )
 
         # Cache for processed chunks to avoid recomputation
         self._processed_chunks: dict[str, dict[str, Any]] = {}
@@ -59,28 +73,41 @@ class ChunkProcessor:
             chunk_length=len(chunk),
         )
 
-        # Check cache first
-        if chunk in self._processed_chunks:
-            return self._processed_chunks[chunk]
-
-        # Perform semantic analysis
-        logger.debug("Starting semantic analysis for chunk", chunk_index=chunk_index)
-        analysis_result = self.semantic_analyzer.analyze_text(
-            chunk, doc_id=f"chunk_{chunk_index}"
-        )
-
-        # Cache results
-        results = {
-            "entities": analysis_result.entities,
-            "pos_tags": analysis_result.pos_tags,
-            "dependencies": analysis_result.dependencies,
-            "topics": analysis_result.topics,
-            "key_phrases": analysis_result.key_phrases,
-            "document_similarity": analysis_result.document_similarity,
-        }
-        self._processed_chunks[chunk] = results
-
-        logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
+        # Perform semantic analysis only if enabled
+        if self._semantic_analysis_enabled and self.semantic_analyzer:
+            logger.debug(
+                "Starting semantic analysis for chunk", chunk_index=chunk_index
+            )
+            analysis_result = self.semantic_analyzer.analyze_text(
+                chunk,
+                doc_id=f"chunk_{chunk_index}",
+                include_enhanced=self._enhanced_semantic_analysis_enabled,
+            )
+            results = {
+                "entities": analysis_result.entities,
+                "topics": analysis_result.topics,
+                "key_phrases": analysis_result.key_phrases,
+            }
+            self._processed_chunks[chunk] = results
+            logger.debug(
+                "Completed semantic analysis for chunk", chunk_index=chunk_index
+            )
+            if self._enhanced_semantic_analysis_enabled:
+                results.update(
+                    {
+                        "pos_tags": analysis_result.pos_tags,
+                        "dependencies": analysis_result.dependencies,
+                        "document_similarity": analysis_result.document_similarity,
+                    }
+                )
+        else:
+            results = {
+                "entities": [],
+                "topics": [],
+                "key_phrases": [],
+            }
+            self._processed_chunks[chunk] = results
+            logger.debug("Semantic analysis skipped for chunk", chunk_index=chunk_index)
         return results
 
     def create_chunk_document(
@@ -171,8 +198,8 @@ class ChunkProcessor:
             self._executor.shutdown(wait=True)
             self._executor = None
 
-        if hasattr(self, "semantic_analyzer"):
-            self.semantic_analyzer.shutdown()  # Use shutdown() instead of clear_cache() for complete cleanup
+        if getattr(self, "semantic_analyzer", None) is not None:
+            self.semantic_analyzer.shutdown()
 
     def __del__(self):
         """Cleanup on deletion."""

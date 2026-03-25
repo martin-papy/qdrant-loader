@@ -133,12 +133,44 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 | `MCP_LOG_LEVEL` | Logging level | `INFO` | No |
 | `MCP_LOG_FILE` | Log file path | None | No |
 | `MCP_DISABLE_CONSOLE_LOGGING` | Disable console output | `false` | **Yes for Cursor** |
+| `SEARCH_MAX_CONCURRENT` | Max concurrent search operations per worker | `4` | No |
 
 ### Important Configuration Notes
 
 - **For Cursor Integration**: Always set `MCP_DISABLE_CONSOLE_LOGGING=true` to prevent interference with JSON-RPC communication
 - **For Debugging**: Use `MCP_LOG_FILE` to write logs when console logging is disabled
 - **API Keys**: OpenAI API keys should start with `sk-proj-` for project keys or `sk-` for user keys
+
+### HTTP Transport and Workers
+
+The server supports an HTTP transport mode with multiple worker processes for production deployments:
+
+```bash
+# Start with HTTP transport (single worker, good for local development)
+mcp-qdrant-loader --transport http --port 8080
+
+# Start with multiple workers for production
+mcp-qdrant-loader --transport http --port 8080 --workers 4
+```
+
+Each worker is a separate OS process with its own event loop, Qdrant connection pool, and search engine. This eliminates GIL contention for CPU-bound work (SpaCy, BM25, reranking).
+
+### Tuning Concurrency
+
+`SEARCH_MAX_CONCURRENT` limits the number of simultaneous Qdrant queries **per worker**. With multiple workers, the total concurrent load on Qdrant is `workers × SEARCH_MAX_CONCURRENT`.
+
+| Workers | `SEARCH_MAX_CONCURRENT` | Max concurrent Qdrant queries |
+|---------|------------------------|-------------------------------|
+| 1       | 4 (default)            | 4                             |
+| 4       | 4 (default)            | 16                            |
+| 4       | 2                      | 8                             |
+
+If you see `408 Request Timeout` errors from Qdrant, reduce `SEARCH_MAX_CONCURRENT` to match your Qdrant instance's capacity:
+
+```bash
+export SEARCH_MAX_CONCURRENT=2
+mcp-qdrant-loader --transport http --workers 4
+```
 
 ## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> AI Tool Integration
 

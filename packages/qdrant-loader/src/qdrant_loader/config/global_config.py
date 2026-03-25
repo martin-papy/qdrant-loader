@@ -45,7 +45,7 @@ class GlobalConfig(BaseConfig):
         description="Semantic analysis configuration",
     )
     state_management: StateManagementConfig = Field(
-        default_factory=lambda: StateManagementConfig(database_path=":memory:"),
+        default_factory=StateManagementConfig,
         description="State management configuration",
     )
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
@@ -53,8 +53,8 @@ class GlobalConfig(BaseConfig):
         default_factory=FileConversionConfig,
         description="File conversion configuration",
     )
-    qdrant: QdrantConfig | None = Field(
-        default=None, description="Qdrant configuration"
+    qdrant: QdrantConfig = Field(
+        default_factory=QdrantConfig, description="Qdrant configuration"
     )
 
     def __init__(self, **data):
@@ -63,7 +63,7 @@ class GlobalConfig(BaseConfig):
         skip_validation = data.pop("skip_validation", False)
         if skip_validation and "state_management" not in data:
             data["state_management"] = {
-                "database_path": ":memory:",
+                "database_path": "./state.db",
                 "table_prefix": "qdrant_loader_",
                 "connection_pool": {"size": 5, "timeout": 30},
             }
@@ -75,6 +75,8 @@ class GlobalConfig(BaseConfig):
             "chunking": {
                 "chunk_size": self.chunking.chunk_size,
                 "chunk_overlap": self.chunking.chunk_overlap,
+                "enable_semantic_analysis": self.chunking.enable_semantic_analysis,
+                "enable_enhanced_semantic_analysis": self.chunking.enable_enhanced_semantic_analysis,
             },
             "embedding": self.embedding.model_dump(),
             "llm": self.llm,
@@ -95,5 +97,5 @@ class GlobalConfig(BaseConfig):
                     "llm_api_key": self.file_conversion.markitdown.llm_api_key,
                 },
             },
-            "qdrant": self.qdrant.to_dict() if self.qdrant else None,
+            "qdrant": self.qdrant.to_dict(),
         }

@@ -1,7 +1,12 @@
+"""Schema for the expand_document tool."""
+
 from typing import Any
 
 
 def get_expand_document_tool_schema() -> dict[str, Any]:
+    """
+    Returns the schema for the expand_document tool.
+    """
     return {
         "name": "expand_document",
         "description": "Retrieve full document content by document ID for lazy loading",
@@ -13,12 +18,12 @@ def get_expand_document_tool_schema() -> dict[str, Any]:
                     "type": "string",
                     "description": "The ID of the document to expand and retrieve full content",
                 },
-                "include_metadata": {
+                "include_metadata": {  # Optional, not used in handler for now
                     "type": "boolean",
                     "description": "Include detailed metadata (optional, default: true)",
                     "default": True,
                 },
-                "include_hierarchy": {
+                "include_hierarchy": {  # Optional, not used in handler for now
                     "type": "boolean",
                     "description": "Include hierarchy information for Confluence documents (optional, default: true)",
                     "default": True,
