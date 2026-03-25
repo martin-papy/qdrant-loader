@@ -22,7 +22,7 @@ jobs:
           poetry install --no-interaction --no-root
 
       - name: Build site
-        run: python build.py   # script build ra HTML
+        run: python website/build.py   # script build ra HTML
 
       - name: Deploy preview
         uses: peaceiris/actions-gh-pages@v3
