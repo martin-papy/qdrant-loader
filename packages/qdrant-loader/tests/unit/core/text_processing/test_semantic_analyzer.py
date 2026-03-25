@@ -705,6 +705,68 @@ class TestSemanticAnalyzer:
             assert "doc1" in similarities
             assert isinstance(similarities["doc1"], float)
 
+    def test_calculate_document_similarity_excludes_current_doc_id(
+        self, mock_nlp, mock_doc
+    ):
+        """Test similarity excludes the current doc_id from results."""
+        with patch("spacy.load", return_value=mock_nlp):
+            mock_nlp.return_value = mock_doc
+
+            analyzer = SemanticAnalyzer()
+
+            # Add multiple cached results
+            for doc_id in ["doc1", "doc2", "doc3"]:
+                cached_result = SemanticAnalysisResult(
+                    entities=[{"context": f"{doc_id} context"}],
+                    pos_tags=[],
+                    dependencies=[],
+                    topics=[],
+                    key_phrases=[],
+                    document_similarity={},
+                )
+                analyzer._doc_cache[doc_id] = cached_result
+
+            # Calculate similarity excluding doc2
+            similarities = analyzer._calculate_document_similarity(
+                "Apple is a company", doc_id="doc2"
+            )
+
+            # doc1 and doc3 should be in results, but not doc2 (current id)
+            assert "doc1" in similarities
+            assert "doc3" in similarities
+            assert "doc2" not in similarities
+
+    def test_analyze_text_cache_separate_by_include_enhanced(self, mock_nlp, mock_doc):
+        """Test that same doc_id with different include_enhanced values are cached separately."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            # Analyze same text with same doc_id but different include_enhanced
+            result_enhanced_false = analyzer.analyze_text(
+                "Apple is a company", doc_id="same_doc", include_enhanced=False
+            )
+            result_enhanced_true = analyzer.analyze_text(
+                "Apple is a company", doc_id="same_doc", include_enhanced=True
+            )
+
+            # Should be different objects (separate cache entries)
+            assert result_enhanced_false is not result_enhanced_true
+
+            # Cache should have separate keys
+            assert ("same_doc", False) in analyzer._doc_cache
+            assert ("same_doc", True) in analyzer._doc_cache
+
+            # Verify enhanced fields differ
+            assert len(result_enhanced_false.pos_tags) == 0
+            assert len(result_enhanced_true.pos_tags) > 0
+
     def test_calculate_topic_coherence(self, mock_nlp):
         """Test topic coherence calculation."""
         with patch("spacy.load", return_value=mock_nlp):
