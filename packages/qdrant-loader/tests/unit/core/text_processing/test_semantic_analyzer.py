@@ -255,7 +255,7 @@ class TestSemanticAnalyzer:
             mock_nlp.return_value = mock_doc
             analyzer = SemanticAnalyzer()
 
-            result = analyzer.analyze_text("Apple is a company")
+            result = analyzer.analyze_text("Apple is a company", include_enhanced=True)
 
             assert isinstance(result, SemanticAnalysisResult)
             assert len(result.entities) > 0
@@ -278,13 +278,45 @@ class TestSemanticAnalyzer:
             analyzer = SemanticAnalyzer()
 
             # First call should process and cache
-            result1 = analyzer.analyze_text("Apple is a company", doc_id="doc1")
+            result1 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
 
             # Second call should return cached result
-            result2 = analyzer.analyze_text("Apple is a company", doc_id="doc1")
+            result2 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
 
             assert result1 is result2
-            assert "doc1" in analyzer._doc_cache
+            assert ("doc1", True) in analyzer._doc_cache
+
+    def test_analyze_text_without_enhanced_fields(self, mock_nlp, mock_doc):
+        """Test text analysis short-circuits enhanced computations when disabled."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer,
+                "_calculate_document_similarity",
+                return_value={"doc1": 0.8},
+            ) as mock_similarity,
+            patch.object(SemanticAnalyzer, "_get_pos_tags") as mock_pos_tags,
+            patch.object(SemanticAnalyzer, "_get_dependencies") as mock_dependencies,
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            result = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc2", include_enhanced=False
+            )
+
+            assert result.pos_tags == []
+            assert result.dependencies == []
+            assert result.document_similarity == {}
+            mock_pos_tags.assert_not_called()
+            mock_dependencies.assert_not_called()
+            mock_similarity.assert_not_called()
+            assert ("doc2", False) in analyzer._doc_cache
 
     def test_extract_entities(self, mock_nlp, mock_doc):
         """Test entity extraction."""
@@ -825,7 +857,7 @@ class TestSemanticAnalyzer:
             ):
                 analyzer = SemanticAnalyzer()
                 result = analyzer.analyze_text(
-                    "Apple Inc is a company", doc_id="test_doc"
+                    "Apple Inc is a company", doc_id="test_doc", include_enhanced=True
                 )
 
                 # Verify all components are present
@@ -836,4 +868,4 @@ class TestSemanticAnalyzer:
                 assert isinstance(result.document_similarity, dict)
 
                 # Verify caching
-                assert "test_doc" in analyzer._doc_cache
+                assert ("test_doc", True) in analyzer._doc_cache

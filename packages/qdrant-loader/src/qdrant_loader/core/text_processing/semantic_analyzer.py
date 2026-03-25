@@ -22,31 +22,6 @@ def is_meaningful_text(text: str) -> bool:
     - Whitespace characters
     - Special symbols without semantic meaning (---, ..., |||, etc.)
 
-    This is used to filter both entities and tokens in NLP processing,
-    especially important for Excel/table processing where markdown tables
-    generate excessive pipe characters, commas, and spaces.
-
-    Args:
-        text: Text string to check
-
-    Returns:
-        True if text contains at least one letter or digit, False otherwise
-
-    Example:
-        >>> is_meaningful_text("Apple")
-        True
-        >>> is_meaningful_text("#")
-        False
-        >>> is_meaningful_text("|")
-        False
-        >>> is_meaningful_text("...")
-        False
-        >>> is_meaningful_text("---")
-        False
-        >>> is_meaningful_text("Apple123")
-        True
-        >>> is_meaningful_text("COVID-19")  # Has alphanumeric
-        True
     """
     # Check if text contains at least one alphanumeric character
     return any(c.isalnum() for c in text)
@@ -105,20 +80,26 @@ class SemanticAnalyzer:
         self._doc_cache = {}
 
     def analyze_text(
-        self, text: str, doc_id: str | None = None
+        self,
+        text: str,
+        doc_id: str | None = None,
+        include_enhanced: bool = False,
     ) -> SemanticAnalysisResult:
         """Perform comprehensive semantic analysis on text.
 
         Args:
             text: Text to analyze
             doc_id: Optional document ID for caching
+            include_enhanced: Whether to compute enhanced NLP fields
+                (pos_tags, dependencies, document_similarity)
 
         Returns:
             SemanticAnalysisResult containing all analysis results
         """
         # Check cache
-        if doc_id and doc_id in self._doc_cache:
-            return self._doc_cache[doc_id]
+        cache_key = (doc_id, include_enhanced) if doc_id else None
+        if cache_key and cache_key in self._doc_cache:
+            return self._doc_cache[cache_key]
 
         # Process with spaCy
         doc = self.nlp(text)
@@ -126,11 +107,15 @@ class SemanticAnalyzer:
         # Extract entities with linking
         entities = self._extract_entities(doc)
 
-        # Get part-of-speech tags
-        pos_tags = self._get_pos_tags(doc)
+        if include_enhanced:
+            # Get part-of-speech tags
+            pos_tags = self._get_pos_tags(doc)
 
-        # Get dependency parse
-        dependencies = self._get_dependencies(doc)
+            # Get dependency parse
+            dependencies = self._get_dependencies(doc)
+        else:
+            pos_tags = []
+            dependencies = []
 
         # Extract topics
         topics = self._extract_topics(text)
@@ -139,7 +124,9 @@ class SemanticAnalyzer:
         key_phrases = self._extract_key_phrases(doc)
 
         # Calculate document similarity
-        doc_similarity = self._calculate_document_similarity(text)
+        doc_similarity = (
+            self._calculate_document_similarity(text) if include_enhanced else {}
+        )
 
         # Create result
         result = SemanticAnalysisResult(
@@ -152,8 +139,8 @@ class SemanticAnalyzer:
         )
 
         # Cache result
-        if doc_id:
-            self._doc_cache[doc_id] = result
+        if cache_key:
+            self._doc_cache[cache_key] = result
 
         return result
 
@@ -410,7 +397,11 @@ class SemanticAnalyzer:
         # Check if the model has word vectors
         has_vectors = self.nlp.vocab.vectors_length > 0
 
-        for doc_id, cached_result in self._doc_cache.items():
+        for cache_key, cached_result in self._doc_cache.items():
+            doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
+            if doc_id is None:
+                continue
+
             # Check if cached_result has entities and the first entity has context
             if not cached_result.entities or not cached_result.entities[0].get(
                 "context"

@@ -37,8 +37,7 @@ class ChunkingConfig(BaseModel):
 
     enable_enhanced_semantic_analysis: bool = Field(
         default=False,
-        description="Enable advanced NLP fields: pos_tags, dependencies, "
-        "document_similarity, topic_analysis. "
+        description="Enable advanced NLP fields: pos_tags, dependencies,document_similarity."
         "Requires enable_semantic_analysis=true. "
         "Increases payload size and ingestion time.",
     )

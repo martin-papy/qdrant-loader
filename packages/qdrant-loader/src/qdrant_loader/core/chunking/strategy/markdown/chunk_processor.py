@@ -79,7 +79,9 @@ class ChunkProcessor:
                 "Starting semantic analysis for chunk", chunk_index=chunk_index
             )
             analysis_result = self.semantic_analyzer.analyze_text(
-                chunk, doc_id=f"chunk_{chunk_index}"
+                chunk,
+                doc_id=f"chunk_{chunk_index}",
+                include_enhanced=self._enhanced_semantic_analysis_enabled,
             )
             results = {
                 "entities": analysis_result.entities,
@@ -96,7 +98,6 @@ class ChunkProcessor:
                         "pos_tags": analysis_result.pos_tags,
                         "dependencies": analysis_result.dependencies,
                         "document_similarity": analysis_result.document_similarity,
-                        "topic_analysis": analysis_result.topic_analysis,
                     }
                 )
         else:
