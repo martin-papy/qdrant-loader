@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed `uv.lock` from version control tracking [#187]
 
-## [pip install --upgrade qdrant-loader qdrant-loader-mcp-server] - 2026-03-17
+## [0.8.0] - 2026-03-17
 
 ### Removed
 
