@@ -1,10 +1,12 @@
 """Search result models."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SearchResult(BaseModel):
     """Search result model with comprehensive metadata."""
+
+    model_config = {"populate_by_name": True}
 
     score: float
     text: str
@@ -69,10 +71,10 @@ class SearchResult(BaseModel):
     pos_tags: list[dict] = []
 
     # 🔥 NEW: Navigation context
-    previous_section: str | None = None
-    next_section: str | None = None
-    sibling_sections: list[str] = []
-    subsections: list[str] = []
+    previous_section: str | None = Field(default=None, exclude=True)
+    next_section: str | None = Field(default=None, exclude=True)
+    sibling_sections: list[str] = Field(default=[], exclude=True)
+    subsections: list[str] = Field(default=[], exclude=True)
     document_hierarchy: list[str] = []
 
     # 🔥 NEW: Chunking context

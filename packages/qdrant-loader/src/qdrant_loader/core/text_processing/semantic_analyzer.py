@@ -44,7 +44,7 @@ class SemanticAnalyzer:
 
     def __init__(
         self,
-        spacy_model: str = "en_core_web_md",
+        spacy_model: str = "en_core_web_sm",
         num_topics: int = 5,
         passes: int = 10,
         min_topic_freq: int = 2,
