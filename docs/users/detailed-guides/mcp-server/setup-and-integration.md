@@ -563,10 +563,10 @@ Example: "Cluster our microservices documentation by related topics"
 
 #### 9. Expand Document (`expand_document`)
 
-**Purpose**: Retrieve detailed metadata and related context for one document
+**Purpose**: Retrieve full document details along with metadata and its related context for deeper understanding
 
 ```text
-Example: "Expand document api-auth-guide with relationships and metadata"
+Example: "Expand the document 'api-auth-guide' with metadata and related context"
 ```
 
 #### 10. Expand Cluster (`expand_cluster`)
@@ -860,7 +860,7 @@ The MCP server provides these search capabilities:
 
 ### Expansion Tools Overview
 
-1. **expand_document** - Detailed document context and metadata
+1. **expand_document** - Fetch full document context along with metadata
 2. **expand_cluster** - Detailed cluster analysis
 3. **expand_chunk_context** - Local neighboring chunk expansion
 

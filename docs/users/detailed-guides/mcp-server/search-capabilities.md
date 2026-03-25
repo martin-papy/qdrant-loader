@@ -552,7 +552,6 @@ Expand surrounding chunks around a specific chunk so AI tools can reason with ne
     "document_id": "string", // Required: document identifier
     "chunk_index": 3, // Required: zero-based chunk index
     "window": 2, // Optional: number of chunks before/after (default: 2)
-    "include_metadata": true // Optional: include metadata for returned chunks
   }
 }
 ```
