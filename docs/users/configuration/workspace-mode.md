@@ -2,7 +2,7 @@
 
 This guide covers how to configure QDrant Loader using workspace mode, which provides organized directory structure and simplified configuration management for your projects.
 
-## 🎯 Overview
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview"> Overview
 
 Workspace mode in QDrant Loader provides a structured approach to organizing your configuration files, logs, and metrics in a dedicated directory. It automatically discovers configuration files and creates necessary subdirectories for organized project management.
 
@@ -113,7 +113,7 @@ CONFLUENCE_TOKEN=your-confluence-token
 CONFLUENCE_EMAIL=your-email@company.com
 ```
 
-## ⚙️ Workspace Commands
+## <img src="../../../../assets/icons/library/setting-icon.svg" width="32" alt="Workspace"> Workspace Commands
 
 ### Initialize Workspace
 
@@ -284,7 +284,7 @@ sources:
       download_attachments: true
 ```
 
-## 🔧 Advanced Configuration
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Configuration"> Advanced Configuration
 
 ### Global Settings
 
@@ -336,7 +336,7 @@ global:
 
 In workspace mode, the state database is automatically created as `qdrant-loader.db` in the `data/` directory within the workspace.
 
-## 📊 Workspace Structure
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Structure"> Workspace Structure
 
 ### Directory Layout
 
@@ -418,7 +418,7 @@ Workspace mode support for the MCP server is planned for future releases, which 
 - Project-aware search capabilities
 - Simplified configuration through workspace files
 
-## 🚀 Getting Started Checklist
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Getting Started"> Getting Started Checklist
 
 - [ ] **Create workspace directory** and navigate to it
 - [ ] **Copy configuration template** to `config.yaml`

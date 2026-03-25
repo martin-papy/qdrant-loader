@@ -2,7 +2,7 @@
 
 Connect QDrant Loader to Confluence to index team documentation, knowledge bases, and collaborative content. This guide covers setup for both Confluence Cloud and Confluence Data Center.
 
-## 🎯 What Gets Processed
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Processed"> What Gets Processed
 
 When you connect to Confluence, QDrant Loader can process:
 
@@ -13,7 +13,7 @@ When you connect to Confluence, QDrant Loader can process:
 - **Page metadata** - Authors, creation dates, labels, versions
 - **Space information** - Space descriptions and metadata
 
-## 🔧 Authentication Setup
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Setup"> Authentication Setup
 
 ### Confluence Cloud
 
@@ -50,7 +50,7 @@ export CONFLUENCE_URL="https://confluence.your-company.com"
 export CONFLUENCE_TOKEN="your_personal_access_token"
 ```
 
-## ⚙️ Configuration
+## <img src="../../../../../assets/icons/library/setting-icon.svg" width="32" alt="Configuration"> Configuration
 
 QDrant Loader uses a **project-based configuration structure**. Each project can have multiple Confluence sources.
 
@@ -165,7 +165,7 @@ projects:
           download_attachments: true
 ```
 
-## 🎯 Configuration Options
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Options"> Configuration Options
 
 ### Validator Requirements
 
@@ -211,7 +211,7 @@ projects:
 |--------|------|-------------|---------|
 | `requests_per_minute` | int | API rate limit (RPM) | `60` |
 
-## 🚀 Usage Examples
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Examples"> Usage Examples
 
 ### Documentation Team
 
@@ -301,7 +301,7 @@ projects:
           download_attachments: true
 ```
 
-## 🧪 Testing and Validation
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing"> Testing and Validation
 
 ### Initialize and Test Configuration
 
@@ -335,7 +335,7 @@ qdrant-loader ingest --workspace . --project my-project
 qdrant-loader ingest --workspace . --project my-project --source-type confluence --source company-wiki
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
 
 ### Common Issues
 
@@ -500,7 +500,7 @@ curl -u "email:token" \
   "https://domain.atlassian.net/wiki/rest/api/content/PAGE_ID?expand=body.storage"
 ```
 
-## 📊 Monitoring and Processing
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Processing"> Monitoring and Processing
 
 ### Check Processing Status
 
@@ -525,7 +525,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 ```
 
-## 🔄 Best Practices
+## <img src="../../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Best Practices"> Best Practices
 
 ### Content Organization
 
@@ -556,7 +556,7 @@ qdrant-loader config --workspace .
 3. **Process incrementally** - Run regular updates rather than full reprocessing
 4. **Monitor resource usage** - Watch memory and network usage during processing
 
-## 📚 Related Documentation
+## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation"> Related Documentation
 
 - **[Configuration Reference](../../configuration/)** - Complete configuration options
 - **[File Conversion](../file-conversion/)** - Processing Confluence attachments
