@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 """
 
+# TODO: Filter out commits that are not related to the changelog
+# Example:
+# - chore(release): update changelog
+# - chore(release): update changelog
+# NOTE: This is not a perfect solution, might shelf this for now.
 # Commit type → changelog category
 TYPE_TO_CATEGORY = {
     "feat": "Added",
