@@ -46,6 +46,7 @@ global:
     chunk_overlap: 200 # Number of characters to overlap between chunks
     max_chunks_per_document: 500 # Maximum number of chunks per document (safety limit)
     enable_semantic_analysis: true # Master switch for NLP enrichment (spaCy + LDA) across all strategies. Disable for faster ingestion.
+    enable_enhanced_semantic_analysis: false # Opt-in: pos_tags, dependencies, document_similarity. Requires enable_semantic_analysis: true.
 
     # Strategy-specific configurations for different content types
     strategies:

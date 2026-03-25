@@ -255,7 +255,7 @@ class TestSemanticAnalyzer:
             mock_nlp.return_value = mock_doc
             analyzer = SemanticAnalyzer()
 
-            result = analyzer.analyze_text("Apple is a company")
+            result = analyzer.analyze_text("Apple is a company", include_enhanced=True)
 
             assert isinstance(result, SemanticAnalysisResult)
             assert len(result.entities) > 0
@@ -278,13 +278,50 @@ class TestSemanticAnalyzer:
             analyzer = SemanticAnalyzer()
 
             # First call should process and cache
-            result1 = analyzer.analyze_text("Apple is a company", doc_id="doc1")
+            result1 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
 
-            # Second call should return cached result
-            result2 = analyzer.analyze_text("Apple is a company", doc_id="doc1")
+            # Second call should return cached result (deep-copied when include_enhanced=True)
+            result2 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
 
-            assert result1 is result2
-            assert "doc1" in analyzer._doc_cache
+            # With include_enhanced=True, cache hit returns a deep copy with refreshed similarity
+            # So result1 and result2 are different objects, but have same content
+            assert result1 is not result2
+            assert result1.entities == result2.entities
+            assert result1.pos_tags == result2.pos_tags
+            assert result1.topics == result2.topics
+            assert ("doc1", True) in analyzer._doc_cache
+
+    def test_analyze_text_without_enhanced_fields(self, mock_nlp, mock_doc):
+        """Test text analysis short-circuits enhanced computations when disabled."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer,
+                "_calculate_document_similarity",
+                return_value={"doc1": 0.8},
+            ) as mock_similarity,
+            patch.object(SemanticAnalyzer, "_get_pos_tags") as mock_pos_tags,
+            patch.object(SemanticAnalyzer, "_get_dependencies") as mock_dependencies,
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            result = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc2", include_enhanced=False
+            )
+
+            assert result.pos_tags == []
+            assert result.dependencies == []
+            assert result.document_similarity == {}
+            mock_pos_tags.assert_not_called()
+            mock_dependencies.assert_not_called()
+            mock_similarity.assert_not_called()
+            assert ("doc2", False) in analyzer._doc_cache
 
     def test_extract_entities(self, mock_nlp, mock_doc):
         """Test entity extraction."""
@@ -673,6 +710,115 @@ class TestSemanticAnalyzer:
             assert "doc1" in similarities
             assert isinstance(similarities["doc1"], float)
 
+    def test_calculate_document_similarity_excludes_current_doc_id(
+        self, mock_nlp, mock_doc
+    ):
+        """Test similarity excludes the current doc_id from results."""
+        with patch("spacy.load", return_value=mock_nlp):
+            mock_nlp.return_value = mock_doc
+
+            analyzer = SemanticAnalyzer()
+
+            # Add multiple cached results
+            for doc_id in ["doc1", "doc2", "doc3"]:
+                cached_result = SemanticAnalysisResult(
+                    entities=[{"context": f"{doc_id} context"}],
+                    pos_tags=[],
+                    dependencies=[],
+                    topics=[],
+                    key_phrases=[],
+                    document_similarity={},
+                )
+                analyzer._doc_cache[doc_id] = cached_result
+
+            # Calculate similarity excluding doc2
+            similarities = analyzer._calculate_document_similarity(
+                "Apple is a company", doc_id="doc2"
+            )
+
+            # doc1 and doc3 should be in results, but not doc2 (current id)
+            assert "doc1" in similarities
+            assert "doc3" in similarities
+            assert "doc2" not in similarities
+
+    def test_analyze_text_cache_separate_by_include_enhanced(self, mock_nlp, mock_doc):
+        """Test that same doc_id with different include_enhanced values are cached separately."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            # Analyze same text with same doc_id but different include_enhanced
+            result_enhanced_false = analyzer.analyze_text(
+                "Apple is a company", doc_id="same_doc", include_enhanced=False
+            )
+            result_enhanced_true = analyzer.analyze_text(
+                "Apple is a company", doc_id="same_doc", include_enhanced=True
+            )
+
+            # Should be different objects (separate cache entries)
+            assert result_enhanced_false is not result_enhanced_true
+
+            # Cache should have separate keys
+            assert ("same_doc", False) in analyzer._doc_cache
+            assert ("same_doc", True) in analyzer._doc_cache
+
+            # Verify enhanced fields differ
+            assert len(result_enhanced_false.pos_tags) == 0
+            assert len(result_enhanced_true.pos_tags) > 0
+
+    def test_analyze_text_cache_hit_refreshes_similarity(self, mock_nlp, mock_doc):
+        """Test that cache hit with include_enhanced=True refreshes similarity."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity"
+            ) as mock_similarity,
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            # Mock _calculate_document_similarity to return different results on each call
+            mock_similarity.side_effect = [
+                {"other_doc": 0.5},  # First call (initial analysis of doc1)
+                {
+                    "doc2": 0.7
+                },  # Second call (cache hit, refreshed with doc2 now in cache)
+            ]
+
+            # First call - analyze doc1 and cache it
+            result1 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
+            assert result1.document_similarity == {"other_doc": 0.5}
+
+            # Add doc2 to cache (simulating another document being analyzed)
+            doc2_result = SemanticAnalysisResult(
+                entities=[{"context": "Microsoft is a company"}],
+                pos_tags=[],
+                dependencies=[],
+                topics=[],
+                key_phrases=[],
+                document_similarity={},
+            )
+            analyzer._doc_cache[("doc2", True)] = doc2_result
+
+            # Second call - cache hit for doc1, should refresh similarity
+            result2 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
+
+            # Result should have refreshed similarity (now includes doc2)
+            assert result2.document_similarity == {"doc2": 0.7}
+            # Verify _calculate_document_similarity was called twice (initial + refresh)
+            assert mock_similarity.call_count == 2
+
     def test_calculate_topic_coherence(self, mock_nlp):
         """Test topic coherence calculation."""
         with patch("spacy.load", return_value=mock_nlp):
@@ -825,7 +971,7 @@ class TestSemanticAnalyzer:
             ):
                 analyzer = SemanticAnalyzer()
                 result = analyzer.analyze_text(
-                    "Apple Inc is a company", doc_id="test_doc"
+                    "Apple Inc is a company", doc_id="test_doc", include_enhanced=True
                 )
 
                 # Verify all components are present
@@ -836,4 +982,4 @@ class TestSemanticAnalyzer:
                 assert isinstance(result.document_similarity, dict)
 
                 # Verify caching
-                assert "test_doc" in analyzer._doc_cache
+                assert ("test_doc", True) in analyzer._doc_cache
