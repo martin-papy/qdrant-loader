@@ -259,7 +259,7 @@ Content Analysis Results:
 
 ```json
 {
-  "name": "analyze_document_relationships",
+  "name": "analyze_relationships",
   "parameters": {
     "query": "search query to get documents for analysis",
     "limit": 15, // Maximum documents to analyze
@@ -539,6 +539,45 @@ Query: Expand cluster "authentication-docs"
     └── Knowledge Gaps: Missing mobile authentication patterns
 ```
 
+### Expand Chunk Context (`expand_chunk_context`)
+
+Expand surrounding chunks around a specific chunk so AI tools can reason with nearby context without loading an entire document.
+
+#### Expand Chunk Context Parameters
+
+```json
+{
+  "name": "expand_chunk_context",
+  "arguments": {
+    "document_id": "string", // Required: document identifier
+    "chunk_index": 3, // Required: zero-based chunk index
+    "window": 2, // Optional: number of chunks before/after (default: 2)
+    "include_metadata": true // Optional: include metadata for returned chunks
+  }
+}
+```
+
+#### Expand Chunk Context Example
+
+```text
+Query: Expand context around chunk 12 in "api-auth-guide"
+
+🔍 Expand Chunk Context Results:
+🎯 Center Chunk: 12
+📚 Window: 2 (returns chunks 10..14)
+
+Chunks Returned:
+- [10] Previous setup prerequisites
+- [11] Token validation flow intro
+- [12] JWT refresh implementation details (target)
+- [13] Error handling and retries
+- [14] Testing checklist and edge cases
+
+💡 Outcome:
+- Preserves local continuity for LLM reasoning
+- Avoids fetching entire document when only nearby context is needed
+```
+
 ## 🎯 Advanced Search Strategies
 
 ### Multi-Tool Workflow Examples
@@ -630,7 +669,6 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 #### For Large Knowledge Bases
 
 1. **Optimize Search Parameters**
-
    - Use appropriate `limit` values for your needs
    - Filter by `source_types` or `project_ids` when possible
    - Use specific search tools for targeted queries
