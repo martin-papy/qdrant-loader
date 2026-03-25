@@ -13,6 +13,9 @@ from .search import get_search_tool_schema
 
 
 def get_all_tool_schemas() -> list[dict[str, Any]]:
+    """
+    Get all tool schemas.
+    """
     # Backward-compatibility alias: expose detect_conflicts under legacy name
     # 'detect_document_conflicts' in the tools list while the underlying schema
     # function uses the canonical 'detect_conflicts' name.
