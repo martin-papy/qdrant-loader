@@ -2,7 +2,7 @@
 
 Connect QDrant Loader to Git repositories to index source code, documentation, and project files. This guide covers setup for GitHub, GitLab, Bitbucket, and self-hosted Git servers.
 
-## 🎯 What Gets Processed
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Processed Icon"> What Gets Processed
 
 When you connect a Git repository, QDrant Loader can process:
 
@@ -12,7 +12,7 @@ When you connect a Git repository, QDrant Loader can process:
 - **README files** - Project documentation and guides
 - **Any text-based files** - Based on your file type configuration
 
-## 🔧 Authentication Setup
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Setup Icon"> Authentication Setup
 
 ### GitHub
 
@@ -53,7 +53,7 @@ For other Git providers (Bitbucket, self-hosted), use their respective token sys
 export REPO_TOKEN=your_access_token_here
 ```
 
-## ⚙️ Configuration
+## <img src="../../../../../assets/icons/library/setting-icon.svg" width="32" alt="Configuration Icon"> Configuration
 
 QDrant Loader uses a **project-based configuration structure**. Each project can have multiple Git repository sources.
 
@@ -189,7 +189,7 @@ projects:
           enable_file_conversion: true
 ```
 
-## 🎯 Configuration Options
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Options Icon"> Configuration Options
 
 ### Required Settings
 
@@ -222,7 +222,7 @@ projects:
 - `depth`: default `1` (shallow clone)
 - `max_file_size`: default `1048576` bytes (1MB)
 
-## 🚀 Usage Examples
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Example Icon"> Usage Examples
 
 ### Software Development Team
 
@@ -357,7 +357,7 @@ projects:
           enable_file_conversion: true
 ```
 
-## 🧪 Testing and Validation
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Icon"> Testing and Validation
 
 ### Initialize and Test Configuration
 
@@ -391,7 +391,7 @@ qdrant-loader ingest --workspace . --project my-project
 qdrant-loader ingest --workspace . --project my-project --source-type git --source main-repo
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting Icon"> Troubleshooting
 
 ### Common Issues
 
@@ -561,7 +561,7 @@ find /tmp/test-repo -name "*.py" | head -10
 curl -H "Authorization: token $REPO_TOKEN" https://api.github.com/repos/org/repo
 ```
 
-## 📊 Monitoring and Processing
+## <img src="../../../../../assets/icons/library/test-tuble-icon.svg" width="32" alt="Documentation"> Monitoring and Processing
 
 ### Check Processing Status
 
@@ -586,7 +586,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 ```
 
-## 🔄 Best Practices
+## <img src="../../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Practice Icon"> Best Practices
 
 ### Repository Organization
 
@@ -647,7 +647,7 @@ file_types:
 4. **Audit access** - Monitor which repositories are being accessed
 5. **Use environment variables** - Never commit tokens to version control
 
-## 📚 Related Documentation
+## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation Icon"> Related Documentation
 
 - **[Configuration Reference](../../configuration/)** - Complete configuration options
 - **[File Conversion](../file-conversion/)** - Processing different file types found in repositories

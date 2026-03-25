@@ -5,7 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.1] - 2026-03-24
+
+### Fixed
+
+- CI secret injection restricted to develop/main branches only [#187]
+- CI secrets and integration tests skipped for fork/Dependabot PRs [#187]
+
+### Changed
+
+- Removed `uv.lock` from version control tracking [#187]
+
+## [0.8.0] - 2026-03-17
+
+### Removed
+
+#### Qdrant-loader
+
+- Legacy binary Office formats (`.doc`/`.ppt`) no longer supported [#145]
+
+### Fixed
+
+#### Qdrant-loader
+
+- Unsupported-type fallback now skips ingestion for legacy `.doc`/`.ppt` files [#145]
+- Excel chunk overlap consistency [#142]
+- `.xls` inputs now treated as Excel files for chunking strategy and metadata [#141]
+
+#### Qdrant-loader-mcp-server
+
+- Applied NLP processing only to keyword-search flow [#134]
+- Lazily loaded `qdrant-client`, `spaCy`, and network imports in MCP server [#132]
+- Reduced CLI startup time by lazily loading the OpenAI SDK [#131]
+
+### Added
+
+#### Qdrant-loader-mcp-server
+
+- Cross-encoder reranking to improve retrieval relevance [#151]
+- `expand_document` MCP tool to expand context around a specific chunk [#149]
+- `expand_cluster` MCP tool with detailed analysis of document grouping and relationships [#146]
+- WRRF ranking for hybrid search to improve result quality [#133]
+
+### Changed
+
+- Simplified configuration with smart defaults and a setup wizard [#144]
 
 ## [0.9.0] - 2026-03-26
 

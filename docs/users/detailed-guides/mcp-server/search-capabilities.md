@@ -2,7 +2,7 @@
 
 This guide covers the powerful AI-driven search capabilities available through the QDrant Loader MCP Server, enabling intelligent knowledge discovery and contextual understanding that goes beyond simple keyword matching.
 
-## 🚀 Overview
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Overview"> Overview
 
 The QDrant Loader MCP Server provides **intelligent search capabilities** powered by advanced AI technologies including semantic understanding, document relationship analysis, and cross-document intelligence. These features work together to provide contextually relevant results and comprehensive knowledge discovery.
 
@@ -29,7 +29,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 4. **Complementary Content Discovery** - Find related and supporting content **(Available)**
 5. **Document Clustering** - Group documents by similarity and relationships **(Available)**
 
-### 📄 Document Expansion Tools
+### <img src="../../../../../assets/icons/library/file-icon.svg" width="32" alt="Documentation"> Document Expansion Tools
 
 1. **Expand Document** - Get detailed document information and context **(Available)**
 2. **Expand Cluster** - Explore document clusters with detailed analysis **(Available)**
@@ -251,7 +251,7 @@ Content Analysis Results:
 }
 ```
 
-## 🤝 Cross-Document Intelligence Features
+## <img src="../../../../../assets/icons/library/hand-sake-icon.svg" width="32" alt="Features"> Cross-Document Intelligence Features
 
 ### Document Relationship Analysis
 
@@ -577,7 +577,7 @@ Chunks Returned:
 - Avoids fetching entire document when only nearby context is needed
 ```
 
-## 🎯 Advanced Search Strategies
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Strategies"> Advanced Search Strategies
 
 ### Multi-Tool Workflow Examples
 
@@ -645,7 +645,7 @@ source_types: ["localfile"]  # Only local files
 source_types: ["confluence", "git"]  # Documentation and code
 ```
 
-## 🔧 Advanced Configuration
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Configuration"> Advanced Configuration
 
 ### Environment Variables
 
@@ -677,7 +677,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
    - Use specific queries to reduce processing overhead
    - Filter by project or source type for focused analysis
 
-## 🚀 Performance Metrics
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Performance"> Performance Metrics
 
 ### Real-World Performance Results
 
@@ -696,7 +696,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 - ✅ **Content Intelligence**: Comprehensive file and attachment analysis
 - ✅ **Scalability**: Handles large document collections effectively
 
-## 📋 Search Capabilities Checklist
+## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Checklist Icon"> Search Capabilities Checklist
 
 ### Understanding Available Tools
 

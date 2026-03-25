@@ -4,7 +4,7 @@
 
 Connect QDrant Loader to your local file system to index documents, research materials, archives, and any file-based content. This guide covers setup for processing local directories and files.
 
-## 🎯 What Gets Processed
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Processed"> What Gets Processed
 
 When you configure local file processing, QDrant Loader can handle:
 
@@ -14,7 +14,7 @@ When you configure local file processing, QDrant Loader can handle:
 - **Data files** - JSON, CSV, XML, YAML configuration files
 - **Any file type** - When file conversion is enabled, many additional formats are supported
 
-## 🔧 Setup and Configuration
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Setup"> Setup and Configuration
 
 ### Basic Configuration
 
@@ -158,7 +158,7 @@ projects:
             - "**/dist/**"
 ```
 
-## 🎯 Configuration Options
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Options"> Configuration Options
 
 ### Base URL Requirements
 
@@ -185,7 +185,7 @@ projects:
 | ------------------------ | ---- | -------------------------------------------- | ------- |
 | `enable_file_conversion` | bool | Enable file conversion for supported formats | `false` |
 
-## 🚀 Usage Examples
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Examples"> Usage Examples
 
 ### Research Team
 
@@ -356,7 +356,7 @@ projects:
           enable_file_conversion: true
 ```
 
-## 🧪 Testing and Validation
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing"> Testing and Validation
 
 ### Initialize and Configure
 
@@ -394,7 +394,7 @@ qdrant-loader ingest --workspace . --project my-project
 qdrant-loader ingest --workspace . --log-level debug
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
 
 ### Common Issues
 
@@ -494,7 +494,7 @@ df -h /path/to/files
 qdrant-loader ingest --workspace . --log-level debug
 ```
 
-## 📊 Monitoring and Performance
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Monitoring"> Monitoring and Performance
 
 ### Check Processing Status
 
@@ -519,7 +519,7 @@ Monitor these aspects for local file processing:
 - **Memory usage** - Peak memory during processing
 - **Disk I/O** - Read/write operations per second
 
-## 🔄 Best Practices
+## <img src="../../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Best Practices"> Best Practices
 
 ### File Organization
 
@@ -573,7 +573,7 @@ projects:
 3. **Remove duplicates** - Avoid processing duplicate content
 4. **Update regularly** - Keep file collections current
 
-## 📚 Related Documentation
+## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation"> Related Documentation
 
 - **[File Conversion](../file-conversion/)** - Processing different file formats
 - **[Configuration Reference](../../configuration/)** - Complete configuration options

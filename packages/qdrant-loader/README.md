@@ -1,12 +1,14 @@
 # QDrant Loader
 
+<img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Package icon">
+
 [![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![Python](https://img.shields.io/pypi/pyversions/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A powerful data ingestion engine that collects and vectorizes technical content from multiple sources for storage in QDrant vector database. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
-## 🚀 What It Does
+## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket Icon"> What It Does
 
 QDrant Loader is the data ingestion engine that:
 
@@ -16,7 +18,7 @@ QDrant Loader is the data ingestion engine that:
 - **Stores efficiently** in QDrant vector database with optimized embeddings
 - **Updates incrementally** to keep your knowledge base current
 
-## 🔄 Supported Data Sources
+## <img src="../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Support icon"> Supported Data Sources
 
 | Source | Description | Key Features |
 |--------|-------------|--------------|
@@ -26,7 +28,7 @@ QDrant Loader is the data ingestion engine that:
 | **Public Docs** | External documentation sites | CSS selector extraction, version detection |
 | **Local Files** | Local directories and files | Glob patterns, recursive scanning, file type filtering |
 
-## 📄 File Conversion Support
+## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="File icon"> File Conversion Support
 
 Automatically converts diverse file formats using Microsoft's MarkItDown:
 
@@ -48,7 +50,7 @@ Automatically converts diverse file formats using Microsoft's MarkItDown:
 - **Metadata preservation**: Original file information maintained
 - **Performance optimized**: Configurable size limits and timeouts
 
-## 📦 Installation
+## <img src="../../../assets/icons/library/package-icon.svg" width="32" alt="Insallation icon"> Installation
 
 ### From PyPI (Recommended)
 
@@ -184,7 +186,7 @@ qdrant-loader ingest --workspace .
 qdrant-loader project --workspace . status
 ```
 
-## 🔧 Configuration
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Congiguration icon"> Configuration
 
 ### Environment Variables
 
@@ -239,7 +241,7 @@ JIRA_PROJECT_KEY=PROJ
 JIRA_PAT=your_personal_access_token
 ```
 
-## 🎯 Usage Examples
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Example icon"> Usage Examples
 
 ### Basic Commands
 
@@ -362,7 +364,7 @@ pytest -m "unit" packages/qdrant-loader/tests/
 pytest -m "integration" packages/qdrant-loader/tests/
 ```
 
-## 🤝 Contributing
+## <img src="../../../assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
 This package is part of the QDrant Loader monorepo. See the [main contributing guide](../../CONTRIBUTING.md) for details.
 
@@ -380,7 +382,7 @@ pip install -e "packages/qdrant-loader[dev]"
 pytest packages/qdrant-loader/tests/
 ```
 
-## 📚 Documentation
+## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation icon"> Documentation
 
 - **[Complete Documentation](../../docs/)** - Comprehensive guides and references
 - **[Getting Started](../../docs/getting-started/)** - Quick start and core concepts
@@ -393,7 +395,7 @@ pytest packages/qdrant-loader/tests/
 - **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
 - **[Documentation](../../docs/)** - Comprehensive guides
 
-## 📄 License
+## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="License icon"> License
 
 This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) file for details.
 

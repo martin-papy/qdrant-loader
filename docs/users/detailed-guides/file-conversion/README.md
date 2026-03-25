@@ -317,7 +317,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace . --log-level DEBUG
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
 
 ### Common Issues
 
@@ -449,7 +449,7 @@ print(result.text_content[:500])
 pip list | grep -E "(markitdown|tesseract|whisper)"
 ```
 
-## 📊 Monitoring and Performance
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Mornitoring and Perfomance"> Monitoring and Performance
 
 ### Check Processing Status
 
@@ -471,7 +471,7 @@ Monitor these aspects for file conversion:
 - **File size distribution** - Understanding of content characteristics
 - **Timeout frequency** - Files that exceed conversion timeout
 
-## 🔄 Best Practices
+## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Best Practices"> Best Practices
 
 ### Performance Optimization
 
@@ -501,7 +501,7 @@ Monitor these aspects for file conversion:
 3. **Clean up temporary files** - Remove intermediate files after processing
 4. **Limit concurrent operations** - Avoid overwhelming the system
 
-## 📚 Related Documentation
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Related icon"> Related Documentation
 
 - **[Data Sources](../data-sources/)** - Configuring data sources that use file conversion
 - **[Configuration Reference](../../configuration/)** - Complete configuration options

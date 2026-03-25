@@ -2,7 +2,7 @@
 
 This guide covers the attachment search capabilities of the QDrant Loader MCP Server, enabling you to find and work with file attachments across your knowledge base with AI assistance.
 
-## 🎯 Overview
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Ovreview Icon"> Overview
 
 The attachment search tool specializes in finding file attachments and their associated documents. **Currently, this feature is specifically designed for Confluence sources** and includes:
 
@@ -63,7 +63,7 @@ Query: "architecture diagrams"
 6. Ranked Results (by relevance and attachment metadata)
 ```
 
-## 🔧 Attachment Search Parameters
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Search Parameters Icon"> Attachment Search Parameters
 
 ### Available Parameters
 
@@ -294,7 +294,7 @@ Results:
    Content: "Comprehensive system architecture documentation..."
 ```
 
-## 🔧 Advanced Attachment Features
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Attachment Features Icon"> Advanced Attachment Features
 
 ### 1. MarkItDown-Based Content Extraction
 
@@ -365,7 +365,7 @@ Attachment search integrates with the broader search system:
 - **Parent Context**: Considers both attachment content and parent page context
 - **Filter Support**: Allows filtering by file type, size, author, and parent page
 
-## 🎯 Optimization Strategies
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Strategies Icon"> Optimization Strategies
 
 ### 1. Query Optimization
 
@@ -553,7 +553,7 @@ Query: "deployment documentation structure"
 - **[Hierarchy Search](./hierarchy-search.md)** - Document structure navigation
 - **[Setup and Integration](./setup-and-integration.md)** - MCP server setup
 
-## 📋 Attachment Search Checklist
+## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Checklist Icon"> Attachment Search Checklist
 
 - [ ] **Understand Confluence attachments** in your knowledge base
 - [ ] **Use file-type specific queries** for targeted search within Confluence
