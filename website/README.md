@@ -35,7 +35,7 @@ website/
 └── README.md                  # This file
 ```
 
-## 🚀 Building the Website
+## <img src="../website/assets/icons/library/rocket-icon.svg" width="32" alt="Rockets Icons"> Building the Website
 
 ### Prerequisites
 
@@ -113,7 +113,7 @@ Templates have access to:
 - `breadcrumbs`: Current page breadcrumb path
 - `assets_url`: Base URL for assets
 
-## 🎯 Assets Management
+## <img src="../website/assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> Assets Management
 
 ### Favicons
 
@@ -151,7 +151,7 @@ python generate_favicons.py
 # Requires Pillow (PIL) for image processing
 ```
 
-## 🔧 Configuration
+## <img src="../website/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration
 
 ### Environment Variables
 
@@ -179,7 +179,7 @@ hide_nav: true                   # Optional: hide from navigation
 # Your markdown content here
 ```
 
-## 🚀 Development Workflow
+## <img src="../website/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Development Workflow
 
 ### Local Development
 
@@ -259,7 +259,7 @@ python build.py --output ../dist/v2
 - **CDN-ready assets** with proper caching headers
 - **Progressive Web App** features with manifest
 
-## 🤝 Contributing
+## <img src="../website/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
 ### Adding New Features
 

@@ -1,8 +1,10 @@
 # Architecture Overview
 
+<img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Architecture icon">
+
 This section provides a comprehensive overview of QDrant Loader's architecture, including system design principles, component interactions, and data flow patterns.
 
-## 🎯 Design Principles
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Design Priciples"> Design Principles
 
 QDrant Loader is built on several key architectural principles:
 
@@ -98,7 +100,7 @@ QDrant Loader is built on several key architectural principles:
 - **LLM APIs** - Embedding generation via provider-agnostic interface (OpenAI, Azure OpenAI, Ollama)
 - **Data Sources** - Git repositories, Confluence, JIRA, local files, web content
 
-## 🔧 Core Components
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Core Componets"> Core Components
 
 ### Data Source Connectors
 
@@ -214,7 +216,7 @@ Implementation: `qdrant_loader/core/state/state_manager.py`
 - Metadata handling
 - Connection management with retry logic
 
-## 📊 Data Flow
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Data Flow"> Data Flow
 
 ### Ingestion Pipeline
 
@@ -242,7 +244,7 @@ Implementation: `qdrant_loader/core/state/state_manager.py`
 └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
 ```
 
-## 🔌 Connector System
+## <img src="../../../../assets/icons/library/plug-icon.svg" width="32" alt="Connector System"> Connector System
 
 ### Connector Architecture
 
@@ -298,7 +300,7 @@ async def _collect_documents_from_sources(
 - **LocalFileConnector** - Local file system processing
 - **PublicDocsConnector** - Web-based documentation crawling
 
-## 🔄 State Management
+## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="State Management"> State Management
 
 ### State Storage
 
@@ -349,7 +351,7 @@ async def update_document_state(
     # ... implementation details
 ```
 
-## 🚀 Performance Considerations
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Performance"> Performance Considerations
 
 ### Asynchronous Processing
 
@@ -415,14 +417,14 @@ class ConfluenceConnector(BaseConnector):
 - **Access control** - Per-source authentication
 - **Local processing** - No data sent to external services except for LLM embedding generation
 
-## 📚 Related Documentation
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Related Documentation"> Related Documentation
 
 - **[CLI Reference](../../users/cli-reference/)** - Command-line interface
 - **[Configuration Guide](../../users/configuration/)** - Configuration options
 - **[Extending Guide](../extending/)** - How to extend functionality
 - **[Testing Guide](../testing/)** - Testing framework and patterns
 
-## 🔄 Architecture Evolution
+## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Architecture"> Architecture Evolution
 
 ### Current State (v0.4.x)
 

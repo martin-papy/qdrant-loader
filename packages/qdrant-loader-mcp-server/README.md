@@ -1,12 +1,10 @@
-# QDrant Loader MCP Server
-
-[![PyPI](https://img.shields.io/pypi/v/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
+# QDrant Loader MCP Server[![PyPI](https://img.shields.io/pypi/v/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
 [![Python](https://img.shields.io/pypi/pyversions/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A Model Context Protocol (MCP) server that provides advanced Retrieval-Augmented Generation (RAG) capabilities to AI development tools. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
-## 🚀 What It Does
+## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket Icon"> What It Does
 
 The MCP Server bridges your QDrant knowledge base with AI development tools:
 
@@ -16,7 +14,7 @@ The MCP Server bridges your QDrant knowledge base with AI development tools:
 - **Streams responses** for fast, real-time search results
 - **Preserves relationships** between documents, attachments, and parent content
 
-## 🔌 Supported AI Tools
+## <img src="../../../assets/icons/library/plug-icon.svg" width="32" alt="Plug Icon"> Supported AI Tools
 
 | Tool | Status | Integration Features |
 |------|--------|---------------------|
@@ -55,7 +53,7 @@ The MCP Server bridges your QDrant knowledge base with AI development tools:
 - **Visual Indicators**: Rich formatting with icons and context clues
 - **Relationship Mapping**: Shows connections between related content
 
-## 📦 Installation
+## <img src="../../../assets/icons/library/package-icon.svg" width="32" alt="Package Icon"> Installation
 
 ### From PyPI (Recommended)
 
@@ -121,7 +119,7 @@ mcp-qdrant-loader --help
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | mcp-qdrant-loader
 ```
 
-## 🔧 Configuration
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench Icon"> Configuration
 
 ### Environment Variables
 
@@ -142,7 +140,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 - **For Debugging**: Use `MCP_LOG_FILE` to write logs when console logging is disabled
 - **API Keys**: OpenAI API keys should start with `sk-proj-` for project keys or `sk-` for user keys
 
-## 🎯 AI Tool Integration
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> AI Tool Integration
 
 ### Cursor IDE Integration
 
@@ -209,7 +207,7 @@ Add to Claude Desktop's configuration:
 }
 ```
 
-## 🎯 Usage Examples
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> Usage Examples
 
 ### In Cursor IDE
 
@@ -364,7 +362,7 @@ pytest --cov=qdrant_loader_mcp_server packages/qdrant-loader-mcp-server/tests/
 pytest -m "mcp" packages/qdrant-loader-mcp-server/tests/
 ```
 
-## 🤝 Contributing
+## <img src="../../../assets/icons/library/hand-sake-icon.svg" width="32" alt="Hand Sake Icon"> Contributing
 
 This package is part of the QDrant Loader monorepo. See the [main contributing guide](../../CONTRIBUTING.md) for details.
 
@@ -382,7 +380,7 @@ pip install -e "packages/qdrant-loader-mcp-server[dev]"
 pytest packages/qdrant-loader-mcp-server/tests/
 ```
 
-## 📚 Documentation
+## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book Icon"> Documentation
 
 - **[Complete Documentation](../../docs/)** - Comprehensive guides and references
 - **[Getting Started](../../docs/getting-started/)** - Quick start and core concepts
@@ -395,7 +393,7 @@ pytest packages/qdrant-loader-mcp-server/tests/
 - **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
 - **[Documentation](../../docs/)** - Comprehensive guides
 
-## 📄 License
+## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="License Icon"> License
 
 This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) file for details.
 
