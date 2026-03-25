@@ -125,7 +125,9 @@ class SemanticAnalyzer:
 
         # Calculate document similarity
         doc_similarity = (
-            self._calculate_document_similarity(text) if include_enhanced else {}
+            self._calculate_document_similarity(text, doc_id=doc_id)
+            if include_enhanced
+            else {}
         )
 
         # Create result
@@ -382,24 +384,29 @@ class SemanticAnalyzer:
 
         return list(set(key_phrases))  # Remove duplicates
 
-    def _calculate_document_similarity(self, text: str) -> dict[str, float]:
+    def _calculate_document_similarity(
+        self, text: str, doc_id: str | None = None
+    ) -> dict[str, float]:
         """Calculate similarity with other processed documents.
 
         Args:
             text: Text to compare
+            doc_id: Optional current document ID to exclude from results
 
         Returns:
             Dictionary of document similarities
         """
         similarities = {}
+        skipped_ids = {doc_id} if doc_id else set()
+
         doc = self.nlp(text)
 
         # Check if the model has word vectors
         has_vectors = self.nlp.vocab.vectors_length > 0
 
         for cache_key, cached_result in self._doc_cache.items():
-            doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
-            if doc_id is None:
+            cached_doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
+            if cached_doc_id is None or cached_doc_id in skipped_ids:
                 continue
 
             # Check if cached_result has entities and the first entity has context
@@ -418,7 +425,8 @@ class SemanticAnalyzer:
                 # This avoids the spaCy warning about missing word vectors
                 similarity = self._calculate_alternative_similarity(doc, cached_doc)
 
-            similarities[doc_id] = float(similarity)
+            similarities[cached_doc_id] = float(similarity)
+            skipped_ids.add(cached_doc_id)
 
         return similarities
 
