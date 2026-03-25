@@ -282,12 +282,17 @@ class TestSemanticAnalyzer:
                 "Apple is a company", doc_id="doc1", include_enhanced=True
             )
 
-            # Second call should return cached result
+            # Second call should return cached result (deep-copied when include_enhanced=True)
             result2 = analyzer.analyze_text(
                 "Apple is a company", doc_id="doc1", include_enhanced=True
             )
 
-            assert result1 is result2
+            # With include_enhanced=True, cache hit returns a deep copy with refreshed similarity
+            # So result1 and result2 are different objects, but have same content
+            assert result1 is not result2
+            assert result1.entities == result2.entities
+            assert result1.pos_tags == result2.pos_tags
+            assert result1.topics == result2.topics
             assert ("doc1", True) in analyzer._doc_cache
 
     def test_analyze_text_without_enhanced_fields(self, mock_nlp, mock_doc):
@@ -766,6 +771,53 @@ class TestSemanticAnalyzer:
             # Verify enhanced fields differ
             assert len(result_enhanced_false.pos_tags) == 0
             assert len(result_enhanced_true.pos_tags) > 0
+
+    def test_analyze_text_cache_hit_refreshes_similarity(self, mock_nlp, mock_doc):
+        """Test that cache hit with include_enhanced=True refreshes similarity."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity"
+            ) as mock_similarity,
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            # Mock _calculate_document_similarity to return different results on each call
+            mock_similarity.side_effect = [
+                {"other_doc": 0.5},  # First call (initial analysis of doc1)
+                {
+                    "doc2": 0.7
+                },  # Second call (cache hit, refreshed with doc2 now in cache)
+            ]
+
+            # First call - analyze doc1 and cache it
+            result1 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
+            assert result1.document_similarity == {"other_doc": 0.5}
+
+            # Add doc2 to cache (simulating another document being analyzed)
+            doc2_result = SemanticAnalysisResult(
+                entities=[{"context": "Microsoft is a company"}],
+                pos_tags=[],
+                dependencies=[],
+                topics=[],
+                key_phrases=[],
+                document_similarity={},
+            )
+            analyzer._doc_cache[("doc2", True)] = doc2_result
+
+            # Second call - cache hit for doc1, should refresh similarity
+            result2 = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc1", include_enhanced=True
+            )
+
+            # Result should have refreshed similarity (now includes doc2)
+            assert result2.document_similarity == {"doc2": 0.7}
+            # Verify _calculate_document_similarity was called twice (initial + refresh)
+            assert mock_similarity.call_count == 2
 
     def test_calculate_topic_coherence(self, mock_nlp):
         """Test topic coherence calculation."""

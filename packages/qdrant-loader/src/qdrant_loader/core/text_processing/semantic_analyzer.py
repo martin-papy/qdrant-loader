@@ -99,7 +99,23 @@ class SemanticAnalyzer:
         # Check cache
         cache_key = (doc_id, include_enhanced) if doc_id else None
         if cache_key and cache_key in self._doc_cache:
-            return self._doc_cache[cache_key]
+            cached = self._doc_cache[cache_key]
+            if include_enhanced:
+                # Reuse cached base fields but refresh document_similarity to reflect
+                # any newly-analyzed docs added to the cache since last computation
+                refreshed = SemanticAnalysisResult(
+                    entities=cached.entities,
+                    pos_tags=cached.pos_tags,
+                    dependencies=cached.dependencies,
+                    topics=cached.topics,
+                    key_phrases=cached.key_phrases,
+                    document_similarity=self._calculate_document_similarity(
+                        text, doc_id=doc_id
+                    ),
+                )
+                self._doc_cache[cache_key] = refreshed
+                return refreshed
+            return cached
 
         # Process with spaCy
         doc = self.nlp(text)
