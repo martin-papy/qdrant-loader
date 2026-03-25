@@ -2,7 +2,7 @@
 
 This comprehensive guide covers setting up the QDrant Loader MCP Server with all supported AI development tools. Follow the instructions for your specific AI tool to enable **advanced knowledge-powered development** with semantic search, hierarchy navigation, attachment analysis, and cross-document intelligence.
 
-## 🎯 Overview
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Ovreview"> Overview
 
 The QDrant Loader MCP Server integrates with popular AI development tools through the Model Context Protocol (MCP), providing seamless access to your knowledge base during development with **advanced search capabilities**.
 
@@ -13,7 +13,7 @@ The QDrant Loader MCP Server integrates with popular AI development tools throug
 - **Claude Desktop** - Anthropic's desktop AI assistant
 - **Other MCP-Compatible Tools** - Generic MCP setup
 
-### 🚀 Advanced Search Capabilities
+### <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Capabilities Icon"> Advanced Search Capabilities
 
 The MCP server provides **10 powerful search tools**:
 
@@ -46,7 +46,7 @@ After completing this guide, you'll have:
 - ✅ **Cross-document intelligence** for analyzing document relationships
 - ✅ **Optimized performance** for your specific use case
 
-## 🚀 Prerequisites
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Prerequisites"> Prerequisites
 
 Before starting, ensure you have:
 
@@ -74,7 +74,7 @@ qdrant-loader status
 pip install qdrant-loader-mcp-server
 ```
 
-## 🔧 MCP Server Installation
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Installation Icon"> MCP Server Installation
 
 ### Install the MCP Server Package
 
@@ -130,7 +130,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 
 > **💡 Pro Tip**: `MCP_DISABLE_CONSOLE_LOGGING=true` significantly improves performance and prevents console spam in AI tools.
 
-## 🚀 Transport Modes (v0.6.0+)
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Transport"> Transport Modes (v0.6.0+)
 
 The QDrant Loader MCP Server supports **dual transport architecture** with MCP Protocol 2025-06-18 compliance:
 
@@ -447,7 +447,7 @@ Claude Desktop is Anthropic's desktop AI assistant with MCP support.
    Ask: "Can you search my knowledge base for information about API authentication?"
    ```
 
-## 🔧 Other MCP-Compatible Tools
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="MCP-Compatible Icon"> Other MCP-Compatible Tools
 
 For other AI tools that support MCP, use this generic configuration approach:
 
@@ -559,7 +559,7 @@ Example: "What content complements our deployment guide?"
 Example: "Cluster our microservices documentation by related topics"
 ```
 
-## ⚙️ Configuration Reference
+## <img src="../../../../../assets/icons/library/setting-icon.svg" width="32" alt="Configuration Icon"> Configuration Reference
 
 ### Supported Environment Variables
 
@@ -612,7 +612,7 @@ For different projects with different knowledge bases:
 }
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
 
 ### Common Issues
 
@@ -725,7 +725,7 @@ mcp-qdrant-loader
 
 > **Note**: Manual JSON-RPC testing is complex. Use AI tool integration for practical testing.
 
-## 🚀 Performance Optimization
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Performance"> Performance Optimization
 
 ### For Large Knowledge Bases
 
@@ -755,7 +755,7 @@ mcp-qdrant-loader
    - Watch memory consumption
    - Monitor QDrant performance
 
-## 📊 Best Practices
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Best Practices Icon"> Best Practices
 
 ### Effective Prompting
 
@@ -814,7 +814,7 @@ mcp-qdrant-loader
 }
 ```
 
-## 📊 Available Search Tools Summary
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Search Tool Icon"> Available Search Tools Summary
 
 The MCP server provides these search capabilities:
 
@@ -832,7 +832,7 @@ The MCP server provides these search capabilities:
 4. **find_complementary_content** - Complementary content discovery
 5. **cluster_documents** - Document clustering based on content and relationships
 
-## 📋 Integration Checklist
+## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Checklist Icon"> Integration Checklist
 
 ### Pre-Setup
 
@@ -870,7 +870,7 @@ The MCP server provides these search capabilities:
 
 With the MCP server properly configured, your AI tool can access and search your knowledge base using **10 powerful search tools**, providing contextual answers, navigating document relationships, detecting conflicts, and analyzing content to support your development workflow. The system provides semantic understanding and cross-document intelligence that goes far beyond simple keyword matching, making your development process more informed and efficient! ✨
 
-## 📚 Related Documentation
+## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation Icon"> Related Documentation
 
 - **[Search Capabilities](./search-capabilities.md)** - Complete search features reference
 - **[Attachment Search](./attachment-search.md)** - File and attachment search guide

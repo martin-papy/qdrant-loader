@@ -8,60 +8,60 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 
 ### Document Formats
 
-| Format | Extension | Description | Features |
-|--------|-----------|-------------|----------|
-| **PDF** | `.pdf` | Portable Document Format | Text extraction, OCR for images, metadata |
-| **Word** | `.docx`, `.doc` | Microsoft Word documents | Text, tables, images, metadata |
-| **PowerPoint** | `.pptx`, `.ppt` | Microsoft PowerPoint presentations | Slide text, speaker notes, metadata |
-| **Excel** | `.xlsx`, `.xls` | Microsoft Excel spreadsheets | Cell data, formulas, sheet names |
-| **OpenDocument** | `.odt`, `.ods`, `.odp` | LibreOffice/OpenOffice documents | Text, tables, metadata |
+| Format           | Extension              | Description                        | Features                                  |
+| ---------------- | ---------------------- | ---------------------------------- | ----------------------------------------- |
+| **PDF**          | `.pdf`                 | Portable Document Format           | Text extraction, OCR for images, metadata |
+| **Word**         | `.docx`                | Microsoft Word documents           | Text, tables, images, metadata            |
+| **PowerPoint**   | `.pptx`                | Microsoft PowerPoint presentations | Slide text, speaker notes, metadata       |
+| **Excel**        | `.xlsx`, `.xls`        | Microsoft Excel spreadsheets       | Cell data, formulas, sheet names          |
+| **OpenDocument** | `.odt`, `.ods`, `.odp` | LibreOffice/OpenOffice documents   | Text, tables, metadata                    |
 
 ### Text Formats
 
-| Format | Extension | Description | Features |
-|--------|-----------|-------------|----------|
-| **Markdown** | `.md`, `.markdown` | Markdown markup | Formatted text, code blocks, tables |
-| **reStructuredText** | `.rst` | reStructuredText markup | Formatted text, directives |
-| **Plain Text** | `.txt` | Plain text files | Raw text content |
-| **Rich Text** | `.rtf` | Rich Text Format | Formatted text, basic styling |
-| **LaTeX** | `.tex` | LaTeX documents | Mathematical content, structured text |
+| Format               | Extension          | Description             | Features                              |
+| -------------------- | ------------------ | ----------------------- | ------------------------------------- |
+| **Markdown**         | `.md`, `.markdown` | Markdown markup         | Formatted text, code blocks, tables   |
+| **reStructuredText** | `.rst`             | reStructuredText markup | Formatted text, directives            |
+| **Plain Text**       | `.txt`             | Plain text files        | Raw text content                      |
+| **Rich Text**        | `.rtf`             | Rich Text Format        | Formatted text, basic styling         |
+| **LaTeX**            | `.tex`             | LaTeX documents         | Mathematical content, structured text |
 
 ### Image Formats (with OCR)
 
-| Format | Extension | Description | Features |
-|--------|-----------|-------------|----------|
-| **JPEG** | `.jpg`, `.jpeg` | JPEG images | OCR text extraction, metadata |
-| **PNG** | `.png` | PNG images | OCR text extraction, transparency |
-| **GIF** | `.gif` | GIF images | OCR text extraction, animation frames |
-| **TIFF** | `.tiff`, `.tif` | TIFF images | OCR text extraction, high quality |
-| **BMP** | `.bmp` | Bitmap images | OCR text extraction |
+| Format   | Extension       | Description   | Features                              |
+| -------- | --------------- | ------------- | ------------------------------------- |
+| **JPEG** | `.jpg`, `.jpeg` | JPEG images   | OCR text extraction, metadata         |
+| **PNG**  | `.png`          | PNG images    | OCR text extraction, transparency     |
+| **GIF**  | `.gif`          | GIF images    | OCR text extraction, animation frames |
+| **TIFF** | `.tiff`, `.tif` | TIFF images   | OCR text extraction, high quality     |
+| **BMP**  | `.bmp`          | Bitmap images | OCR text extraction                   |
 
 ### Audio Formats (with Transcription)
 
-| Format | Extension | Description | Features |
-|--------|-----------|-------------|----------|
-| **MP3** | `.mp3` | MP3 audio | Speech-to-text transcription |
-| **WAV** | `.wav` | WAV audio | Speech-to-text transcription |
-| **M4A** | `.m4a` | M4A audio | Speech-to-text transcription |
-| **FLAC** | `.flac` | FLAC audio | Speech-to-text transcription |
+| Format   | Extension | Description | Features                     |
+| -------- | --------- | ----------- | ---------------------------- |
+| **MP3**  | `.mp3`    | MP3 audio   | Speech-to-text transcription |
+| **WAV**  | `.wav`    | WAV audio   | Speech-to-text transcription |
+| **M4A**  | `.m4a`    | M4A audio   | Speech-to-text transcription |
+| **FLAC** | `.flac`   | FLAC audio  | Speech-to-text transcription |
 
 ### Data Formats
 
-| Format | Extension | Description | Features |
-|--------|-----------|-------------|----------|
-| **JSON** | `.json` | JSON data | Structured data extraction |
-| **CSV** | `.csv` | Comma-separated values | Tabular data, headers |
-| **XML** | `.xml` | XML documents | Structured data, attributes |
-| **YAML** | `.yaml`, `.yml` | YAML configuration | Configuration data |
-| **TOML** | `.toml` | TOML configuration | Configuration data |
+| Format   | Extension       | Description            | Features                    |
+| -------- | --------------- | ---------------------- | --------------------------- |
+| **JSON** | `.json`         | JSON data              | Structured data extraction  |
+| **CSV**  | `.csv`          | Comma-separated values | Tabular data, headers       |
+| **XML**  | `.xml`          | XML documents          | Structured data, attributes |
+| **YAML** | `.yaml`, `.yml` | YAML configuration     | Configuration data          |
+| **TOML** | `.toml`         | TOML configuration     | Configuration data          |
 
 ### Archive Formats
 
-| Format | Extension | Description | Features |
-|--------|-----------|-------------|----------|
-| **ZIP** | `.zip` | ZIP archives | Extract and process contents |
-| **TAR** | `.tar`, `.tar.gz`, `.tgz` | TAR archives | Extract and process contents |
-| **7-Zip** | `.7z` | 7-Zip archives | Extract and process contents |
+| Format    | Extension                 | Description    | Features                     |
+| --------- | ------------------------- | -------------- | ---------------------------- |
+| **ZIP**   | `.zip`                    | ZIP archives   | Extract and process contents |
+| **TAR**   | `.tar`, `.tar.gz`, `.tgz` | TAR archives   | Extract and process contents |
+| **7-Zip** | `.7z`                     | 7-Zip archives | Extract and process contents |
 
 ## <img src="../../../../assets/icons/library/setting-icon.svg" width="32" alt="Configuration"> Configuration
 
@@ -73,22 +73,22 @@ File conversion is configured globally and applies to all projects and sources t
 global:
   file_conversion:
     # Maximum file size for conversion (in bytes)
-    max_file_size: 52428800  # 50MB
-    
+    max_file_size: 52428800 # 50MB
+
     # Timeout for conversion operations (in seconds)
-    conversion_timeout: 300  # 5 minutes
-    
+    conversion_timeout: 300 # 5 minutes
+
     # MarkItDown specific settings
     markitdown:
       # Enable LLM integration for image descriptions
       enable_llm_descriptions: false
-      
+
       # LLM model for image descriptions (when enabled)
       llm_model: "gpt-4o"
-      
+
       # LLM endpoint (when enabled)
       llm_endpoint: "https://api.openai.com/v1"
-      
+
       # API key for LLM service (required when enable_llm_descriptions is true)
       llm_api_key: "${LLM_API_KEY}"
 
@@ -106,7 +106,7 @@ projects:
             - "*.pptx"
             - "*.xlsx"
           max_file_size: 52428800
-          
+
           # Enable file conversion for this source
           enable_file_conversion: true
 ```
@@ -115,26 +115,26 @@ projects:
 
 #### Global File Conversion Settings
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `max_file_size` | int | Maximum file size in bytes | `52428800` (50MB) |
-| `conversion_timeout` | int | Timeout for conversion operations in seconds | `300` (5 minutes) |
+| Option               | Type | Description                                  | Default           |
+| -------------------- | ---- | -------------------------------------------- | ----------------- |
+| `max_file_size`      | int  | Maximum file size in bytes                   | `52428800` (50MB) |
+| `conversion_timeout` | int  | Timeout for conversion operations in seconds | `300` (5 minutes) |
 
 #### MarkItDown Settings
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `enable_llm_descriptions` | bool | Enable LLM integration for image descriptions | `false` |
-| `llm_model` | string | LLM model for image descriptions | `gpt-4o` |
-| `llm_endpoint` | string | LLM endpoint URL | `https://api.openai.com/v1` |
-| `llm_api_key` | string | API key for LLM service | `null` |
+| Option                    | Type   | Description                                   | Default                     |
+| ------------------------- | ------ | --------------------------------------------- | --------------------------- |
+| `enable_llm_descriptions` | bool   | Enable LLM integration for image descriptions | `false`                     |
+| `llm_model`               | string | LLM model for image descriptions              | `gpt-4o`                    |
+| `llm_endpoint`            | string | LLM endpoint URL                              | `https://api.openai.com/v1` |
+| `llm_api_key`             | string | API key for LLM service                       | `null`                      |
 
 #### Source-Level Settings
 
 Each data source can enable or disable file conversion:
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
+| Option                   | Type | Description                            | Default |
+| ------------------------ | ---- | -------------------------------------- | ------- |
 | `enable_file_conversion` | bool | Enable file conversion for this source | `false` |
 
 ## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="How File Conversion Works"> How File Conversion Works
@@ -186,8 +186,8 @@ Each data source can enable or disable file conversion:
 ```yaml
 global:
   file_conversion:
-    max_file_size: 52428800  # 50MB
-    conversion_timeout: 300  # 5 minutes
+    max_file_size: 52428800 # 50MB
+    conversion_timeout: 300 # 5 minutes
     markitdown:
       enable_llm_descriptions: false
 
@@ -212,8 +212,8 @@ projects:
 ```yaml
 global:
   file_conversion:
-    max_file_size: 104857600  # 100MB for large papers
-    conversion_timeout: 600   # 10 minutes
+    max_file_size: 104857600 # 100MB for large papers
+    conversion_timeout: 600 # 10 minutes
     markitdown:
       enable_llm_descriptions: true
       llm_model: "gpt-4o"
@@ -240,7 +240,7 @@ projects:
 global:
   file_conversion:
     max_file_size: 52428800
-    conversion_timeout: 900  # 15 minutes for audio/video
+    conversion_timeout: 900 # 15 minutes for audio/video
     markitdown:
       enable_llm_descriptions: true
       llm_model: "gpt-4o"
@@ -317,7 +317,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace . --log-level DEBUG
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
 
 ### Common Issues
 
@@ -331,15 +331,15 @@ qdrant-loader config --workspace . --log-level DEBUG
 global:
   file_conversion:
     # Increase size limit
-    max_file_size: 104857600  # 100MB
-    
+    max_file_size: 104857600 # 100MB
+
     # Or filter at source level
 projects:
   my-project:
     sources:
       localfile:
         documents:
-          max_file_size: 20971520  # 20MB limit for this source
+          max_file_size: 20971520 # 20MB limit for this source
 ```
 
 #### Conversion Timeout
@@ -352,7 +352,7 @@ projects:
 global:
   file_conversion:
     # Increase timeout
-    conversion_timeout: 900  # 15 minutes
+    conversion_timeout: 900 # 15 minutes
 ```
 
 #### LLM Integration Issues
@@ -396,10 +396,10 @@ curl -H "Authorization: Bearer $LLM_API_KEY" \
 global:
   file_conversion:
     # Reduce file size limits
-    max_file_size: 20971520  # 20MB
-    
+    max_file_size: 20971520 # 20MB
+
     # Reduce timeout to fail faster
-    conversion_timeout: 180  # 3 minutes
+    conversion_timeout: 180 # 3 minutes
 ```
 
 #### Unsupported File Types
@@ -449,7 +449,7 @@ print(result.text_content[:500])
 pip list | grep -E "(markitdown|tesseract|whisper)"
 ```
 
-## 📊 Monitoring and Performance
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Mornitoring and Perfomance"> Monitoring and Performance
 
 ### Check Processing Status
 
@@ -471,7 +471,7 @@ Monitor these aspects for file conversion:
 - **File size distribution** - Understanding of content characteristics
 - **Timeout frequency** - Files that exceed conversion timeout
 
-## 🔄 Best Practices
+## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Best Practices"> Best Practices
 
 ### Performance Optimization
 
@@ -501,7 +501,7 @@ Monitor these aspects for file conversion:
 3. **Clean up temporary files** - Remove intermediate files after processing
 4. **Limit concurrent operations** - Avoid overwhelming the system
 
-## 📚 Related Documentation
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Related icon"> Related Documentation
 
 - **[Data Sources](../data-sources/)** - Configuring data sources that use file conversion
 - **[Configuration Reference](../../configuration/)** - Complete configuration options

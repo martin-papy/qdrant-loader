@@ -14,6 +14,19 @@ from spacy.tokens import Doc
 logger = logging.getLogger(__name__)
 
 
+def is_meaningful_text(text: str) -> bool:
+    """Check if text contains meaningful content (letters or digits).
+
+    Returns False for text that only contains:
+    - Punctuation marks: ., #, @, |, -, _, etc.
+    - Whitespace characters
+    - Special symbols without semantic meaning (---, ..., |||, etc.)
+
+    """
+    # Check if text contains at least one alphanumeric character
+    return any(c.isalnum() for c in text)
+
+
 @dataclass
 class SemanticAnalysisResult:
     """Container for semantic analysis results."""
@@ -67,20 +80,42 @@ class SemanticAnalyzer:
         self._doc_cache = {}
 
     def analyze_text(
-        self, text: str, doc_id: str | None = None
+        self,
+        text: str,
+        doc_id: str | None = None,
+        include_enhanced: bool = False,
     ) -> SemanticAnalysisResult:
         """Perform comprehensive semantic analysis on text.
 
         Args:
             text: Text to analyze
             doc_id: Optional document ID for caching
+            include_enhanced: Whether to compute enhanced NLP fields
+                (pos_tags, dependencies, document_similarity)
 
         Returns:
             SemanticAnalysisResult containing all analysis results
         """
         # Check cache
-        if doc_id and doc_id in self._doc_cache:
-            return self._doc_cache[doc_id]
+        cache_key = (doc_id, include_enhanced) if doc_id else None
+        if cache_key and cache_key in self._doc_cache:
+            cached = self._doc_cache[cache_key]
+            if include_enhanced:
+                # Reuse cached base fields but refresh document_similarity to reflect
+                # any newly-analyzed docs added to the cache since last computation
+                refreshed = SemanticAnalysisResult(
+                    entities=cached.entities,
+                    pos_tags=cached.pos_tags,
+                    dependencies=cached.dependencies,
+                    topics=cached.topics,
+                    key_phrases=cached.key_phrases,
+                    document_similarity=self._calculate_document_similarity(
+                        text, doc_id=doc_id
+                    ),
+                )
+                self._doc_cache[cache_key] = refreshed
+                return refreshed
+            return cached
 
         # Process with spaCy
         doc = self.nlp(text)
@@ -88,11 +123,15 @@ class SemanticAnalyzer:
         # Extract entities with linking
         entities = self._extract_entities(doc)
 
-        # Get part-of-speech tags
-        pos_tags = self._get_pos_tags(doc)
+        if include_enhanced:
+            # Get part-of-speech tags
+            pos_tags = self._get_pos_tags(doc)
 
-        # Get dependency parse
-        dependencies = self._get_dependencies(doc)
+            # Get dependency parse
+            dependencies = self._get_dependencies(doc)
+        else:
+            pos_tags = []
+            dependencies = []
 
         # Extract topics
         topics = self._extract_topics(text)
@@ -101,7 +140,11 @@ class SemanticAnalyzer:
         key_phrases = self._extract_key_phrases(doc)
 
         # Calculate document similarity
-        doc_similarity = self._calculate_document_similarity(text)
+        doc_similarity = (
+            self._calculate_document_similarity(text, doc_id=doc_id)
+            if include_enhanced
+            else {}
+        )
 
         # Create result
         result = SemanticAnalysisResult(
@@ -114,13 +157,18 @@ class SemanticAnalyzer:
         )
 
         # Cache result
-        if doc_id:
-            self._doc_cache[doc_id] = result
+        if cache_key:
+            self._doc_cache[cache_key] = result
 
         return result
 
     def _extract_entities(self, doc: Doc) -> list[dict[str, Any]]:
-        """Extract named entities with linking.
+        """Extract named entities with linking, filtering garbage entities.
+
+        Filters out entities that:
+        - Only contain punctuation/symbols (., #, |, etc.)
+        - Don't have any alphanumeric characters
+        - Are just whitespace
 
         Args:
             doc: spaCy document
@@ -130,6 +178,10 @@ class SemanticAnalyzer:
         """
         entities = []
         for ent in doc.ents:
+            # Filter entities that only contain punctuation/symbols
+            if not is_meaningful_text(ent.text):
+                continue
+
             # Get entity context
             start_sent = ent.sent.start
             end_sent = ent.sent.end
@@ -138,17 +190,19 @@ class SemanticAnalyzer:
             # Get entity description
             description = self.nlp.vocab.strings[ent.label_]
 
-            # Get related entities
+            # Get related entities (also filter meaningless ones)
             related = []
             for token in ent.sent:
                 if token.ent_type_ and token.text != ent.text:
-                    related.append(
-                        {
-                            "text": token.text,
-                            "type": token.ent_type_,
-                            "relation": token.dep_,
-                        }
-                    )
+                    # Only add related entities with meaningful text
+                    if is_meaningful_text(token.text):
+                        related.append(
+                            {
+                                "text": token.text,
+                                "type": token.ent_type_,
+                                "relation": token.dep_,
+                            }
+                        )
 
             entities.append(
                 {
@@ -165,16 +219,32 @@ class SemanticAnalyzer:
         return entities
 
     def _get_pos_tags(self, doc: Doc) -> list[dict[str, Any]]:
-        """Get part-of-speech tags with detailed information.
+        """Get part-of-speech tags with detailed information, filtering noise tokens.
+
+        Filters out multiple types of noise:
+        - Whitespace tokens (is_space=True)
+        - Punctuation tokens (is_punct=True)
+        - Symbol-only tokens without alphanumeric content (e.g., ---, ..., |||)
+
+        This is especially important for Excel tables and structured data.
 
         Args:
             doc: spaCy document
 
         Returns:
-            List of POS tag dictionaries
+            List of POS tag dictionaries (excluding spaces, punctuation, and symbols)
         """
         pos_tags = []
         for token in doc:
+            # Skip whitespace and punctuation - they pollute metadata
+            if token.is_space or token.is_punct:
+                continue
+
+            # Also skip tokens with no meaningful content (e.g., ---, ...)
+            # This catches edge cases where spaCy doesn't mark as punct
+            if not is_meaningful_text(token.text):
+                continue
+
             pos_tags.append(
                 {
                     "text": token.text,
@@ -182,8 +252,6 @@ class SemanticAnalyzer:
                     "tag": token.tag_,
                     "lemma": token.lemma_,
                     "is_stop": token.is_stop,
-                    "is_punct": token.is_punct,
-                    "is_space": token.is_space,
                 }
             )
         return pos_tags
@@ -332,22 +400,31 @@ class SemanticAnalyzer:
 
         return list(set(key_phrases))  # Remove duplicates
 
-    def _calculate_document_similarity(self, text: str) -> dict[str, float]:
+    def _calculate_document_similarity(
+        self, text: str, doc_id: str | None = None
+    ) -> dict[str, float]:
         """Calculate similarity with other processed documents.
 
         Args:
             text: Text to compare
+            doc_id: Optional current document ID to exclude from results
 
         Returns:
             Dictionary of document similarities
         """
         similarities = {}
+        skipped_ids = {doc_id} if doc_id else set()
+
         doc = self.nlp(text)
 
         # Check if the model has word vectors
         has_vectors = self.nlp.vocab.vectors_length > 0
 
-        for doc_id, cached_result in self._doc_cache.items():
+        for cache_key, cached_result in self._doc_cache.items():
+            cached_doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
+            if cached_doc_id is None or cached_doc_id in skipped_ids:
+                continue
+
             # Check if cached_result has entities and the first entity has context
             if not cached_result.entities or not cached_result.entities[0].get(
                 "context"
@@ -364,7 +441,8 @@ class SemanticAnalyzer:
                 # This avoids the spaCy warning about missing word vectors
                 similarity = self._calculate_alternative_similarity(doc, cached_doc)
 
-            similarities[doc_id] = float(similarity)
+            similarities[cached_doc_id] = float(similarity)
+            skipped_ids.add(cached_doc_id)
 
         return similarities
 

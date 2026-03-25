@@ -8,6 +8,20 @@ from qdrant_loader.core.chunking.strategy.markdown.splitters.base import BaseSpl
 class ExcelSplitter(BaseSplitter):
     """Excel-specific splitter that preserves table structure."""
 
+    @staticmethod
+    def _is_table_line(line: str) -> bool:
+        """Check whether a line is part of a markdown table."""
+        return bool(re.match(r"^\|.*\|$", line)) or bool(re.match(r"^[|\-\s:]+$", line))
+
+    @staticmethod
+    def _is_table_unit(unit: str) -> bool:
+        """Check whether a logical unit is a markdown table block."""
+        non_empty_lines = [line.strip() for line in unit.split("\n") if line.strip()]
+        if not non_empty_lines:
+            return False
+
+        return all(ExcelSplitter._is_table_line(line) for line in non_empty_lines)
+
     def split_content(self, content: str, max_size: int) -> list[str]:
         """Split Excel sheet content into chunks, preserving table structure where possible.
 
@@ -33,9 +47,7 @@ class ExcelSplitter(BaseSplitter):
         for line in lines:
             line = line.strip()
 
-            is_table_line = bool(re.match(r"^\|.*\|$", line)) or bool(
-                re.match(r"^[|\-\s:]+$", line)
-            )
+            is_table_line = self._is_table_line(line)
 
             if is_table_line and not in_table:
                 if current_unit:
@@ -105,7 +117,18 @@ class ExcelSplitter(BaseSplitter):
                 if self.chunk_overlap == 0:
                     advance = units_in_chunk
                 else:
-                    overlap_units = min(1, units_in_chunk // 2)
+                    is_non_table_then_table_boundary = (
+                        i == 0
+                        and units_in_chunk >= 2
+                        and not self._is_table_unit(logical_units[i])
+                        and self._is_table_unit(logical_units[i + 1])
+                    )
+
+                    if is_non_table_then_table_boundary:
+                        overlap_units = 0
+                    else:
+                        overlap_units = min(1, units_in_chunk // 2)
+
                     advance = max(1, units_in_chunk - overlap_units)
 
                 i += advance

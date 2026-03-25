@@ -14,6 +14,7 @@ def async_search_engine():
     """Create a mock search engine with async behavior."""
     engine = Mock()
     engine.search = AsyncMock()
+    engine._search_semaphore = asyncio.Semaphore(10)
     return engine
 
 
@@ -35,8 +36,15 @@ def mock_protocol():
 
 @pytest.fixture
 def async_search_handler(async_search_engine, async_query_processor, mock_protocol):
-    """Create a SearchHandler with async components."""
-    return SearchHandler(async_search_engine, async_query_processor, mock_protocol)
+    """Create a SearchHandler with async components (reranking disabled for async tests)."""
+    from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
+    return SearchHandler(
+        async_search_engine,
+        async_query_processor,
+        mock_protocol,
+        reranking_config=MCPReranking(enabled=False),
+    )
 
 
 @pytest.fixture
@@ -51,7 +59,7 @@ def sample_async_results():
         result.text = f"Content for async document {i}"
         result.score = 0.9 - (i * 0.1)
         result.depth = i
-        result.parent_title = None if i == 0 else f"Async Document {i-1}"
+        result.parent_title = None if i == 0 else f"Async Document {i - 1}"
         result.is_attachment = False
         result.original_filename = None
         result.file_path = None
@@ -388,39 +396,52 @@ class TestAsyncExpandDocumentBehavior:
     """Test async behavior in document expansion operations."""
 
     @pytest.mark.asyncio
-    async def test_expand_document_async_search_sequence(
-        self, async_search_handler, sample_async_results
-    ):
-        """Test async behavior with document expansion search sequence."""
-        target_document = sample_async_results[0]
+    async def test_expand_document_async_scroll_sequence(self, async_search_handler):
+        """Test async behavior when scrolling multiple pages from Qdrant."""
 
-        # Setup sequential async searches
-        async def sequential_search(query, **kwargs):
-            if "document_id:" in query:
-                await asyncio.sleep(0.02)  # First search delay
-                return []  # No exact match
+        point1 = Mock()
+        point1.payload = {"document_id": "async-doc-0", "chunk_index": 0}
+
+        point2 = Mock()
+        point2.payload = {"document_id": "async-doc-0", "chunk_index": 1}
+
+        def sequential_scroll(**kwargs):
+            if not hasattr(sequential_scroll, "called"):
+                sequential_scroll.called = True
+                time.sleep(0.02)  # simulate first page delay
+                return ([point1], "next_offset")
             else:
-                await asyncio.sleep(0.03)  # Second search delay
-                return [target_document]
+                time.sleep(0.03)  # simulate second page delay
+                return ([point2], None)
 
-        async_search_handler.search_engine.search = sequential_search
-        async_search_handler.protocol.create_response.return_value = {
-            "jsonrpc": "2.0",
-            "id": 1,
-        }
+        async_search_handler.search_engine.client = Mock()
+        async_search_handler.search_engine.client.scroll = AsyncMock(
+            side_effect=sequential_scroll
+        )
 
-        with patch.object(async_search_handler.formatters, "format_search_result"):
-            with patch.object(
-                async_search_handler.formatters, "create_structured_search_results"
-            ):
-                start_time = time.time()
-                params = {"document_id": "async-doc-0"}
-                result = await async_search_handler.handle_expand_document(1, params)
-                end_time = time.time()
+        async_search_handler.qdrant_config = Mock()
+        async_search_handler.qdrant_config.collection_name = "test_collection"
 
-                # Should wait for both search attempts
-                assert end_time - start_time >= 0.05
-                assert result["jsonrpc"] == "2.0"
+        async_search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
+        )
+
+        start = time.monotonic()
+
+        params = {"document_id": "async-doc-0"}
+        result = await async_search_handler.handle_expand_document(1, params)
+
+        elapsed = time.monotonic() - start
+
+        # Should wait for both scroll calls
+        assert elapsed >= 0.04
+        assert result["jsonrpc"] == "2.0"
+        assert result["result"]["structuredContent"]["total_chunks"] == 2
 
     @pytest.mark.asyncio
     async def test_concurrent_document_expansions(
@@ -555,12 +576,13 @@ class TestAsyncPerformance:
             await asyncio.sleep(delay)
             return sample_async_results
 
+        async def mock_search(**kwargs):
+            return await slow_operation(0.1)
+
         async_search_handler.query_processor.process_query.return_value = {
             "query": "parallel_test"
         }
-        async_search_handler.search_engine.search.side_effect = (
-            lambda **kwargs: slow_operation(0.1)
-        )
+        async_search_handler.search_engine.search.side_effect = mock_search
         async_search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0"}
 
         with patch.object(
@@ -568,19 +590,26 @@ class TestAsyncPerformance:
         ):
             with patch.object(async_search_handler.formatters, "format_search_result"):
                 # Test parallel execution
-                tasks = []
-                for i in range(3):
-                    params = {"query": f"parallel_query_{i}"}
-                    task = async_search_handler.handle_search(f"par_{i}", params)
-                    tasks.append(task)
-
+                tasks = [
+                    async_search_handler.handle_search(f"par_{i}", {"query": f"q{i}"})
+                    for i in range(3)
+                ]
+                # parallel
                 start_time = time.time()
                 results = await asyncio.gather(*tasks)
                 parallel_time = time.time() - start_time
 
+                # sequential
+                start = time.time()
+                for i in range(3):
+                    await async_search_handler.handle_search(
+                        f"seq_{i}", {"query": f"q{i}"}
+                    )
+                sequential_time = time.time() - start
+
                 # Parallel execution should be faster than 3 * 0.1 seconds
                 # (allowing overhead for CI/slow systems like WSL)
-                assert parallel_time < 0.5  # Much less than 3 * 0.1 = 0.3
+                assert parallel_time < sequential_time
                 assert len(results) == 3
 
     @pytest.mark.asyncio

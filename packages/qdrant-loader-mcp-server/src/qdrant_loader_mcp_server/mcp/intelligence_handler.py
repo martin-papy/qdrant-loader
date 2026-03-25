@@ -1,5 +1,8 @@
 """Cross-document intelligence operations handler for MCP server."""
 
+import asyncio
+import time
+import uuid
 from typing import Any
 
 from ..search.engine import SearchEngine
@@ -8,9 +11,7 @@ from .formatters import MCPFormatters
 from .handlers.intelligence import (
     get_or_create_document_id as _get_or_create_document_id_fn,
 )
-from .handlers.intelligence import (
-    process_analysis_results,
-)
+from .handlers.intelligence import process_analysis_results
 from .protocol import MCPProtocol
 
 # Get logger for this module
@@ -25,9 +26,31 @@ class IntelligenceHandler:
         self.search_engine = search_engine
         self.protocol = protocol
         self.formatters = MCPFormatters()
+        self._cluster_store = {}
+        self._ttl = 300
+        self._max_sessions = 500
+        self._lock = asyncio.Lock()
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
+
+    def _expand_cluster_docs_to_schema(
+        self, docs: list[Any], include_metadata: bool
+    ) -> list[dict[str, Any]]:
+        """Build documents array to match expand_cluster outputSchema (id, text, metadata)."""
+        result = []
+        for doc in docs:
+            doc_id = getattr(doc, "document_id", None) or getattr(doc, "id", None) or ""
+            item = {"id": str(doc_id), "text": getattr(doc, "text", "") or ""}
+            if include_metadata:
+                item["metadata"] = {
+                    "title": getattr(doc, "source_title", ""),
+                    "source_type": getattr(doc, "source_type", ""),
+                    "source_url": getattr(doc, "source_url", None),
+                    "file_path": getattr(doc, "file_path", None),
+                }
+            result.append(item)
+        return result
 
     async def handle_analyze_document_relationships(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -300,9 +323,13 @@ class IntelligenceHandler:
                             if isinstance(v, int | float)
                         },
                         "similarity_reason": (
-                            ", ".join(item.get("similarity_reasons", []))
-                            if isinstance(item.get("similarity_reasons", []), list)
-                            else item.get("similarity_reason", "")
+                            ", ".join(reasons)
+                            if isinstance(
+                                reasons := item.get("similarity_reasons"), list
+                            )
+                            else (
+                                item.get("similarity_reason", "") or str(reasons or "")
+                            )
                         ),
                         "content_preview": content_preview,
                     }
@@ -440,9 +467,10 @@ class IntelligenceHandler:
                 )
 
         try:
-            logger.info("🔍 About to call search_engine.find_complementary_content")
-            logger.info(f"🔍 search_engine type: {type(self.search_engine)}")
-            logger.info(f"🔍 search_engine is None: {self.search_engine is None}")
+            logger.debug(
+                "Calling search_engine.find_complementary_content (%s)",
+                type(self.search_engine).__name__,
+            )
 
             result = await self.search_engine.find_complementary_content(
                 target_query=params["target_query"],
@@ -469,8 +497,9 @@ class IntelligenceHandler:
             target_document = result.get("target_document")
             context_documents_analyzed = result.get("context_documents_analyzed", 0)
 
-            logger.info(
-                f"✅ search_engine.find_complementary_content completed, got {len(complementary_recommendations)} results"
+            logger.debug(
+                "find_complementary_content completed, got %s results",
+                len(complementary_recommendations),
             )
 
             # Create lightweight structured content using the new formatter
@@ -546,6 +575,20 @@ class IntelligenceHandler:
                 )
             )
 
+            # Store for expand_cluster call (keep full document object)
+            cluster_session_id = str(uuid.uuid4())
+            async with self._lock:
+                self._cleanup_sessions_locked()
+                self._cluster_store[cluster_session_id] = {
+                    "data": {
+                        "clusters": clustering_results.get("clusters", []),
+                        "clustering_metadata": clustering_results.get(
+                            "clustering_metadata"
+                        ),
+                    },
+                    "expires_at": time.time() + self._ttl,
+                }
+
             # Build schema-compliant clustering response
             schema_clusters: list[dict[str, Any]] = []
             for idx, cluster in enumerate(clustering_results.get("clusters", []) or []):
@@ -602,8 +645,8 @@ class IntelligenceHandler:
 
                 schema_clusters.append(
                     {
-                        "cluster_id": str(cluster.get("id", f"cluster_{idx+1}")),
-                        "cluster_name": cluster.get("name") or f"Cluster {idx+1}",
+                        "cluster_id": str(cluster.get("id", f"cluster_{idx + 1}")),
+                        "cluster_name": cluster.get("name") or f"Cluster {idx + 1}",
                         "cluster_theme": theme_str,
                         "document_count": int(
                             cluster.get(
@@ -703,7 +746,10 @@ class IntelligenceHandler:
                             ),
                         }
                     ],
-                    "structuredContent": mcp_clustering_results,
+                    "structuredContent": {
+                        **mcp_clustering_results,
+                        "cluster_session_id": cluster_session_id,
+                    },
                     "isError": False,
                 },
             )
@@ -721,7 +767,22 @@ class IntelligenceHandler:
         """Handle cluster expansion request for lazy loading."""
         logger.debug("Handling expand cluster with params", params=params)
 
-        if "cluster_id" not in params:
+        # 1. Validate cluster_session_id
+        cluster_session_id = params.get("cluster_session_id")
+        if not cluster_session_id:
+            logger.error("Missing required parameter: cluster_session_id")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: cluster_session_id",
+                },
+            )
+
+        # 2. Validate cluster_id
+        cluster_id = params.get("cluster_id")
+        if not cluster_id:
             logger.error("Missing required parameter: cluster_id")
             return self.protocol.create_response(
                 request_id,
@@ -732,70 +793,158 @@ class IntelligenceHandler:
                 },
             )
 
+        cluster_id = str(cluster_id).strip()
+
+        # 3. Pagination params
         try:
-            cluster_id = params["cluster_id"]
-            limit = params.get("limit", 20)
-            offset = params.get("offset", 0)
-            params.get("include_metadata", True)
+            limit = max(1, min(100, int(params.get("limit", 20))))
+        except Exception:
+            limit = 20
 
-            logger.info(
-                f"Expanding cluster {cluster_id} with limit={limit}, offset={offset}"
-            )
+        try:
+            offset = max(0, int(params.get("offset", 0)))
+        except Exception:
+            offset = 0
 
-            # For now, we need to re-run clustering to get cluster data
-            # In a production system, this would be cached or stored
-            # This is a placeholder implementation
+        include_metadata = params.get("include_metadata", True)
 
-            # Since we don't have cluster data persistence yet, return a helpful message
-            # In the future, this would retrieve stored cluster data and expand it
+        # 4. Get cache (LOCK)
+        now = time.time()
 
-            # Build schema-compliant placeholder payload
-            page_num = (
-                (int(offset) // int(limit)) + 1
-                if isinstance(limit, int) and limit > 0
-                else 1
-            )
-            expansion_result = {
-                "cluster_id": str(cluster_id),
-                "cluster_info": {
-                    "cluster_name": "",
-                    "cluster_theme": "",
-                    "document_count": 0,
-                },
-                "documents": [],
-                "pagination": {
-                    "page": page_num,
-                    "page_size": int(limit) if isinstance(limit, int) else 20,
-                    "total": 0,
-                    "has_more": False,
-                },
-            }
+        # Note: Cache is in-memory and per-process. In multi-worker deployments,
+        # cluster_session_id created on one worker won't be available on others
+        # unless using shared storage (e.g., Redis) or sticky routing.
+        async with self._lock:
+            entry = self._cluster_store.get(cluster_session_id)
 
-            return self.protocol.create_response(
-                request_id,
-                result={
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"🔄 **Cluster Expansion Request**\n\nCluster ID: {cluster_id}\n\n"
-                            + "Currently, cluster expansion requires re-running the clustering operation. "
-                            + "The lightweight cluster response provides the first 5 documents per cluster. "
-                            + "For complete cluster content, please run `cluster_documents` again.\n\n"
-                            + "💡 **Future Enhancement**: Cluster data will be cached to enable true lazy loading.",
-                        }
-                    ],
-                    "structuredContent": expansion_result,
-                    "isError": False,
-                },
-            )
+            if entry and entry.get("expires_at", 0) < now:
+                self._cluster_store.pop(cluster_session_id, None)
+                entry = None
 
-        except Exception as e:
-            logger.error("Error expanding cluster", exc_info=True)
+        if entry is None:
             return self.protocol.create_response(
                 request_id,
                 error={
-                    "code": -32603,
-                    "message": "Internal server error",
-                    "data": str(e),
+                    "code": -32001,
+                    "message": "Session not found or expired",
+                    "data": f"Cluster session '{cluster_session_id}' not found or expired",
                 },
             )
+
+        cache = entry.get("data") or {}
+        clusters = cache.get("clusters") or []
+
+        # 5. Find cluster
+        cluster = next(
+            (
+                c
+                for idx, c in enumerate(clusters)
+                if str(c.get("id", f"cluster_{idx + 1}")) == cluster_id
+            ),
+            None,
+        )
+
+        if not cluster:
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32002,
+                    "message": "Cluster not found",
+                    "data": f"No cluster with id '{cluster_id}' found",
+                },
+            )
+
+        # 6. Pagination
+        all_docs = cluster.get("documents") or []
+        total = len(all_docs)
+
+        slice_docs = all_docs[offset : offset + limit]
+        has_more = offset + len(slice_docs) < total
+        page = (offset // limit) + 1 if limit > 0 else 1
+        # 7. Transform documents
+        doc_schema_list = self._expand_cluster_docs_to_schema(
+            slice_docs, include_metadata
+        )
+
+        # 8. Extract theme
+        theme = (
+            cluster.get("cluster_summary")
+            or ", ".join(
+                (
+                    cluster.get("shared_entities")
+                    or cluster.get("centroid_topics")
+                    or []
+                )[:3]
+            )
+            or "N/A"
+        )
+
+        # 9. Build result
+        result = {
+            "cluster_id": cluster_id,
+            "cluster_info": {
+                "cluster_name": cluster.get("name") or f"Cluster {cluster_id}",
+                "cluster_theme": theme,
+                "document_count": total,
+            },
+            "documents": doc_schema_list,
+            "pagination": {
+                "page": page,
+                "page_size": limit,
+                "total": total,
+                "has_more": has_more,
+            },
+        }
+
+        # 10. Return response
+        return self.protocol.create_response(
+            request_id,
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": self._format_text_block(result),
+                    }
+                ],
+                "structuredContent": result,
+                "isError": False,
+            },
+        )
+
+    def _format_text_block(self, result: dict) -> str:
+        info = result.get("cluster_info", {})
+        docs = result.get("documents", [])
+        total = info.get("document_count", 0)
+
+        text = (
+            f"**Cluster: {info.get('cluster_name', 'Unknown')}**\n"
+            f"Theme: {info.get('cluster_theme', 'N/A')}\n"
+            f"Documents: {total}\n\n"
+        )
+
+        for i, d in enumerate(docs[:5], 1):
+            title = d.get("metadata", {}).get("title", d.get("id", "Unknown"))
+            text += f"{i}. {title}\n"
+
+        if total > 5:
+            text += f"... and {total - 5} more.\n"
+
+        return text
+
+    def _cleanup_sessions_locked(self):
+        now = time.time()
+
+        expired_keys = [
+            k for k, v in self._cluster_store.items() if v.get("expires_at", 0) < now
+        ]
+
+        for k in expired_keys:
+            self._cluster_store.pop(k, None)
+
+        if len(self._cluster_store) > self._max_sessions:
+            sorted_items = sorted(
+                self._cluster_store.items(), key=lambda x: x[1].get("expires_at", 0)
+            )
+            overflow = len(self._cluster_store) - self._max_sessions
+            for k, _ in sorted_items[:overflow]:
+                self._cluster_store.pop(k, None)

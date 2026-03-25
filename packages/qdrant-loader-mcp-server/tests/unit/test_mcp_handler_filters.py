@@ -126,10 +126,17 @@ def mock_search_results():
 @pytest.fixture
 def search_handler():
     """Create a SearchHandler instance for testing."""
+    from qdrant_loader_mcp_server.config_reranking import MCPReranking
+
     mock_search_engine = Mock()
     mock_query_processor = Mock()
     mock_protocol = Mock(spec=MCPProtocol)
-    return SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
+    return SearchHandler(
+        mock_search_engine,
+        mock_query_processor,
+        mock_protocol,
+        reranking_config=MCPReranking(enabled=False),
+    )
 
 
 @pytest.fixture

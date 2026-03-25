@@ -2,11 +2,11 @@
 
 This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, and quality assurance practices.
 
-## 🎯 Testing Overview
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Testing Overview"> Testing Overview
 
 QDrant Loader follows a comprehensive testing strategy to ensure reliability, performance, and maintainability:
 
-### 🧪 Testing Philosophy
+### <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Philosophy"> Testing Philosophy
 
 1. **Test-Driven Development** - Write tests before implementing features
 2. **Comprehensive Coverage** - Aim for 85%+ test coverage
@@ -14,13 +14,13 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 4. **Real-World Testing** - Integration tests with actual services
 5. **Performance Validation** - Regular performance benchmarking
 
-### 📚 Testing Categories
+### <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Testing Categories"> Testing Categories
 
 - **Unit Testing** - Testing individual components in isolation
 - **Integration Testing** - Testing component interactions and end-to-end workflows
 - **Quality Assurance** - Code quality, review processes, and standards
 
-## 🚀 Quick Start
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
 
 ### Test Environment Setup
 
@@ -72,7 +72,7 @@ pytest tests/unit/core/test_qdrant_manager.py
 pytest tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initialization_default_settings
 ```
 
-## 🧪 Testing Framework
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Framework"> Testing Framework
 
 ### Core Testing Tools
 
@@ -103,7 +103,7 @@ tests/
 └── test_website_build.py
 ```
 
-## 🔧 Test Fixtures and Utilities
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Test Fixtures and Utilities"> Test Fixtures and Utilities
 
 ### Common Fixtures
 
@@ -225,7 +225,7 @@ def create_mock_settings():
     return settings
 ```
 
-## 🧪 Unit Testing Patterns
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Partterns"> Unit Testing Patterns
 
 ### Testing Core Components
 
@@ -448,7 +448,7 @@ async def test_cli_integration(tmp_path):
     assert result.exit_code == 0
 ```
 
-## 📊 Performance Testing
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Performance Testing"> Performance Testing
 
 ### Benchmarking
 
@@ -549,7 +549,7 @@ jobs:
           file: ./coverage.xml
 ```
 
-## 📚 Testing Best Practices
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Testing Best"> Testing Best Practices
 
 ### Guidelines
 

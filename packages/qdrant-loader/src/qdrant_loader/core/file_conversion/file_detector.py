@@ -22,9 +22,7 @@ class FileDetector:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
-        "application/msword": "doc",
         "application/vnd.ms-excel": "xls",
-        "application/vnd.ms-powerpoint": "ppt",
         # Images
         "image/jpeg": "jpg",
         "image/png": "png",
@@ -77,9 +75,7 @@ class FileDetector:
             ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            ".doc": "application/msword",
             ".xls": "application/vnd.ms-excel",
-            ".ppt": "application/vnd.ms-powerpoint",
             ".epub": "application/epub+zip",
         }
 

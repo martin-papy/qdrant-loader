@@ -14,6 +14,7 @@ def test_monolithic_mcp_schemas_static_methods():
         MCPSchemas.get_cluster_documents_tool_schema(),
         MCPSchemas.get_expand_document_tool_schema(),
         MCPSchemas.get_expand_cluster_tool_schema(),
+        MCPSchemas.get_expand_chunk_context_tool_schema(),
     ]
 
     for s in schemas:

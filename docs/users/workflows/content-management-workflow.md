@@ -2,7 +2,7 @@
 
 This comprehensive guide shows how to implement streamlined content management workflows for documentation teams, content creators, and knowledge managers. Whether you're managing a documentation site, internal knowledge base, or content publishing pipeline, this workflow provides practical solutions for content creation, review, publishing, and maintenance using QDrant Loader's actual capabilities.
 
-## 🎯 Overview
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview"> Overview
 
 The content management workflow focuses on creating efficient processes for content lifecycle management, from initial creation through publication and ongoing maintenance. This workflow is essential for organizations that need to maintain high-quality, up-to-date content across multiple sources and formats.
 
@@ -34,7 +34,7 @@ graph TD
     F --> M[AI Tools]
 ```
 
-## 📋 Prerequisites
+## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Prerequisites"> Prerequisites
 
 ### Required Tools
 
@@ -53,7 +53,7 @@ graph TD
 🔗 Git Repositories - Code repos, documentation repos
 ```
 
-## 🚀 Step-by-Step Implementation
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Implementation"> Step-by-Step Implementation
 
 ### Step 1: Content Source Configuration
 
@@ -925,7 +925,7 @@ main() {
 main "$@"
 ```
 
-## 🔧 Advanced Configuration
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Advantage"> Advanced Configuration
 
 ### Multi-Environment Setup
 
@@ -978,7 +978,7 @@ projects:
       # Production source configuration
 ```
 
-## 📊 Workflow Metrics and Analytics
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Metrics"> Workflow Metrics and Analytics
 
 ### Content Performance Tracking
 
@@ -1052,7 +1052,7 @@ main() {
 main "$@"
 ```
 
-## 🚀 Quick Start Guide
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start Guide
 
 ### 1. Initial Setup
 
@@ -1100,7 +1100,7 @@ qdrant-loader config --workspace .
 mcp-qdrant-loader
 ```
 
-## 📋 Best Practices
+## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Best Practices">📋 Best Practices
 
 ### Content Organization
 

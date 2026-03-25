@@ -5,12 +5,18 @@ This module implements the core SearchEngine class with initialization,
 configuration management, and resource cleanup functionality.
 """
 
+from __future__ import annotations
+
+import asyncio
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import httpx
 import yaml
-from qdrant_client import AsyncQdrantClient, models
+
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
 
 from ...config import OpenAIConfig, QdrantConfig, SearchConfig
 from ...utils.logging import LoggingConfig
@@ -23,11 +29,22 @@ from .search import SearchOperations
 from .strategies import StrategySelector
 from .topic_chain import TopicChainOperations
 
-# Expose OpenAI Async client symbol at module scope for tests to patch only.
-# Do not import the OpenAI library at runtime to avoid hard dependency.
+# Expose client symbols at module scope for tests to patch only.
+# Do not import the libraries at runtime to avoid hard dependency - use lazy loading.
 AsyncOpenAI = None  # type: ignore[assignment]
+AsyncQdrantClient = None  # type: ignore[assignment] - will be lazy loaded
 
 logger = LoggingConfig.get_logger(__name__)
+
+
+def _get_async_qdrant_client():
+    """Get AsyncQdrantClient class, using module-level if patched, otherwise lazy import."""
+    global AsyncQdrantClient
+    if AsyncQdrantClient is not None:
+        return AsyncQdrantClient
+    from qdrant_client import AsyncQdrantClient as _AsyncQdrantClient
+
+    return _AsyncQdrantClient
 
 
 def _safe_value_to_dict(value_obj: object) -> dict:
@@ -79,6 +96,11 @@ class SearchEngine:
         self.hybrid_search: HybridSearchEngine | None = None
         self.logger = LoggingConfig.get_logger(__name__)
 
+        # Concurrency limiter – prevents overwhelming the shared Qdrant client
+        # connection pool when multiple MCP tool calls arrive concurrently.
+        # Initialised with a default; overridden in initialize() from SearchConfig.
+        self._search_semaphore: asyncio.Semaphore = asyncio.Semaphore(4)
+
         # Initialize operation modules (will be set up after initialization)
         self._search_ops: SearchOperations | None = None
         self._topic_chain_ops: TopicChainOperations | None = None
@@ -93,17 +115,38 @@ class SearchEngine:
         search_config: SearchConfig | None = None,
     ) -> None:
         """Initialize the search engine with configuration."""
+        from qdrant_client.http import models
+
+        # Use helper to get client class (supports test patching)
+        QdrantClientClass = _get_async_qdrant_client()
+
         self.config = config
         try:
-            # Configure timeout for Qdrant cloud instances
-            # Set to 120 seconds to handle large datasets and prevent ReadTimeout errors
+            # Extract concurrency limit early — needed for both pool sizing and semaphore
+            max_concurrent = 4  # default
+            if search_config is not None:
+                max_concurrent = max(
+                    1, getattr(search_config, "max_concurrent_searches", 4)
+                )
+            self._search_semaphore = asyncio.Semaphore(max_concurrent)
+
+            # Size the httpx connection pool to match the concurrency level.
+            # +10 headroom for non-search calls (expand_document, conflict
+            # detection embeddings, init-time get_collections, etc.)
+            pool_connections = max(20, max_concurrent + 10)
+            pool_keepalive = max(10, pool_connections // 2)
+
             client_kwargs = {
                 "url": config.url,
-                "timeout": 120,  # 120 seconds timeout for cloud instances
+                "timeout": 360,  # We need to keep it relatively high until we optimise further
+                "limits": httpx.Limits(
+                    max_connections=pool_connections,
+                    max_keepalive_connections=pool_keepalive,
+                ),
             }
             if getattr(config, "api_key", None):
                 client_kwargs["api_key"] = config.api_key
-            self.client = AsyncQdrantClient(**client_kwargs)
+            self.client = QdrantClientClass(**client_kwargs)
             # Keep legacy OpenAI client for now only when tests patch AsyncOpenAI
             try:
                 if AsyncOpenAI is not None and getattr(openai_config, "api_key", None):
@@ -218,17 +261,20 @@ class SearchEngine:
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
         """Search for documents using hybrid search."""
-        if not self._search_ops:
-            # Fallback: delegate directly to hybrid_search when operations not initialized
-            if not self.hybrid_search:
-                raise RuntimeError("Search engine not initialized")
-            return await self.hybrid_search.search(
-                query=query,
-                source_types=source_types,
-                limit=limit,
-                project_ids=project_ids,
+        async with self._search_semaphore:
+            if not self._search_ops:
+                # Fallback: delegate directly to hybrid_search when operations not initialized
+                if not self.hybrid_search:
+                    raise RuntimeError("Search engine not initialized")
+                return await self.hybrid_search.search(
+                    query=query,
+                    source_types=source_types,
+                    limit=limit,
+                    project_ids=project_ids,
+                )
+            return await self._search_ops.search(
+                query, source_types, limit, project_ids
             )
-        return await self._search_ops.search(query, source_types, limit, project_ids)
 
     async def generate_topic_chain(
         self,
@@ -304,78 +350,81 @@ class SearchEngine:
         facet_filters: list[dict] | None = None,
     ) -> dict:
         """Perform faceted search."""
-        if not self._faceted_ops:
-            # Fallback: delegate directly to hybrid_search when operations not initialized
-            if not self.hybrid_search:
-                raise RuntimeError("Search engine not initialized")
+        async with self._search_semaphore:
+            if not self._faceted_ops:
+                # Fallback: delegate directly to hybrid_search when operations not initialized
+                if not self.hybrid_search:
+                    raise RuntimeError("Search engine not initialized")
 
-            # Convert facet filter dictionaries to FacetFilter objects if provided
-            filter_objects = []
-            if facet_filters:
-                from ..enhanced.faceted_search import FacetFilter, FacetType
+                # Convert facet filter dictionaries to FacetFilter objects if provided
+                filter_objects = []
+                if facet_filters:
+                    from ..enhanced.faceted_search import FacetFilter, FacetType
 
-                for filter_dict in facet_filters:
-                    try:
-                        facet_type = FacetType(filter_dict["facet_type"])
-                    except Exception:
-                        continue  # Skip invalid facet filters
+                    for filter_dict in facet_filters:
+                        try:
+                            facet_type = FacetType(filter_dict["facet_type"])
+                        except Exception:
+                            continue  # Skip invalid facet filters
 
-                    values_raw = filter_dict.get("values")
-                    if not values_raw:
-                        continue  # Skip filters with no values
+                        values_raw = filter_dict.get("values")
+                        if not values_raw:
+                            continue  # Skip filters with no values
 
-                    if isinstance(values_raw, set | tuple):
-                        values = list(values_raw)
-                    elif isinstance(values_raw, list):
-                        values = values_raw
-                    else:
-                        values = [str(values_raw)]
+                        if isinstance(values_raw, set | tuple):
+                            values = list(values_raw)
+                        elif isinstance(values_raw, list):
+                            values = values_raw
+                        else:
+                            values = [str(values_raw)]
 
-                    operator = filter_dict.get("operator", "OR")
-                    filter_objects.append(
-                        FacetFilter(
-                            facet_type=facet_type,
-                            values=values,
-                            operator=operator,
+                        operator = filter_dict.get("operator", "OR")
+                        filter_objects.append(
+                            FacetFilter(
+                                facet_type=facet_type,
+                                values=values,
+                                operator=operator,
+                            )
                         )
-                    )
 
-            faceted_results = await self.hybrid_search.search_with_facets(
-                query=query,
-                limit=limit,
-                source_types=source_types,
-                project_ids=project_ids,
-                facet_filters=filter_objects,
+                faceted_results = await self.hybrid_search.search_with_facets(
+                    query=query,
+                    limit=limit,
+                    source_types=source_types,
+                    project_ids=project_ids,
+                    facet_filters=filter_objects,
+                )
+
+                # Convert to MCP-friendly dict format (same as FacetedSearchOperations does)
+                return {
+                    "results": getattr(faceted_results, "results", []),
+                    "facets": [
+                        _safe_facet_to_dict(facet)
+                        for facet in getattr(faceted_results, "facets", [])
+                    ],
+                    "total_results": getattr(faceted_results, "total_results", 0),
+                    "filtered_count": getattr(faceted_results, "filtered_count", 0),
+                    "applied_filters": [
+                        {
+                            "facet_type": (
+                                getattr(
+                                    getattr(f, "facet_type", None), "value", "unknown"
+                                )
+                                if getattr(f, "facet_type", None)
+                                else "unknown"
+                            ),
+                            "values": getattr(f, "values", []),
+                            "operator": getattr(f, "operator", "and"),
+                        }
+                        for f in getattr(faceted_results, "applied_filters", [])
+                    ],
+                    "generation_time_ms": getattr(
+                        faceted_results, "generation_time_ms", 0.0
+                    ),
+                }
+            return await self._faceted_ops.search_with_facets(
+                query, limit, source_types, project_ids, facet_filters
             )
-
-            # Convert to MCP-friendly dict format (same as FacetedSearchOperations does)
-            return {
-                "results": getattr(faceted_results, "results", []),
-                "facets": [
-                    _safe_facet_to_dict(facet)
-                    for facet in getattr(faceted_results, "facets", [])
-                ],
-                "total_results": getattr(faceted_results, "total_results", 0),
-                "filtered_count": getattr(faceted_results, "filtered_count", 0),
-                "applied_filters": [
-                    {
-                        "facet_type": (
-                            getattr(getattr(f, "facet_type", None), "value", "unknown")
-                            if getattr(f, "facet_type", None)
-                            else "unknown"
-                        ),
-                        "values": getattr(f, "values", []),
-                        "operator": getattr(f, "operator", "and"),
-                    }
-                    for f in getattr(faceted_results, "applied_filters", [])
-                ],
-                "generation_time_ms": getattr(
-                    faceted_results, "generation_time_ms", 0.0
-                ),
-            }
-        return await self._faceted_ops.search_with_facets(
-            query, limit, source_types, project_ids, facet_filters
-        )
 
     async def get_facet_suggestions(
         self,
@@ -776,7 +825,6 @@ class SearchEngine:
                 project_ids = set()
 
                 for doc in documents:
-
                     # Hierarchical structure
                     breadcrumb = get_doc_attr(doc, "breadcrumb_text", "")
                     if breadcrumb and breadcrumb.strip():

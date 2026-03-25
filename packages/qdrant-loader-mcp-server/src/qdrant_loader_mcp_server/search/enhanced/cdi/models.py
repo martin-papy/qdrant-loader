@@ -5,6 +5,10 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+# Note: networkx is imported at module level because:
+# 1. This module (cdi/models) is only imported when CDI functionality is needed
+# 2. Tests need to be able to patch nx.hits, nx.pagerank, etc.
+# The lazy loading happens at a higher level - this module is not imported at MCP startup
 import networkx as nx
 from networkx.exception import NetworkXError, PowerIterationFailedConvergence
 

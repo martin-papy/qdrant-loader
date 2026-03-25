@@ -36,6 +36,10 @@ class HybridSearchResult:
     def score(self) -> float:  # pragma: no cover - simple passthrough
         return self.base.score
 
+    @score.setter
+    def score(self, value: float) -> None:
+        self.base.score = float(value)
+
     @property
     def text(self) -> str:  # pragma: no cover
         return self.base.text

@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to QDrant Loader! This guide will help you get started with contributing to our monorepo ecosystem.
 
-## 🎯 Ways to Contribute
+## <img src="../assets/icons/library/target-icon.svg" width="32" alt="Contribute"> Ways to Contribute
 
 - **🐛 Bug Reports**: Help us identify and fix issues
 - **✨ Feature Requests**: Suggest new features or improvements
@@ -11,7 +11,7 @@ Thank you for your interest in contributing to QDrant Loader! This guide will he
 - **🧪 Testing**: Add tests or improve test coverage
 - **💬 Community Support**: Help other users in discussions
 
-## 🚀 Getting Started
+## <img src="../assets/icons/library/rocket-icon.svg" width="32" alt="Getting Started"> Getting Started
 
 ### Prerequisites
 
@@ -78,7 +78,7 @@ qdrant-loader/
 └── CONTRIBUTING.md             # This file
 ```
 
-## 🔧 Development Workflow
+## <img src="../assets/icons/library/wrench-icon.svg" width="32" alt="Workflow"> Development Workflow
 
 ### 1. Create a Feature Branch
 
@@ -140,7 +140,7 @@ git push origin feature/your-feature-name
 # Include a clear description of your changes
 ```
 
-## 📝 Coding Standards
+## <img src="../assets/icons/library/note-icon.svg" width="32" alt="Coding Standards"> Coding Standards
 
 > **📖 For comprehensive guidelines** including Pythonic patterns, AI/RAG best practices, and PR review checklists, see the [Best Practices Guide](./docs/developers/contributing/).
 
@@ -218,7 +218,7 @@ def process_files(files: List[Path], max_size: Optional[int] = None) -> List[str
     pass
 ```
 
-## 🧪 Testing Guidelines
+## <img src="../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing"> Testing Guidelines
 
 ### Test Structure
 
@@ -281,7 +281,7 @@ pytest --cov=packages --cov-report=html
 pytest -m "not slow"
 ```
 
-## 📚 Documentation Guidelines
+## <img src="../assets/icons/library/book-icon.svg" width="32" alt="Documentation"> Documentation Guidelines
 
 ### Documentation Types
 
@@ -332,7 +332,7 @@ cd ../dist
 python -m http.server 8000
 ```
 
-## 🚀 Pull Request Process
+## <img src="../assets/icons/library/rocket-icon.svg" width="32" alt="Pull Request Process"> Pull Request Process
 
 ### Before Submitting
 
@@ -473,7 +473,7 @@ python release.py --dry-run
 python release.py
 ```
 
-## 🤝 Community Guidelines
+## <img src="../assets/icons/library/hand-sake-icon.svg" width="32" alt="Comnunity Guildlines"> Community Guidelines
 
 ### Code of Conduct
 
@@ -495,7 +495,7 @@ python release.py
 - **Ask Questions**: Use GitHub Discussions for help
 - **Be Specific**: Provide context and details when asking for help
 
-## 📄 License
+## <img src="../assets/icons/library/file-icon.svg" width="32" alt="License icon"> License
 
 By contributing to QDrant Loader, you agree that your contributions will be licensed under the GNU GPLv3 license.
 

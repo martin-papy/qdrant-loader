@@ -2,7 +2,7 @@
 
 This guide presents the most common workflows and usage patterns for QDrant Loader. Whether you're a developer building documentation systems, a content manager maintaining knowledge bases, or a team lead implementing AI-powered tools, these workflows provide practical guidance for real-world scenarios.
 
-## 🎯 Overview
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview"> Overview
 
 QDrant Loader supports diverse workflows across different roles and use cases. Each workflow is designed to be practical, efficient, and scalable for your specific needs.
 
@@ -81,7 +81,7 @@ graph TD
 
 ---
 
-## 📝 Content Management Workflows
+## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Workflows"> Content Management Workflows
 
 ### Documentation Publishing Workflow
 
@@ -206,7 +206,7 @@ graph LR
 
 ---
 
-## 🔄 CI/CD Integration Workflows
+## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Integration"> CI/CD Integration Workflows
 
 ### Automated Documentation Pipeline
 
@@ -331,7 +331,7 @@ graph TD
 
 ---
 
-## 📊 Workflow Selection Guide
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Guild"> Workflow Selection Guide
 
 ### By Role
 
@@ -361,7 +361,7 @@ graph TD
 | **Developer Tools** | Code Documentation, API | Integration, real-time updates |
 | **Research Platform** | Analysis, Discovery | Comprehensive coverage, insights |
 
-## 🚀 Getting Started with Workflows
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Getting Started"> Getting Started with Workflows
 
 ### 1. Assess Your Needs
 
@@ -409,7 +409,7 @@ mcp-qdrant-loader
 - **[Team Collaboration Workflow](./team-collaboration-workflow.md)** - Cross-team knowledge sharing
 - **[CI/CD Integration Workflow](./cicd-integration-workflow.md)** - Automated documentation pipelines
 
-## 📋 Workflow Templates
+## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Templates"> Workflow Templates
 
 Each detailed workflow guide includes:
 
