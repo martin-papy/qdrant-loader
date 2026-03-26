@@ -647,15 +647,31 @@ class SearchHandler:
                     "data": "chunk_index must be a valid integer",
                 },
             )
-        window_size = params.get("window_size", 2)
 
-        if not isinstance(window_size, int) or window_size < 0:
+        if chunk_index < 0:
             return self.protocol.create_response(
                 request_id,
                 error={
                     "code": -32602,
                     "message": "Invalid params",
-                    "data": "window_size must be non-negative integer",
+                    "data": "chunk_index must be a non-negative integer",
+                },
+            )
+        
+        MAX_WINDOW_SIZE = 25
+        window_size = params.get("window_size", 2)
+
+        if (
+            not isinstance(window_size, int)
+            or window_size < 0
+            or window_size > MAX_WINDOW_SIZE
+        ):
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": f"window_size must be a non-negative integer between 0 and {MAX_WINDOW_SIZE}",
                 },
             )
 
@@ -680,7 +696,9 @@ class SearchHandler:
                 models.FieldCondition(
                     key="document_id",
                     match=models.MatchValue(value=document_id),
-                ),
+                )
+            ],
+            should=[
                 models.FieldCondition(
                     key="metadata.chunk_index",
                     range=models.Range(
@@ -688,7 +706,15 @@ class SearchHandler:
                         lte=end_chunk,
                     ),
                 ),
-            ]
+                models.FieldCondition(
+                    key="chunk_index",
+                    range=models.Range(
+                        gte=start_chunk,
+                        lte=end_chunk,
+                    ),
+                ),
+            ],
+            must_not=[],
         )
 
         # =========================
@@ -723,11 +749,11 @@ class SearchHandler:
             )
 
         # =========================
-        # Sort by chunk_index
+        # Sort by chunk_index with fallback
         # =========================
         chunks = sorted(
             [p.payload for p in all_points],
-            key=lambda x: x.get("metadata", {}).get("chunk_index", 0),
+            key=lambda x: x.get("metadata", {}).get("chunk_index", x.get("chunk_index", 0)),
         )
 
         # =========================
@@ -752,6 +778,18 @@ class SearchHandler:
             else:
                 post_chunks.append(chunk)
 
+        if target_chunk is None:
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32001,
+                    "message": "Chunk not found",
+                    "data": (
+                        f"No chunk found for document_id: {document_id}, "
+                        f"chunk_index: {chunk_index}"
+                    ),
+                },
+            )
         # =========================
         # Build structured output
         # =========================
