@@ -1,6 +1,7 @@
 """Semantic analysis module for text processing."""
 
 import logging
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -77,7 +78,8 @@ class SemanticAnalyzer:
         self.dictionary = None
 
         # Cache for processed documents
-        self._doc_cache = {}
+        self._doc_cache: dict = {}
+        self._doc_cache_lock = threading.Lock()
 
     def analyze_text(
         self,
@@ -98,22 +100,28 @@ class SemanticAnalyzer:
         """
         # Check cache
         cache_key = (doc_id, include_enhanced) if doc_id else None
-        if cache_key and cache_key in self._doc_cache:
-            cached = self._doc_cache[cache_key]
+
+        # Protected read
+        with self._doc_cache_lock:
+            cached = self._doc_cache.get(cache_key) if cache_key else None
+
+        if cached is not None:
             if include_enhanced:
-                # Reuse cached base fields but refresh document_similarity to reflect
-                # any newly-analyzed docs added to the cache since last computation
+                # Compute similarity OUTSIDE the lock (can be slow)
+                doc_similarity = self._calculate_document_similarity(
+                    text, doc_id=doc_id
+                )
                 refreshed = SemanticAnalysisResult(
                     entities=cached.entities,
                     pos_tags=cached.pos_tags,
                     dependencies=cached.dependencies,
                     topics=cached.topics,
                     key_phrases=cached.key_phrases,
-                    document_similarity=self._calculate_document_similarity(
-                        text, doc_id=doc_id
-                    ),
+                    document_similarity=doc_similarity,
                 )
-                self._doc_cache[cache_key] = refreshed
+                # Protected write-back
+                with self._doc_cache_lock:
+                    self._doc_cache[cache_key] = refreshed
                 return refreshed
             return cached
 
@@ -156,9 +164,10 @@ class SemanticAnalyzer:
             document_similarity=doc_similarity,
         )
 
-        # Cache result
+        # Protected write
         if cache_key:
-            self._doc_cache[cache_key] = result
+            with self._doc_cache_lock:
+                self._doc_cache[cache_key] = result
 
         return result
 
@@ -443,7 +452,10 @@ class SemanticAnalyzer:
         # Check if the model has word vectors
         has_vectors = self.nlp.vocab.vectors_length > 0
 
-        for cache_key, cached_result in self._doc_cache.items():
+        with self._doc_cache_lock:
+            cached_items = list(self._doc_cache.items())
+
+        for cache_key, cached_result in cached_items:
             cached_doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
             if cached_doc_id is None or cached_doc_id in skipped_ids:
                 continue
@@ -538,7 +550,8 @@ class SemanticAnalyzer:
     def clear_cache(self):
         """Clear the document cache and release all resources."""
         # Clear document cache
-        self._doc_cache.clear()
+        with self._doc_cache_lock:
+            self._doc_cache.clear()
 
         # Release LDA model resources
         if hasattr(self, "lda_model") and self.lda_model is not None:

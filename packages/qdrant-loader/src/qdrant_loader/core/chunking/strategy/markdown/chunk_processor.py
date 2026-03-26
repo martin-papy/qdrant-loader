@@ -1,6 +1,5 @@
 """Chunk processing coordination for markdown strategy."""
 
-import concurrent.futures
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -48,10 +47,6 @@ class ChunkProcessor:
 
         # Cache for processed chunks to avoid recomputation
         self._processed_chunks: dict[str, dict[str, Any]] = {}
-
-        # Initialize thread pool for parallel processing
-        max_workers = settings.global_config.chunking.strategies.markdown.max_workers
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
 
     def process_chunk(
         self, chunk: str, chunk_index: int, total_chunks: int
@@ -193,11 +188,7 @@ class ChunkProcessor:
         return max(1, estimated)  # At least 1 chunk
 
     def shutdown(self):
-        """Shutdown the thread pool executor and clean up resources."""
-        if hasattr(self, "_executor") and self._executor:
-            self._executor.shutdown(wait=True)
-            self._executor = None
-
+        """Shutdown and clean up resources."""
         if getattr(self, "semantic_analyzer", None) is not None:
             self.semantic_analyzer.shutdown()
 
