@@ -293,7 +293,12 @@ class TestSemanticAnalyzer:
             assert result1.entities == result2.entities
             assert result1.pos_tags == result2.pos_tags
             assert result1.topics == result2.topics
-            assert ("doc1", True) in analyzer._doc_cache
+            assert len(analyzer._doc_cache) == 1
+            assert any(
+                key[0] == "doc1" and key[1] is True
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
 
     def test_analyze_text_without_enhanced_fields(self, mock_nlp, mock_doc):
         """Test text analysis short-circuits enhanced computations when disabled."""
@@ -321,7 +326,12 @@ class TestSemanticAnalyzer:
             mock_pos_tags.assert_not_called()
             mock_dependencies.assert_not_called()
             mock_similarity.assert_not_called()
-            assert ("doc2", False) in analyzer._doc_cache
+            assert len(analyzer._doc_cache) == 1
+            assert any(
+                key[0] == "doc2" and key[1] is False
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
 
     def test_extract_entities(self, mock_nlp, mock_doc):
         """Test entity extraction."""
@@ -852,8 +862,16 @@ class TestSemanticAnalyzer:
             assert result_enhanced_false is not result_enhanced_true
 
             # Cache should have separate keys
-            assert ("same_doc", False) in analyzer._doc_cache
-            assert ("same_doc", True) in analyzer._doc_cache
+            assert any(
+                key[0] == "same_doc" and key[1] is False
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
+            assert any(
+                key[0] == "same_doc" and key[1] is True
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
 
             # Verify enhanced fields differ
             assert len(result_enhanced_false.pos_tags) == 0
@@ -905,6 +923,47 @@ class TestSemanticAnalyzer:
             assert result2.document_similarity == {"doc2": 0.7}
             # Verify _calculate_document_similarity was called twice (initial + refresh)
             assert mock_similarity.call_count == 2
+
+    def test_analyze_text_same_doc_id_changed_text_recomputes(self, mock_nlp, mock_doc):
+        """Test changed text with same doc_id does not reuse stale semantic cache."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+            patch.object(
+                SemanticAnalyzer, "_extract_entities"
+            ) as mock_extract_entities,
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            mock_extract_entities.side_effect = [
+                [{"text": "Apple"}],
+                [{"text": "Microsoft"}],
+            ]
+
+            first = analyzer.analyze_text(
+                "Apple is a company", doc_id="doc_same", include_enhanced=False
+            )
+            second = analyzer.analyze_text(
+                "Microsoft builds software",
+                doc_id="doc_same",
+                include_enhanced=False,
+            )
+
+            # Changed text should trigger recomputation, not stale cache hit.
+            assert mock_extract_entities.call_count == 2
+            assert first.entities != second.entities
+
+            # Only newest fingerprinted entry for same (doc_id, include_enhanced) remains.
+            same_doc_mode_entries = [
+                key
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple) and key[0] == "doc_same" and key[1] is False
+            ]
+            assert len(same_doc_mode_entries) == 1
 
     def test_calculate_topic_coherence(self, mock_nlp):
         """Test topic coherence calculation."""
@@ -1069,4 +1128,8 @@ class TestSemanticAnalyzer:
                 assert isinstance(result.document_similarity, dict)
 
                 # Verify caching
-                assert ("test_doc", True) in analyzer._doc_cache
+                assert any(
+                    key[0] == "test_doc" and key[1] is True
+                    for key in analyzer._doc_cache
+                    if isinstance(key, tuple)
+                )
