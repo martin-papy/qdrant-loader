@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import signal
+import time
 from pathlib import Path
 
 from click.exceptions import ClickException
@@ -35,6 +36,8 @@ async def run_ingest_command(
     force: bool,
 ) -> None:
     """Implementation for the `ingest` CLI command with identical behavior."""
+
+    ingest_start_time = time.perf_counter()
 
     try:
         # Validate flag combinations
@@ -149,6 +152,10 @@ async def run_ingest_command(
                             exc_info=True,
                         )
             await asyncio.sleep(0.1)
+            end_to_end_duration = time.perf_counter() - ingest_start_time
+            logger.info(
+                f"Ingestion end-to-end completed in {end_to_end_duration:.2f} seconds"
+            )
         except asyncio.CancelledError:
             # Preserve cancellation semantics so Ctrl+C results in a normal exit
             raise
@@ -157,10 +164,12 @@ async def run_ingest_command(
             error_msg = (
                 str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
             )
+            end_to_end_duration = time.perf_counter() - ingest_start_time
             logger.error(
                 "Document ingestion process failed during execution",
                 error=error_msg,
                 error_type=type(e).__name__,
+                end_to_end_duration_seconds=round(end_to_end_duration, 2),
                 suggestion=(
                     "Check data sources, configuration, and system resources. "
                     "Run 'qdrant-loader project validate' to verify setup"
@@ -183,10 +192,12 @@ async def run_ingest_command(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+        end_to_end_duration = time.perf_counter() - ingest_start_time
         logger.error(
             "Unexpected error during ingestion command execution",
             error=error_msg,
             error_type=type(e).__name__,
+            end_to_end_duration_seconds=round(end_to_end_duration, 2),
             suggestion="Check logs above for specific error details and verify system configuration",
             exc_info=True,
         )
