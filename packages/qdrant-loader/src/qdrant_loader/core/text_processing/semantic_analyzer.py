@@ -1,6 +1,5 @@
 """Semantic analysis module for text processing."""
 
-import hashlib
 import logging
 import threading
 from dataclasses import dataclass
@@ -79,7 +78,7 @@ class SemanticAnalyzer:
         self.dictionary = None
 
         # Cache for processed documents
-        self._doc_cache = {}
+        self._doc_cache: dict = {}
         self._doc_cache_lock = threading.Lock()
 
     def analyze_text(
@@ -100,33 +99,27 @@ class SemanticAnalyzer:
             SemanticAnalysisResult containing all analysis results
         """
         # Check cache
-        text_fingerprint = (
-            hashlib.sha256(text.encode("utf-8")).hexdigest() if doc_id else None
-        )
-        cache_key = (
-            (doc_id, include_enhanced, text_fingerprint)
-            if doc_id and text_fingerprint
-            else None
-        )
-        cached = None
-        if cache_key:
-            with self._doc_cache_lock:
-                cached = self._doc_cache.get(cache_key)
+        cache_key = (doc_id, include_enhanced) if doc_id else None
+
+        # Protected read
+        with self._doc_cache_lock:
+            cached = self._doc_cache.get(cache_key) if cache_key else None
 
         if cached is not None:
             if include_enhanced:
-                # Reuse cached base fields but refresh document_similarity to reflect
-                # any newly-analyzed docs added to the cache since last computation
+                # Compute similarity OUTSIDE the lock (can be slow)
+                doc_similarity = self._calculate_document_similarity(
+                    text, doc_id=doc_id
+                )
                 refreshed = SemanticAnalysisResult(
                     entities=cached.entities,
                     pos_tags=cached.pos_tags,
                     dependencies=cached.dependencies,
                     topics=cached.topics,
                     key_phrases=cached.key_phrases,
-                    document_similarity=self._calculate_document_similarity(
-                        text, doc_id=doc_id
-                    ),
+                    document_similarity=doc_similarity,
                 )
+                # Protected write-back
                 with self._doc_cache_lock:
                     self._doc_cache[cache_key] = refreshed
                 return refreshed
@@ -171,23 +164,9 @@ class SemanticAnalyzer:
             document_similarity=doc_similarity,
         )
 
-        # Cache result
+        # Protected write
         if cache_key:
             with self._doc_cache_lock:
-                # Keep only one cache entry per (doc_id, include_enhanced) to avoid stale
-                # entries for prior text versions being used in similarity calculations.
-                stale_keys = [
-                    existing_key
-                    for existing_key in self._doc_cache
-                    if isinstance(existing_key, tuple)
-                    and len(existing_key) == 3
-                    and existing_key[0] == doc_id
-                    and existing_key[1] == include_enhanced
-                    and existing_key != cache_key
-                ]
-                for stale_key in stale_keys:
-                    del self._doc_cache[stale_key]
-
                 self._doc_cache[cache_key] = result
 
         return result

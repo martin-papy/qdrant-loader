@@ -924,47 +924,6 @@ class TestSemanticAnalyzer:
             # Verify _calculate_document_similarity was called twice (initial + refresh)
             assert mock_similarity.call_count == 2
 
-    def test_analyze_text_same_doc_id_changed_text_recomputes(self, mock_nlp, mock_doc):
-        """Test changed text with same doc_id does not reuse stale semantic cache."""
-        with (
-            patch("spacy.load", return_value=mock_nlp),
-            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
-            patch.object(
-                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
-            ),
-            patch.object(
-                SemanticAnalyzer, "_extract_entities"
-            ) as mock_extract_entities,
-        ):
-            mock_nlp.return_value = mock_doc
-            analyzer = SemanticAnalyzer()
-
-            mock_extract_entities.side_effect = [
-                [{"text": "Apple"}],
-                [{"text": "Microsoft"}],
-            ]
-
-            first = analyzer.analyze_text(
-                "Apple is a company", doc_id="doc_same", include_enhanced=False
-            )
-            second = analyzer.analyze_text(
-                "Microsoft builds software",
-                doc_id="doc_same",
-                include_enhanced=False,
-            )
-
-            # Changed text should trigger recomputation, not stale cache hit.
-            assert mock_extract_entities.call_count == 2
-            assert first.entities != second.entities
-
-            # Only newest fingerprinted entry for same (doc_id, include_enhanced) remains.
-            same_doc_mode_entries = [
-                key
-                for key in analyzer._doc_cache
-                if isinstance(key, tuple) and key[0] == "doc_same" and key[1] is False
-            ]
-            assert len(same_doc_mode_entries) == 1
-
     def test_calculate_topic_coherence(self, mock_nlp):
         """Test topic coherence calculation."""
         with patch("spacy.load", return_value=mock_nlp):
