@@ -657,7 +657,7 @@ class SearchHandler:
                     "data": "chunk_index must be a non-negative integer",
                 },
             )
-        
+
         MAX_WINDOW_SIZE = 25
         window_size = params.get("window_size", 2)
 
@@ -753,7 +753,9 @@ class SearchHandler:
         # =========================
         chunks = sorted(
             [p.payload for p in all_points],
-            key=lambda x: x.get("metadata", {}).get("chunk_index", x.get("chunk_index", 0)),
+            key=lambda x: x.get("metadata", {}).get(
+                "chunk_index", x.get("chunk_index", 0)
+            ),
         )
 
         # =========================
