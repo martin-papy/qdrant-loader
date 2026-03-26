@@ -192,10 +192,12 @@ async def run_ingest_command(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+        end_to_end_duration = time.perf_counter() - ingest_start_time
         logger.error(
             "Unexpected error during ingestion command execution",
             error=error_msg,
             error_type=type(e).__name__,
+            end_to_end_duration_seconds=round(end_to_end_duration, 2),
             suggestion="Check logs above for specific error details and verify system configuration",
             exc_info=True,
         )
