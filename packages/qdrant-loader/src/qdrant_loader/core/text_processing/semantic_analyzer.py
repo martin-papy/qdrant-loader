@@ -257,23 +257,46 @@ class SemanticAnalyzer:
         return pos_tags
 
     def _get_dependencies(self, doc: Doc) -> list[dict[str, Any]]:
-        """Get dependency parse information.
+        """Get dependency parse information with filtering.
+
+        Filters out:
+        - Whitespace tokens (is_space=True)
+        - Punctuation tokens (is_punct=True)
+        - Symbol-only tokens without alphanumeric content
+        - Children that are punctuation or meaningless symbols
 
         Args:
             doc: spaCy document
 
         Returns:
-            List of dependency dictionaries
+            List of dependency dictionaries (excluding noise tokens)
         """
         dependencies = []
         for token in doc:
+            # Skip whitespace and punctuation tokens
+            if token.is_space or token.is_punct:
+                continue
+
+            # Skip tokens with no meaningful content (e.g., ---, ...)
+            if not is_meaningful_text(token.text):
+                continue
+
+            # Filter children to only include meaningful tokens
+            meaningful_children = [
+                child.text
+                for child in token.children
+                if not child.is_space
+                and not child.is_punct
+                and is_meaningful_text(child.text)
+            ]
+
             dependencies.append(
                 {
                     "text": token.text,
                     "dep": token.dep_,
                     "head": token.head.text,
                     "head_pos": token.head.pos_,
-                    "children": [child.text for child in token.children],
+                    "children": meaningful_children,
                 }
             )
         return dependencies

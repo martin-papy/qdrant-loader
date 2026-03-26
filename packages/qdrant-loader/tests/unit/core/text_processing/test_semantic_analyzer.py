@@ -605,6 +605,93 @@ class TestSemanticAnalyzer:
             assert dep2["head"] == "is"
             assert dep2["children"] == ["Apple"]
 
+    def test_get_dependencies_filters_punctuation_spaces_and_symbols(self, mock_nlp):
+        """Test that dependency parsing filters out noisy tokens and children."""
+        with patch("spacy.load", return_value=mock_nlp):
+            mock_doc = Mock()
+
+            token_word = Mock()
+            token_word.text = "Hello"
+            token_word.dep_ = "nsubj"
+            token_word.pos_ = "NOUN"
+            token_word.is_punct = False
+            token_word.is_space = False
+            token_word.head = Mock()
+            token_word.head.text = "runs"
+            token_word.head.pos_ = "VERB"
+
+            child_good = Mock()
+            child_good.text = "world"
+            child_good.is_punct = False
+            child_good.is_space = False
+
+            child_punct = Mock()
+            child_punct.text = ","
+            child_punct.is_punct = True
+            child_punct.is_space = False
+
+            child_space = Mock()
+            child_space.text = " "
+            child_space.is_punct = False
+            child_space.is_space = True
+
+            child_symbol = Mock()
+            child_symbol.text = "|||"
+            child_symbol.is_punct = False
+            child_symbol.is_space = False
+
+            token_word.children = [child_good, child_punct, child_space, child_symbol]
+
+            token_space = Mock()
+            token_space.text = " "
+            token_space.dep_ = "dep"
+            token_space.pos_ = "SPACE"
+            token_space.is_punct = False
+            token_space.is_space = True
+            token_space.head = token_word
+            token_space.children = []
+
+            token_punct = Mock()
+            token_punct.text = "."
+            token_punct.dep_ = "punct"
+            token_punct.pos_ = "PUNCT"
+            token_punct.is_punct = True
+            token_punct.is_space = False
+            token_punct.head = token_word
+            token_punct.children = []
+
+            token_symbol = Mock()
+            token_symbol.text = "---"
+            token_symbol.dep_ = "dep"
+            token_symbol.pos_ = "SYM"
+            token_symbol.is_punct = False
+            token_symbol.is_space = False
+            token_symbol.head = token_word
+            token_symbol.children = []
+
+            token_root = Mock()
+            token_root.text = "runs"
+            token_root.dep_ = "ROOT"
+            token_root.pos_ = "VERB"
+            token_root.is_punct = False
+            token_root.is_space = False
+            token_root.head = token_root
+            token_root.children = []
+
+            mock_doc.__iter__ = Mock(
+                return_value=iter(
+                    [token_word, token_space, token_punct, token_symbol, token_root]
+                )
+            )
+
+            analyzer = SemanticAnalyzer()
+            dependencies = analyzer._get_dependencies(mock_doc)
+
+            assert len(dependencies) == 2
+            assert dependencies[0]["text"] == "Hello"
+            assert dependencies[0]["children"] == ["world"]
+            assert dependencies[1]["text"] == "runs"
+
     def test_extract_topics_existing_model(self, mock_nlp):
         """Test topic extraction with existing LDA model."""
         with (
