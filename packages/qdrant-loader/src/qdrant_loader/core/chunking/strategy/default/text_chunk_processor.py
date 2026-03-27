@@ -51,6 +51,17 @@ class TextChunkProcessor(BaseChunkProcessor):
                     "skip_reason": "semantic_analysis_disabled",
                 }
             )
+        else:
+            # Initialize with defaults when semantic analysis is enabled
+            # These will be updated if actual NLP processing occurs
+            base_metadata.update(
+                {
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": False,
+                    "skip_reason": None,
+                }
+            )
 
         # Create chunk document
         chunk_doc = Document(
