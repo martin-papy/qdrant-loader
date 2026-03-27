@@ -30,7 +30,13 @@ class SearchOperations:
         limit: int = 5,
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
-        """Search for documents using hybrid search."""
+        """Search for documents using hybrid search.
+        Args:
+            query: Search query text
+            source_types: Optional list of source types to filter by
+            limit: Maximum number of results to return
+            project_ids: Optional list of project IDs to filter by
+        """
         async with self.engine._search_semaphore:  # Acquire semaphore
             hybrid = getattr(self.engine, "hybrid_search", None)
             if not hybrid:
