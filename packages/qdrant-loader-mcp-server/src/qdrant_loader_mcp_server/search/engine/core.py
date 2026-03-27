@@ -461,6 +461,8 @@ class SearchEngine:
         documents: list[HybridSearchResult] = None,
     ) -> dict:
         """Analyze relationships between documents."""
+        if not self._intelligence_ops:
+            raise RuntimeError("Search engine not initialized")
         if query is not None:
             search_results = await self.search(query, source_types, limit, project_ids)
             if len(search_results) < 2:
