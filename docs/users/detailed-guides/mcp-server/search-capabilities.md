@@ -6,7 +6,7 @@ This guide covers the powerful AI-driven search capabilities available through t
 
 The QDrant Loader MCP Server provides **intelligent search capabilities** powered by advanced AI technologies including semantic understanding, document relationship analysis, and cross-document intelligence. These features work together to provide contextually relevant results and comprehensive knowledge discovery.
 
-### 🎉 Available Intelligence Features
+### Available Intelligence Features
 
 Our search system provides sophisticated capabilities for knowledge exploration and analysis:
 
@@ -21,7 +21,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 2. **Hierarchy Search** - Structure-aware search with document relationships
 3. **Attachment Search** - Specialized search for files and documents
 
-### 🔥 Cross-Document Intelligence Features
+### Cross-Document Intelligence Features
 
 1. **Document Relationship Analysis** - Comprehensive relationship analysis **(Available)**
 2. **Document Similarity Detection** - Find similar and related documents **(Available)**
@@ -29,12 +29,12 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 4. **Complementary Content Discovery** - Find related and supporting content **(Available)**
 5. **Document Clustering** - Group documents by similarity and relationships **(Available)**
 
-### <img src="../../../../../assets/icons/library/file-icon.svg" width="32" alt="Documentation"> Document Expansion Tools
+### Document Expansion Tools
 
 1. **Expand Document** - Get detailed document information and context **(Available)**
 2. **Expand Cluster** - Explore document clusters with detailed analysis **(Available)**
 
-## 🔍 Enhanced Semantic Search
+## <img src="../../../../../assets/icons/library/search-icon.svg" width="32" alt="Enhanced Semantic Search"> Enhanced Semantic Search
 
 ### Intelligent Query Understanding
 
@@ -112,7 +112,7 @@ Results:
 }
 ```
 
-## 🏗️ Enhanced Hierarchy Search
+## <img src="../../../../../assets/icons/library/architect-icon.svg" width="32" alt="Enhanced Hierarchy Search"> Enhanced Hierarchy Search
 
 ### Structure-Aware Document Navigation
 
@@ -182,7 +182,7 @@ Recommendation: Create under Security section for consistency
 }
 ```
 
-## 📎 Enhanced Attachment Search
+## <img src="../../../../../assets/icons/library/paperclip-icon.svg" width="32" alt="Enhanced Attachment Search"> Enhanced Attachment Search
 
 ### Intelligent File and Document Search
 
@@ -455,7 +455,7 @@ Document Clusters Created:
 - Good coverage across implementation lifecycle
 ```
 
-## 📄 Document Expansion Tools Reference
+## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Document Expansion Tools Reference"> Document Expansion Tools Reference
 
 ### Expand Document (`expand_document`)
 

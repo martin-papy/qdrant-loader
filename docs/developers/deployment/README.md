@@ -15,7 +15,7 @@ QDrant Loader supports the following deployment patterns:
 - **Workspace-Based Deployment** - Organized multi-project configurations
 - **MCP Server Deployment** - Optional server component for AI assistant integration
 
-### 🏗️ Architecture Patterns
+### <img src="../../../../assets/icons/library/architect-icon.svg" width="28" alt="Architect icon"> Architecture Patterns
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -113,7 +113,7 @@ pip install qdrant-loader qdrant-loader-mcp-server
 qdrant-loader init --workspace /opt/qdrant-loader
 ```
 
-## 🖥️ Environment Setup
+## <img src="../../../../assets/icons/library/computer-icon.svg" width="32" alt="Computer icon"> Environment Setup
 
 ### System Requirements
 
@@ -423,7 +423,7 @@ CPU_USAGE = Gauge("qdrant_cpu_usage_percent", "CPU usage percent")
 MEMORY_USAGE = Gauge("qdrant_memory_usage_percent", "Memory usage percent")
 ```
 
-## 🔒 Security Configuration
+## <img src="../../../../assets/icons/library/security-icon.svg" width="32" alt="Security icon"> Security Configuration
 
 ### File Permissions
 
@@ -530,7 +530,7 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 - [ ] Backup and recovery tested
 - [ ] Documentation updated
 
-## 🆘 Getting Help
+## <img src="../../../../assets/icons/library/sos-icon.svg" width="32" alt="SOS icon"> Getting Help
 
 ### Deployment Support
 

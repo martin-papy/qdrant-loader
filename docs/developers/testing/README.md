@@ -2,11 +2,11 @@
 
 This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, and quality assurance practices.
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Testing Overview"> Testing Overview
+## <img src="../../../../assets/icons/library/testing-icon.svg" width="32" alt="Testing Overview"> Testing Overview
 
 QDrant Loader follows a comprehensive testing strategy to ensure reliability, performance, and maintainability:
 
-### <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Philosophy"> Testing Philosophy
+### Testing Philosophy
 
 1. **Test-Driven Development** - Write tests before implementing features
 2. **Comprehensive Coverage** - Aim for 85%+ test coverage
@@ -14,7 +14,7 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 4. **Real-World Testing** - Integration tests with actual services
 5. **Performance Validation** - Regular performance benchmarking
 
-### <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Testing Categories"> Testing Categories
+### Testing Categories
 
 - **Unit Testing** - Testing individual components in isolation
 - **Integration Testing** - Testing component interactions and end-to-end workflows
@@ -392,7 +392,7 @@ def test_document_id_consistency():
     assert doc1.id == doc2.id
 ```
 
-## 🔗 Integration Testing
+## <img src="../../../../assets/icons/library/linked-icon.svg" width="32" alt="Integration Testing"> Integration Testing
 
 ### Full Pipeline Testing
 
@@ -481,7 +481,7 @@ async def test_ingestion_performance(test_settings):
         await pipeline.cleanup()
 ```
 
-## 🔍 Quality Assurance
+## <img src="../../../../assets/icons/library/search-icon.svg" width="32" alt="Quality Assurance"> Quality Assurance
 
 ### Code Quality Checks
 
@@ -599,7 +599,7 @@ def test_with_mock(mock_function):
     assert result == "expected_result"
 ```
 
-## 🆘 Getting Help
+## <img src="../../../../assets/icons/library/sos-icon.svg" width="32" alt="Getting Help"> Getting Help
 
 ### Testing Support
 

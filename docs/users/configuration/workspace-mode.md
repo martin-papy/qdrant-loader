@@ -26,7 +26,7 @@ Workspace mode in QDrant Loader provides a structured approach to organizing you
 - **Simplified commands**: No need to specify config file paths
 - **Consistent layout**: Standardized project organization
 
-## 🏗️ Setting Up Workspace Mode
+## <img src="../../../../assets/icons/library/architect-icon.svg" width="32" alt="Setting Up Workspace Mode"> Setting Up Workspace Mode
 
 ### Create Workspace Directory
 
@@ -157,7 +157,7 @@ qdrant-loader config --workspace .
 # The config command shows all configured projects and their status
 ```
 
-## 📁 Project Management
+## <img src="../../../../assets/icons/library/folder-icon.svg" width="32" alt="Project Management"> Project Management
 
 ### Project Structure
 
@@ -188,7 +188,7 @@ Projects are isolated through metadata, not separate collections:
 - Search can be filtered by project through the MCP server
 - Simplifies collection management and enables cross-project search
 
-## 🔍 Data Source Configuration
+## <img src="../../../../assets/icons/library/search-icon.svg" width="32" alt="Search"> Search
 
 ### Supported Source Types
 
@@ -368,7 +368,7 @@ Performance metrics are stored in the `metrics/` directory:
 - **Error tracking**: Failed operations and retry attempts
 - **Resource usage**: Memory and processing time metrics
 
-## 🔗 MCP Server Integration
+## <img src="../../../../assets/icons/library/linked-icon.svg" width="32" alt="Linked"> MCP Server Integration
 
 The MCP server uses environment variables for configuration and does not currently support workspace mode directly. You need to configure it using environment variables:
 
@@ -429,7 +429,7 @@ Workspace mode support for the MCP server is planned for future releases, which 
 - [ ] **Verify setup** with `qdrant-loader config --workspace .`
 - [ ] **Test search** through MCP server integration
 
-## 🔗 Related Documentation
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Related Documentation"> Related Documentation
 
 - **[Configuration File Reference](./config-file-reference.md)** - Complete YAML configuration options
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration

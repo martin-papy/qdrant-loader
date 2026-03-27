@@ -2,7 +2,7 @@
 
 Get up and running with QDrant Loader in 5 minutes! This guide walks you through your first document ingestion and AI tool integration.
 
-## 🎯 What You'll Accomplish
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="What You'll Accomplish"> What You'll Accomplish
 
 By the end of this guide, you'll have:
 
@@ -14,7 +14,7 @@ By the end of this guide, you'll have:
 
 **Time Required**: 5-10 minutes
 
-## 🔧 Prerequisites
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Prerequisites"> Prerequisites
 
 Before starting, ensure you have:
 
@@ -23,7 +23,7 @@ Before starting, ensure you have:
 - [ ] **LLM API key** ready (OpenAI, Azure OpenAI, Ollama, or OpenAI-compatible)
 - [ ] **Basic terminal/command line** familiarity
 
-## 🚀 Step 1: Initial Configuration
+## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Step 1"> Step 1: Initial Configuration
 
 ### Set Up Workspace Directory
 
@@ -67,7 +67,7 @@ qdrant-loader config --workspace .
 # Expected output shows project configuration and connection status
 ```
 
-## 📄 Step 2: Your First Document Ingestion
+## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="Document Ingestion"> Step 2: Your First Document Ingestion
 
 ### Option A: Ingest Local Files
 
@@ -235,7 +235,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 ```
 
-## 🤖 Step 3: Set Up MCP Server
+## <img src="../../../assets/icons/library/robot-icon.svg" width="32" alt="MCP Server"> Step 3: Set Up MCP Server
 
 ### Start the MCP Server
 
@@ -253,7 +253,7 @@ mcp-qdrant-loader
 
 The MCP server communicates via JSON-RPC over stdio. It doesn't have traditional CLI flags like `--list-tools`. Instead, it provides tools that AI applications can discover and use.
 
-## 🔧 Step 4: Connect AI Tool (Cursor IDE Example)
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Connect AI Tool"> Connect AI Tool (Cursor IDE Example)
 
 ### Configure Cursor IDE
 
@@ -293,7 +293,7 @@ Can you search for information about QDrant Loader features?
    - You'll see search results from your content
    - AI responses will be grounded in your actual documents
 
-## 🔍 Step 5: Explore Search Capabilities
+## <img src="../../../assets/icons/library/search-icon.svg" width="32" alt="Search"> Step 5: Explore Search Capabilities
 
 ### Search via MCP
 
@@ -318,7 +318,7 @@ python packages/qdrant-loader/tests/scripts/query_qdrant.py \
   --search "QDrant Loader features"
 ```
 
-## 🎉 Success! What's Next?
+## <img src="../../../assets/icons/library/star-icon.svg" width="32" alt="Success"> Success! What's Next?
 
 Congratulations! You now have QDrant Loader running with:
 
@@ -355,7 +355,7 @@ Congratulations! You now have QDrant Loader running with:
 - **[User Guides](../users/)** - Explore all features in detail
 - **[MCP Server Guide](../users/detailed-guides/mcp-server/)** - Advanced AI integration
 
-## 🔧 Troubleshooting Quick Start
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting Quick Start
 
 ### Common Issues
 
@@ -459,7 +459,7 @@ If you encounter issues:
 3. **Search issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
 4. **Ask for help**: [GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
 
-## 📋 Quick Start Checklist
+## <img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Quick Start Checklist"> Quick Start Checklist
 
 - [ ] **Environment configured** with API keys
 - [ ] **QDrant connection** verified
