@@ -380,12 +380,14 @@ class BaseChunkingStrategy(ABC):
             file_path = "converted.md"  # Use .md extension for NLP decision
             content_type = "md"
 
+        nlp_applicable = self._should_apply_nlp(chunk_content, file_path, content_type)
+
         should_apply_nlp = (
             self._semantic_analysis_enabled
             and not skip_nlp
             and len(chunk_content) <= 10000  # Size limit
             and total_chunks <= 50  # Chunk count limit
-            and self._should_apply_nlp(chunk_content, file_path, content_type)
+            and nlp_applicable
         )
 
         if not should_apply_nlp:
@@ -397,7 +399,7 @@ class BaseChunkingStrategy(ABC):
                 skip_reason = "chunk_too_large"
             elif total_chunks > 50:
                 skip_reason = "too_many_chunks"
-            elif not self._should_apply_nlp(chunk_content, file_path, content_type):
+            elif not nlp_applicable:
                 skip_reason = "content_type_inappropriate"
 
             metadata.update(
