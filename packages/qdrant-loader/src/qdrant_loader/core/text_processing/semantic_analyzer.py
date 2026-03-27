@@ -1,5 +1,6 @@
 """Semantic analysis module for text processing."""
 
+import hashlib
 import logging
 import threading
 from dataclasses import dataclass
@@ -81,6 +82,20 @@ class SemanticAnalyzer:
         self._doc_cache: dict = {}
         self._doc_cache_lock = threading.Lock()
 
+    def _build_cache_key(
+        self, text: str, doc_id: str | None, include_enhanced: bool
+    ) -> tuple[str, bool, str] | None:
+        """Build a cache key that includes a content fingerprint.
+
+        Including a fingerprint prevents stale cache hits when the same doc_id
+        is reused with different content.
+        """
+        if not doc_id:
+            return None
+
+        text_fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return (doc_id, include_enhanced, text_fingerprint)
+
     def analyze_text(
         self,
         text: str,
@@ -99,7 +114,7 @@ class SemanticAnalyzer:
             SemanticAnalysisResult containing all analysis results
         """
         # Check cache
-        cache_key = (doc_id, include_enhanced) if doc_id else None
+        cache_key = self._build_cache_key(text, doc_id, include_enhanced)
 
         # Protected read
         with self._doc_cache_lock:

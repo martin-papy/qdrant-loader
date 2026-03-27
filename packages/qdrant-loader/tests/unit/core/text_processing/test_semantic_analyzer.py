@@ -877,6 +877,37 @@ class TestSemanticAnalyzer:
             assert len(result_enhanced_false.pos_tags) == 0
             assert len(result_enhanced_true.pos_tags) > 0
 
+    def test_analyze_text_same_doc_id_changed_text_recomputes(self, mock_nlp, mock_doc):
+        """Test that changed text with same doc_id does not hit stale cache."""
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+            patch.object(
+                SemanticAnalyzer,
+                "_extract_entities",
+                side_effect=[
+                    [{"text": "Apple", "label": "ORG"}],
+                    [{"text": "Microsoft", "label": "ORG"}],
+                ],
+            ),
+        ):
+            mock_nlp.return_value = mock_doc
+            analyzer = SemanticAnalyzer()
+
+            result1 = analyzer.analyze_text(
+                "Apple is a company", doc_id="chunk_0", include_enhanced=False
+            )
+            result2 = analyzer.analyze_text(
+                "Microsoft is a company", doc_id="chunk_0", include_enhanced=False
+            )
+
+            assert result1.entities[0]["text"] == "Apple"
+            assert result2.entities[0]["text"] == "Microsoft"
+            assert len(analyzer._doc_cache) == 2
+
     def test_analyze_text_cache_hit_refreshes_similarity(self, mock_nlp, mock_doc):
         """Test that cache hit with include_enhanced=True refreshes similarity."""
         with (
