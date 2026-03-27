@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.9.0] - 2026-03-26
+
+### Added
+
+#### Qdrant-loader
+
+- `enable_semantic_analysis` global NLP kill switch in `chunking` config to skip spaCy/LDA processing entirely for faster ingestion [#189]
+- `enable_enhanced_semantic_analysis` opt-in flag in `chunking` config to gate advanced NLP fields (`pos_tags`, `dependencies`, `document_similarity`) [#195]
+
+#### Qdrant-loader-mcp-server
+
+- `expand_chunk_context` MCP tool to retrieve surrounding chunks for richer context around a specific chunk [#185]
+- `cluster_session_id` required parameter to `expand_cluster` tool schema for session isolation [#175]
+
+### Fixed
+
+#### Qdrant-loader
+
+- Semantic analyzer now filters out garbage/punctuation-only entities from NLP metadata [#178]
+- Improved semantic similarity caching to avoid self-matches and keep similarity results fresh across repeated enhanced analyses [#195]
+
+#### Qdrant-loader-mcp-server
+
+- Instance-level `_clustering_cache` causing cross-request data leakage in `IntelligenceHandler`; replaced with session-scoped store with TTL cleanup [#175]
+- MCP server concurrency improved with FastAPI-centric workers and semaphore-based search load distribution [#176]
+- Removed redundant top-level `schemas.py` that duplicated per-tool schema modules [#181]
+- Search handler config instance de-duplicated to eliminate redundant initialization [#174]
+
+### Changed
+
+#### Qdrant-loader-mcp-server
+
+- CLI and transport layer refactored: `server.py` centralizes startup; HTTP handler split into focused route modules [#176]
+
 ## [0.8.1] - 2026-03-24
 
 ### Fixed
@@ -533,6 +569,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change detection for incremental updates [#21]
 - Signal handling for graceful shutdown [#21]
 
+[0.9.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.1...qdrant-loader-v0.9.0
 [0.8.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.0...qdrant-loader-v0.8.1
 [0.8.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.6...qdrant-loader-v0.8.0
 [0.7.6]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.5...qdrant-loader-v0.7.6

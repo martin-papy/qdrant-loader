@@ -39,6 +39,7 @@ class KeywordSearchService:
         self._stemmer = SnowballStemmer(language="english")
 
         from nltk.corpus import stopwords
+
         try:
             nltk.data.find("corpora/stopwords")
         except LookupError:

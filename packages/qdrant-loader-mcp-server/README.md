@@ -18,12 +18,12 @@ The MCP Server bridges your QDrant knowledge base with AI development tools:
 
 ## 🔌 Supported AI Tools
 
-| Tool | Status | Integration Features |
-|------|--------|---------------------|
-| **Cursor** | ✅ Full Support | Context-aware code assistance, documentation lookup, intelligent suggestions |
-| **Windsurf** | ✅ Compatible | MCP protocol integration, semantic search capabilities |
-| **Claude Desktop** | ✅ Compatible | Direct MCP integration, conversational search interface |
-| **Other MCP Tools** | ✅ Compatible | Any tool supporting MCP 2024-11-05 specification |
+| Tool                | Status          | Integration Features                                                         |
+| ------------------- | --------------- | ---------------------------------------------------------------------------- |
+| **Cursor**          | ✅ Full Support | Context-aware code assistance, documentation lookup, intelligent suggestions |
+| **Windsurf**        | ✅ Compatible   | MCP protocol integration, semantic search capabilities                       |
+| **Claude Desktop**  | ✅ Compatible   | Direct MCP integration, conversational search interface                      |
+| **Other MCP Tools** | ✅ Compatible   | Any tool supporting MCP 2024-11-05 specification                             |
 
 ## 🔍 Advanced Search Capabilities
 
@@ -54,6 +54,24 @@ The MCP Server bridges your QDrant knowledge base with AI development tools:
 - **Metadata Enrichment**: Includes authors, dates, file sizes, and source information
 - **Visual Indicators**: Rich formatting with icons and context clues
 - **Relationship Mapping**: Shows connections between related content
+
+### Additional MCP Tools
+
+Beyond the three core search tools, the server also provides cross-document and expansion tools:
+
+- `analyze_relationships`
+- `find_similar_documents`
+- `detect_document_conflicts`
+- `find_complementary_content`
+- `cluster_documents`
+- `expand_document`
+- `expand_cluster`
+- `expand_chunk_context`
+
+For complete parameter references and usage examples for all tools, see:
+
+- `docs/users/detailed-guides/mcp-server/search-capabilities.md`
+- `docs/users/detailed-guides/mcp-server/setup-and-integration.md`
 
 ## 📦 Installation
 
@@ -125,22 +143,54 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 
 ### Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `QDRANT_URL` | QDrant instance URL | `http://localhost:6333` | Yes |
-| `QDRANT_API_KEY` | QDrant API key | None | Cloud only |
-| `QDRANT_COLLECTION_NAME` | Collection name | `documents` | No |
-| `LLM_API_KEY` | LLM API key for embeddings | None | Yes |
-| `OPENAI_API_KEY` | OpenAI API key (legacy) | None | No |
-| `MCP_LOG_LEVEL` | Logging level | `INFO` | No |
-| `MCP_LOG_FILE` | Log file path | None | No |
-| `MCP_DISABLE_CONSOLE_LOGGING` | Disable console output | `false` | **Yes for Cursor** |
+| Variable                      | Description                                 | Default                 | Required           |
+| ----------------------------- | ------------------------------------------- | ----------------------- | ------------------ |
+| `QDRANT_URL`                  | QDrant instance URL                         | `http://localhost:6333` | Yes                |
+| `QDRANT_API_KEY`              | QDrant API key                              | None                    | Cloud only         |
+| `QDRANT_COLLECTION_NAME`      | Collection name                             | `documents`             | No                 |
+| `LLM_API_KEY`                 | LLM API key for embeddings                  | None                    | Yes                |
+| `OPENAI_API_KEY`              | OpenAI API key (legacy)                     | None                    | No                 |
+| `MCP_LOG_LEVEL`               | Logging level                               | `INFO`                  | No                 |
+| `MCP_LOG_FILE`                | Log file path                               | None                    | No                 |
+| `MCP_DISABLE_CONSOLE_LOGGING` | Disable console output                      | `false`                 | **Yes for Cursor** |
+| `SEARCH_MAX_CONCURRENT`       | Max concurrent search operations per worker | `4`                     | No                 |
 
 ### Important Configuration Notes
 
 - **For Cursor Integration**: Always set `MCP_DISABLE_CONSOLE_LOGGING=true` to prevent interference with JSON-RPC communication
 - **For Debugging**: Use `MCP_LOG_FILE` to write logs when console logging is disabled
 - **API Keys**: OpenAI API keys should start with `sk-proj-` for project keys or `sk-` for user keys
+
+### HTTP Transport and Workers
+
+The server supports an HTTP transport mode with multiple worker processes for production deployments:
+
+```bash
+# Start with HTTP transport (single worker, good for local development)
+mcp-qdrant-loader --transport http --port 8080
+
+# Start with multiple workers for production
+mcp-qdrant-loader --transport http --port 8080 --workers 4
+```
+
+Each worker is a separate OS process with its own event loop, Qdrant connection pool, and search engine. This eliminates GIL contention for CPU-bound work (SpaCy, BM25, reranking).
+
+### Tuning Concurrency
+
+`SEARCH_MAX_CONCURRENT` limits the number of simultaneous Qdrant queries **per worker**. With multiple workers, the total concurrent load on Qdrant is `workers × SEARCH_MAX_CONCURRENT`.
+
+| Workers | `SEARCH_MAX_CONCURRENT` | Max concurrent Qdrant queries |
+| ------- | ----------------------- | ----------------------------- |
+| 1       | 4 (default)             | 4                             |
+| 4       | 4 (default)             | 16                            |
+| 4       | 2                       | 8                             |
+
+If you see `408 Request Timeout` errors from Qdrant, reduce `SEARCH_MAX_CONCURRENT` to match your Qdrant instance's capacity:
+
+```bash
+export SEARCH_MAX_CONCURRENT=2
+mcp-qdrant-loader --transport http --workers 4
+```
 
 ## 🎯 AI Tool Integration
 
@@ -157,7 +207,7 @@ Add to your `.cursor/mcp.json`:
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_API_KEY": "your_qdrant_api_key",
         "LLM_API_KEY": "sk-proj-your_openai_api_key",
-        "OPENAI_API_KEY": "sk-proj-your_openai_api_key",  // Legacy support
+        "OPENAI_API_KEY": "sk-proj-your_openai_api_key", // Legacy support
         "QDRANT_COLLECTION_NAME": "your_collection",
         "MCP_LOG_LEVEL": "INFO",
         "MCP_LOG_FILE": "/path/to/logs/mcp.log",
@@ -181,7 +231,7 @@ Similar configuration in Windsurf's MCP settings:
         "env": {
           "QDRANT_URL": "http://localhost:6333",
           "LLM_API_KEY": "your_openai_key",
-          "OPENAI_API_KEY": "your_openai_key",  // Legacy support
+          "OPENAI_API_KEY": "your_openai_key", // Legacy support
           "MCP_DISABLE_CONSOLE_LOGGING": "true"
         }
       }
@@ -202,7 +252,7 @@ Add to Claude Desktop's configuration:
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "LLM_API_KEY": "your_openai_key",
-        "OPENAI_API_KEY": "your_openai_key"  // Legacy support
+        "OPENAI_API_KEY": "your_openai_key" // Legacy support
       }
     }
   }
@@ -215,11 +265,11 @@ Add to Claude Desktop's configuration:
 
 Ask your AI assistant:
 
-- *"Find documentation about authentication in our API"*
-- *"Show me examples of error handling patterns in our codebase"*
-- *"What are the deployment requirements for this service?"*
-- *"Find all PDF attachments related to database schema"*
-- *"Show me the hierarchy of pages under the Architecture section"*
+- _"Find documentation about authentication in our API"_
+- _"Show me examples of error handling patterns in our codebase"_
+- _"What are the deployment requirements for this service?"_
+- _"Find all PDF attachments related to database schema"_
+- _"Show me the hierarchy of pages under the Architecture section"_
 
 ### Advanced Search Queries
 

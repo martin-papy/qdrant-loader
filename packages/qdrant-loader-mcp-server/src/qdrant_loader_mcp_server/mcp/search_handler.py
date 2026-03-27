@@ -6,7 +6,6 @@ from typing import Any
 
 from qdrant_client import models
 
-from qdrant_loader_mcp_server.config import QdrantConfig
 from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
 from ..search.engine import SearchEngine
@@ -43,7 +42,6 @@ class SearchHandler:
         self.query_processor = query_processor
         self.protocol = protocol
         self.formatters = MCPFormatters()
-        self.qdrant_config = QdrantConfig()
         self.reranker = None
 
         if reranking_config is None:
@@ -53,11 +51,17 @@ class SearchHandler:
         if reranking_config.enabled:
             # If handler-level reranking is active, disable pipeline-level reranking
             # to avoid running the cross-encoder twice.
-            if hasattr(search_engine, "hybrid_pipeline") and search_engine.hybrid_pipeline is not None:
+            if (
+                hasattr(search_engine, "hybrid_pipeline")
+                and search_engine.hybrid_pipeline is not None
+            ):
                 if hasattr(search_engine.hybrid_pipeline, "reranker"):
                     search_engine.hybrid_pipeline.reranker = None
 
-            if hasattr(search_engine, "pipeline") and search_engine.pipeline is not None:
+            if (
+                hasattr(search_engine, "pipeline")
+                and search_engine.pipeline is not None
+            ):
                 if hasattr(search_engine.pipeline, "reranker"):
                     search_engine.pipeline.reranker = None
 
@@ -149,7 +153,6 @@ class SearchHandler:
             )
 
             # Apply reranking if enabled
-
 
             if self.reranker:
                 results = await asyncio.to_thread(
@@ -497,30 +500,33 @@ class SearchHandler:
             next_offset = None
             truncated = False
 
-            collection_name = self.query_processor.collection_name
+            collection_name = self.search_engine.config.collection_name
             MAX_CHUNKS = 500  # Reasonable upper bound
-            # Scroll to retrieve all chunks
-            while True:
-                remaining = MAX_CHUNKS - len(all_points)
-                if remaining <= 0:
-                    truncated = next_offset is not None
-                    break
-                points, next_offset = await self.search_engine.client.scroll(
-                    collection_name=collection_name,
-                    scroll_filter=query_filter,
-                    limit=min(100, remaining),
-                    offset=next_offset,
-                    with_payload=True,
-                    with_vectors=False,
-                )
 
-                all_points.extend(points)
+            # Acquire the search semaphore to prevent overwhelming the
+            # shared Qdrant client connection pool under concurrent load.
+            async with self.search_engine._search_semaphore:
+                while True:
+                    remaining = MAX_CHUNKS - len(all_points)
+                    if remaining <= 0:
+                        truncated = next_offset is not None
+                        break
+                    points, next_offset = await self.search_engine.client.scroll(
+                        collection_name=collection_name,
+                        scroll_filter=query_filter,
+                        limit=min(100, remaining),
+                        offset=next_offset,
+                        with_payload=True,
+                        with_vectors=False,
+                    )
 
-                if next_offset is None:
-                    break
-                if len(all_points) >= MAX_CHUNKS:
-                    truncated = True
-                    break
+                    all_points.extend(points)
+
+                    if next_offset is None:
+                        break
+                    if len(all_points) >= MAX_CHUNKS:
+                        truncated = True
+                        break
             if not all_points:
                 logger.warning(f"No chunks found for document_id={document_id}")
                 return self.protocol.create_response(
@@ -582,3 +588,246 @@ class SearchHandler:
                     "data": str(e),
                 },
             )
+
+    async def handle_expand_chunk_context(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Return neighboring chunks within the same document based on chunk_index.
+
+        Required params:
+            document_id (str): The document identifier.
+            chunk_index (int): The target chunk index to expand around.
+
+        Optional params:
+            window_size (int): Number of chunks before/after target (default=2).
+        """
+        logger.debug("Handling expand_chunk_context", params=params)
+        # =========================
+        # Validate params
+        # =========================
+        if (
+            "document_id" not in params
+            or params["document_id"] is None
+            or params["document_id"] == ""
+        ):
+            logger.error("Missing required parameter: document_id")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: document_id",
+                },
+            )
+        if (
+            "chunk_index" not in params
+            or params["chunk_index"] is None
+            or params["chunk_index"] == ""
+        ):
+            logger.error("Missing required parameter: chunk_index")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: chunk_index",
+                },
+            )
+
+        document_id = params["document_id"]
+        try:
+            chunk_index = int(params["chunk_index"])
+        except (ValueError, TypeError):
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "chunk_index must be a valid integer",
+                },
+            )
+
+        if chunk_index < 0:
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "chunk_index must be a non-negative integer",
+                },
+            )
+
+        MAX_WINDOW_SIZE = 25
+        window_size = params.get("window_size", 2)
+
+        if (
+            not isinstance(window_size, int)
+            or window_size < 0
+            or window_size > MAX_WINDOW_SIZE
+        ):
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": f"window_size must be a non-negative integer between 0 and {MAX_WINDOW_SIZE}",
+                },
+            )
+
+        # =========================
+        # Calculate chunk window
+        # =========================
+        start_chunk = max(chunk_index - window_size, 0)
+        end_chunk = chunk_index + window_size
+
+        logger.info(
+            f"Expanding document {document_id} "
+            f"around chunk {chunk_index} "
+            f"(window={window_size}, range={start_chunk}-{end_chunk})"
+        )
+
+        # =========================
+        # Metadata filter retrieval
+        # =========================
+
+        query_filter = models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="document_id",
+                    match=models.MatchValue(value=document_id),
+                )
+            ],
+            should=[
+                models.FieldCondition(
+                    key="metadata.chunk_index",
+                    range=models.Range(
+                        gte=start_chunk,
+                        lte=end_chunk,
+                    ),
+                ),
+                models.FieldCondition(
+                    key="chunk_index",
+                    range=models.Range(
+                        gte=start_chunk,
+                        lte=end_chunk,
+                    ),
+                ),
+            ],
+            must_not=[],
+        )
+
+        # =========================
+        # Scroll all matching chunks
+        # =========================
+        all_points = []
+        next_offset = None
+        collection_name = self.search_engine.config.collection_name
+        try:
+            async with self.search_engine._search_semaphore:
+                while True:
+                    points, next_offset = await self.search_engine.client.scroll(
+                        collection_name=collection_name,
+                        scroll_filter=query_filter,
+                        offset=next_offset,
+                        limit=100,
+                        with_payload=True,
+                        with_vectors=False,
+                    )
+                    all_points.extend(points)
+                    if next_offset is None:
+                        break
+        except Exception as e:
+            logger.error("Error expanding chunk context", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Internal error",
+                    "data": str(e),
+                },
+            )
+
+        # =========================
+        # Sort by chunk_index with fallback
+        # =========================
+        chunks = sorted(
+            [p.payload for p in all_points],
+            key=lambda x: x.get("metadata", {}).get(
+                "chunk_index", x.get("chunk_index", 0)
+            ),
+        )
+
+        # =========================
+        # Build context sections
+        # =========================
+
+        pre_chunks = []
+        post_chunks = []
+        target_chunk = None
+
+        for chunk in chunks:
+            idx = chunk.get("metadata", {}).get("chunk_index")
+            if idx is None:
+                continue  # Skip chunks without chunk_index
+
+            if idx < chunk_index:
+                pre_chunks.append(chunk)
+
+            elif idx == chunk_index:
+                target_chunk = chunk
+
+            else:
+                post_chunks.append(chunk)
+
+        if target_chunk is None:
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32001,
+                    "message": "Chunk not found",
+                    "data": (
+                        f"No chunk found for document_id: {document_id}, "
+                        f"chunk_index: {chunk_index}"
+                    ),
+                },
+            )
+        # =========================
+        # Build structured output
+        # =========================
+
+        structured_results = {
+            "context_chunks": {
+                "pre": pre_chunks,
+                "target": target_chunk,
+                "post": post_chunks,
+            },
+            "metadata": {
+                "document_id": document_id,
+                "chunk_index": chunk_index,
+                "window_size": window_size,
+                "context_range": {
+                    "start": start_chunk,
+                    "end": end_chunk,
+                },
+                "total_chunks": len(chunks),
+            },
+        }
+
+        # =========================
+        # Return response
+        # =========================
+        return self.protocol.create_response(
+            request_id,
+            result={
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Retrieved context for chunk {chunk_index} in document {document_id} "
+                        f"({len(pre_chunks)} pre, {1 if target_chunk else 0} target, {len(post_chunks)} post)",
+                    }
+                ],
+                "structuredContent": structured_results,
+                "isError": False,
+            },
+        )

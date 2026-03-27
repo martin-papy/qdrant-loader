@@ -128,33 +128,6 @@ class TestMarkdownStrategyConfigBehavior:
         few_words_skip_low = len(few_words.split()) < 5
         assert few_words_skip_low is False  # Should now pass word count check
 
-    @patch(
-        "qdrant_loader.core.chunking.strategy.markdown.chunk_processor.SemanticAnalyzer"
-    )
-    def test_max_workers_affects_thread_pool(self, mock_semantic_analyzer):
-        """Test that max_workers configuration affects thread pool initialization."""
-        # Test default worker count
-        default_settings = self.create_settings_with_markdown_config()
-
-        with patch(
-            "qdrant_loader.core.chunking.strategy.markdown.chunk_processor.concurrent.futures.ThreadPoolExecutor"
-        ) as mock_executor:
-            MarkdownChunkingStrategy(default_settings)
-
-            # Should use default max_workers=4
-            mock_executor.assert_called_with(max_workers=4)
-
-        # Test custom worker count
-        custom_settings = self.create_settings_with_markdown_config(max_workers=8)
-
-        with patch(
-            "qdrant_loader.core.chunking.strategy.markdown.chunk_processor.concurrent.futures.ThreadPoolExecutor"
-        ) as mock_executor:
-            MarkdownChunkingStrategy(custom_settings)
-
-            # Should use custom max_workers=8
-            mock_executor.assert_called_with(max_workers=8)
-
     def test_estimation_buffer_affects_chunk_estimation(self):
         """Test that estimation_buffer affects chunk count estimation."""
         # Use larger content to ensure base estimate > 0

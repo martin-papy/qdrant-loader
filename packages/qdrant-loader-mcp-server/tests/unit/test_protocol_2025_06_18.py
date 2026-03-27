@@ -356,7 +356,7 @@ class TestToolCapabilities:
         tools_response = await mcp_handler.handle_request(tools_list_request)
         tools_count = len(tools_response["result"]["tools"])
 
-        # Should have exactly 10 tools (3 search + 5 analysis + 2 lazy loading)
+        # Should have exactly 11 tools (3 search + 5 analysis + 3 lazy loading)
         expected_tools = [
             "search",
             "hierarchy_search",
@@ -368,6 +368,7 @@ class TestToolCapabilities:
             "cluster_documents",
             "expand_document",
             "expand_cluster",
+            "expand_chunk_context",
         ]
 
         assert tools_count == len(expected_tools)

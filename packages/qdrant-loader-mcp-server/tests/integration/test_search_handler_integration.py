@@ -33,6 +33,7 @@ def integration_search_handler(real_protocol):
     # mock qdrant client
     mock_search_engine.client = Mock()
     mock_search_engine.client.scroll = AsyncMock()
+    mock_search_engine._search_semaphore = asyncio.Semaphore(10)
 
     from qdrant_loader_mcp_server.config_reranking import MCPReranking
 
@@ -578,6 +579,122 @@ class TestExpandDocumentIntegration:
         assert "nonexistent-doc" in result["error"]["data"]
 
 
+class TestExpandChunkContextIntegration:
+    """Integration tests for chunk context expansion functionality."""
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_success(self, integration_search_handler):
+        """Should return correct context chunks around target chunk."""
+
+        params = {
+            "document_id": "doc-123",
+            "chunk_index": 2,
+            "window_size": 1,
+        }
+
+        # Mock Qdrant points
+        def make_point(idx, content):
+            p = Mock()
+            p.payload = {"content": content, "metadata": {"chunk_index": idx}}
+            return p
+
+        points = [
+            make_point(1, "chunk 1"),
+            make_point(2, "chunk 2"),
+            make_point(3, "chunk 3"),
+        ]
+
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
+            return_value=(points, None)
+        )
+
+        result = await integration_search_handler.handle_expand_chunk_context(
+            request_id=1,
+            params=params,
+        )
+
+        assert "result" in result
+        data = result["result"]
+
+        assert "structuredContent" in data
+        structured = data["structuredContent"]
+
+        assert structured["context_chunks"]["target"]["metadata"]["chunk_index"] == 2
+        assert len(structured["context_chunks"]["pre"]) == 1
+        assert len(structured["context_chunks"]["post"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_missing_document_id(
+        self, integration_search_handler
+    ):
+        """Should return error when document_id is missing."""
+
+        params = {
+            "chunk_index": 2,
+        }
+
+        result = await integration_search_handler.handle_expand_chunk_context(
+            request_id=1,
+            params=params,
+        )
+
+        assert "error" in result
+        assert result["error"]["code"] == -32602
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_invalid_window_size(
+        self, integration_search_handler
+    ):
+        """Should return error when window_size is invalid."""
+
+        params = {
+            "document_id": "doc-123",
+            "chunk_index": 2,
+            "window_size": -1,
+        }
+
+        result = await integration_search_handler.handle_expand_chunk_context(
+            request_id=1,
+            params=params,
+        )
+
+        assert "error" in result
+        assert result["error"]["code"] == -32602
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_only_target_chunk(
+        self, integration_search_handler
+    ):
+        """Should handle case where only target chunk exists."""
+
+        params = {
+            "document_id": "doc-123",
+            "chunk_index": 2,
+            "window_size": 1,
+        }
+
+        p = Mock()
+        p.payload = {"content": "only chunk", "metadata": {"chunk_index": 2}}
+
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
+            return_value=([p], None)
+        )
+
+        result = await integration_search_handler.handle_expand_chunk_context(
+            request_id=1,
+            params=params,
+        )
+
+        data = result["result"]
+
+        assert data["structuredContent"]["context_chunks"]["pre"] == []
+        assert data["structuredContent"]["context_chunks"]["post"] == []
+        assert (
+            data["structuredContent"]["context_chunks"]["target"]["content"]
+            == "only chunk"
+        )
+
+
 class TestRealWorldScenarios:
     """Integration tests simulating real-world usage scenarios."""
 
@@ -733,6 +850,49 @@ class TestRealWorldScenarios:
 
         assert result3["result"]["isError"] is False
 
+        point1 = Mock()
+        point1.payload = {
+            "document_id": "confluence-doc-456",
+            "content": "Step 1: Check credentials",
+            "metadata": {"chunk_index": 4},
+        }
+
+        point2 = Mock()
+        point2.payload = {
+            "document_id": "confluence-doc-456",
+            "content": "Step 2: Reset password",
+            "metadata": {"chunk_index": 5},
+        }
+
+        point3 = Mock()
+        point3.payload = {
+            "document_id": "confluence-doc-456",
+            "content": "Step 3: Contact support",
+            "metadata": {"chunk_index": 6},
+        }
+
+        integration_search_handler.search_engine.client.scroll = AsyncMock(
+            return_value=([point1, point2, point3], None)
+        )
+
+        params_expand = {
+            "document_id": "confluence-doc-456",
+            "chunk_index": 5,
+            "window_size": 1,
+        }
+
+        result_expand = await integration_search_handler.handle_expand_chunk_context(
+            "support-2b", params_expand
+        )
+
+        assert result_expand["error"] is None
+        assert (
+            result_expand["result"]["structuredContent"]["context_chunks"]["target"][
+                "metadata"
+            ]["chunk_index"]
+            == 5
+        )
+
 
 class TestPerformanceScenarios:
     """Integration tests for performance-related scenarios."""
@@ -753,13 +913,13 @@ class TestPerformanceScenarios:
             result.original_filename = None
             result.file_path = None
             result.breadcrumb_text = (
-                f"Root > Category {i//10} > Document {i}" if i > 0 else ""
+                f"Root > Category {i // 10} > Document {i}" if i > 0 else ""
             )
             result.hierarchy_context = (
-                f"Root > Category {i//10} > Document {i}" if i > 0 else None
+                f"Root > Category {i // 10} > Document {i}" if i > 0 else None
             )
             result.depth = i // 20 + 1  # Varying depths
-            result.parent_title = f"Category {i//10}" if i > 0 else None
+            result.parent_title = f"Category {i // 10}" if i > 0 else None
             result.children_count = 3 if i < 10 else 0
             result.is_root_document = Mock(return_value=i < 10)
             result.has_children = Mock(return_value=i < 5)

@@ -606,3 +606,134 @@ class TestCLICommand:
 
         assert result.exit_code != 0
         assert "does not exist" in result.output
+
+
+class TestReadStdinLinesClosedStdin:
+    """read_stdin_lines should handle closed stdin gracefully."""
+
+    @pytest.mark.asyncio
+    async def test_breaks_on_value_error(self):
+        """When stdin is closed, readline raises ValueError -- should break."""
+        mock_executor = MagicMock()
+
+        async def mock_run_in_executor(executor, func):
+            raise ValueError("I/O operation on closed file")
+
+        with patch("asyncio.get_event_loop") as mock_loop:
+            mock_loop.return_value.run_in_executor = mock_run_in_executor
+            lines = []
+            async for line in read_stdin_lines(mock_executor):
+                lines.append(line)
+            assert lines == []
+
+    @pytest.mark.asyncio
+    async def test_breaks_on_os_error(self):
+        """When stdin is closed, readline may raise OSError -- should break."""
+        mock_executor = MagicMock()
+
+        async def mock_run_in_executor(executor, func):
+            raise OSError("Bad file descriptor")
+
+        with patch("asyncio.get_event_loop") as mock_loop:
+            mock_loop.return_value.run_in_executor = mock_run_in_executor
+            lines = []
+            async for line in read_stdin_lines(mock_executor):
+                lines.append(line)
+            assert lines == []
+
+    @pytest.mark.asyncio
+    async def test_breaks_on_eof(self):
+        """When stdin returns empty string (EOF), should break."""
+        call_count = 0
+
+        async def mock_run_in_executor(executor, func):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return '{"method": "test"}\n'
+            return ""
+
+        with patch("asyncio.get_event_loop") as mock_loop:
+            mock_loop.return_value.run_in_executor = mock_run_in_executor
+            lines = []
+            async for line in read_stdin_lines():
+                lines.append(line)
+            assert len(lines) == 1
+
+
+class TestSignalHandlerCancelsMainTask:
+    """Signal handler should cancel the main handle_stdio task."""
+
+    @patch("qdrant_loader_mcp_server.cli._setup_logging")
+    @patch("qdrant_loader_mcp_server.cli.load_config")
+    @patch("qdrant_loader_mcp_server.cli.handle_stdio")
+    @patch("asyncio.new_event_loop")
+    @patch("asyncio.set_event_loop")
+    @patch("signal.SIGTERM", 15)
+    @patch("signal.SIGINT", 2)
+    def test_signal_handler_creates_task_and_cancels(
+        self,
+        mock_set_event_loop,
+        mock_new_event_loop,
+        mock_handle_stdio,
+        mock_load_config,
+        mock_setup_logging,
+    ):
+        """Test that stdio transport wraps handle_stdio in a task (cancellable)."""
+        mock_loop = MagicMock()
+        mock_new_event_loop.return_value = mock_loop
+        mock_loop.run_until_complete.return_value = None
+
+        # Track create_task calls
+        mock_task = MagicMock()
+        mock_task.done.return_value = False
+        mock_loop.create_task.return_value = mock_task
+
+        mock_config = MagicMock()
+        mock_load_config.return_value = (mock_config, {}, None)
+        mock_handle_stdio.return_value = AsyncMock()
+
+        runner = CliRunner()
+        runner.invoke(cli, ["--log-level", "DEBUG"])
+
+        # Verify create_task was called (handle_stdio wrapped as task)
+        assert mock_loop.create_task.called
+        # Verify run_until_complete receives the task, not raw coroutine
+        mock_loop.run_until_complete.assert_called()
+
+    @patch("qdrant_loader_mcp_server.cli._setup_logging")
+    @patch("qdrant_loader_mcp_server.cli.load_config")
+    @patch("qdrant_loader_mcp_server.cli.handle_stdio")
+    @patch("asyncio.new_event_loop")
+    @patch("asyncio.set_event_loop")
+    @patch("signal.SIGTERM", 15)
+    @patch("signal.SIGINT", 2)
+    def test_signal_handler_registered(
+        self,
+        mock_set_event_loop,
+        mock_new_event_loop,
+        mock_handle_stdio,
+        mock_load_config,
+        mock_setup_logging,
+    ):
+        """Test that signal handlers are registered for SIGINT and SIGTERM."""
+        mock_loop = MagicMock()
+        mock_new_event_loop.return_value = mock_loop
+        mock_loop.run_until_complete.return_value = None
+
+        mock_task = MagicMock()
+        mock_task.done.return_value = True
+        mock_loop.create_task.return_value = mock_task
+
+        mock_config = MagicMock()
+        mock_load_config.return_value = (mock_config, {}, None)
+        mock_handle_stdio.return_value = AsyncMock()
+
+        runner = CliRunner()
+        runner.invoke(cli, ["--log-level", "INFO"])
+
+        # Verify add_signal_handler was called for both signals
+        signal_calls = list(mock_loop.add_signal_handler.call_args_list)
+        registered_signals = [call[0][0] for call in signal_calls]
+        assert 15 in registered_signals  # SIGTERM
+        assert 2 in registered_signals  # SIGINT
