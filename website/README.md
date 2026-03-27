@@ -2,7 +2,7 @@
 
 This directory contains the documentation website generator for QDrant Loader. It automatically converts markdown documentation into a professional, responsive website using Bootstrap templates.
 
-## 🏗️ Architecture
+## <img src="../website/assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture
 
 The website generator is a Python-based static site generator that:
 
@@ -13,7 +13,7 @@ The website generator is a Python-based static site generator that:
 - **Creates sitemaps and robots.txt** for SEO optimization
 - **Supports code coverage reports** integration
 
-## 📁 Directory Structure
+## <img src="../website/assets/icons/library/folder-icon.svg" width="32" alt="Directory Structure"> Directory Structure
 
 ```text
 website/
@@ -82,7 +82,7 @@ python build.py --base-url https://qdrant-loader.net
 7. **SEO Generation**: Creates sitemap.xml and robots.txt
 8. **Output Writing**: Writes final HTML files to output directory
 
-## 🎨 Templates
+## <img src="../assets/icons/library/palette-icon.svg" width="32" alt="Templates"> Templates
 
 ### Base Template (`base.html`)
 
@@ -214,7 +214,7 @@ python -m http.server 8000
 3. **Rebuild website** to copy assets to output
 4. **Test asset loading** in the generated website
 
-## 📊 Integration Features
+## <img src="../website/assets/icons/library/test-tube-icon.svg" width="32" alt="Integration Features"> Integration Features
 
 ### Test Coverage Reports
 
@@ -239,7 +239,7 @@ python build.py --output ../dist/v1
 python build.py --output ../dist/v2
 ```
 
-## 🔍 SEO and Performance
+## <img src="../website/assets/icons/library/search-icon.svg" width="32" alt="SEO and Performance"> SEO and Performance
 
 ### SEO Features
 

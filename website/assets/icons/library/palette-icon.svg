@@ -1,0 +1,14 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Palette outer shape -->
+  <path d="M16 4C10 4 5 8.5 5 14C5 19 9 24 14 24H16C17.5 24 19 25.5 19 27C19 28.5 20 29 21 29C25 29 29 24 29 18C29 10 23 4 16 4Z"
+        stroke="#1C1C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Paint dots -->
+  <circle cx="12" cy="12" r="1.7" stroke="#1C1C1C" stroke-width="2"/>
+  <circle cx="18" cy="11" r="1.7" stroke="#1C1C1C" stroke-width="2"/>
+  <circle cx="21" cy="15" r="1.7" stroke="#1C1C1C" stroke-width="2"/>
+  <circle cx="15" cy="17" r="1.7" stroke="#1C1C1C" stroke-width="2"/>
+
+</svg>

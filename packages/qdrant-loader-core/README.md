@@ -103,7 +103,7 @@ asyncio.run(main())
   - Maps to provider + models (embeddings/chat), emits a deprecation warning
   - Prefer migrating to `global.llm` for clarity and future features
 
-## <img src="../../../assets/icons/library/note-icon.svg"  width="32" alt="Logging"> Logging
+## <img src="../../../assets/icons/library/file-icon.svg"  width="32" alt="Logging"> Logging
 
 Use the built‑in structured logging with redaction:
 

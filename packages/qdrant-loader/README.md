@@ -1,14 +1,12 @@
 # QDrant Loader
 
-<img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Package icon">
-
 [![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![Python](https://img.shields.io/pypi/pyversions/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A powerful data ingestion engine that collects and vectorizes technical content from multiple sources for storage in QDrant vector database. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
-## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket Icon"> What It Does
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Rocket Icon"> What It Does
 
 QDrant Loader is the data ingestion engine that:
 
@@ -78,7 +76,7 @@ For complete AI integration:
 pip install qdrant-loader qdrant-loader-mcp-server
 ```
 
-## ⚡ Quick Start
+## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket Icon"> Quick Start
 
 ### 1. Workspace Setup (Recommended)
 
@@ -304,7 +302,7 @@ qdrant-loader project status --workspace . --format json
 qdrant-loader project status --workspace . --project-id my-project
 ```
 
-## 🏗️ Architecture
+## <img src="../../../assets/icons/library/architect-icon.svg" width="32" alt="Architecture Icon"> Architecture
 
 ### Core Components
 
@@ -327,7 +325,7 @@ Public Docs    Documents       Filtering       Context   Providers   Updates
 Local Files    20+ Formats     Cleaning        Tokens    Endpoints   State Tracking
 ```
 
-## 🔍 Advanced Features
+## <img src="../../../assets/icons/library/search-icon.svg" width="32" alt="Search Icon"> Advanced Features
 
 ### Incremental Updates
 
@@ -350,7 +348,7 @@ Local Files    20+ Formats     Cleaning        Tokens    Endpoints   State Track
 - **Detailed logging** for troubleshooting
 - **Recovery strategies** for partial failures
 
-## 🧪 Testing
+## <img src="../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Icon"> Testing
 
 ```bash
 # Run all tests
@@ -389,7 +387,7 @@ pytest packages/qdrant-loader/tests/
 - **[User Guides](../../docs/users/)** - Detailed usage instructions
 - **[Developer Docs](../../docs/developers/)** - Architecture and API reference
 
-## 🆘 Support
+## <img src="../../../assets/icons/library/sos-icon.svg" width="32" alt="Support Icon"> Support
 
 - **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
 - **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A

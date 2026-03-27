@@ -17,7 +17,7 @@ The hierarchy search tool is designed specifically for **Confluence documents** 
 - **Navigation Aid**: Helps explore and understand documentation organization
 - **Completeness Checking**: Identifies gaps in documentation structure
 
-## 🏗️ How Hierarchy Search Works
+## <img src="../../../../../assets/icons/library/architect-icon.svg" width="32" alt="How Hierarchy Search Works"> How Hierarchy Search Works
 
 ### Document Relationships
 
@@ -334,7 +334,7 @@ Found 8 results organized by hierarchy:
    🔗 https://wiki.company.com/api/errors
 ```
 
-## 🔍 Advanced Hierarchy Search Techniques
+## <img src="../../../../../assets/icons/library/search-icon.svg" width="32" alt="Advanced Hierarchy Search Techniques"> Advanced Hierarchy Search Techniques
 
 ### 1. Depth-Based Filtering
 
@@ -392,7 +392,7 @@ Results: Only documents at exactly 2 levels deep
 
 Results: All documents under "API Documentation" organized by structure
 
-## 🎨 Hierarchy Visualization
+## <img src="../../../../../assets/icons/library/palette-icon.svg" width="32" alt="Hierarchy Visualization"> Hierarchy Visualization
 
 ### Tree Structure Display
 
@@ -446,7 +446,7 @@ API rate limiting policies and implementation guidelines for preventing abuse...
 🔗 https://wiki.company.com/api/security/rate-limiting
 ```
 
-## 🔧 Optimization Strategies
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Optimization Strategies"> Optimization Strategies
 
 ### 1. Query Optimization
 
@@ -584,7 +584,7 @@ API rate limiting policies and implementation guidelines for preventing abuse...
 }
 ```
 
-## 🔗 Integration with Other Search Tools
+## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Integration with Other Search Tools"> Integration with Other Search Tools
 
 ### Combining with Semantic Search
 
@@ -614,7 +614,7 @@ API rate limiting policies and implementation guidelines for preventing abuse...
    → Find supporting files
 ```
 
-## 🔗 Related Documentation
+## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Related Documentation"> Related Documentation
 
 - **[MCP Server Overview](./README.md)** - Complete MCP server guide
 - **[Search Capabilities](./search-capabilities.md)** - All search tools overview

@@ -380,7 +380,7 @@ Brief description of the changes and why they're needed.
 3. **Feedback incorporation**: Address review comments
 4. **Approval and merge**: Once approved, changes are merged
 
-## 🐛 Bug Reports
+## <img src="../assets/icons/library/bug-icon.svg" width="32" alt="Bug Reports"> Bug Reports
 
 ### Before Reporting
 
@@ -420,7 +420,7 @@ A clear and concise description of what you expected to happen.
 Add any other context about the problem here.
 ```
 
-## ✨ Feature Requests
+## <img src="../assets/icons/library/star-icon.svg" width="32" alt="Feature Requests"> Feature Requests
 
 ### Before Requesting
 
@@ -452,7 +452,7 @@ Describe any alternative solutions or features you've considered.
 Add any other context, mockups, or examples about the feature request here.
 ```
 
-## 🏷️ Release Process
+## <img src="../assets/icons/library/tag-icon.svg" width="32" alt="Release Process"> Release Process
 
 ### Version Management
 

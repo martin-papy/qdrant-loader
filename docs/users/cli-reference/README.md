@@ -50,7 +50,7 @@ Complete reference for all available commands:
 - **`ingest`** - Process and load data from sources  
 - **`config`** - View current configuration (includes all project information and validation)
 
-### 🤖 Scripting and Automation (coming later)
+### <img src="../../../../assets/icons/library/robot-icon.svg" width="32" alt="Scripting and Automation"> Scripting and Automation (coming later)
 
 Using QDrant Loader in scripts and automated workflows:
 
@@ -114,7 +114,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-##  G<img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon">lobal Options
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon">Global Options
 
 ### Workspace and Configuration
 
@@ -189,7 +189,7 @@ qdrant-loader config --workspace . --log-level DEBUG
 qdrant-loader config --config custom-config.yaml --env custom.env
 ```
 
-## 🔍 Advanced Usage
+## <img src="../../../../assets/icons/library/search-icon.svg" width="32" alt="Advanced Usage"> Advanced Usage
 
 ### Environment Variable Overrides
 
@@ -250,7 +250,7 @@ fi
 echo "Processing completed successfully"
 ```
 
-## 🧪 Testing and Debugging
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing and Debugging"> Testing and Debugging
 
 ### Debug Mode
 
@@ -375,7 +375,7 @@ function ql-status() {
 - **[Configuration Reference](../configuration/)** - Configuration file options
 - **[Troubleshooting](../troubleshooting/)** - Common CLI issues and solutions
 
-## 🆘 Getting Help
+## <img src="../../../../assets/icons/library/sos-icon.svg" width="32" alt="Getting Help"> Getting Help
 
 ### Built-in Help
 

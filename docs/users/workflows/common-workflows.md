@@ -16,7 +16,7 @@ QDrant Loader supports diverse workflows across different roles and use cases. E
 🔍 Search & Discovery - Knowledge exploration, content finding, research
 ```
 
-## 👨‍💻 Development Workflows
+## <img src="../../../../assets/icons/library/workflow-icon.svg" width="32" alt="Development Workflows"> Development Workflows
 
 ### Code Documentation Workflow
 
@@ -143,7 +143,7 @@ graph TD
 
 ---
 
-## 👥 Team Collaboration Workflows
+## <img src="../../../../assets/icons/library/team-icon.svg" width="32" alt="Team Collaboration Workflows"> Team Collaboration Workflows
 
 ### Cross-Team Knowledge Sharing
 
@@ -270,7 +270,7 @@ graph TD
 
 ---
 
-## 🔍 Search & Discovery Workflows
+## <img src="../../../../assets/icons/library/search-icon.svg" width="32" alt="Search & Discovery Workflows"> Search & Discovery Workflows
 
 ### Research and Analysis Workflow
 
@@ -402,7 +402,7 @@ mcp-qdrant-loader
 - Team collaboration
 ```
 
-## 🔗 Detailed Workflow Guides
+## <img src="../../../../assets/icons/library/linked-icon.svg" width="32" alt="Detailed Workflow Guides"> Detailed Workflow Guides
 
 - **[Development Workflow](./development-workflow.md)** - Complete development documentation workflow
 - **[Content Management Workflow](./content-management-workflow.md)** - Content creation and publishing

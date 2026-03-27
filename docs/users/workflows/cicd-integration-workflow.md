@@ -25,7 +25,7 @@ This workflow ensures code quality, documentation accuracy, and seamless deploym
 🔧 Force Deploy Option - Emergency deployment without waiting for test artifacts
 ```
 
-## 🏗️ Architecture Overview
+## <img src="../../../../assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture Overview
 
 ```mermaid
 graph TD
