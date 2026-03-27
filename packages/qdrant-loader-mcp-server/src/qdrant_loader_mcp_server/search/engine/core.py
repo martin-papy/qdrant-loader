@@ -265,12 +265,13 @@ class SearchEngine:
             # Fallback: delegate directly to hybrid_search when operations not initialized
             if not self.hybrid_search:
                 raise RuntimeError("Search engine not initialized")
-            return await self.hybrid_search.search(
-                query=query,
-                source_types=source_types,
-                limit=limit,
-                project_ids=project_ids,
-            )
+            async with self._search_semaphore:
+                return await self.hybrid_search.search(
+                    query=query,
+                    source_types=source_types,
+                    limit=limit,
+                    project_ids=project_ids,
+                )
         return await self._search_ops.search(query, source_types, limit, project_ids)
 
     async def generate_topic_chain(
