@@ -6,6 +6,7 @@ import logging
 import os
 import signal
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import click
@@ -67,11 +68,14 @@ def _setup_logging(log_level: str, transport: str | None = None) -> None:
         print(f"Failed to setup logging: {e}", file=sys.stderr)
 
 
-async def read_stdin_lines():
+async def read_stdin_lines(executor=None):
     """Cross-platform async generator that yields lines from stdin."""
     loop = asyncio.get_event_loop()
     while True:
-        line = await loop.run_in_executor(None, sys.stdin.readline)
+        try:
+            line = await loop.run_in_executor(executor, sys.stdin.readline)
+        except (ValueError, OSError):
+            break  # stdin was closed during shutdown
         if not line:  # EOF
             break
         yield line
@@ -98,7 +102,7 @@ async def shutdown(
     logger.info("Shutdown signal dispatched")
 
 
-async def handle_stdio(config: Config, log_level: str):
+async def handle_stdio(config: Config, log_level: str, executor=None):
     """Handle stdio communication with Cursor."""
     logger = LoggingConfig.get_logger(__name__)
 
@@ -130,7 +134,7 @@ async def handle_stdio(config: Config, log_level: str):
         if not disable_console_logging:
             logger.info("Server ready to handle requests")
 
-        async for line in read_stdin_lines():
+        async for line in read_stdin_lines(executor):
             try:
                 raw_input = line.strip()
                 if not raw_input:
@@ -234,6 +238,12 @@ async def handle_stdio(config: Config, log_level: str):
         if not disable_console_logging:
             logger.error("Error in stdio handler", exc_info=True)
         raise
+    finally:
+        # Close stdin to unblock the executor thread waiting on readline()
+        try:
+            sys.stdin.close()
+        except Exception:
+            pass
 
 
 @click.command(name="mcp-qdrant-loader")
@@ -397,11 +407,15 @@ def cli(
 
             shutdown_event = asyncio.Event()
             shutdown_task = None
+            main_task = None
+            stdin_executor = None
 
             def signal_handler():
-                nonlocal shutdown_task
+                nonlocal shutdown_task, main_task
                 if shutdown_task is None:
                     shutdown_task = loop.create_task(shutdown(loop, shutdown_event))
+                if main_task is not None and not main_task.done():
+                    main_task.cancel()
 
             for sig in (signal.SIGTERM, signal.SIGINT):
                 try:
@@ -416,7 +430,15 @@ def cli(
                         pass
 
             try:
-                loop.run_until_complete(handle_stdio(config_obj, log_level))
+                stdin_executor = ThreadPoolExecutor(
+                    max_workers=1, thread_name_prefix="stdin-"
+                )
+                main_task = loop.create_task(
+                    handle_stdio(config_obj, log_level, stdin_executor)
+                )
+                loop.run_until_complete(main_task)
+            except asyncio.CancelledError:
+                pass  # Expected during signal-driven shutdown
             except Exception:
                 logger = LoggingConfig.get_logger(__name__)
                 logger.error("Error in main", exc_info=True)
@@ -461,6 +483,11 @@ def cli(
                     logger = LoggingConfig.get_logger(__name__)
                     logger.error("Error during final cleanup", exc_info=True)
                 finally:
+                    if stdin_executor is not None:
+                        try:
+                            stdin_executor.shutdown(wait=False)
+                        except Exception:
+                            pass
                     loop.close()
                     logger = LoggingConfig.get_logger(__name__)
                     logger.info("Server shutdown complete")
