@@ -25,9 +25,23 @@ Before starting, ensure you have:
 
 ## 🚀 Step 1: Initial Configuration
 
-### Set Up Workspace Directory
+### Option A: Use the Setup Wizard (Recommended)
 
-Create a workspace directory for your QDrant Loader project:
+The fastest way to get started is with the built-in setup wizard:
+
+```bash
+# Create and configure a workspace in one step
+qdrant-loader setup --output-dir my-qdrant-workspace --mode default
+cd my-qdrant-workspace
+```
+
+This generates `config.yaml`, `.env`, and a `docs/` directory ready for your documents. Edit the `.env` file to add your actual API keys, then skip to [Step 2](#-step-2-initialize-and-ingest).
+
+For more control over sources (Git, Confluence, Jira), use `--mode normal` instead. See the [CLI Reference](../users/cli-reference/commands.md#qdrant-loader-setup) for all options.
+
+### Option B: Manual Configuration
+
+Create a workspace directory for your QDrant Loader project manually:
 
 ```bash
 # Create workspace directory
