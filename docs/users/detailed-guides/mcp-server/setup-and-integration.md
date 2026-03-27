@@ -163,7 +163,7 @@ mcp-qdrant-loader --help
 
 > **📝 Note**: Most AI tools (including Cursor) work best with stdio transport. Use HTTP transport for custom integrations or web-based clients.
 
-## 🎨 Cursor IDE
+## <img src="../../../../../assets/icons/library/palette-icon.svg" width="32" alt="Cursor IDE"> Cursor IDE
 
 Cursor is an AI-powered code editor with excellent MCP support. It's the most popular choice for AI-assisted development.
 

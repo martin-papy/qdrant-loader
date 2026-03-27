@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Main sparkle -->
+  <path d="M16 6L17.5 12.5L24 14L17.5 15.5L16 22L14.5 15.5L8 14L14.5 12.5L16 6Z"
+        stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- Small sparkle left -->
+  <path d="M8 20L8.6 22.4L11 23L8.6 23.6L8 26L7.4 23.6L5 23L7.4 22.4L8 20Z"
+        stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- Small sparkle right -->
+  <path d="M24 20L24.6 22.4L27 23L24.6 23.6L24 26L23.4 23.6L21 23L23.4 22.4L24 20Z"
+        stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
+
+</svg>

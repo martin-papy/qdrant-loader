@@ -32,7 +32,7 @@ QDrant Loader is built on several key architectural principles:
 - **Comprehensive testing** - Unit, integration, and end-to-end tests
 - **Rich documentation** - Detailed guides and examples
 
-## 🏗️ System Architecture
+## <img src="../../../../assets/icons/library/architect-icon.svg" width="32" alt="System Architecture"> System Architecture
 
 ### High-Level Overview
 
@@ -392,7 +392,7 @@ class QdrantManager:
             await self._upsert_batch(batch)
 ```
 
-## 🔒 Security Architecture
+## <img src="../../../../assets/icons/library/security-icon.svg" width="32" alt="Security Architecture"> Security Architecture
 
 ### Authentication Flow
 

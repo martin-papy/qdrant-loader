@@ -19,13 +19,13 @@ The attachment search tool specializes in finding file attachments and their ass
 - **File Type Intelligence**: Optimized search for different file formats supported by MarkItDown
 - **Metadata Awareness**: Searches file properties, authors, and creation dates from Confluence
 
-### ⚠️ Important Limitations
+### <img src="../../../../../assets/icons/library/warning-icon.svg" width="32" alt="Important Limitations"> Important Limitations
 
 - **Confluence Only**: Currently limited to Confluence attachments and documents
 - **MarkItDown Dependency**: File conversion capabilities depend on MarkItDown library support
 - **No OCR**: Text extraction from images relies on MarkItDown, not dedicated OCR processing
 
-## 📎 How Attachment Search Works
+## <img src="../../../../../assets/icons/library/paperclip-icon.svg" width="32" alt="How Attachment Search Works"> How Attachment Search Works
 
 ### File Processing Pipeline
 
@@ -125,7 +125,7 @@ Query: "architecture diagrams"
 - **`file_size_max`** (integer): Maximum file size in bytes
 - **`author`** (string): Filter by attachment author
 
-## 📁 Supported File Types
+## <img src="../../../../../assets/icons/library/folder-icon.svg" width="32" alt="Supported File Types"> Supported File Types
 
 The attachment search supports file types that can be processed by MarkItDown for text extraction:
 
@@ -187,7 +187,7 @@ The attachment search supports file types that can be processed by MarkItDown fo
 - **Confluence Metadata**: File metadata comes from Confluence attachment properties
 - **No Custom OCR**: No dedicated OCR processing beyond MarkItDown's built-in capabilities
 
-## 🔍 Search Examples and Use Cases
+## <img src="../../../../../assets/icons/library/search-icon.svg" width="32" alt="Search Examples and Use Cases"> Search Examples and Use Cases
 
 ### 1. Finding Specific File Types in Confluence
 
@@ -433,7 +433,7 @@ Attachment search integrates with the broader search system:
 }
 ```
 
-## 🎨 Result Interpretation
+## <img src="../../../../../assets/icons/library/palette-icon.svg" width="32" alt="Result Interpretation"> Result Interpretation
 
 ### Understanding Attachment Results
 
@@ -483,7 +483,7 @@ Overall Score: 0.85 (weighted combination)
 - **Orphaned files** (no clear parent context)
 - **Unusual file sizes** (very small or very large)
 
-## 🔗 Integration with Other Search Tools
+## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Integration with Other Search Tools"> Integration with Other Search Tools
 
 ### Combining Search Strategies for Confluence
 
@@ -546,7 +546,7 @@ Query: "deployment documentation structure"
 - Need to search across all source types
 - Looking for regular page content (use semantic or hierarchy search)
 
-## 🔗 Related Documentation
+## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Related Documentation"> Related Documentation
 
 - **[MCP Server Overview](./README.md)** - Complete MCP server guide
 - **[Search Capabilities](./search-capabilities.md)** - All search tools overview
