@@ -17,6 +17,7 @@ def get_expand_chunk_context_tool_schema() -> dict[str, Any]:
                 "chunk_index": {
                     "type": "integer",
                     "description": "Index of the target chunk within the document.",
+                    "minimum": 0,
                 },
                 "window_size": {
                     "type": "integer",

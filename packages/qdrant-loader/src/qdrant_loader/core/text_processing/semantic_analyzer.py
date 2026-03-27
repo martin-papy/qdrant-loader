@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -78,7 +79,8 @@ class SemanticAnalyzer:
         self.dictionary = None
 
         # Cache for processed documents
-        self._doc_cache = {}
+        self._doc_cache: dict = {}
+        self._doc_cache_lock = threading.Lock()
 
     def analyze_text(
         self,
@@ -97,25 +99,31 @@ class SemanticAnalyzer:
         Returns:
             SemanticAnalysisResult containing all analysis results
         """
-        # Check cache
+        # Check cache (fingerprint prevents stale results, lock prevents races)
         text_fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
         cache_key = (doc_id, text_fingerprint, include_enhanced) if doc_id else None
-        if cache_key and cache_key in self._doc_cache:
-            cached = self._doc_cache[cache_key]
+
+        # Protected read
+        with self._doc_cache_lock:
+            cached = self._doc_cache.get(cache_key) if cache_key else None
+
+        if cached is not None:
             if include_enhanced:
-                # Reuse cached base fields but refresh document_similarity to reflect
-                # any newly-analyzed docs added to the cache since last computation
+                # Compute similarity OUTSIDE the lock (can be slow)
+                doc_similarity = self._calculate_document_similarity(
+                    text, doc_id=doc_id
+                )
                 refreshed = SemanticAnalysisResult(
                     entities=cached.entities,
                     pos_tags=cached.pos_tags,
                     dependencies=cached.dependencies,
                     topics=cached.topics,
                     key_phrases=cached.key_phrases,
-                    document_similarity=self._calculate_document_similarity(
-                        text, doc_id=doc_id
-                    ),
+                    document_similarity=doc_similarity,
                 )
-                self._doc_cache[cache_key] = refreshed
+                # Protected write-back
+                with self._doc_cache_lock:
+                    self._doc_cache[cache_key] = refreshed
                 return refreshed
             return cached
 
@@ -158,9 +166,10 @@ class SemanticAnalyzer:
             document_similarity=doc_similarity,
         )
 
-        # Cache result
+        # Protected write
         if cache_key:
-            self._doc_cache[cache_key] = result
+            with self._doc_cache_lock:
+                self._doc_cache[cache_key] = result
 
         return result
 
@@ -259,23 +268,46 @@ class SemanticAnalyzer:
         return pos_tags
 
     def _get_dependencies(self, doc: Doc) -> list[dict[str, Any]]:
-        """Get dependency parse information.
+        """Get dependency parse information with filtering.
+
+        Filters out:
+        - Whitespace tokens (is_space=True)
+        - Punctuation tokens (is_punct=True)
+        - Symbol-only tokens without alphanumeric content
+        - Children that are punctuation or meaningless symbols
 
         Args:
             doc: spaCy document
 
         Returns:
-            List of dependency dictionaries
+            List of dependency dictionaries (excluding noise tokens)
         """
         dependencies = []
         for token in doc:
+            # Skip whitespace and punctuation tokens
+            if token.is_space or token.is_punct:
+                continue
+
+            # Skip tokens with no meaningful content (e.g., ---, ...)
+            if not is_meaningful_text(token.text):
+                continue
+
+            # Filter children to only include meaningful tokens
+            meaningful_children = [
+                child.text
+                for child in token.children
+                if not child.is_space
+                and not child.is_punct
+                and is_meaningful_text(child.text)
+            ]
+
             dependencies.append(
                 {
                     "text": token.text,
                     "dep": token.dep_,
                     "head": token.head.text,
                     "head_pos": token.head.pos_,
-                    "children": [child.text for child in token.children],
+                    "children": meaningful_children,
                 }
             )
         return dependencies
@@ -422,7 +454,10 @@ class SemanticAnalyzer:
         # Check if the model has word vectors
         has_vectors = self.nlp.vocab.vectors_length > 0
 
-        for cache_key, cached_result in self._doc_cache.items():
+        with self._doc_cache_lock:
+            cached_items = list(self._doc_cache.items())
+
+        for cache_key, cached_result in cached_items:
             cached_doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
             if cached_doc_id is None or cached_doc_id in skipped_ids:
                 continue
@@ -517,7 +552,8 @@ class SemanticAnalyzer:
     def clear_cache(self):
         """Clear the document cache and release all resources."""
         # Clear document cache
-        self._doc_cache.clear()
+        with self._doc_cache_lock:
+            self._doc_cache.clear()
 
         # Release LDA model resources
         if hasattr(self, "lda_model") and self.lda_model is not None:

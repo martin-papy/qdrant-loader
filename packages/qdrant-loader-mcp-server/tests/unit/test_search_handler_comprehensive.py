@@ -697,13 +697,26 @@ class TestHandleExpandChunkContext:
         assert "chunk_index" in result["error"]["data"]
 
     @pytest.mark.asyncio
+    async def test_expand_chunk_context_negative_chunk_index(self, search_handler):
+        """Should return error if chunk_index is negative."""
+
+        params = {"document_id": "doc1", "chunk_index": -1}
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        assert result["error"]["code"] == -32602
+        assert "chunk_index must be a non-negative integer" in result["error"]["data"]
+
+    @pytest.mark.asyncio
     async def test_expand_chunk_context_invalid_window_size(self, search_handler):
-        """Should validate window_size"""
+        """Should return error if window_size is invalid."""
 
         params = {
             "document_id": "doc1",
             "chunk_index": 1,
-            "window_size": -1,
+            "window_size": 30,  # Exceeds MAX_WINDOW_SIZE
         }
 
         self._mock_protocol(search_handler)
@@ -711,7 +724,28 @@ class TestHandleExpandChunkContext:
         result = await search_handler.handle_expand_chunk_context(1, params)
 
         assert result["error"]["code"] == -32602
-        assert "window_size" in result["error"]["data"]
+        assert (
+            "window_size must be a non-negative integer between 0 and 25"
+            in result["error"]["data"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_chunk_not_found(self, search_handler):
+        """Should return error if target chunk is not found."""
+
+        params = {"document_id": "doc1", "chunk_index": 5}
+
+        search_handler.search_engine.client.scroll = AsyncMock(return_value=([], None))
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        assert result["error"]["code"] == -32001
+        assert (
+            "No chunk found for document_id: doc1, chunk_index: 5"
+            in result["error"]["data"]
+        )
 
     @pytest.mark.asyncio
     async def test_expand_chunk_context_sorted_correctly(self, search_handler):

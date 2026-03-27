@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import signal
 from types import SimpleNamespace
 
@@ -158,3 +159,95 @@ async def test_sigint_handler_schedules_cancellation_windows_fallback(mocker):
 
     # Ensure command completes cleanly
     await asyncio.wait_for(task, timeout=2.0)
+
+
+@pytest.mark.asyncio
+async def test_ingest_logs_end_to_end_duration_on_success(mocker, caplog):
+    from qdrant_loader.cli.commands import ingest_cmd as ingest_module
+
+    mocker.patch.object(ingest_module, "_load_config_with_workspace", return_value=None)
+    mocker.patch.object(ingest_module, "validate_workspace_flags", return_value=None)
+    mocker.patch("qdrant_loader.config.get_settings", return_value=SimpleNamespace())
+    mocker.patch(
+        "qdrant_loader.core.qdrant_manager.QdrantManager", return_value=object()
+    )
+
+    async def _fake_run_pipeline(*_args, **_kwargs):
+        return None
+
+    mocker.patch.object(
+        ingest_module, "_run_ingest_pipeline", side_effect=_fake_run_pipeline
+    )
+    mocker.patch.object(ingest_module.asyncio, "all_tasks", return_value=[])
+
+    with caplog.at_level(logging.INFO):
+        await ingest_module.run_ingest_command(
+            workspace=None,
+            config=None,
+            env=None,
+            project=None,
+            source_type=None,
+            source=None,
+            log_level="INFO",
+            profile=False,
+            force=False,
+        )
+
+    assert any(
+        "Ingestion end-to-end completed in" in record.getMessage()
+        for record in caplog.records
+    )
+
+
+@pytest.mark.asyncio
+async def test_ingest_logs_end_to_end_duration_on_failure(mocker):
+    from click.exceptions import ClickException
+    from qdrant_loader.cli.commands import ingest_cmd as ingest_module
+
+    mocker.patch.object(ingest_module, "_load_config_with_workspace", return_value=None)
+    mocker.patch.object(ingest_module, "validate_workspace_flags", return_value=None)
+    mocker.patch("qdrant_loader.config.get_settings", return_value=SimpleNamespace())
+    mocker.patch(
+        "qdrant_loader.core.qdrant_manager.QdrantManager", return_value=object()
+    )
+
+    async def _failing_run_pipeline(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    mocker.patch.object(
+        ingest_module, "_run_ingest_pipeline", side_effect=_failing_run_pipeline
+    )
+    mocker.patch.object(ingest_module.asyncio, "all_tasks", return_value=[])
+
+    mock_logger = mocker.Mock()
+    get_logger_mock = mocker.patch.object(
+        ingest_module.LoggingConfig, "get_logger", return_value=mock_logger
+    )
+
+    with pytest.raises(ClickException, match="Failed to run ingestion: boom"):
+        await ingest_module.run_ingest_command(
+            workspace=None,
+            config=None,
+            env=None,
+            project=None,
+            source_type=None,
+            source=None,
+            log_level="INFO",
+            profile=False,
+            force=False,
+        )
+
+    assert get_logger_mock.called
+
+    failure_call = None
+    for call in mock_logger.error.call_args_list:
+        if (
+            call.args
+            and call.args[0] == "Document ingestion process failed during execution"
+        ):
+            failure_call = call
+            break
+
+    assert failure_call is not None
+    assert "end_to_end_duration_seconds" in failure_call.kwargs
+    assert isinstance(failure_call.kwargs["end_to_end_duration_seconds"], float)

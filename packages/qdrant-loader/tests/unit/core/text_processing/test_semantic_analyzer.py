@@ -250,7 +250,6 @@ class TestSemanticAnalyzer:
                 SemanticAnalyzer, "_calculate_document_similarity", return_value={}
             ),
         ):
-
             # Configure mock_nlp to return mock_doc when called with text
             mock_nlp.return_value = mock_doc
             analyzer = SemanticAnalyzer()
@@ -273,7 +272,6 @@ class TestSemanticAnalyzer:
                 SemanticAnalyzer, "_calculate_document_similarity", return_value={}
             ),
         ):
-
             mock_nlp.return_value = mock_doc
             analyzer = SemanticAnalyzer()
 
@@ -293,7 +291,12 @@ class TestSemanticAnalyzer:
             assert result1.entities == result2.entities
             assert result1.pos_tags == result2.pos_tags
             assert result1.topics == result2.topics
-            assert any(k[0] == "doc1" for k in analyzer._doc_cache)
+            assert len(analyzer._doc_cache) == 1
+            assert any(
+                key[0] == "doc1"
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
 
     def test_analyze_text_without_enhanced_fields(self, mock_nlp, mock_doc):
         """Test text analysis short-circuits enhanced computations when disabled."""
@@ -321,7 +324,12 @@ class TestSemanticAnalyzer:
             mock_pos_tags.assert_not_called()
             mock_dependencies.assert_not_called()
             mock_similarity.assert_not_called()
-            assert any(k[0] == "doc2" for k in analyzer._doc_cache)
+            assert len(analyzer._doc_cache) == 1
+            assert any(
+                key[0] == "doc2"
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
 
     def test_extract_entities(self, mock_nlp, mock_doc):
         """Test entity extraction."""
@@ -605,6 +613,93 @@ class TestSemanticAnalyzer:
             assert dep2["head"] == "is"
             assert dep2["children"] == ["Apple"]
 
+    def test_get_dependencies_filters_punctuation_spaces_and_symbols(self, mock_nlp):
+        """Test that dependency parsing filters out noisy tokens and children."""
+        with patch("spacy.load", return_value=mock_nlp):
+            mock_doc = Mock()
+
+            token_word = Mock()
+            token_word.text = "Hello"
+            token_word.dep_ = "nsubj"
+            token_word.pos_ = "NOUN"
+            token_word.is_punct = False
+            token_word.is_space = False
+            token_word.head = Mock()
+            token_word.head.text = "runs"
+            token_word.head.pos_ = "VERB"
+
+            child_good = Mock()
+            child_good.text = "world"
+            child_good.is_punct = False
+            child_good.is_space = False
+
+            child_punct = Mock()
+            child_punct.text = ","
+            child_punct.is_punct = True
+            child_punct.is_space = False
+
+            child_space = Mock()
+            child_space.text = " "
+            child_space.is_punct = False
+            child_space.is_space = True
+
+            child_symbol = Mock()
+            child_symbol.text = "|||"
+            child_symbol.is_punct = False
+            child_symbol.is_space = False
+
+            token_word.children = [child_good, child_punct, child_space, child_symbol]
+
+            token_space = Mock()
+            token_space.text = " "
+            token_space.dep_ = "dep"
+            token_space.pos_ = "SPACE"
+            token_space.is_punct = False
+            token_space.is_space = True
+            token_space.head = token_word
+            token_space.children = []
+
+            token_punct = Mock()
+            token_punct.text = "."
+            token_punct.dep_ = "punct"
+            token_punct.pos_ = "PUNCT"
+            token_punct.is_punct = True
+            token_punct.is_space = False
+            token_punct.head = token_word
+            token_punct.children = []
+
+            token_symbol = Mock()
+            token_symbol.text = "---"
+            token_symbol.dep_ = "dep"
+            token_symbol.pos_ = "SYM"
+            token_symbol.is_punct = False
+            token_symbol.is_space = False
+            token_symbol.head = token_word
+            token_symbol.children = []
+
+            token_root = Mock()
+            token_root.text = "runs"
+            token_root.dep_ = "ROOT"
+            token_root.pos_ = "VERB"
+            token_root.is_punct = False
+            token_root.is_space = False
+            token_root.head = token_root
+            token_root.children = []
+
+            mock_doc.__iter__ = Mock(
+                return_value=iter(
+                    [token_word, token_space, token_punct, token_symbol, token_root]
+                )
+            )
+
+            analyzer = SemanticAnalyzer()
+            dependencies = analyzer._get_dependencies(mock_doc)
+
+            assert len(dependencies) == 2
+            assert dependencies[0]["text"] == "Hello"
+            assert dependencies[0]["children"] == ["world"]
+            assert dependencies[1]["text"] == "runs"
+
     def test_extract_topics_existing_model(self, mock_nlp):
         """Test topic extraction with existing LDA model."""
         with (
@@ -620,7 +715,6 @@ class TestSemanticAnalyzer:
                 ],
             ),
         ):
-
             analyzer = SemanticAnalyzer()
 
             # Set up existing model and dictionary
@@ -764,9 +858,17 @@ class TestSemanticAnalyzer:
             # Should be different objects (separate cache entries)
             assert result_enhanced_false is not result_enhanced_true
 
-            # Cache should have separate keys
-            assert any(k[0] == "same_doc" and k[-1] is False for k in analyzer._doc_cache)
-            assert any(k[0] == "same_doc" and k[-1] is True for k in analyzer._doc_cache)
+            # Cache should have separate keys (include_enhanced is last element)
+            assert any(
+                key[0] == "same_doc" and key[-1] is False
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
+            assert any(
+                key[0] == "same_doc" and key[-1] is True
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
 
             # Verify enhanced fields differ
             assert len(result_enhanced_false.pos_tags) == 0
@@ -935,7 +1037,11 @@ class TestSemanticAnalyzer:
                 token.dep_ = (
                     "nsubj"
                     if i == 0
-                    else "ROOT" if text == "is" else "det" if text == "a" else "attr"
+                    else "ROOT"
+                    if text == "is"
+                    else "det"
+                    if text == "a"
+                    else "attr"
                 )
                 token.head = Mock()
                 token.head.text = "is"
@@ -982,7 +1088,11 @@ class TestSemanticAnalyzer:
                 assert isinstance(result.document_similarity, dict)
 
                 # Verify caching
-                assert any(k[0] == "test_doc" for k in analyzer._doc_cache)
+                assert any(
+                    key[0] == "test_doc"
+                    for key in analyzer._doc_cache
+                    if isinstance(key, tuple)
+                )
 
 
 class TestCacheKeyFingerprint:
@@ -1014,3 +1124,338 @@ class TestCacheKeyFingerprint:
         key1 = (doc_id, fp1, False)
         key2 = (doc_id, fp2, False)
         assert key1 == key2, "Same text should produce same cache key"
+
+
+class TestSemanticAnalyzerConcurrency:
+    """Test thread-safety of SemanticAnalyzer cache under concurrent access."""
+
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    @pytest.fixture
+    def mock_nlp_fixture(self):
+        """Create mock spaCy nlp object."""
+        mock_nlp = Mock()
+        mock_doc = Mock()
+        mock_doc.ents = []
+        mock_doc.noun_chunks = []
+        mock_doc.similarity = Mock(return_value=0.8)
+        mock_nlp.return_value = mock_doc
+        return mock_nlp, mock_doc
+
+    def test_concurrent_cache_reads_same_doc_id(self, mock_nlp_fixture):
+        """Test multiple threads reading the same cached document."""
+        import threading
+
+        mock_nlp, mock_doc = mock_nlp_fixture
+
+        results = []
+        errors = []
+
+        def read_cache(doc_id, include_enhanced):
+            try:
+                with (
+                    patch("spacy.load", return_value=mock_nlp),
+                    patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+                    patch.object(
+                        SemanticAnalyzer,
+                        "_calculate_document_similarity",
+                        return_value={},
+                    ),
+                ):
+                    analyzer.analyze_text(
+                        f"Test document {doc_id}",
+                        doc_id=doc_id,
+                        include_enhanced=include_enhanced,
+                    )
+                    results.append((doc_id, include_enhanced))
+            except Exception as e:
+                errors.append(str(e))
+
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+        ):
+            analyzer = SemanticAnalyzer()
+
+            # Spawn multiple threads reading the same document
+            threads = []
+            for _i in range(10):
+                t = threading.Thread(
+                    target=read_cache, args=("doc1", False), daemon=True
+                )
+                threads.append(t)
+                t.start()
+
+            # Wait for all threads
+            for t in threads:
+                t.join(timeout=10)
+
+            # All operations should succeed without deadlock or corruption
+            assert len(errors) == 0, f"Errors occurred: {errors}"
+            assert len(results) == 10
+            assert len(analyzer._doc_cache) == 1  # Only one cache entry
+
+    def test_concurrent_writes_different_doc_ids(self, mock_nlp_fixture):
+        """Test multiple threads writing different documents to cache."""
+        import threading
+
+        mock_nlp, mock_doc = mock_nlp_fixture
+        errors = []
+
+        def write_cache(doc_id):
+            try:
+                with (
+                    patch("spacy.load", return_value=mock_nlp),
+                    patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+                    patch.object(
+                        SemanticAnalyzer,
+                        "_calculate_document_similarity",
+                        return_value={},
+                    ),
+                ):
+                    analyzer.analyze_text(
+                        f"Test document {doc_id}",
+                        doc_id=doc_id,
+                        include_enhanced=False,
+                    )
+            except Exception as e:
+                errors.append(str(e))
+
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+        ):
+            analyzer = SemanticAnalyzer()
+
+            # Spawn multiple threads writing different documents
+            threads = []
+            num_docs = 20
+            for i in range(num_docs):
+                t = threading.Thread(
+                    target=write_cache, args=(f"doc_{i}",), daemon=True
+                )
+                threads.append(t)
+                t.start()
+
+            # Wait for all threads
+            for t in threads:
+                t.join(timeout=10)
+
+            # All operations should succeed
+            assert len(errors) == 0, f"Errors occurred: {errors}"
+            # Each doc_id creates one cache entry per include_enhanced value
+            assert len(analyzer._doc_cache) == num_docs
+
+    def test_concurrent_cache_hits_and_misses(self, mock_nlp_fixture):
+        """Test concurrent mix of cache hits and misses."""
+        import threading
+
+        mock_nlp, mock_doc = mock_nlp_fixture
+        errors = []
+        hit_count = 0
+        hit_lock = threading.Lock()
+
+        def analyze_with_mix(doc_id, text_variant):
+            nonlocal hit_count
+            try:
+                with (
+                    patch("spacy.load", return_value=mock_nlp),
+                    patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+                    patch.object(
+                        SemanticAnalyzer,
+                        "_calculate_document_similarity",
+                        return_value={},
+                    ),
+                ):
+                    # Some threads hit cache, others miss
+                    text = f"Document {text_variant}" if text_variant % 2 == 0 else ""
+                    result = analyzer.analyze_text(
+                        text, doc_id=doc_id, include_enhanced=False
+                    )
+
+                    # Simple hit detection: if result has cached entities
+                    if hasattr(result, "entities"):
+                        with hit_lock:
+                            hit_count += 1
+            except Exception as e:
+                errors.append(str(e))
+
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+        ):
+            analyzer = SemanticAnalyzer()
+
+            # Pre-populate cache with some documents
+            for i in range(5):
+                analyzer.analyze_text(f"Cached doc {i}", doc_id=f"cached_{i}")
+
+            initial_cache_size = len(analyzer._doc_cache)
+
+            # Spawn concurrent threads with mix of hits and misses
+            threads = []
+            for i in range(20):
+                t = threading.Thread(
+                    target=analyze_with_mix, args=("cached_1", i), daemon=True
+                )
+                threads.append(t)
+                t.start()
+
+            for t in threads:
+                t.join(timeout=10)
+
+            assert len(errors) == 0, f"Errors occurred: {errors}"
+            # Cache should still be consistent
+            assert len(analyzer._doc_cache) >= initial_cache_size
+
+    def test_concurrent_clear_cache_with_reads(self, mock_nlp_fixture):
+        """Test clearing cache while other threads are reading."""
+        import threading
+
+        mock_nlp, mock_doc = mock_nlp_fixture
+        errors = []
+        read_count = 0
+        read_lock = threading.Lock()
+
+        def read_from_cache():
+            nonlocal read_count
+            try:
+                with (
+                    patch("spacy.load", return_value=mock_nlp),
+                    patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+                    patch.object(
+                        SemanticAnalyzer,
+                        "_calculate_document_similarity",
+                        return_value={},
+                    ),
+                ):
+                    analyzer.analyze_text(
+                        "Test document", doc_id="doc1", include_enhanced=False
+                    )
+                    with read_lock:
+                        read_count += 1
+            except Exception as e:
+                errors.append(str(e))
+
+        def clear_cache_locker():
+            try:
+                analyzer.clear_cache()
+            except Exception as e:
+                errors.append(str(e))
+
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+            patch.object(
+                SemanticAnalyzer, "_calculate_document_similarity", return_value={}
+            ),
+        ):
+            analyzer = SemanticAnalyzer()
+
+            # Pre-populate cache
+            analyzer.analyze_text("Pre-cached", doc_id="doc1", include_enhanced=False)
+
+            threads = []
+
+            # Spawn reader threads
+            for _i in range(5):
+                t = threading.Thread(target=read_from_cache, daemon=True)
+                threads.append(t)
+                t.start()
+
+            # Spawn clearer thread
+            t = threading.Thread(target=clear_cache_locker, daemon=True)
+            threads.append(t)
+            t.start()
+
+            # More readers after clear
+            for _i in range(5):
+                t = threading.Thread(target=read_from_cache, daemon=True)
+                threads.append(t)
+                t.start()
+
+            for t in threads:
+                t.join(timeout=10)
+
+            # Operations should complete without deadlock or corruption
+            assert len(errors) == 0, f"Errors occurred: {errors}"
+            # After clear, cache may be empty or have new entries
+            assert isinstance(analyzer._doc_cache, dict)
+
+    def test_concurrent_enhanced_similarity_refresh(self, mock_nlp_fixture):
+        """Test concurrent cache hits with enhanced similarity refresh."""
+        import threading
+
+        mock_nlp, mock_doc = mock_nlp_fixture
+        errors = []
+        refresh_count = 0
+        refresh_lock = threading.Lock()
+
+        def read_with_refresh(doc_id):
+            nonlocal refresh_count
+            try:
+                call_count = 0
+
+                def mock_similarity_side_effect(*args, **kwargs):
+                    nonlocal call_count
+                    call_count += 1
+                    return {"other_doc": 0.5 + call_count * 0.01}
+
+                with (
+                    patch("spacy.load", return_value=mock_nlp),
+                    patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+                    patch.object(
+                        SemanticAnalyzer,
+                        "_calculate_document_similarity",
+                        side_effect=mock_similarity_side_effect,
+                    ),
+                    patch.object(SemanticAnalyzer, "_get_pos_tags", return_value=[]),
+                    patch.object(
+                        SemanticAnalyzer, "_get_dependencies", return_value=[]
+                    ),
+                ):
+                    result = analyzer.analyze_text(
+                        "Test document", doc_id=doc_id, include_enhanced=True
+                    )
+                    if result.document_similarity:
+                        with refresh_lock:
+                            refresh_count += 1
+            except Exception as e:
+                errors.append(str(e))
+
+        with (
+            patch("spacy.load", return_value=mock_nlp),
+            patch.object(SemanticAnalyzer, "_extract_topics", return_value=[]),
+        ):
+            analyzer = SemanticAnalyzer()
+
+            # Spawn concurrent threads accessing same doc with enhanced flag
+            threads = []
+            for _i in range(10):
+                t = threading.Thread(
+                    target=read_with_refresh, args=("doc_enhanced",), daemon=True
+                )
+                threads.append(t)
+                t.start()
+
+            for t in threads:
+                t.join(timeout=10)
+
+            # All operations should succeed
+            assert len(errors) == 0, f"Errors occurred: {errors}"
+            # Cache should have one entry for the enhanced doc
+            assert any(
+                key[0] == "doc_enhanced" and key[-1] is True
+                for key in analyzer._doc_cache
+                if isinstance(key, tuple)
+            )
