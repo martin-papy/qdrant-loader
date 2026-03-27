@@ -188,6 +188,7 @@ class TestRunSetupWizardCreatesFiles:
         assert src["base_url"] == "https://docs.example.com/"
         assert src["version"] == "latest"
         assert src["content_type"] == "html"
+        assert "enable_file_conversion" not in src
 
     def test_run_setup_wizard_localfile_source(self, tmp_path: Path) -> None:
         """Test that localfile source gets the file:// prefix applied."""
@@ -444,6 +445,7 @@ class TestRunSetupDefault:
         # Should point to the docs subdirectory of the workspace
         assert src["base_url"].endswith("/docs")
         assert src["file_types"] == ["*.md", "*.txt", "*.py"]
+        assert src["enable_file_conversion"] is True
         # docs directory should be created
         assert (tmp_path / "docs").is_dir()
 
@@ -829,6 +831,7 @@ class TestCollectGitConfig:
         assert config["base_url"] == "https://github.com/org/repo.git"
         assert config["branch"] == "main"
         assert config["file_types"] == ["*.md", "*.txt"]
+        assert config["enable_file_conversion"] is True
 
     def test_collect_git_config_no_token(self) -> None:
         prompt_side_effects = [
@@ -843,6 +846,7 @@ class TestCollectGitConfig:
 
         assert "token" not in config
         assert extra_env == {}
+        assert config["enable_file_conversion"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -859,6 +863,7 @@ class TestCollectLocalfileConfig:
 
         assert config["base_url"].startswith("file:///")
         assert config["base_url"].endswith("/home/user/docs")
+        assert config["enable_file_conversion"] is True
         assert extra_env == {}
 
     def test_collect_localfile_preserves_existing_prefix(self) -> None:
