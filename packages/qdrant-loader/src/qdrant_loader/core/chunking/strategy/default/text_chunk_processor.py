@@ -41,6 +41,28 @@ class TextChunkProcessor(BaseChunkProcessor):
         text_metadata = self._create_text_specific_metadata(chunk_content, original_doc)
         base_metadata.update(text_metadata)
 
+        # Always set NLP-state metadata so consumers can rely on these keys
+        if not self._semantic_analysis_enabled:
+            base_metadata.update(
+                {
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": True,
+                    "skip_reason": "semantic_analysis_disabled",
+                }
+            )
+        else:
+            # Initialize with defaults when semantic analysis is enabled
+            # These will be updated if actual NLP processing occurs
+            base_metadata.update(
+                {
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": False,
+                    "skip_reason": None,
+                }
+            )
+
         # Create chunk document
         chunk_doc = Document(
             id=chunk_id,
