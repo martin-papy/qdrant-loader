@@ -63,8 +63,15 @@ class BaseChunkingStrategy(ABC):
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError("Chunk overlap must be less than chunk size")
 
-        # Initialize text processor
-        self.text_processor = TextProcessor(settings)
+        # Master switch for NLP metadata extraction across all strategies.
+        self._semantic_analysis_enabled = bool(
+            getattr(settings.global_config.chunking, "enable_semantic_analysis", True)
+        )
+
+        # Initialize text processor only when NLP metadata extraction is enabled.
+        self.text_processor = (
+            TextProcessor(settings) if self._semantic_analysis_enabled else None
+        )
 
     def _count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""
@@ -82,6 +89,9 @@ class BaseChunkingStrategy(ABC):
         Returns:
             dict: Processed text features
         """
+        if self.text_processor is None:
+            return {"tokens": [], "entities": [], "pos_tags": [], "chunks": []}
+
         return self.text_processor.process_text(text)
 
     def _should_apply_nlp(
@@ -371,7 +381,8 @@ class BaseChunkingStrategy(ABC):
             content_type = "md"
 
         should_apply_nlp = (
-            not skip_nlp
+            self._semantic_analysis_enabled
+            and not skip_nlp
             and len(chunk_content) <= 10000  # Size limit
             and total_chunks <= 50  # Chunk count limit
             and self._should_apply_nlp(chunk_content, file_path, content_type)
@@ -380,7 +391,9 @@ class BaseChunkingStrategy(ABC):
         if not should_apply_nlp:
             # Skip NLP processing
             skip_reason = "performance_optimization"
-            if len(chunk_content) > 10000:
+            if not self._semantic_analysis_enabled:
+                skip_reason = "semantic_analysis_disabled"
+            elif len(chunk_content) > 10000:
                 skip_reason = "chunk_too_large"
             elif total_chunks > 50:
                 skip_reason = "too_many_chunks"

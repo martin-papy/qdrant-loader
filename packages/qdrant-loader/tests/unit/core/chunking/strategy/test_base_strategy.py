@@ -32,6 +32,7 @@ class TestBaseChunkingStrategy:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 1000
         settings.global_config.chunking.chunk_overlap = 200
+        settings.global_config.chunking.enable_semantic_analysis = True
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "cl100k_base"
         return settings
@@ -44,8 +45,22 @@ class TestBaseChunkingStrategy:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 1000
         settings.global_config.chunking.chunk_overlap = 200
+        settings.global_config.chunking.enable_semantic_analysis = True
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "none"
+        return settings
+
+    @pytest.fixture
+    def mock_settings_semantic_disabled(self):
+        """Create mock settings with semantic analysis disabled."""
+        settings = Mock(spec=Settings)
+        settings.global_config = Mock()
+        settings.global_config.chunking = Mock()
+        settings.global_config.chunking.chunk_size = 1000
+        settings.global_config.chunking.chunk_overlap = 200
+        settings.global_config.chunking.enable_semantic_analysis = False
+        settings.global_config.embedding = Mock()
+        settings.global_config.embedding.tokenizer = "cl100k_base"
         return settings
 
     def test_initialization_with_tokenizer(self, mock_settings):
@@ -150,6 +165,35 @@ class TestBaseChunkingStrategy:
 
             assert result == {"entities": [], "pos_tags": []}
             mock_processor.process_text.assert_called_once_with("test text")
+
+    def test_initialization_semantic_disabled_skips_text_processor(
+        self, mock_settings_semantic_disabled
+    ):
+        """Test TextProcessor is not initialized when semantic analysis is disabled."""
+        with patch(
+            "qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"
+        ) as mock_processor_class:
+            strategy = ConcreteChunkingStrategy(mock_settings_semantic_disabled)
+
+            assert strategy._semantic_analysis_enabled is False
+            assert strategy.text_processor is None
+            mock_processor_class.assert_not_called()
+
+    def test_process_text_semantic_disabled_returns_empty(
+        self, mock_settings_semantic_disabled
+    ):
+        """Test _process_text returns empty NLP payload when semantic analysis is disabled."""
+        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
+            strategy = ConcreteChunkingStrategy(mock_settings_semantic_disabled)
+
+            result = strategy._process_text("test text")
+
+            assert result == {
+                "tokens": [],
+                "entities": [],
+                "pos_tags": [],
+                "chunks": [],
+            }
 
     def test_should_apply_nlp_text_files(self, mock_settings):
         """Test NLP application decision for text files."""
@@ -599,3 +643,29 @@ def function():
             # Should skip NLP for non-converted binary files
             assert chunk_doc.metadata["nlp_skipped"] is True
             assert chunk_doc.metadata["skip_reason"] == "content_type_inappropriate"
+
+    def test_create_chunk_document_semantic_disabled_skips_all_nlp_metadata(
+        self, mock_settings_semantic_disabled
+    ):
+        """Test master semantic switch disables NLP metadata extraction in base strategy."""
+        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
+            strategy = ConcreteChunkingStrategy(mock_settings_semantic_disabled)
+
+            original_doc = Document(
+                content="Original content",
+                metadata={"file_name": "test.txt"},
+                source="test_source",
+                source_type="test",
+                url="http://test.com",
+                title="Test Title",
+                content_type="text",
+            )
+
+            chunk_doc = strategy._create_chunk_document(
+                original_doc, "This is text content for NLP processing.", 0, 2
+            )
+
+            assert chunk_doc.metadata["nlp_skipped"] is True
+            assert chunk_doc.metadata["skip_reason"] == "semantic_analysis_disabled"
+            assert chunk_doc.metadata["entities"] == []
+            assert chunk_doc.metadata["pos_tags"] == []
