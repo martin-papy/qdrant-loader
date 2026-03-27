@@ -855,3 +855,25 @@ class TestEdgeCasesAndErrorHandling:
         # Should be sorted by score
         scores = [result.score for result in combined]
         assert scores == sorted(scores, reverse=True)
+
+
+class TestResultCombinerWeightsSync:
+    """Verify _scorer gets adaptive weights, not base weights."""
+
+    def test_scorer_uses_constructor_weights(self):
+        combiner = ResultCombiner(vector_weight=0.8, keyword_weight=0.15)
+        assert combiner._scorer.vector_weight == 0.8
+        assert combiner._scorer.keyword_weight == 0.15
+
+    def test_post_construction_weight_change_not_reflected_in_scorer(self):
+        """Changing weights after construction does NOT update _scorer."""
+        combiner = ResultCombiner(vector_weight=0.6, keyword_weight=0.3)
+        combiner.vector_weight = 0.9
+        assert combiner._scorer.vector_weight == 0.6  # Stale
+        assert combiner.vector_weight == 0.9
+
+    def test_creating_combiner_with_final_weights_works(self):
+        """The fix: create combiner with resolved weights so _scorer is correct."""
+        combiner = ResultCombiner(vector_weight=0.85, keyword_weight=0.1)
+        assert combiner._scorer.vector_weight == 0.85
+        assert combiner._scorer.keyword_weight == 0.1

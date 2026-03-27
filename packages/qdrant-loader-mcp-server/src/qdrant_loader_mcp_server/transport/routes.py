@@ -31,6 +31,13 @@ async def handle_mcp_post(
             "error": {"code": -32700, "message": "Invalid JSON in request"},
         }
 
+    if not isinstance(body, dict):
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32600, "message": "Invalid Request"},
+        }
+
     try:
         logger.debug("Processing MCP request: %s", body.get("method", "unknown"))
         response = await mcp_handler.handle_request(body, headers=dict(request.headers))

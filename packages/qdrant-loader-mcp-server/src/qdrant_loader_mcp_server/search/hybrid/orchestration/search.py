@@ -41,17 +41,15 @@ async def run_search(
     combined_results: list[HybridSearchResult]
     fetch_limit = limit
 
-    # Build a request-scoped combiner clone to avoid mutating shared engine state
+    # Resolve effective weights first so the combiner's internal scorer
+    # is built with the final values (scorer snapshots weights at construction).
     base_combiner = engine.result_combiner
-    local_combiner = ResultCombiner(
-        vector_weight=getattr(base_combiner, "vector_weight", 0.6),
-        keyword_weight=getattr(base_combiner, "keyword_weight", 0.3),
-        metadata_weight=getattr(base_combiner, "metadata_weight", 0.1),
-        min_score=getattr(base_combiner, "min_score", 0.3),
-        spacy_analyzer=getattr(base_combiner, "spacy_analyzer", None),
-    )
+    vector_weight = getattr(base_combiner, "vector_weight", 0.6)
+    keyword_weight = getattr(base_combiner, "keyword_weight", 0.3)
+    metadata_weight = getattr(base_combiner, "metadata_weight", 0.1)
+    min_score = getattr(base_combiner, "min_score", 0.3)
 
-    # Intent classification and adaptive adjustments (applied to local combiner only)
+    # Intent classification and adaptive adjustments
     search_intent = None
     adaptive_config = None
     if engine.enable_intent_adaptation and engine.intent_classifier:
@@ -60,10 +58,19 @@ async def run_search(
         )
         adaptive_config = engine.adaptive_strategy.adapt_search(search_intent, query)
         if adaptive_config:
-            local_combiner.vector_weight = adaptive_config.vector_weight
-            local_combiner.keyword_weight = adaptive_config.keyword_weight
-            local_combiner.min_score = adaptive_config.min_score_threshold
+            vector_weight = adaptive_config.vector_weight
+            keyword_weight = adaptive_config.keyword_weight
+            min_score = adaptive_config.min_score_threshold
             fetch_limit = min(adaptive_config.max_results, limit * 2)
+
+    # Build combiner with final resolved weights (scorer will use these)
+    local_combiner = ResultCombiner(
+        vector_weight=vector_weight,
+        keyword_weight=keyword_weight,
+        metadata_weight=metadata_weight,
+        min_score=min_score,
+        spacy_analyzer=getattr(base_combiner, "spacy_analyzer", None),
+    )
 
     # TODO: Evaluate the expanded_query logic to see it's impacts on vector and keyword searches
     expanded_query = await engine._expand_query(query)

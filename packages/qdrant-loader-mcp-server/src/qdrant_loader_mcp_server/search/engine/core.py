@@ -445,7 +445,8 @@ class SearchEngine:
                     query=query, limit=limit
                 )
             else:
-                search_results = await self._search_ops.search(query, limit=limit)
+                async with self._search_semaphore:
+                    search_results = await self._search_ops.search(query, limit=limit)
 
             # Use the hybrid search engine's suggestion method
             if hasattr(self.hybrid_search, "suggest_facet_refinements"):
@@ -479,9 +480,10 @@ class SearchEngine:
 
         # If query is provided, perform search to get documents
         if query is not None:
-            search_results = await self._search_ops.search(
-                query, source_types, limit, project_ids
-            )
+            async with self._search_semaphore:
+                search_results = await self._search_ops.search(
+                    query, source_types, limit, project_ids
+                )
 
             # Check if we have sufficient documents for relationship analysis
             if len(search_results) < 2:
@@ -556,16 +558,18 @@ class SearchEngine:
             raise RuntimeError("Search engine not initialized")
 
         # First, search for target documents
-        target_documents = await self._search_ops.search(
-            target_query, source_types, 1, project_ids
-        )
+        async with self._search_semaphore:
+            target_documents = await self._search_ops.search(
+                target_query, source_types, 1, project_ids
+            )
         if not target_documents:
             return {}
 
         # Then search for comparison documents
-        comparison_documents = await self._search_ops.search(
-            comparison_query or target_query, source_types, limit, project_ids
-        )
+        async with self._search_semaphore:
+            comparison_documents = await self._search_ops.search(
+                comparison_query or target_query, source_types, limit, project_ids
+            )
 
         # Use the hybrid search engine's method to find similarities
         # API expects a single target document and a list of comparison documents.
@@ -632,9 +636,10 @@ class SearchEngine:
             raise RuntimeError("Search engine not initialized")
 
         # First, search for documents related to the query
-        search_results = await self._search_ops.search(
-            query, source_types, limit, project_ids
-        )
+        async with self._search_semaphore:
+            search_results = await self._search_ops.search(
+                query, source_types, limit, project_ids
+            )
 
         # Check if we have sufficient documents for conflict detection
         if len(search_results) < 2:
@@ -734,9 +739,10 @@ class SearchEngine:
         if isinstance(strategy, str):
             if strategy == "adaptive":
                 # First, get documents to analyze for optimal strategy selection
-                documents = await self._search_ops.search(
-                    query, source_types, limit, project_ids
-                )
+                async with self._search_semaphore:
+                    documents = await self._search_ops.search(
+                        query, source_types, limit, project_ids
+                    )
                 optimal_strategy = self._select_optimal_strategy(documents)
                 strategy_map = {
                     "mixed_features": ClusteringStrategy.MIXED_FEATURES,

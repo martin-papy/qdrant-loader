@@ -606,3 +606,41 @@ class TestCLICommand:
 
         assert result.exit_code != 0
         assert "does not exist" in result.output
+
+
+class TestReadStdinLinesClosedStdin:
+    """read_stdin_lines should handle closed stdin gracefully."""
+
+    @pytest.mark.asyncio
+    async def test_breaks_on_value_error(self):
+        """When stdin is closed, readline raises ValueError -- should break."""
+        mock_executor = MagicMock()
+
+        async def mock_run_in_executor(executor, func):
+            raise ValueError("I/O operation on closed file")
+
+        with patch("asyncio.get_event_loop") as mock_loop:
+            mock_loop.return_value.run_in_executor = mock_run_in_executor
+            lines = []
+            async for line in read_stdin_lines(mock_executor):
+                lines.append(line)
+            assert lines == []
+
+    @pytest.mark.asyncio
+    async def test_breaks_on_eof(self):
+        """When stdin returns empty string (EOF), should break."""
+        call_count = 0
+
+        async def mock_run_in_executor(executor, func):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return '{"method": "test"}\n'
+            return ""
+
+        with patch("asyncio.get_event_loop") as mock_loop:
+            mock_loop.return_value.run_in_executor = mock_run_in_executor
+            lines = []
+            async for line in read_stdin_lines():
+                lines.append(line)
+            assert len(lines) == 1

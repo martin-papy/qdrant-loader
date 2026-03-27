@@ -272,3 +272,54 @@ class TestHTTPTransportErrorHandling:
         )
 
         assert response.status_code == 503
+
+
+class TestNonDictBodyReturns32600:
+    """Non-dict JSON body should return -32600 (Invalid Request), not -32603."""
+
+    @pytest.fixture
+    def mcp_app_simple(self, mock_mcp_handler):
+        """App with handler that returns OK (for testing body validation path)."""
+        mock_mcp_handler.handle_request = AsyncMock(
+            return_value={"jsonrpc": "2.0", "result": "ok", "id": 1}
+        )
+        app = FastAPI()
+        app.state.mcp_handler = mock_mcp_handler
+        app.include_router(mcp_router)
+        return app
+
+    @pytest.fixture
+    def simple_client(self, mcp_app_simple):
+        return TestClient(mcp_app_simple, raise_server_exceptions=False)
+
+    def test_array_body_returns_invalid_request(self, simple_client):
+        response = simple_client.post("/mcp", json=[1, 2, 3])
+        data = response.json()
+        assert data["error"]["code"] == -32600
+        assert data["id"] is None
+
+    def test_string_body_returns_invalid_request(self, simple_client):
+        response = simple_client.post("/mcp", json="ping")
+        assert response.json()["error"]["code"] == -32600
+
+    def test_number_body_returns_invalid_request(self, simple_client):
+        response = simple_client.post("/mcp", json=42)
+        assert response.json()["error"]["code"] == -32600
+
+    def test_null_body_returns_parse_error(self, simple_client):
+        """json=None sends empty body -> JSONDecodeError -> -32700."""
+        response = simple_client.post("/mcp", json=None)
+        assert response.json()["error"]["code"] == -32700
+
+    def test_dict_body_passes_through(self, simple_client):
+        response = simple_client.post(
+            "/mcp", json={"jsonrpc": "2.0", "method": "test", "id": 1}
+        )
+        data = response.json()
+        assert "error" not in data or data.get("result") == "ok"
+
+    def test_invalid_json_returns_parse_error(self, simple_client):
+        response = simple_client.post(
+            "/mcp", content=b"not json", headers={"content-type": "application/json"}
+        )
+        assert response.json()["error"]["code"] == -32700

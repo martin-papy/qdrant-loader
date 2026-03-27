@@ -1,5 +1,6 @@
 """Semantic analysis module for text processing."""
 
+import hashlib
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -97,7 +98,8 @@ class SemanticAnalyzer:
             SemanticAnalysisResult containing all analysis results
         """
         # Check cache
-        cache_key = (doc_id, include_enhanced) if doc_id else None
+        text_fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        cache_key = (doc_id, text_fingerprint, include_enhanced) if doc_id else None
         if cache_key and cache_key in self._doc_cache:
             cached = self._doc_cache[cache_key]
             if include_enhanced:
