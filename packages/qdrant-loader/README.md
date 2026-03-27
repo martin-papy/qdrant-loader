@@ -1,7 +1,5 @@
 # QDrant Loader
 
-<img src="/assets/icons/library/note-icon.svg" width="32" alt="Package icon">
-
 [![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![Python](https://img.shields.io/pypi/pyversions/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)

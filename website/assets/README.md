@@ -1,7 +1,5 @@
 # QDrant Loader Visual Assets
 
-<img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Assets icon">
-
 This directory contains all visual assets for the QDrant Loader project, including logos, icons, favicons, and branding materials.
 
 ## 🎨 **Logo Collection**
