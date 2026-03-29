@@ -178,7 +178,7 @@ async def test_initialize_and_tools_list_workflow(integration_handler):
     # Check that we have the expected tools available
     assert "result" in tools_response
     assert "tools" in tools_response["result"]
-    assert len(tools_response["result"]["tools"]) == 10
+    assert len(tools_response["result"]["tools"]) == 11
 
 
 @pytest.mark.asyncio

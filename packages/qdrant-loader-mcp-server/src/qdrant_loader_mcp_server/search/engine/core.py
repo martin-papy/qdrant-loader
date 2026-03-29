@@ -261,20 +261,18 @@ class SearchEngine:
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
         """Search for documents using hybrid search."""
-        async with self._search_semaphore:
-            if not self._search_ops:
-                # Fallback: delegate directly to hybrid_search when operations not initialized
-                if not self.hybrid_search:
-                    raise RuntimeError("Search engine not initialized")
+        if not self._search_ops:
+            # Fallback: delegate directly to hybrid_search when operations not initialized
+            if not self.hybrid_search:
+                raise RuntimeError("Search engine not initialized")
+            async with self._search_semaphore:
                 return await self.hybrid_search.search(
                     query=query,
                     source_types=source_types,
                     limit=limit,
                     project_ids=project_ids,
                 )
-            return await self._search_ops.search(
-                query, source_types, limit, project_ids
-            )
+        return await self._search_ops.search(query, source_types, limit, project_ids)
 
     async def generate_topic_chain(
         self,
@@ -435,18 +433,8 @@ class SearchEngine:
         max_facets_per_type: int = 5,
     ) -> dict:
         """Get facet suggestions from documents or query."""
-        # If query is provided, perform search to get documents
         if query is not None:
-            if not self._search_ops:
-                # Fallback: use hybrid_search directly when operations not initialized
-                if not self.hybrid_search:
-                    raise RuntimeError("Search engine not initialized")
-                search_results = await self.hybrid_search.search(
-                    query=query, limit=limit
-                )
-            else:
-                search_results = await self._search_ops.search(query, limit=limit)
-
+            search_results = await self.search(query, limit=limit)
             # Use the hybrid search engine's suggestion method
             if hasattr(self.hybrid_search, "suggest_facet_refinements"):
                 return self.hybrid_search.suggest_facet_refinements(
@@ -455,7 +443,6 @@ class SearchEngine:
             else:
                 return {"suggestions": []}
 
-        # Fallback to faceted operations if documents provided directly
         if documents is not None:
             if not self._faceted_ops:
                 raise RuntimeError("Search engine not initialized")
@@ -476,14 +463,8 @@ class SearchEngine:
         """Analyze relationships between documents."""
         if not self._intelligence_ops:
             raise RuntimeError("Search engine not initialized")
-
-        # If query is provided, perform search to get documents
         if query is not None:
-            search_results = await self._search_ops.search(
-                query, source_types, limit, project_ids
-            )
-
-            # Check if we have sufficient documents for relationship analysis
+            search_results = await self.search(query, source_types, limit, project_ids)
             if len(search_results) < 2:
                 return {
                     "error": f"Need at least 2 documents for relationship analysis, found {len(search_results)}",
@@ -497,13 +478,9 @@ class SearchEngine:
                         "project_ids": project_ids,
                     },
                 }
-
-            # Use the hybrid search engine's analysis method
             analysis_result = await self.hybrid_search.analyze_document_relationships(
                 search_results
             )
-
-            # Add query metadata to the result
             if isinstance(analysis_result, dict):
                 analysis_result["query_metadata"] = {
                     "original_query": query,
@@ -511,10 +488,8 @@ class SearchEngine:
                     "source_types": source_types,
                     "project_ids": project_ids,
                 }
-
             return analysis_result
 
-        # Fallback to documents if provided directly
         if documents is not None:
             return await self._intelligence_ops.analyze_document_relationships(
                 documents

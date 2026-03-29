@@ -587,6 +587,212 @@ class TestHandleExpandDocument:
         assert content["chunks"][1]["chunk_index"] == 1
 
 
+class TestHandleExpandChunkContext:
+    """Test chunk context expansion functionality."""
+
+    def _mock_protocol(self, search_handler):
+        search_handler.protocol.create_response = Mock(
+            side_effect=lambda request_id, result=None, error=None: {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": result,
+                "error": error,
+            }
+        )
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_success(self, search_handler):
+        """Should return correct pre, target, post chunks"""
+
+        params = {
+            "document_id": "doc1",
+            "chunk_index": 1,
+            "window_size": 1,
+        }
+
+        # mock chunk
+        chunk0 = Mock()
+        chunk0.payload = {
+            "content": "chunk 0",
+            "metadata": {"chunk_index": 0},
+        }
+
+        chunk1 = Mock()
+        chunk1.payload = {
+            "content": "chunk 1",
+            "metadata": {"chunk_index": 1},
+        }
+        chunk2 = Mock()
+        chunk2.payload = {
+            "content": "chunk 2",
+            "metadata": {"chunk_index": 2},
+        }
+
+        search_handler.search_engine.client.scroll = AsyncMock(
+            return_value=([chunk0, chunk1, chunk2], None)
+        )
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        data = result["result"]
+        structured = data["structuredContent"]
+
+        assert structured["metadata"]["document_id"] == "doc1"
+        assert structured["metadata"]["chunk_index"] == 1
+        assert structured["metadata"]["total_chunks"] == 3
+
+        assert len(structured["context_chunks"]["pre"]) == 1
+        assert structured["context_chunks"]["target"]["content"] == "chunk 1"
+        assert len(structured["context_chunks"]["post"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_multiple_scroll_pages(self, search_handler):
+        """Should collect chunks across multiple scroll pages."""
+
+        params = {"document_id": "doc1", "chunk_index": 1}
+
+        chunk0 = Mock()
+        chunk0.payload = {"content": "chunk 0", "metadata": {"chunk_index": 0}}
+
+        chunk1 = Mock()
+        chunk1.payload = {"content": "chunk 1", "metadata": {"chunk_index": 1}}
+
+        calls = [
+            ([chunk0], "next"),
+            ([chunk1], None),
+        ]
+
+        async def scroll_mock(*args, **kwargs):
+            return calls.pop(0)
+
+        search_handler.search_engine.client.scroll = AsyncMock(side_effect=scroll_mock)
+
+        self._mock_protocol(search_handler)
+        result = await search_handler.handle_expand_chunk_context(1, params)
+        structured = result["result"]["structuredContent"]
+        assert structured["metadata"]["total_chunks"] == 2
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_missing_document_id(self, search_handler):
+        """Should return error id document_id is missing."""
+
+        self._mock_protocol(search_handler)
+        result = await search_handler.handle_expand_chunk_context(1, {"chunk_index": 1})
+        assert result["error"]["code"] == -32602
+        assert "document_id" in result["error"]["data"]
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_missing_chunk_index(self, search_handler):
+        """Should return error if chunk_index is missing."""
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(
+            1, {"document_id": "doc1"}
+        )
+
+        assert result["error"]["code"] == -32602
+        assert "chunk_index" in result["error"]["data"]
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_negative_chunk_index(self, search_handler):
+        """Should return error if chunk_index is negative."""
+
+        params = {"document_id": "doc1", "chunk_index": -1}
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        assert result["error"]["code"] == -32602
+        assert "chunk_index must be a non-negative integer" in result["error"]["data"]
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_invalid_window_size(self, search_handler):
+        """Should return error if window_size is invalid."""
+
+        params = {
+            "document_id": "doc1",
+            "chunk_index": 1,
+            "window_size": 30,  # Exceeds MAX_WINDOW_SIZE
+        }
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        assert result["error"]["code"] == -32602
+        assert (
+            "window_size must be a non-negative integer between 0 and 25"
+            in result["error"]["data"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_chunk_not_found(self, search_handler):
+        """Should return error if target chunk is not found."""
+
+        params = {"document_id": "doc1", "chunk_index": 5}
+
+        search_handler.search_engine.client.scroll = AsyncMock(return_value=([], None))
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        assert result["error"]["code"] == -32001
+        assert (
+            "No chunk found for document_id: doc1, chunk_index: 5"
+            in result["error"]["data"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_expand_chunk_context_sorted_correctly(self, search_handler):
+        """Should sort chunks by metadata.chunk_index."""
+
+        params = {
+            "document_id": "doc1",
+            "chunk_index": 1,
+        }
+
+        chunk2 = Mock()
+        chunk2.payload = {
+            "content": "chunk 2",
+            "metadata": {"chunk_index": 2},
+        }
+
+        chunk0 = Mock()
+        chunk0.payload = {
+            "content": "chunk 0",
+            "metadata": {"chunk_index": 0},
+        }
+
+        chunk1 = Mock()
+        chunk1.payload = {
+            "content": "chunk 1",
+            "metadata": {"chunk_index": 1},
+        }
+
+        search_handler.search_engine.client.scroll = AsyncMock(
+            return_value=([chunk2, chunk0, chunk1], None)
+        )
+
+        self._mock_protocol(search_handler)
+
+        result = await search_handler.handle_expand_chunk_context(1, params)
+
+        chunks = (
+            result["result"]["structuredContent"]["context_chunks"]["pre"]
+            + [result["result"]["structuredContent"]["context_chunks"]["target"]]
+            + result["result"]["structuredContent"]["context_chunks"]["post"]
+        )
+
+        assert chunks[0]["metadata"]["chunk_index"] == 0
+        assert chunks[1]["metadata"]["chunk_index"] == 1
+        assert chunks[2]["metadata"]["chunk_index"] == 2
+
+
 class TestHierarchyFilters:
     """Test hierarchy filtering methods."""
 

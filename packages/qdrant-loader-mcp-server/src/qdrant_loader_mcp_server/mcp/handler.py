@@ -210,6 +210,10 @@ class MCPHandler:
                     return await self.intelligence_handler.handle_expand_cluster(
                         request_id, params.get("arguments", {})
                     )
+                elif tool_name == "expand_chunk_context":
+                    return await self.search_handler.handle_expand_chunk_context(
+                        request_id, params.get("arguments", {})
+                    )
                 else:
                     logger.warning("Unknown tool requested", tool_name=tool_name)
                     return self.protocol.create_response(

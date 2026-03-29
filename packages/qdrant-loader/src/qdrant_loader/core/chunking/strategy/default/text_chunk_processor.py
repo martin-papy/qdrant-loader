@@ -14,6 +14,9 @@ class TextChunkProcessor(BaseChunkProcessor):
         super().__init__(settings)
         # Get strategy-specific configuration
         self.default_config = settings.global_config.chunking.strategies.default
+        self._semantic_analysis_enabled = (
+            settings.global_config.chunking.enable_semantic_analysis
+        )
 
     def create_chunk_document(
         self,
@@ -37,6 +40,28 @@ class TextChunkProcessor(BaseChunkProcessor):
         # Add text-specific metadata
         text_metadata = self._create_text_specific_metadata(chunk_content, original_doc)
         base_metadata.update(text_metadata)
+
+        # Always set NLP-state metadata so consumers can rely on these keys
+        if not self._semantic_analysis_enabled:
+            base_metadata.update(
+                {
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": True,
+                    "skip_reason": "semantic_analysis_disabled",
+                }
+            )
+        else:
+            # Initialize with defaults when semantic analysis is enabled
+            # These will be updated if actual NLP processing occurs
+            base_metadata.update(
+                {
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": False,
+                    "skip_reason": None,
+                }
+            )
 
         # Create chunk document
         chunk_doc = Document(
@@ -65,7 +90,7 @@ class TextChunkProcessor(BaseChunkProcessor):
         }
 
         # Add semantic analysis indicators if enabled
-        if self.default_config.enable_semantic_analysis:
+        if self._semantic_analysis_enabled:
             metadata["semantic_analysis_enabled"] = True
             metadata["semantic_indicators"] = self._extract_semantic_indicators(content)
 

@@ -198,6 +198,7 @@ def run_setup_default(output_dir: Path) -> None:
             "my-docs": {
                 "base_url": docs_path,
                 "file_types": ["*.md", "*.txt", "*.py"],
+                "enable_file_conversion": True,
             }
         }
     }
@@ -696,6 +697,7 @@ def _collect_git_config(source_name: str) -> _SourceResult:
         "base_url": url,
         "branch": branch,
         "file_types": file_types,
+        "enable_file_conversion": True,
     }
     extra_env: dict[str, str] = {}
 
@@ -730,6 +732,7 @@ def _collect_confluence_config(source_name: str) -> _SourceResult:
         "space_key": space_key,
         "token": f"${{{token_key}}}",
         "email": f"${{{email_key}}}",
+        "enable_file_conversion": True,
     }
     extra_env: dict[str, str] = {
         token_key: token,
@@ -758,6 +761,7 @@ def _collect_jira_config(source_name: str) -> _SourceResult:
         "project_key": project_key,
         "token": f"${{{token_key}}}",
         "email": f"${{{email_key}}}",
+        "enable_file_conversion": True,
     }
     extra_env: dict[str, str] = {
         token_key: token,
@@ -821,6 +825,7 @@ def _collect_localfile_config(
     config: dict[str, Any] = {
         "base_url": path,
         "file_types": file_types,
+        "enable_file_conversion": True,
     }
     return config, {}
 

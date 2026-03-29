@@ -26,14 +26,13 @@ class TestChunkingConsistency:
         settings.global_config.chunking.chunk_size = 200  # characters
         settings.global_config.chunking.chunk_overlap = 50  # characters
         settings.global_config.chunking.max_chunks_per_document = 1000
+        settings.global_config.chunking.enable_semantic_analysis = True
+        settings.global_config.chunking.enable_enhanced_semantic_analysis = False
 
         # Add strategy-specific configurations
         settings.global_config.chunking.strategies = Mock()
         settings.global_config.chunking.strategies.default = Mock()
         settings.global_config.chunking.strategies.default.min_chunk_size = 50
-        settings.global_config.chunking.strategies.default.enable_semantic_analysis = (
-            True
-        )
         settings.global_config.chunking.strategies.default.enable_entity_extraction = (
             True
         )
@@ -315,3 +314,56 @@ This concludes the documentation with a summary of all the topics covered and re
                 assert (
                     len(chunk.content) <= max_size + 50
                 ), f"Chunk {i} too large: {len(chunk.content)} chars (max: {max_size} + boundary tolerance)"
+
+    def test_semantic_master_switch_disables_nlp_metadata_across_strategies(
+        self, mock_settings, test_document
+    ):
+        """Test that enable_semantic_analysis=False disables NLP metadata for all strategies."""
+        mock_settings.global_config.chunking.enable_semantic_analysis = False
+        mock_settings.global_config.chunking.enable_enhanced_semantic_analysis = False
+
+        with (
+            patch(
+                "qdrant_loader.core.chunking.strategy.base_strategy.tiktoken"
+            ) as mock_tiktoken,
+            patch(
+                "qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"
+            ) as mock_text_processor,
+            patch("spacy.load") as mock_spacy_load,
+        ):
+            # Keep tokenizer behavior deterministic for both strategies.
+            mock_encoding = Mock()
+            mock_encoding.encode.side_effect = lambda text: list(
+                range(len(text.split()))
+            )
+            mock_encoding.decode.side_effect = lambda tokens: "decoded_text"
+            mock_tiktoken.get_encoding.return_value = mock_encoding
+
+            # Avoid real spaCy load in this integration assertion.
+            mock_nlp = Mock()
+            mock_nlp.pipe_names = []
+            mock_spacy_load.return_value = mock_nlp
+
+            default_strategy = DefaultChunkingStrategy(mock_settings)
+            markdown_strategy = MarkdownChunkingStrategy(mock_settings)
+
+            default_chunks = default_strategy.chunk_document(test_document)
+            markdown_chunks = markdown_strategy.chunk_document(test_document)
+
+            assert len(default_chunks) > 0
+            assert len(markdown_chunks) > 0
+
+            # Base strategy should mark NLP as skipped when semantic master switch is off.
+            for chunk in default_chunks:
+                assert chunk.metadata.get("entities") == []
+                assert chunk.metadata.get("pos_tags") == []
+                assert chunk.metadata.get("nlp_skipped") is True
+                assert chunk.metadata.get("skip_reason") == "semantic_analysis_disabled"
+
+            # Markdown strategy should also produce no semantic entities/pos_tags.
+            for chunk in markdown_chunks:
+                assert chunk.metadata.get("entities") == []
+                assert chunk.metadata.get("pos_tags", []) == []
+
+            # No TextProcessor should be created when semantic analysis is disabled.
+            mock_text_processor.assert_not_called()

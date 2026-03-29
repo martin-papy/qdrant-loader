@@ -9,9 +9,6 @@ class DefaultStrategyConfig(BaseModel):
     min_chunk_size: int = Field(
         default=100, description="Minimum chunk size in characters", gt=0
     )
-    enable_semantic_analysis: bool = Field(
-        default=True, description="Enable semantic analysis for text chunks"
-    )
     enable_entity_extraction: bool = Field(
         default=True, description="Enable entity extraction from text"
     )
@@ -200,6 +197,17 @@ class ChunkingConfig(BaseModel):
         gt=0,
         title="Max Chunks Per Document",
     )
+    enable_semantic_analysis: bool = Field(
+        default=True,
+        description="Master switch for semantic analysis (spaCy + LDA) across all chunking strategies. "
+        "Disable for faster ingestion when NLP enrichment is not needed.",
+    )
+    enable_enhanced_semantic_analysis: bool = Field(
+        default=False,
+        description="Enable advanced NLP fields: pos_tags, dependencies, document_similarity. "
+        "Requires enable_semantic_analysis=true. "
+        "Increases payload size and ingestion time.",
+    )
 
     # Strategy-specific configurations
     strategies: StrategySpecificConfig = Field(
@@ -213,4 +221,16 @@ class ChunkingConfig(BaseModel):
         chunk_size = info.data.get("chunk_size", 1500)
         if v >= chunk_size:
             raise ValueError("Chunk overlap must be less than chunk size")
+        return v
+
+    @field_validator("enable_enhanced_semantic_analysis")
+    def validate_enhanced_semantic_analysis_dependency(
+        cls, v: bool, info: ValidationInfo
+    ) -> bool:
+        """Validate enhanced semantic analysis requires base semantic analysis."""
+        enable_semantic_analysis = info.data.get("enable_semantic_analysis", True)
+        if v and enable_semantic_analysis is not True:
+            raise ValueError(
+                "enable_enhanced_semantic_analysis requires enable_semantic_analysis=True"
+            )
         return v
