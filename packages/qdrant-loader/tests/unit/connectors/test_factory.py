@@ -16,6 +16,7 @@ class DummyConnector:
 
 
 def test_get_connector_instance_success():
+    """Test that a connector instance is correctly created for a valid configuration."""
     config = DummyConfig("jira", "cloud")
 
     mock_registry = {("jira", "cloud"): DummyConnector}
@@ -28,6 +29,7 @@ def test_get_connector_instance_success():
 
 
 def test_get_connector_instance_without_deployment_type():
+    """Test that the correct connector instance is returned when deployment type is not provided."""
     config = DummyConfig("publicdocs", None)
 
     mock_registry = {("publicdocs", None): DummyConnector}
@@ -39,6 +41,7 @@ def test_get_connector_instance_without_deployment_type():
 
 
 def test_get_connector_instance_unsupported_deployment_type():
+    """Test that an error is raised for an unsupported deployment type."""
     config = DummyConfig("jira", "server")
 
     mock_registry = {("jira", "cloud"): DummyConnector}

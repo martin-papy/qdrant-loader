@@ -9,6 +9,7 @@ from .models import JiraAttachment, JiraComment, JiraIssue, JiraUser
 def parse_user(
     raw_user: dict[str, Any] | None, required: bool = False
 ) -> JiraUser | None:
+    """Parse a raw user from the Jira response into a JiraUser object."""
     if not raw_user:
         if required:
             raise ValueError("User data is required but not provided")
@@ -32,6 +33,7 @@ def parse_user(
 
 
 def parse_attachment(raw_attachment: dict[str, Any]) -> JiraAttachment:
+    """Parse a raw attachment from the Jira response into a JiraAttachment object."""
     required_keys = [
         "id",
         "filename",
@@ -72,6 +74,7 @@ def parse_attachment(raw_attachment: dict[str, Any]) -> JiraAttachment:
 
 
 def parse_comment(raw_comment: dict[str, Any]) -> JiraComment:
+    """Parse a raw comment from the Jira response into a JiraComment object."""
     author = parse_user(raw_comment["author"], required=True)
     if author is None:
         raise ValueError("Missing author in Jira comment")
@@ -96,6 +99,7 @@ def parse_comment(raw_comment: dict[str, Any]) -> JiraComment:
 
 
 def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
+    """Parse a raw issue from the Jira response into a JiraIssue object."""
     # Gather identifiers early for clearer error messages
     issue_id = raw_issue.get("id")
     issue_key = raw_issue.get("key")

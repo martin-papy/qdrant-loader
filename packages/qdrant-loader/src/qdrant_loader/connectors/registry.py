@@ -7,6 +7,7 @@ from qdrant_loader.connectors.jira.data_center_connector import JiraDataCenterCo
 from qdrant_loader.connectors.localfile.connector import LocalFileConnector
 from qdrant_loader.connectors.publicdocs.connector import PublicDocsConnector
 
+"""Connector registry for mapping source types and deployment types to connector classes."""
 CONNECTOR_REGISTRY = {
     ("confluence", ConfluenceDeploymentType.CLOUD): ConfluenceConnector,
     ("confluence", ConfluenceDeploymentType.DATACENTER): ConfluenceConnector,

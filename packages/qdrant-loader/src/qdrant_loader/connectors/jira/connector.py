@@ -265,19 +265,24 @@ class BaseJiraConnector(BaseConnector):
         self, updated_after: datetime | None = None
     ) -> AsyncGenerator[JiraIssue, None]:
         """Get all issues from Jira."""
+        ...
 
     def _parse_issue(self, raw_issue: dict) -> JiraIssue:
+        """Parse a raw issue from the Jira response into a JiraIssue object."""
         return _parse_issue_helper(raw_issue)
 
     def _parse_user(
         self, raw_user: dict | None, required: bool = False
     ) -> JiraUser | None:
+        """Parse a raw user from the Jira response into a JiraUser object."""
         return _parse_user_helper(raw_user, required)
 
     def _parse_attachment(self, raw_attachment: dict) -> JiraAttachment:
+        """Parse a raw attachment from the Jira response into a JiraAttachment object."""
         return _parse_attachment_helper(raw_attachment)
 
     def _parse_comment(self, raw_comment: dict) -> JiraComment:
+        """Parse a raw comment from the Jira response into a JiraComment object."""
         return _parse_comment_helper(raw_comment)
 
     def _get_issue_attachments(self, issue: JiraIssue) -> list[AttachmentMetadata]:
