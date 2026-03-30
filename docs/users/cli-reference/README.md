@@ -1,10 +1,8 @@
 # Command Line Interface (CLI) Reference
 
-<img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="CLI icon">
-
 QDrant Loader provides a comprehensive command-line interface for managing data ingestion, configuration, and project management. This section covers all available commands, options, and usage patterns.
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="target icon"> CLI Overview
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="target icon"> CLI Overview
 
 The `qdrant-loader` command is your primary interface for:
 
@@ -13,7 +11,7 @@ The `qdrant-loader` command is your primary interface for:
 - **Collection management** - Initializing QDrant collections
 - **Troubleshooting** - Debugging and testing configurations
 
-## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Quick Reference
+## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Quick Reference
 
 ### Essential Commands
 
@@ -40,9 +38,9 @@ qdrant-loader --help
 | `--env` | | Environment file | `--env production.env` |
 | `--log-level` | | Set logging level | `--log-level DEBUG` |
 
-## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Command Categories
+## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Command Categories
 
-### <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Available Commands
+### <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Available Commands
 
 Complete reference for all available commands:
 
@@ -50,7 +48,7 @@ Complete reference for all available commands:
 - **`ingest`** - Process and load data from sources  
 - **`config`** - View current configuration (includes all project information and validation)
 
-### <img src="../../../../assets/icons/library/robot-icon.svg" width="32" alt="Scripting and Automation"> Scripting and Automation (coming later)
+### <img src="/assets/icons/library/robot-icon.svg" width="32" alt="Scripting and Automation"> Scripting and Automation (coming later)
 
 Using QDrant Loader in scripts and automated workflows:
 
@@ -59,7 +57,7 @@ Using QDrant Loader in scripts and automated workflows:
 - **Monitoring scripts** - Health checks and alerts
 - **Error handling** - Robust automation patterns
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Usage Patterns
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Usage Patterns
 
 ### Basic Workflow
 
@@ -114,7 +112,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon">Global Options
+## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon">Global Options
 
 ### Workspace and Configuration
 
@@ -139,7 +137,7 @@ qdrant-loader ingest --workspace .
 | `--source` | Process specific source | All sources | `--source my-repo` |
 | `--profile` | Enable performance profiling | False | `--profile` |
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Command Examples
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Command Examples
 
 ### Initialization
 
@@ -189,7 +187,7 @@ qdrant-loader config --workspace . --log-level DEBUG
 qdrant-loader config --config custom-config.yaml --env custom.env
 ```
 
-## <img src="../../../../assets/icons/library/search-icon.svg" width="32" alt="Advanced Usage"> Advanced Usage
+## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Advanced Usage"> Advanced Usage
 
 ### Environment Variable Overrides
 
@@ -250,7 +248,7 @@ fi
 echo "Processing completed successfully"
 ```
 
-## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing and Debugging"> Testing and Debugging
+## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Testing and Debugging"> Testing and Debugging
 
 ### Debug Mode
 
@@ -289,7 +287,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace . --log-level DEBUG
 ```
 
-## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Reload icon"> Exit Codes
+## <img src="/assets/icons/library/arrow-reload-icon.svg" width="32" alt="Reload icon"> Exit Codes
 
 QDrant Loader uses standard exit codes:
 
@@ -323,7 +321,7 @@ else
 fi
 ```
 
-## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Test icon"> Output Formats
+## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Test icon"> Output Formats
 
 ### Standard Output
 
@@ -348,7 +346,7 @@ qdrant-loader ingest --workspace . --log-level INFO
 qdrant-loader ingest --workspace . --log-level WARNING
 ```
 
-## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Shell Integration
+## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Shell Integration
 
 ### Aliases and Functions
 
@@ -370,12 +368,12 @@ function ql-status() {
 }
 ```
 
-## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book CLI icon"> Related Documentation
+## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Book CLI icon"> Related Documentation
 
 - **[Configuration Reference](../configuration/)** - Configuration file options
 - **[Troubleshooting](../troubleshooting/)** - Common CLI issues and solutions
 
-## <img src="../../../../assets/icons/library/sos-icon.svg" width="32" alt="Getting Help"> Getting Help
+## <img src="/assets/icons/library/sos-icon.svg" width="32" alt="Getting Help"> Getting Help
 
 ### Built-in Help
 
