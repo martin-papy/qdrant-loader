@@ -632,6 +632,7 @@ Sitemap: {site_base}/sitemap.xml
 
         wrapped_content = f"""
 <section>
+    <div class=\"container-fluid\">
     <div class=\"row\">
       <aside class=\"col-lg-3 d-none d-lg-block\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
@@ -642,6 +643,7 @@ Sitemap: {site_base}/sitemap.xml
         {html_content}
       </div>
     </div>
+</div>
 </section>
 """
 
@@ -964,6 +966,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
 
                 wrapped_content = f"""
 <section>
+   <div class=\"container-fluid\">
     <div class=\"row\">
       <aside class=\"col-lg-3 d-none d-lg-block\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
@@ -973,6 +976,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
       <div class=\"col-lg-9 container-content\">
         {html_content}
       </div>
+    </div>
     </div>
 </section>
 """
