@@ -150,6 +150,51 @@ class TestUpsertWorker:
         mock_metrics.INGESTED_DOCUMENTS.inc.assert_called_once_with(2)
 
     @pytest.mark.asyncio
+    async def test_process_includes_contextual_content_in_payload(self):
+        """contextual_content stored by EmbeddingWorker must appear in the Qdrant payload."""
+        mock_chunk = Mock()
+        mock_chunk.id = "chunk1"
+        mock_chunk.content = "Raw content"
+        mock_chunk.source = "test_source"
+        mock_chunk.source_type = "confluence"
+        mock_chunk.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        mock_chunk.metadata = {
+            "parent_document": Mock(id="doc1"),
+            "contextual_content": "[Document: Guide | Source: confluence]\n\nRaw content",
+        }
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            await self.upsert_worker.process([(mock_chunk, [0.1, 0.2, 0.3])])
+
+        point = self.mock_qdrant_manager.upsert_points.call_args[0][0][0]
+        assert point.payload["contextual_content"] == (
+            "[Document: Guide | Source: confluence]\n\nRaw content"
+        )
+        # Must not be duplicated inside the metadata sub-dict
+        assert "contextual_content" not in point.payload["metadata"]
+
+    @pytest.mark.asyncio
+    async def test_process_contextual_content_is_none_when_not_set(self):
+        """When contextual embedding is disabled, contextual_content payload field is None."""
+        mock_chunk = Mock()
+        mock_chunk.id = "chunk1"
+        mock_chunk.content = "Raw content"
+        mock_chunk.source = "test_source"
+        mock_chunk.source_type = "confluence"
+        mock_chunk.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        mock_chunk.metadata = {"parent_document": Mock(id="doc1")}  # no contextual_content
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            await self.upsert_worker.process([(mock_chunk, [0.1, 0.2, 0.3])])
+
+        point = self.mock_qdrant_manager.upsert_points.call_args[0][0][0]
+        assert point.payload["contextual_content"] is None
+
+    @pytest.mark.asyncio
     async def test_process_chunk_without_updated_at(self):
         """Test processing chunk without updated_at attribute."""
         mock_chunk = Mock()

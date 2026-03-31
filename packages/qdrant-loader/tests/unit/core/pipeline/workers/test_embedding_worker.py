@@ -445,6 +445,8 @@ class TestEmbeddingWorker:
         self.mock_contextual_embedding_config.include_title = True
         self.mock_contextual_embedding_config.include_source_type = True
         self.mock_contextual_embedding_config.include_source = False
+        self.mock_contextual_embedding_config.include_path = False
+        self.mock_contextual_embedding_config.include_section = False
 
         self.mock_embedding_service.get_embeddings = AsyncMock(
             return_value=[[0.1, 0.2, 0.3]]
@@ -461,3 +463,61 @@ class TestEmbeddingWorker:
                 "[Document: Mock Parent Document | Source: localfile]\n\nRaw chunk content"
             ]
         )
+
+    @pytest.mark.asyncio
+    async def test_process_stores_contextual_content_in_chunk_metadata(self):
+        """Enriched text must be stored in metadata so upsert worker can persist it."""
+        mock_chunk = Mock()
+        mock_chunk.content = "Raw chunk content"
+        mock_chunk.id = "chunk1"
+        mock_chunk.metadata = {
+            "parent_document": Mock(
+                title="Guide",
+                source_type="confluence",
+                source="space",
+                get_breadcrumb_text=Mock(return_value=""),
+            )
+        }
+
+        self.mock_contextual_embedding_config.enabled = True
+        self.mock_contextual_embedding_config.include_title = True
+        self.mock_contextual_embedding_config.include_source_type = True
+        self.mock_contextual_embedding_config.include_source = False
+        self.mock_contextual_embedding_config.include_path = False
+        self.mock_contextual_embedding_config.include_section = False
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            return_value=[[0.1, 0.2, 0.3]]
+        )
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            await self.embedding_worker.process([mock_chunk])
+
+        assert mock_chunk.metadata["contextual_content"] == (
+            "[Document: Guide | Source: confluence]\n\nRaw chunk content"
+        )
+
+    @pytest.mark.asyncio
+    async def test_process_does_not_store_contextual_content_when_disabled(self):
+        """No contextual_content key must be added when the feature is disabled."""
+        mock_chunk = Mock()
+        mock_chunk.content = "Raw chunk content"
+        mock_chunk.id = "chunk1"
+        mock_chunk.metadata = {
+            "parent_document": Mock(title="Guide", source_type="confluence")
+        }
+
+        self.mock_contextual_embedding_config.enabled = False
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            return_value=[[0.1, 0.2, 0.3]]
+        )
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            await self.embedding_worker.process([mock_chunk])
+
+        assert "contextual_content" not in mock_chunk.metadata
