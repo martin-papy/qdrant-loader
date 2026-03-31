@@ -58,10 +58,10 @@ jobs:
       (github.event_name != 'release') || 
       (github.event_name == 'release' && needs.check-release.outputs.should-deploy == 'true')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -113,7 +113,7 @@ jobs:
 
       - name: Get latest test results (from workflow_run trigger)
         if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: test-status-${{ github.event.workflow_run.id }}
           path: test-results/
@@ -121,7 +121,7 @@ jobs:
 
       - name: Get latest test results (from release trigger)
         if: github.event_name == 'release' && steps.get-workflow-run.outputs.workflow_run_id != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: test-results/
@@ -132,7 +132,7 @@ jobs:
 
       - name: Get latest coverage reports (from workflow_run trigger)
         if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-*-${{ github.event.workflow_run.id }}
           path: coverage-artifacts/
@@ -141,7 +141,7 @@ jobs:
 
       - name: Get latest coverage reports (from release trigger)
         if: github.event_name == 'release' && steps.get-workflow-run.outputs.workflow_run_id != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: coverage-artifacts/
@@ -194,7 +194,7 @@ jobs:
           fi
 
       - name: Upload site artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: website-auto-${{ github.run_id }}
           path: site
@@ -202,7 +202,7 @@ jobs:
 
       - name: Setup Pages (for deployment)
         if: github.event_name == 'release' && needs.check-release.outputs.should-deploy == 'true'
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Upload site artifact for Pages (for deployment)
         if: github.event_name == 'release' && needs.check-release.outputs.should-deploy == 'true'
@@ -227,7 +227,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   build-summary:
     name: Build Summary
