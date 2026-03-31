@@ -90,6 +90,9 @@ jobs:
         if: steps.get-workflow-run.outputs.workflow_run_id != ''
         uses: actions/download-artifact@v8
         with:
+          # Coverage artifacts come from another workflow and multiple jobs,
+          # making them non-deterministic. Digest mismatches are expected,
+          # so we use 'warn' to avoid flaky CI failures.
           name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: test-results/
           digest-mismatch: warn
@@ -102,6 +105,9 @@ jobs:
         if: steps.get-workflow-run.outputs.workflow_run_id != ''
         uses: actions/download-artifact@v8
         with:
+          # Coverage artifacts come from another workflow and multiple jobs,
+          # making them non-deterministic. Digest mismatches are expected,
+          # so we use 'warn' to avoid flaky CI failures.
           pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: coverage-artifacts/
           merge-multiple: true
