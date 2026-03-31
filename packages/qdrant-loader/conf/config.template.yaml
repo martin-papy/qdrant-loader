@@ -113,10 +113,12 @@ global:
 
   # Contextual embedding configuration
   contextual_embedding:
-    enabled: true # Enable contextual enrichment before generating embeddings
-    include_title: true # Include the parent document title in the contextual prefix
+    enabled: true          # Enable contextual enrichment before generating embeddings
+    include_title: true    # Include the parent document title in the contextual prefix
     include_source_type: true # Include the parent document source type in the contextual prefix
-    include_source: false # Include the parent document source identifier in the contextual prefix
+    include_source: false  # Include the parent document source identifier in the contextual prefix
+    include_path: true     # Include the document hierarchy/breadcrumb path (e.g. Confluence space > parent page)
+    include_section: true  # Include the chunk's section path from headings (e.g. Setup > Docker > Volumes)
 
   # Unified LLM configuration (provider-agnostic)
   # New preferred configuration block; legacy embedding/markitdown fields still work

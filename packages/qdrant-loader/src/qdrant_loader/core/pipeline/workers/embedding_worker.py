@@ -58,14 +58,17 @@ class EmbeddingWorker(BaseWorker):
                 gc.collect()
 
             with prometheus_metrics.EMBEDDING_DURATION.time():
-                embedding_inputs = [
-                    (
+                embedding_inputs = []
+                for chunk in chunks:
+                    enriched = (
                         build_contextual_text(chunk, self.contextual_embedding_config)
                         if self.contextual_embedding_config is not None
                         else chunk.content
                     )
-                    for chunk in chunks
-                ]
+                    # Store enriched text so upsert worker can persist it for display
+                    if enriched != chunk.content:
+                        chunk.metadata["contextual_content"] = enriched
+                    embedding_inputs.append(enriched)
                 # Add timeout to prevent hanging and check for shutdown
                 embeddings = await asyncio.wait_for(
                     self.embedding_service.get_embeddings(embedding_inputs),

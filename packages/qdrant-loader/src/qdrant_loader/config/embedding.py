@@ -9,7 +9,7 @@ class ContextualEmbeddingConfig(BaseConfig):
     """Configuration for contextual embedding enrichment."""
 
     enabled: bool = Field(
-        default=False,
+        default=True,
         description="Enable contextual enrichment before generating embeddings",
     )
     include_title: bool = Field(
@@ -23,6 +23,14 @@ class ContextualEmbeddingConfig(BaseConfig):
     include_source: bool = Field(
         default=False,
         description="Include the parent document source identifier in the contextual prefix",
+    )
+    include_path: bool = Field(
+        default=True,
+        description="Include the parent document breadcrumb/hierarchy path in the contextual prefix",
+    )
+    include_section: bool = Field(
+        default=True,
+        description="Include the chunk's section path (from markdown headings) in the contextual prefix",
     )
 
 

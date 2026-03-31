@@ -69,10 +69,11 @@ class UpsertWorker(BaseWorker):
                         vector=embedding,
                         payload={
                             "content": chunk.content,
+                            "contextual_content": chunk.metadata.get("contextual_content"),
                             "metadata": {
                                 k: v
                                 for k, v in chunk.metadata.items()
-                                if k != "parent_document"
+                                if k not in ("parent_document", "contextual_content")
                             },
                             "source": chunk.source,
                             "source_type": chunk.source_type,
