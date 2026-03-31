@@ -1,7 +1,7 @@
 """Source processor for handling different source types."""
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.connectors.base import BaseConnector
@@ -26,14 +26,14 @@ class SourceProcessor:
     async def process_source_type(
         self,
         source_configs: Mapping[str, SourceConfig],
-        connector_class: type[BaseConnector],
+        connector_factory: Callable[[SourceConfig], BaseConnector],
         source_type: str,
     ) -> list[Document]:
         """Process documents from a specific source type.
 
         Args:
             source_configs: Mapping of source name to source configuration
-            connector_class: The connector class to use for this source type
+            connector_factory: Factory function that creates a connector from a source config
             source_type: The type of source being processed
 
         Returns:
@@ -54,7 +54,7 @@ class SourceProcessor:
                 logger.debug(f"Processing {source_type} source: {source_name}")
 
                 # Create connector instance and use as async context manager
-                connector = connector_class(source_config)
+                connector = connector_factory(source_config)
 
                 # Set file conversion config if available and connector supports it
                 if (

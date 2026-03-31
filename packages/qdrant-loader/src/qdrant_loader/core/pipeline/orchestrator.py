@@ -1,11 +1,7 @@
 """Main orchestrator for the ingestion pipeline."""
 
 from qdrant_loader.config import Settings, SourcesConfig
-from qdrant_loader.connectors.confluence import ConfluenceConnector
-from qdrant_loader.connectors.git import GitConnector
-from qdrant_loader.connectors.jira import JiraConnector
-from qdrant_loader.connectors.localfile import LocalFileConnector
-from qdrant_loader.connectors.publicdocs import PublicDocsConnector
+from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
@@ -216,34 +212,34 @@ class PipelineOrchestrator:
         if filtered_config.confluence:
             confluence_docs = (
                 await self.components.source_processor.process_source_type(
-                    filtered_config.confluence, ConfluenceConnector, "Confluence"
+                    filtered_config.confluence, get_connector_instance, "Confluence"
                 )
             )
             documents.extend(confluence_docs)
 
         if filtered_config.git:
             git_docs = await self.components.source_processor.process_source_type(
-                filtered_config.git, GitConnector, "Git"
+                filtered_config.git, get_connector_instance, "Git"
             )
             documents.extend(git_docs)
 
         if filtered_config.jira:
             jira_docs = await self.components.source_processor.process_source_type(
-                filtered_config.jira, JiraConnector, "Jira"
+                filtered_config.jira, get_connector_instance, "Jira"
             )
             documents.extend(jira_docs)
 
         if filtered_config.publicdocs:
             publicdocs_docs = (
                 await self.components.source_processor.process_source_type(
-                    filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
+                    filtered_config.publicdocs, get_connector_instance, "PublicDocs"
                 )
             )
             documents.extend(publicdocs_docs)
 
         if filtered_config.localfile:
             localfile_docs = await self.components.source_processor.process_source_type(
-                filtered_config.localfile, LocalFileConnector, "LocalFile"
+                filtered_config.localfile, get_connector_instance, "LocalFile"
             )
             documents.extend(localfile_docs)
 
