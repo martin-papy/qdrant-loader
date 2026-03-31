@@ -140,9 +140,9 @@ class CodeDocumentParser(BaseDocumentParser):
             elements = parse_python_ast(
                 content, max_elements_to_process=MAX_ELEMENTS_TO_PROCESS
             )
-            if not elements and TREE_SITTER_AVAILABLE:
-                self.logger.debug("Falling back to Tree-sitter for Python")
-                elements = self._parse_with_tree_sitter(content, language)
+            # Do NOT fall back to Tree-sitter for Python: the built-in AST
+            # always succeeds on valid Python and Tree-sitter would add
+            # redundant nested nodes, causing duplicate chunks.
         elif language != "unknown" and TREE_SITTER_AVAILABLE:
             self.logger.debug(f"Parsing {language} with Tree-sitter")
             elements = self._parse_with_tree_sitter(content, language)
