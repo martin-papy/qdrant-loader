@@ -34,21 +34,21 @@ class _Provider:
 @pytest.mark.asyncio
 async def test_get_embedding_uses_provider_first(mock_qdrant_client):
     provider = _Provider([0.9, 0.8, 0.7])
-    openai_client = MagicMock()
-    openai_client.embeddings = MagicMock()
-    openai_client.embeddings.create = AsyncMock()
+    embedding_model = MagicMock()
+    embedding_model.embeddings = MagicMock()
+    embedding_model.embeddings.create = AsyncMock()
 
     svc = VectorSearchService(
         qdrant_client=mock_qdrant_client,
         collection_name="test_collection",
         embeddings_provider=provider,
-        openai_client=openai_client,
+        embedding_model=embedding_model,
     )
 
     vec = await svc.get_embedding("hello")
     assert vec == [0.9, 0.8, 0.7]
     # Ensure OpenAI fallback was not used
-    openai_client.embeddings.create.assert_not_called()
+    embedding_model.embeddings.create.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -57,20 +57,20 @@ async def test_get_embedding_falls_back_to_openai_when_no_provider(mock_qdrant_c
     embedding_item = SimpleNamespace(embedding=[0.1, 0.2, 0.3])
     response = SimpleNamespace(data=[embedding_item])
 
-    openai_client = MagicMock()
-    openai_client.embeddings = MagicMock()
-    openai_client.embeddings.create = AsyncMock(return_value=response)
+    embedding_model = MagicMock()
+    embedding_model.embeddings = MagicMock()
+    embedding_model.embeddings.create = AsyncMock(return_value=response)
 
     svc = VectorSearchService(
         qdrant_client=mock_qdrant_client,
         collection_name="test_collection",
         embeddings_provider=None,
-        openai_client=openai_client,
+        embedding_model=embedding_model,
     )
 
     vec = await svc.get_embedding("hello")
     assert vec == [0.1, 0.2, 0.3]
-    openai_client.embeddings.create.assert_awaited_once()
+    embedding_model.embeddings.create.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ async def test_get_embedding_raises_when_no_provider_and_no_openai(mock_qdrant_c
         qdrant_client=mock_qdrant_client,
         collection_name="test_collection",
         embeddings_provider=None,
-        openai_client=None,
+        embedding_model=None,
     )
 
     with pytest.raises(RuntimeError):

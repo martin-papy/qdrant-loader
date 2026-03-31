@@ -200,7 +200,7 @@ def create_vector_search_service(
     min_score: float,
     search_config: Any | None,
     embeddings_provider: Any | None,
-    openai_client: Any,
+    embedding_model: Any,
 ) -> Any:
     """Create VectorSearchService with optional cache/search tuning from config."""
     from ...components import VectorSearchService
@@ -216,14 +216,14 @@ def create_vector_search_service(
             hnsw_ef=search_config.hnsw_ef,
             use_exact_search=search_config.use_exact_search,
             embeddings_provider=embeddings_provider,
-            openai_client=openai_client,
+            embedding_model=embedding_model,
         )
     return VectorSearchService(
         qdrant_client=qdrant_client,
         collection_name=collection_name,
         min_score=min_score,
         embeddings_provider=embeddings_provider,
-        openai_client=openai_client,
+        embedding_model=embedding_model,
     )
 
 
@@ -286,7 +286,7 @@ def create_cdi_engine(
     spacy_analyzer: Any,
     knowledge_graph: Any,
     qdrant_client: Any,
-    openai_client: Any,
+    embedding_model: Any,
     collection_name: str,
     conflict_settings: dict | None,
 ) -> Any:
@@ -297,7 +297,7 @@ def create_cdi_engine(
         spacy_analyzer,
         knowledge_graph,
         qdrant_client,
-        openai_client,
+        embedding_model,
         collection_name,
         conflict_settings=conflict_settings,
     )
@@ -351,7 +351,7 @@ def initialize_engine_components(
     engine_self: Any,
     *,
     qdrant_client: Any,
-    openai_client: Any,
+    embedding_model: Any,
     collection_name: str,
     vector_weight: float,
     keyword_weight: float,
@@ -373,7 +373,7 @@ def initialize_engine_components(
     embeddings_provider = llm_provider
     # If an explicit OpenAI client is provided, prefer it over any auto-created provider
     # so tests and engines that mock the client behave deterministically.
-    if openai_client is not None:
+    if embedding_model is not None:
         embeddings_provider = None
     vector_search_service = create_vector_search_service(
         qdrant_client=qdrant_client,
@@ -381,7 +381,7 @@ def initialize_engine_components(
         min_score=min_score,
         search_config=search_config,
         embeddings_provider=embeddings_provider,
-        openai_client=openai_client,
+        embedding_model=embedding_model,
     )
     keyword_search_service = create_keyword_search_service(
         qdrant_client=qdrant_client, collection_name=collection_name
@@ -501,7 +501,7 @@ def initialize_engine_components(
         spacy_analyzer=spacy_analyzer,
         knowledge_graph=knowledge_graph,
         qdrant_client=qdrant_client,
-        openai_client=openai_client,
+        embedding_model=embedding_model,
         collection_name=collection_name,
         conflict_settings=conflict_settings,
     )
