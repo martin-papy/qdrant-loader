@@ -117,6 +117,7 @@ jobs:
         with:
           name: test-status-${{ github.event.workflow_run.id }}
           path: test-results/
+          digest-mismatch: warn
         continue-on-error: true
 
       - name: Get latest test results (from release trigger)
@@ -125,6 +126,7 @@ jobs:
         with:
           name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: test-results/
+          digest-mismatch: warn
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
@@ -137,6 +139,7 @@ jobs:
           pattern: coverage-*-${{ github.event.workflow_run.id }}
           path: coverage-artifacts/
           merge-multiple: true
+          digest-mismatch: warn
         continue-on-error: true
 
       - name: Get latest coverage reports (from release trigger)
@@ -146,6 +149,7 @@ jobs:
           pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
           path: coverage-artifacts/
           merge-multiple: true
+          digest-mismatch: warn
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
