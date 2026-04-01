@@ -2,7 +2,7 @@
 
 This directory contains the documentation website generator for QDrant Loader. It automatically converts markdown documentation into a professional, responsive website using Bootstrap templates.
 
-## <img src="../website/assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture
+## <img src="/website/assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture
 
 The website generator is a Python-based static site generator that:
 
@@ -13,7 +13,7 @@ The website generator is a Python-based static site generator that:
 - **Creates sitemaps and robots.txt** for SEO optimization
 - **Supports code coverage reports** integration
 
-## <img src="../website/assets/icons/library/folder-icon.svg" width="32" alt="Directory Structure"> Directory Structure
+## <img src="/website/assets/icons/library/folder-icon.svg" width="32" alt="Directory Structure"> Directory Structure
 
 ```text
 website/
@@ -35,7 +35,7 @@ website/
 └── README.md                  # This file
 ```
 
-## <img src="../website/assets/icons/library/rocket-icon.svg" width="32" alt="Rockets Icons"> Building the Website
+## <img src="/website/assets/icons/library/rocket-icon.svg" width="32" alt="Rockets Icons"> Building the Website
 
 ### Prerequisites
 
@@ -82,7 +82,7 @@ python build.py --base-url https://qdrant-loader.net
 7. **SEO Generation**: Creates sitemap.xml and robots.txt
 8. **Output Writing**: Writes final HTML files to output directory
 
-## <img src="../assets/icons/library/palette-icon.svg" width="32" alt="Templates"> Templates
+## <img src="/assets/icons/library/palette-icon.svg" width="32" alt="Templates"> Templates
 
 ### Base Template (`base.html`)
 
@@ -113,7 +113,7 @@ Templates have access to:
 - `breadcrumbs`: Current page breadcrumb path
 - `assets_url`: Base URL for assets
 
-## <img src="../website/assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> Assets Management
+## <img src="/website/assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> Assets Management
 
 ### Favicons
 
@@ -151,7 +151,7 @@ python generate_favicons.py
 # Requires Pillow (PIL) for image processing
 ```
 
-## <img src="../website/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration
+## <img src="/website/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration
 
 ### Environment Variables
 
@@ -179,7 +179,7 @@ hide_nav: true                   # Optional: hide from navigation
 # Your markdown content here
 ```
 
-## <img src="../website/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Development Workflow
+## <img src="/website/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Development Workflow
 
 ### Local Development
 
@@ -214,7 +214,7 @@ python -m http.server 8000
 3. **Rebuild website** to copy assets to output
 4. **Test asset loading** in the generated website
 
-## <img src="../website/assets/icons/library/test-tube-icon.svg" width="32" alt="Integration Features"> Integration Features
+## <img src="/website/assets/icons/library/test-tube-icon.svg" width="32" alt="Integration Features"> Integration Features
 
 ### Test Coverage Reports
 
@@ -239,7 +239,7 @@ python build.py --output ../dist/v1
 python build.py --output ../dist/v2
 ```
 
-## <img src="../website/assets/icons/library/search-icon.svg" width="32" alt="SEO and Performance"> SEO and Performance
+## <img src="/website/assets/icons/library/search-icon.svg" width="32" alt="SEO and Performance"> SEO and Performance
 
 ### SEO Features
 
@@ -259,7 +259,7 @@ python build.py --output ../dist/v2
 - **CDN-ready assets** with proper caching headers
 - **Progressive Web App** features with manifest
 
-## <img src="../website/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
+## <img src="/website/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
 ### Adding New Features
 
