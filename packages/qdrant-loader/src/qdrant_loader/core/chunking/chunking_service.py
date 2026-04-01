@@ -203,6 +203,41 @@ class ChunkingService:
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
 
+            # TODO [contextual_embeddings] STEP 3/8: Apply contextual prefix to chunks
+            #
+            # This is the MAIN integration point. After the strategy produces chunks,
+            # prepend the contextual prefix to each chunk's content. This is done here
+            # (not in each strategy) so ALL strategies benefit automatically.
+            #
+            # Implementation:
+            #   if self.config.chunking.enable_contextual_embeddings:
+            #       # Build prefix from the ORIGINAL document (not the chunk),
+            #       # because we want the parent doc's title, not a section title.
+            #       prefix = document.build_contextual_prefix()
+            #
+            #       for chunk in chunked_docs:
+            #           # Prepend the prefix to the chunk's content.
+            #           # The chunk.content will now look like:
+            #           #   "[Source: confluence | Document: My Doc | Project: X]\n\n<actual content>"
+            #           chunk.content = prefix + chunk.content
+            #
+            #           # Store the prefix in metadata so it can be identified/stripped later
+            #           chunk.metadata["contextual_prefix"] = prefix
+            #           chunk.metadata["has_contextual_prefix"] = True
+            #
+            # IMPORTANT NOTES:
+            # - Use `document` (the parent) to build the prefix, NOT `chunk`.
+            #   The chunk's title might be a section title like "Introduction" which
+            #   lacks document-level context.
+            # - The prefix is stored in metadata["contextual_prefix"] so the retrieval
+            #   side (MCP server) can strip it for clean display if needed.
+            # - The content_hash will differ from a non-prefixed version. That's fine --
+            #   content_hash is calculated in Document.__init__ and we're mutating after.
+            #   If hash consistency matters, recalculate it after prefixing.
+            # - Watch out for token limits: the prefix adds ~20-50 tokens per chunk.
+            #   If chunk_size is very small, this could matter. Consider skipping the
+            #   prefix if the chunk is already near the token limit.
+
             # Optimized: Only calculate and log detailed metrics when debug logging is enabled
             if logging.getLogger().isEnabledFor(logging.DEBUG):
                 self.logger.debug(

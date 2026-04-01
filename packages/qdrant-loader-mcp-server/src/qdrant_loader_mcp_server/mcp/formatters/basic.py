@@ -11,6 +11,46 @@ from ...search.components.search_result_models import HybridSearchResult
 class BasicResultFormatters:
     """Handles basic result formatting operations."""
 
+    # TODO [contextual_embeddings] STEP 6/8: Display contextual prefix properly
+    #
+    # After ingestion, result.text will contain the prefix prepended to the
+    # actual chunk content, e.g.:
+    #   "[Source: confluence | Document: Architecture Overview | Project: X]\n\nActual chunk text..."
+    #
+    # You need to handle this in _format_common_fields so the LLM/user sees
+    # clean, well-structured output. Two options (pick one):
+    #
+    # OPTION A (recommended) - Strip prefix, show as structured metadata line:
+    #   import re
+    #   @staticmethod
+    #   def _strip_contextual_prefix(text: str) -> tuple[str, str | None]:
+    #       """Separate contextual prefix from chunk text.
+    #       Returns (clean_text, prefix_or_None).
+    #       """
+    #       match = re.match(r'^\[(.+?)\]\n\n', text, re.DOTALL)
+    #       if match:
+    #           return text[match.end():], match.group(0).strip()
+    #       return text, None
+    #
+    #   Then in _format_common_fields, call this before building the output:
+    #       clean_text, prefix = BasicResultFormatters._strip_contextual_prefix(result.text)
+    #       formatted_result = f"Score: {result.score}\n"
+    #       if prefix:
+    #           formatted_result += f"Context: {prefix}\n"
+    #       formatted_result += f"Text: {clean_text}\n"
+    #
+    # OPTION B (simpler) - Show text as-is, the prefix is already human-readable:
+    #   Just leave it. The "[Source: ... | Document: ...]" line is self-explanatory.
+    #   The LLM consuming MCP results will understand it.
+    #
+    # WHY THIS MATTERS: Without this step, the prefix is invisible context that
+    # helps embedding quality but the user/LLM never sees it. Displaying it
+    # gives the consumer the same document-level context the embedding had.
+    #
+    # ALSO: Update format_hierarchical_results below -- it truncates result.text
+    # to 150 chars for snippets. If the prefix is ~80 chars, the snippet might
+    # show only the prefix and no actual content. Strip prefix before truncating.
+
     @staticmethod
     def _format_common_fields(
         result: HybridSearchResult, is_attachment_view: bool = False
