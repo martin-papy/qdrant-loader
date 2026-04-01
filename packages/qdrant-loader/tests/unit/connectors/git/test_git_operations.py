@@ -479,19 +479,20 @@ class TestNestedFileHandling:
     def test_get_file_content_nested_path_with_windows_separators(
         self, git_operations, mock_repo
     ):
-        """Test file content retrieval for nested paths on Windows."""
+        """Test file content retrieval with Windows separators cross-platform."""
         git_operations.repo = mock_repo
-        file_path = r"C:\fake\repo\path\src\nested\file.py"
         expected_content = "import os"
 
-        mock_repo.working_dir = r"C:\fake\repo\path"
-        mock_repo.git.show.return_value = expected_content
+        # CI can run on Linux/macOS where relpath semantics differ for Windows-like paths.
+        # Mock relpath to isolate and verify path normalization behavior only.
+        with patch("os.path.relpath", return_value=r"src\nested\file.py"):
+            mock_repo.git.show.return_value = expected_content
 
-        content = git_operations.get_file_content(file_path)
+            content = git_operations.get_file_content("/irrelevant/absolute/path.py")
 
-        assert content == expected_content
-        # Verify path was normalized to Unix separators
-        mock_repo.git.show.assert_called_once_with("HEAD:src/nested/file.py")
+            assert content == expected_content
+            # Verify path was normalized to Unix separators
+            mock_repo.git.show.assert_called_once_with("HEAD:src/nested/file.py")
 
     def test_get_file_content_deeply_nested_path(self, git_operations, mock_repo):
         """Test file content retrieval for deeply nested files."""
