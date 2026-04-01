@@ -60,17 +60,9 @@ QDrant Loader follows a modular architecture designed for multi-project document
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate # On Windows: venv\Scripts\activate
-
-# Install development dependencies
-cd packages/qdrant-loader
-pip install -e ".[dev]"
-
-# Install MCP server package
-cd ../qdrant-loader-mcp-server
-pip install -e ".[dev]"
+# Install all workspace packages with development dependencies
+# uv automatically creates and manages the virtual environment
+uv sync --all-packages --all-extras
 
 # Start QDrant for development
 docker run -p 6333:6333 qdrant/qdrant:latest
@@ -83,15 +75,16 @@ docker run -p 6333:6333 qdrant/qdrant:latest
 make test
 
 # Run specific package tests
-cd packages/qdrant-loader
-pytest
+make test-loader
+make test-mcp
+make test-core
 
 # Run with coverage
-pytest --cov=qdrant_loader --cov-report=html
+make test-coverage
 
-# Run MCP server tests
-cd packages/qdrant-loader-mcp-server
-pytest
+# Or run pytest directly via uv
+uv run pytest packages/qdrant-loader/tests/
+uv run pytest packages/qdrant-loader-mcp-server/tests/ --cov=src --cov-report=html
 ```
 
 ### 3. Code Quality Checks
@@ -101,12 +94,10 @@ pytest
 make lint
 make format
 
-# Or manually
-cd packages/qdrant-loader
-black src/
-isort src/
-flake8 src/
-mypy src/
+# Or run tools directly via uv
+uv run ruff check --fix .
+uv run black .
+uv run isort .
 ```
 
 ## 📚 Core Concepts for Developers
