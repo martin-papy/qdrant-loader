@@ -274,6 +274,29 @@ class ResultCombiner:
         # Naive WRRF trigger
         use_wrrf = len(combined_dict.keys()) >= 10
 
+        # TODO [contextual_embeddings] STEP 7/8: Handle prefixed content in result building
+        #
+        # After ingestion with contextual embeddings enabled, the "text" field
+        # from Qdrant contains the prefix + actual content, e.g.:
+        #   "[Source: confluence | Document: My Doc]\n\nActual chunk text here..."
+        #
+        # The "text" key is used as the dedup key in combined_dict. This is fine
+        # because the prefix is deterministic per parent document -- all chunks
+        # from the same doc get the same prefix, and different docs get different
+        # prefixes, so dedup still works correctly.
+        #
+        # HOWEVER, you may want to:
+        # 1. Extract "contextual_prefix" from metadata and pass it through to the
+        #    HybridSearchResult so the formatter (STEP 6) can use it.
+        #    In merge_rich_and_enhanced_metadata(), add:
+        #      "contextual_prefix": metadata.get("contextual_prefix", ""),
+        #      "has_contextual_prefix": metadata.get("has_contextual_prefix", False),
+        #
+        # 2. If you want keyword search to match on original content only (without
+        #    the prefix polluting keyword matches), you'd need to strip the prefix
+        #    before keyword indexing. But for now this is fine -- the prefix contains
+        #    useful terms like the doc title that SHOULD be keyword-searchable.
+
         for text, info in combined_dict.items():
             # Skip if source type doesn't match filter
             if source_types and info["source_type"] not in source_types:

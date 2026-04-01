@@ -258,6 +258,47 @@ class Document(BaseModel):
 
         return str(chunk_uuid)
 
+    # TODO [contextual_embeddings] STEP 2/8: Add build_contextual_prefix() method
+    #
+    # Add a method here that builds a human-readable context string to prepend
+    # to chunk content before embedding. This gives the embedding model awareness
+    # of the document each chunk comes from (title, source type, project, etc.).
+    #
+    # def build_contextual_prefix(self) -> str:
+    #     """Build a context prefix to prepend to chunk content before embedding.
+    #
+    #     Returns:
+    #         e.g. "[Source: confluence | Document: Architecture Overview | Project: MyProject]\n\n"
+    #     """
+    #     parts = []
+    #     parts.append(f"Source: {self.source_type}")
+    #
+    #     if self.title:
+    #         parts.append(f"Document: {self.title}")
+    #
+    #     project_name = self.metadata.get("project_name")
+    #     if project_name:
+    #         parts.append(f"Project: {project_name}")
+    #
+    #     breadcrumb = self.metadata.get("breadcrumb_text", "")
+    #     if breadcrumb:
+    #         parts.append(f"Path: {breadcrumb}")
+    #
+    #     original_file_type = self.metadata.get("original_file_type", "")
+    #     if original_file_type:
+    #         parts.append(f"File type: {original_file_type}")
+    #
+    #     return "[" + " | ".join(parts) + "]\n\n"
+    #
+    # DESIGN NOTES:
+    # - Format "[Key: Value | ...]\n\n" is chosen so the prefix can be detected
+    #   and stripped with a simple regex like r'^\[.*?\]\n\n' at retrieval time.
+    # - Keep it concise (< ~50 tokens). Don't include URLs or full metadata dumps.
+    # - Use the PARENT document's title, not the chunk's section title, because
+    #   chunks already carry section info in their content.
+    # - Chunks reuse the Document model in this codebase, so this method works
+    #   on both parent docs and chunk docs (use parent doc's fields when calling).
+
     # Hierarchy convenience methods
     def get_parent_id(self) -> str | None:
         """Get the parent document ID if available.

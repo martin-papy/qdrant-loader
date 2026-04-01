@@ -209,6 +209,25 @@ class ChunkingConfig(BaseModel):
         "Increases payload size and ingestion time.",
     )
 
+    # TODO [contextual_embeddings] STEP 1/8: Add feature toggle
+    #
+    # Add a new config field here:
+    #
+    #   enable_contextual_embeddings: bool = Field(
+    #       default=True,
+    #       description=(
+    #           "Prepend document metadata (title, source type, project) to each chunk "
+    #           "before embedding. Improves retrieval by giving the embedding model "
+    #           "document-level context. The prefix is stored with the chunk content "
+    #           "and displayed on retrieval."
+    #       ),
+    #   )
+    #
+    # WHY: This is the master on/off switch. Default True since this is a low-cost
+    #       improvement (no LLM calls). Users can disable it if they want raw chunks.
+    #
+    # ALSO: Update config.template.yaml (see STEP 8) to document this new field.
+
     # Strategy-specific configurations
     strategies: StrategySpecificConfig = Field(
         default_factory=StrategySpecificConfig,

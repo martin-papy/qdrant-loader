@@ -63,6 +63,26 @@ class UpsertWorker(BaseWorker):
 
         try:
             with prometheus_metrics.UPSERT_DURATION.time():
+                # TODO [contextual_embeddings] STEP 5/8: Store prefix info in Qdrant payload
+                #
+                # After STEP 3, chunk.content already contains the prefix and
+                # chunk.metadata has "contextual_prefix" and "has_contextual_prefix".
+                # These will be stored automatically via the metadata dict below.
+                #
+                # HOWEVER, you should also store the prefix as a top-level payload
+                # field so the MCP server can easily access it without digging into
+                # nested metadata:
+                #
+                #   "contextual_prefix": chunk.metadata.get("contextual_prefix", ""),
+                #
+                # Add this key to the payload dict below, next to "content".
+                # This way, the retrieval side can:
+                #   (a) Use payload["content"] which includes the prefix (for full-text search)
+                #   (b) Use payload["contextual_prefix"] to strip it for clean display
+                #
+                # The "metadata" dict will also carry it (via chunk.metadata), but
+                # having it at the root makes structured access cleaner on the MCP side.
+
                 points = [
                     models.PointStruct(
                         id=chunk.id,
