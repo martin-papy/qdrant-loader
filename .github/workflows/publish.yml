@@ -53,25 +53,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-          
+
       - name: Build loader package
         run: |
           cd packages/qdrant-loader
-          python -m build
+          uv build
           
       - name: Publish loader package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: packages/qdrant-loader/dist/
+          packages-dir: dist/
 
   publish-mcp-server:
     name: Publish MCP Server to PyPI
@@ -86,25 +81,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-          
+
       - name: Build MCP server package
         run: |
           cd packages/qdrant-loader-mcp-server
-          python -m build
+          uv build
           
       - name: Publish MCP server package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: packages/qdrant-loader-mcp-server/dist/
+          packages-dir: dist/
 
   publish-core:
     name: Publish qdrant-loader-core to PyPI
@@ -119,22 +109,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
 
       - name: Build core package
         run: |
           cd packages/qdrant-loader-core
-          python -m build
+          uv build
 
       - name: Publish core package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: packages/qdrant-loader-core/dist/
+          packages-dir: dist/
