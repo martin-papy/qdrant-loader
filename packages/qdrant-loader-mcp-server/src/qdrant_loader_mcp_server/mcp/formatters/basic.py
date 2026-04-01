@@ -22,8 +22,16 @@ class BasicResultFormatters:
         conditional branches.
         """
         formatted_result = f"Score: {result.score}\n"
-        formatted_result += f"Text: {result.text}\n"
         formatted_result += f"Source: {result.source_type}"
+        
+        text = result.text
+        contextual_prefix = getattr(result, "contextual_prefix", None)
+        if isinstance(contextual_prefix, str) and contextual_prefix:
+            formatted_result += f"Context: {contextual_prefix}\n"
+            if isinstance(text, str) and text.startswith(contextual_prefix):
+                text = text[len(contextual_prefix):].lstrip()
+
+        formatted_result += f"\nText: {text}"
 
         if result.source_title:
             formatted_result += f" - {result.source_title}"

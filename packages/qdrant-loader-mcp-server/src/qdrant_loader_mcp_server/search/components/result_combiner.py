@@ -322,6 +322,12 @@ class ResultCombiner:
                 chunk_index=chunk_index,
                 total_chunks=total_chunks,
             )
+            contextual_prefix = info.get("contextual_prefix")
+            if contextual_prefix:
+                enhanced_metadata["contextual_prefix"] = contextual_prefix
+                enhanced_metadata["has_contextual_prefix"] = True
+            else:
+                enhanced_metadata["has_contextual_prefix"] = False
 
             # NOTE: No additional fallback; root payload project_id is authoritative
 

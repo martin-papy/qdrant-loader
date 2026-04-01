@@ -69,6 +69,7 @@ class UpsertWorker(BaseWorker):
                         vector=embedding,
                         payload={
                             "content": chunk.content,
+                            "contextual_prefix": chunk.contextual_embedding_content,
                             "metadata": {
                                 k: v
                                 for k, v in chunk.metadata.items()
