@@ -1,7 +1,11 @@
 """Unit tests for the fixed Python AST parser and CodeDocumentParser."""
 
+import ast
+import builtins
+import importlib
 from unittest.mock import Mock, patch
 
+import qdrant_loader.core.chunking.strategy.code.code_document_parser as cdp_module
 from qdrant_loader.core.chunking.strategy.code.code_document_parser import (
     CodeDocumentParser,
 )
@@ -346,3 +350,329 @@ class TestCodeDocumentParserParsePython:
                     f"Overlap: '{e1.name}' ({e1.start_line}-{e1.end_line}) "
                     f"vs '{e2.name}' ({e2.start_line}-{e2.end_line})"
                 )
+
+
+class TestParsePythonAstEdgeCoverage:
+    def test_function_node_without_lineno_is_skipped(self):
+        fake_tree = Mock()
+        fake_tree.body = [
+            ast.FunctionDef(
+                name="no_line_info",
+                args=ast.arguments(
+                    posonlyargs=[],
+                    args=[],
+                    kwonlyargs=[],
+                    kw_defaults=[],
+                    defaults=[],
+                ),
+                body=[ast.Pass()],
+                decorator_list=[],
+            )
+        ]
+
+        with patch(
+            "qdrant_loader.core.chunking.strategy.code.parser.python_ast.ast.parse",
+            return_value=fake_tree,
+        ):
+            elements = parse_python_ast(
+                "def x():\n    pass", max_elements_to_process=10
+            )
+
+        assert elements == []
+
+    def test_module_group_without_lineno_is_skipped(self):
+        fake_tree = Mock()
+        fake_tree.body = [ast.Pass()]
+
+        with patch(
+            "qdrant_loader.core.chunking.strategy.code.parser.python_ast.ast.parse",
+            return_value=fake_tree,
+        ):
+            elements = parse_python_ast("pass", max_elements_to_process=10)
+
+        assert elements == []
+
+    def test_empty_snippet_from_out_of_range_lines_is_ignored(self):
+        node = ast.FunctionDef(
+            name="f",
+            args=ast.arguments(
+                posonlyargs=[],
+                args=[],
+                kwonlyargs=[],
+                kw_defaults=[],
+                defaults=[],
+            ),
+            body=[ast.Pass()],
+            decorator_list=[],
+            lineno=50,
+            end_lineno=50,
+        )
+        fake_tree = Mock()
+        fake_tree.body = [node]
+
+        with patch(
+            "qdrant_loader.core.chunking.strategy.code.parser.python_ast.ast.parse",
+            return_value=fake_tree,
+        ):
+            elements = parse_python_ast(
+                "def f():\n    pass", max_elements_to_process=10
+            )
+
+        assert elements == []
+
+    def test_flush_module_group_respects_limit(self):
+        elements = parse_python_ast("import os", max_elements_to_process=0)
+        assert elements == []
+
+    def test_module_group_empty_snippet_path(self):
+        fake_tree = Mock()
+        module_stmt = ast.Pass(lineno=100, end_lineno=100)
+        func_stmt = ast.FunctionDef(
+            name="ok",
+            args=ast.arguments(
+                posonlyargs=[],
+                args=[],
+                kwonlyargs=[],
+                kw_defaults=[],
+                defaults=[],
+            ),
+            body=[ast.Pass()],
+            decorator_list=[],
+            lineno=1,
+            end_lineno=2,
+        )
+        fake_tree.body = [module_stmt, func_stmt]
+
+        with patch(
+            "qdrant_loader.core.chunking.strategy.code.parser.python_ast.ast.parse",
+            return_value=fake_tree,
+        ):
+            elements = parse_python_ast(
+                "def ok():\n    pass", max_elements_to_process=10
+            )
+
+        assert len(elements) == 1
+        assert elements[0].name == "ok"
+
+    def test_break_when_flushing_group_before_class_hits_limit(self):
+        code = "import os\nclass A:\n    pass\n"
+        elements = parse_python_ast(code, max_elements_to_process=0)
+        assert elements == []
+
+    def test_break_when_adding_class_hits_limit(self):
+        code = "class A:\n    pass\n"
+        elements = parse_python_ast(code, max_elements_to_process=0)
+        assert elements == []
+
+    def test_break_when_flushing_group_before_function_hits_limit(self):
+        code = "x = 1\ndef f():\n    pass\n"
+        elements = parse_python_ast(code, max_elements_to_process=0)
+        assert elements == []
+
+
+class TestCodeDocumentParserHelperMethods:
+    def setup_method(self):
+        self.settings = _make_settings()
+        self.parser = CodeDocumentParser(self.settings)
+
+    def test_parse_document_structure_counts_and_flags(self):
+        content = '"""doc"""\n# comment\nif x:\n    pass\nfor i in x:\n    pass\ndef f():\n    pass\nclass C:\n    pass\n'
+        structure = self.parser.parse_document_structure(content)
+
+        assert structure["structure_type"] == "code"
+        assert structure["total_lines"] >= structure["non_empty_lines"]
+        assert structure["blank_lines"] >= 0
+        assert structure["avg_line_length"] > 0
+        assert structure["max_line_length"] > 0
+        assert structure["has_comments"] is True
+        assert structure["has_docstrings"] is True
+        assert structure["complexity_indicators"]["if_statements"] == 1
+        assert structure["complexity_indicators"]["loop_statements"] == 1
+        assert structure["complexity_indicators"]["function_definitions"] == 1
+        assert structure["complexity_indicators"]["class_definitions"] == 1
+
+    def test_parse_document_structure_empty_content(self):
+        structure = self.parser.parse_document_structure("")
+
+        assert structure["total_lines"] == 1
+        assert structure["non_empty_lines"] == 0
+        assert structure["blank_lines"] == 1
+        assert structure["avg_line_length"] == 0
+        assert structure["max_line_length"] == 0
+        assert structure["has_comments"] is False
+        assert structure["has_docstrings"] is False
+
+    def test_extract_section_metadata_with_optional_fields(self):
+        element = Mock()
+        element.element_type = CodeElementType.FUNCTION
+        element.name = "compute"
+        element.start_line = 10
+        element.end_line = 20
+        element.level = 1
+        element.visibility = "private"
+        element.is_async = True
+        element.is_static = True
+        element.is_abstract = False
+        element.complexity = 5
+        element.docstring = "docs"
+        element.decorators = ["cache"]
+        element.parameters = ["x", "y"]
+        element.return_type = "int"
+        element.dependencies = ["math"]
+        element.children = [Mock(), Mock()]
+
+        metadata = self.parser.extract_section_metadata(element)
+
+        assert metadata["line_count"] == 11
+        assert metadata["docstring_length"] == 4
+        assert metadata["decorators"] == ["cache"]
+        assert metadata["parameters"] == ["x", "y"]
+        assert metadata["return_type"] == "int"
+        assert metadata["dependencies"] == ["math"]
+        assert metadata["child_count"] == 2
+
+    def test_extract_section_metadata_without_optional_fields(self):
+        element = Mock()
+        element.element_type = CodeElementType.CLASS
+        element.name = "NoExtras"
+        element.start_line = 1
+        element.end_line = 1
+        element.level = 0
+        element.visibility = "public"
+        element.is_async = False
+        element.is_static = False
+        element.is_abstract = False
+        element.complexity = 0
+        element.docstring = ""
+        element.decorators = []
+        element.parameters = []
+        element.return_type = None
+        element.dependencies = []
+        element.children = []
+
+        metadata = self.parser.extract_section_metadata(element)
+
+        assert "docstring_length" not in metadata
+        assert "decorators" not in metadata
+        assert "parameters" not in metadata
+        assert "return_type" not in metadata
+        assert "dependencies" not in metadata
+
+    def test_detect_language_known_and_unknown_extensions(self):
+        assert self.parser.detect_language("src/main.py", "") == "python"
+        assert self.parser.detect_language("src/Program.CS", "") == "c_sharp"
+        assert self.parser.detect_language("README", "") == "unknown"
+        assert self.parser.detect_language("archive.unknownext", "") == "unknown"
+
+    def test_get_tree_sitter_parser_returns_none_when_disabled(self):
+        with patch.object(cdp_module, "TREE_SITTER_AVAILABLE", False):
+            assert self.parser._get_tree_sitter_parser("python") is None
+
+    def test_get_tree_sitter_parser_returns_none_when_get_parser_missing(self):
+        with (
+            patch.object(cdp_module, "TREE_SITTER_AVAILABLE", True),
+            patch.object(cdp_module, "get_parser", None),
+        ):
+            assert self.parser._get_tree_sitter_parser("python") is None
+
+    def test_get_tree_sitter_parser_uses_cache(self):
+        fake_parser = Mock()
+        with (
+            patch.object(cdp_module, "TREE_SITTER_AVAILABLE", True),
+            patch.object(
+                cdp_module, "get_parser", Mock(return_value=fake_parser)
+            ) as get_parser_mock,
+        ):
+            p1 = self.parser._get_tree_sitter_parser("javascript")
+            p2 = self.parser._get_tree_sitter_parser("javascript")
+
+        assert p1 is fake_parser
+        assert p2 is fake_parser
+        assert get_parser_mock.call_count == 1
+
+    def test_get_tree_sitter_parser_handles_exception(self):
+        with (
+            patch.object(cdp_module, "TREE_SITTER_AVAILABLE", True),
+            patch.object(
+                cdp_module, "get_parser", Mock(side_effect=RuntimeError("boom"))
+            ),
+        ):
+            parser = self.parser._get_tree_sitter_parser("javascript")
+
+        assert parser is None
+
+    def test_parse_with_tree_sitter_returns_empty_when_parser_missing(self):
+        with patch.object(self.parser, "_get_tree_sitter_parser", return_value=None):
+            elements = self.parser._parse_with_tree_sitter("const x = 1", "javascript")
+
+        assert elements == []
+
+    def test_parse_with_tree_sitter_success_and_limit(self):
+        fake_root = Mock()
+        fake_tree = Mock(root_node=fake_root)
+        fake_parser = Mock()
+        fake_parser.parse.return_value = fake_tree
+        too_many = [Mock() for _ in range(1000)]
+
+        with (
+            patch.object(
+                self.parser, "_get_tree_sitter_parser", return_value=fake_parser
+            ),
+            patch.object(
+                cdp_module, "extract_tree_sitter_elements", return_value=too_many
+            ),
+        ):
+            elements = self.parser._parse_with_tree_sitter("const x = 1", "javascript")
+
+        assert len(elements) == cdp_module.MAX_ELEMENTS_TO_PROCESS
+        fake_parser.parse.assert_called_once_with(b"const x = 1")
+
+    def test_parse_with_tree_sitter_handles_exception(self):
+        fake_parser = Mock()
+        fake_parser.parse.side_effect = ValueError("parse failed")
+
+        with patch.object(
+            self.parser, "_get_tree_sitter_parser", return_value=fake_parser
+        ):
+            elements = self.parser._parse_with_tree_sitter("const x = 1", "javascript")
+
+        assert elements == []
+
+    def test_parse_code_elements_non_python_when_tree_sitter_unavailable(self):
+        with (
+            patch.object(cdp_module, "TREE_SITTER_AVAILABLE", False),
+            patch.object(self.parser, "_parse_with_tree_sitter") as mock_ts,
+        ):
+            elements = self.parser.parse_code_elements("const x = 1", "javascript")
+
+        assert elements == []
+        mock_ts.assert_not_called()
+
+    def test_init_logs_warning_when_tree_sitter_unavailable(self):
+        with (
+            patch.object(cdp_module, "TREE_SITTER_AVAILABLE", False),
+            patch.object(cdp_module, "logger") as logger_mock,
+        ):
+            parser = CodeDocumentParser(self.settings)
+
+        assert parser is not None
+        logger_mock.warning.assert_called_once()
+
+
+class TestCodeDocumentParserImportFallback:
+    def test_module_import_sets_tree_sitter_unavailable_on_import_error(self):
+        original_import = builtins.__import__
+
+        def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "tree_sitter_languages":
+                raise ImportError("simulated missing dependency")
+            return original_import(name, globals, locals, fromlist, level)
+
+        with patch("builtins.__import__", side_effect=fake_import):
+            reloaded = importlib.reload(cdp_module)
+
+        assert reloaded.TREE_SITTER_AVAILABLE is False
+        assert reloaded.get_parser is None
+
+        # Restore module global state for tests that run after this one.
+        importlib.reload(cdp_module)
