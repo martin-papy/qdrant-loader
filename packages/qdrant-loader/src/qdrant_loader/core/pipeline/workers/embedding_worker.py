@@ -54,22 +54,6 @@ class EmbeddingWorker(BaseWorker):
                 gc.collect()
 
             with prometheus_metrics.EMBEDDING_DURATION.time():
-                # TODO [contextual_embeddings] STEP 4/8: No changes needed here!
-                #
-                # This line already embeds `c.content` which, after STEP 3, will
-                # include the contextual prefix. The embedding model will now
-                # encode "[Source: X | Document: Y]\n\n<actual text>" as a single
-                # vector, giving it document-level awareness.
-                #
-                # VERIFY: After implementing STEP 3, add a debug log here to
-                # confirm that chunks arriving here have the prefix:
-                #   if chunks:
-                #       logger.debug(
-                #           "Embedding chunk sample (first 120 chars)",
-                #           sample=chunks[0].content[:120],
-                #           has_prefix=chunks[0].metadata.get("has_contextual_prefix", False),
-                #       )
-
                 # Add timeout to prevent hanging and check for shutdown
                 embeddings = await asyncio.wait_for(
                     self.embedding_service.get_embeddings([c.content for c in chunks]),

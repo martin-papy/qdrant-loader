@@ -48,14 +48,6 @@ global:
     enable_semantic_analysis: true # Master switch for NLP enrichment (spaCy + LDA) across all strategies. Disable for faster ingestion.
     enable_enhanced_semantic_analysis: false # Opt-in: pos_tags, dependencies, document_similarity. Requires enable_semantic_analysis: true.
 
-    # TODO [contextual_embeddings] STEP 8/8: Document the new config option
-    #
-    # Add the following line here once STEP 1 (config/chunking.py) is implemented:
-    #
-    #   enable_contextual_embeddings: true  # Prepend document title, source type, and project to each chunk before embedding. Improves retrieval quality at zero LLM cost.
-    #
-    # This completes the config surface. Users can set it to false to disable.
-
     # Strategy-specific configurations for different content types
     strategies:
       # Default text chunking strategy configuration
