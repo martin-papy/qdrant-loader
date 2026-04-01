@@ -7,10 +7,10 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install both packages in development mode
-	uv sync
+	uv sync --all-packages
 
 install-dev: ## Install both packages with development dependencies
-	uv sync --all-extras
+	uv sync --all-packages --all-extras
 
 test: ## Run all tests
 	uv run pytest packages/
@@ -43,38 +43,40 @@ format: ## Format code in all packages
 	uv run isort .
 	uv run ruff check --fix .
 
-clean: ## Clean build artifacts
+clean-python: ## Clean Python cache files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
-	rm -rf dist/
-	rm -rf packages/*/dist/
-	rm -rf packages/*/build/
-	rm -rf htmlcov/
-	rm -rf .coverage
-	rm -rf .pytest_cache/
+
+clean-build: ## Clean build and test artifacts
+	rm -rf dist/ packages/*/dist/ packages/*/build/
+	rm -rf htmlcov/ .coverage .pytest_cache/
+
+clean: clean-python clean-build ## Clean all build and cache artifacts
 
 build: ## Build both packages
 	cd packages/qdrant-loader && uv build
 	cd packages/qdrant-loader-mcp-server && uv build
 
 build-loader: ## Build qdrant-loader package only
+	rm -rf packages/qdrant-loader/dist/
 	cd packages/qdrant-loader && uv build
 
 build-mcp: ## Build mcp-server package only
+	rm -rf packages/qdrant-loader-mcp-server/dist/
 	cd packages/qdrant-loader-mcp-server && uv build
 
 publish-loader: build-loader ## Publish qdrant-loader to PyPI
-	uv publish dist/qdrant_loader-*
+	uv publish packages/qdrant-loader/dist/qdrant_loader-*
 
 publish-mcp: build-mcp ## Publish mcp-server to PyPI
-	uv publish dist/qdrant_loader_mcp_server-*
+	uv publish packages/qdrant-loader-mcp-server/dist/qdrant_loader_mcp_server-*
 
 docs: ## Generate documentation
 	uv run python website/build.py --output site --templates website/templates --base-url "http://127.0.0.1:3000/site/"
 
 setup-dev: ## Set up development environment
-	uv sync --all-extras
+	uv sync --all-packages --all-extras
 	@echo "Virtual environment ready at .venv"
 	@echo "Activate with:"
 	@echo "  source .venv/bin/activate  # On macOS/Linux"
