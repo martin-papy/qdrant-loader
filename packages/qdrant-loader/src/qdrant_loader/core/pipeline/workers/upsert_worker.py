@@ -133,6 +133,7 @@ class UpsertWorker(BaseWorker):
         logger.debug("UpsertWorker started")
         result = PipelineResult()
         batch = []
+        seen_chunk_ids: set[str] = set()
 
         try:
             async for chunk_embedding in embedded_chunks:
@@ -144,10 +145,27 @@ class UpsertWorker(BaseWorker):
 
                 # Process batch when it reaches the desired size
                 if len(batch) >= self.batch_size:
+                    batch_chunk_ids = {str(chunk.id) for chunk, _ in batch}
                     success_count, error_count, successful_doc_ids, errors = (
                         await self.process(batch)
                     )
-                    result.success_count += success_count
+
+                    if success_count > 0:
+                        duplicate_chunk_ids = batch_chunk_ids & seen_chunk_ids
+                        new_chunk_ids = batch_chunk_ids - seen_chunk_ids
+
+                        if duplicate_chunk_ids:
+                            logger.warning(
+                                "Detected chunk ID collisions during upsert; existing points will be overwritten",
+                                duplicate_count=len(duplicate_chunk_ids),
+                            )
+                            errors.append(
+                                f"Detected {len(duplicate_chunk_ids)} duplicate chunk IDs that overwrite existing points"
+                            )
+
+                        seen_chunk_ids.update(batch_chunk_ids)
+                        result.success_count += len(new_chunk_ids)
+
                     result.error_count += error_count
                     result.successfully_processed_documents.update(successful_doc_ids)
                     result.errors.extend(errors)
@@ -155,10 +173,27 @@ class UpsertWorker(BaseWorker):
 
             # Process any remaining chunks in the final batch
             if batch and not self.shutdown_event.is_set():
+                batch_chunk_ids = {str(chunk.id) for chunk, _ in batch}
                 success_count, error_count, successful_doc_ids, errors = (
                     await self.process(batch)
                 )
-                result.success_count += success_count
+
+                if success_count > 0:
+                    duplicate_chunk_ids = batch_chunk_ids & seen_chunk_ids
+                    new_chunk_ids = batch_chunk_ids - seen_chunk_ids
+
+                    if duplicate_chunk_ids:
+                        logger.warning(
+                            "Detected chunk ID collisions during upsert; existing points will be overwritten",
+                            duplicate_count=len(duplicate_chunk_ids),
+                        )
+                        errors.append(
+                            f"Detected {len(duplicate_chunk_ids)} duplicate chunk IDs that overwrite existing points"
+                        )
+
+                    seen_chunk_ids.update(batch_chunk_ids)
+                    result.success_count += len(new_chunk_ids)
+
                 result.error_count += error_count
                 result.successfully_processed_documents.update(successful_doc_ids)
                 result.errors.extend(errors)

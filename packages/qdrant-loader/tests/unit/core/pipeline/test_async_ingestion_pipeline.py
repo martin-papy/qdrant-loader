@@ -313,6 +313,7 @@ class TestAsyncIngestionPipeline:
             mock_orchestrator.process_documents = AsyncMock(
                 return_value=sample_documents
             )
+            mock_orchestrator.last_pipeline_result = Mock(success_count=5)
             mock_orchestrator_class.return_value = mock_orchestrator
 
             mock_monitor = Mock()
@@ -346,7 +347,14 @@ class TestAsyncIngestionPipeline:
                     "force": False,
                 },
             )
-            mock_monitor.end_batch.assert_called_once_with("document_batch", 2, 0, [])
+            mock_monitor.end_batch.assert_called_once_with(
+                "document_batch",
+                2,
+                0,
+                [],
+                total_chunks=5,
+                total_size_bytes=28,
+            )
 
             assert result == sample_documents
 

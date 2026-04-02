@@ -43,6 +43,7 @@ class PipelineOrchestrator:
         self.settings = settings
         self.components = components
         self.project_manager = project_manager
+        self.last_pipeline_result = None
 
     async def process_documents(
         self,
@@ -65,6 +66,7 @@ class PipelineOrchestrator:
             List of processed documents
         """
         logger.info("🚀 Starting document ingestion")
+        self.last_pipeline_result = None
 
         try:
             # Determine sources configuration to use
@@ -147,6 +149,7 @@ class PipelineOrchestrator:
             result = await self.components.document_pipeline.process_documents(
                 documents
             )
+            self.last_pipeline_result = result
 
             # Update document states for successfully processed documents
             await self._update_document_states(
