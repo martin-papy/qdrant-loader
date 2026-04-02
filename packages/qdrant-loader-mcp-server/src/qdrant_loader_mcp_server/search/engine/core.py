@@ -23,6 +23,7 @@ from ...utils.logging import LoggingConfig
 from ..components.search_result_models import HybridSearchResult
 from ..enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 from ..hybrid_search import HybridSearchEngine
+from ..sparse_config import load_sparse_runtime_config
 from .faceted import FacetedSearchOperations
 from .intelligence import IntelligenceOperations
 from .search import SearchOperations
@@ -167,6 +168,7 @@ class SearchEngine:
             ):
                 # Determine vector size from env or config file; avoid hardcoded default when possible
                 vector_size = None
+                sparse_runtime = load_sparse_runtime_config(os.getenv("MCP_CONFIG"))
                 # 1) From env variable if provided
                 try:
                     env_size = os.getenv("LLM_VECTOR_SIZE")
@@ -197,13 +199,48 @@ class SearchEngine:
                     except Exception:
                         pass
 
-                await self.client.create_collection(
-                    collection_name=config.collection_name,
-                    vectors_config=models.VectorParams(
-                        size=vector_size,
-                        distance=models.Distance.COSINE,
-                    ),
-                )
+                created_with_sparse = False
+                if sparse_runtime.enabled:
+                    try:
+                        await self.client.create_collection(
+                            collection_name=config.collection_name,
+                            vectors_config={
+                                sparse_runtime.dense_vector_name: models.VectorParams(
+                                    size=vector_size,
+                                    distance=models.Distance.COSINE,
+                                )
+                            },
+                            sparse_vectors_config={
+                                sparse_runtime.sparse_vector_name: (
+                                    models.SparseVectorParams()
+                                )
+                            },
+                        )
+                        created_with_sparse = True
+                        self.logger.info(
+                            "Created collection with dense+sparse vectors",
+                            collection=config.collection_name,
+                            dense_vector_name=sparse_runtime.dense_vector_name,
+                            sparse_vector_name=sparse_runtime.sparse_vector_name,
+                            sparse_model=sparse_runtime.model,
+                        )
+                    except Exception as sparse_error:
+                        if not sparse_runtime.auto_fallback:
+                            raise
+                        self.logger.warning(
+                            "Sparse collection creation failed; falling back to dense-only",
+                            collection=config.collection_name,
+                            error=str(sparse_error),
+                        )
+
+                if not created_with_sparse:
+                    await self.client.create_collection(
+                        collection_name=config.collection_name,
+                        vectors_config=models.VectorParams(
+                            size=vector_size,
+                            distance=models.Distance.COSINE,
+                        ),
+                    )
 
             # Initialize hybrid search (single path; pass through search_config which may be None)
             if self.client:

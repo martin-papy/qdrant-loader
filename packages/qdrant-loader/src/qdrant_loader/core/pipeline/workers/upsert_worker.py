@@ -1,6 +1,7 @@
 """Upsert worker for upserting embedded chunks to Qdrant."""
 
 import asyncio
+import inspect
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -63,10 +64,26 @@ class UpsertWorker(BaseWorker):
 
         try:
             with prometheus_metrics.UPSERT_DURATION.time():
+                build_point_vector = getattr(
+                    self.qdrant_manager, "build_point_vector", None
+                )
+
+                def _resolve_vector(chunk: Any, embedding: list[float]) -> object:
+                    if inspect.ismethod(build_point_vector):
+                        try:
+                            return build_point_vector(embedding, chunk.content)
+                        except Exception as e:
+                            logger.warning(
+                                "Failed to build sparse+ dense vector payload, using dense-only embedding",
+                                error=str(e),
+                                chunk_id=getattr(chunk, "id", "unknown"),
+                            )
+                    return embedding
+
                 points = [
                     models.PointStruct(
                         id=chunk.id,
-                        vector=embedding,
+                        vector=_resolve_vector(chunk, embedding),
                         payload={
                             "content": chunk.content,
                             "metadata": {

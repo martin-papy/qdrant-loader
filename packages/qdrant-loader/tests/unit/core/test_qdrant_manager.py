@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from qdrant_client.http import models
 from qdrant_client.http.models import Distance, VectorParams
+
 from qdrant_loader.config import Settings
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
 
@@ -82,6 +83,7 @@ class TestQdrantManager:
         config = Mock()
         config.embedding.batch_size = 100
         config.embedding.vector_size = 1536
+        config.llm = None
         return config
 
     def test_initialization_default_settings(self, mock_settings, mock_global_config):
@@ -312,7 +314,10 @@ class TestQdrantManager:
 
             mock_qdrant_client.create_collection.assert_called_once_with(
                 collection_name="test_collection",
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+                vectors_config={
+                    "dense": VectorParams(size=1536, distance=Distance.COSINE)
+                },
+                sparse_vectors_config={"sparse": models.SparseVectorParams()},
             )
 
             # Verify all expected payload indexes are created
@@ -398,7 +403,10 @@ class TestQdrantManager:
 
             mock_qdrant_client.create_collection.assert_called_once_with(
                 collection_name="test_collection",
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+                vectors_config={
+                    "dense": VectorParams(size=1536, distance=Distance.COSINE)
+                },
+                sparse_vectors_config={"sparse": models.SparseVectorParams()},
             )
 
     def test_create_collection_error(
@@ -421,6 +429,36 @@ class TestQdrantManager:
 
             with pytest.raises(Exception, match="Collection error"):
                 manager.create_collection()
+
+    def test_create_collection_sparse_fallback_to_dense(
+        self, mock_settings, mock_qdrant_client, mock_global_config
+    ):
+        """Test fallback to dense-only schema when sparse collection creation fails."""
+        mock_qdrant_client.get_collections.return_value = Mock(collections=[])
+        mock_qdrant_client.create_collection.side_effect = [
+            Exception("Sparse not supported"),
+            None,
+        ]
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+            manager.create_collection()
+
+            assert mock_qdrant_client.create_collection.call_count == 2
+            fallback_call = mock_qdrant_client.create_collection.call_args_list[1]
+            assert fallback_call.kwargs == {
+                "collection_name": "test_collection",
+                "vectors_config": VectorParams(size=1536, distance=Distance.COSINE),
+            }
 
     @pytest.mark.asyncio
     async def test_upsert_points_success(self, mock_settings, mock_qdrant_client):

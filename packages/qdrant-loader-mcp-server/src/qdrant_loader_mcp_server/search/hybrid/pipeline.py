@@ -4,7 +4,6 @@ Hybrid search pipeline.
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 
 from ..components.search_result_models import HybridSearchResult
@@ -52,12 +51,25 @@ class HybridPipeline:
         """
         effective_vector_query = vector_query if vector_query is not None else query
         effective_keyword_query = keyword_query if keyword_query is not None else query
-        vector_results, keyword_results = await asyncio.gather(
-            self.vector_searcher.search(effective_vector_query, limit * 3, project_ids),
-            self.keyword_searcher.search(
-                effective_keyword_query, limit * 3, project_ids
-            ),
+        vector_results = await self.vector_searcher.search(
+            effective_vector_query, limit * 3, project_ids
         )
+        used_qdrant_hybrid = False
+        hybrid_flag_getter = getattr(
+            self.vector_searcher, "used_qdrant_hybrid_last_query", None
+        )
+        if callable(hybrid_flag_getter):
+            try:
+                used_qdrant_hybrid = bool(hybrid_flag_getter())
+            except Exception:
+                used_qdrant_hybrid = False
+
+        if used_qdrant_hybrid:
+            keyword_results = []
+        else:
+            keyword_results = await self.keyword_searcher.search(
+                effective_keyword_query, limit * 3, project_ids
+            )
         results = await self.result_combiner.combine_results(
             vector_results,
             keyword_results,
