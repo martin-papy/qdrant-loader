@@ -23,13 +23,13 @@ class BasicResultFormatters:
         """
         formatted_result = f"Score: {result.score}\n"
         formatted_result += f"Source: {result.source_type}"
-        
+
         text = result.text
-        contextual_prefix = getattr(result, "contextual_prefix", None)
-        if isinstance(contextual_prefix, str) and contextual_prefix:
-            formatted_result += f"Context: {contextual_prefix}\n"
-            if isinstance(text, str) and text.startswith(contextual_prefix):
-                text = text[len(contextual_prefix):].lstrip()
+        contextual_content = getattr(result, "contextual_content", None)
+        if isinstance(contextual_content, str) and contextual_content:
+            formatted_result += f"Context: {contextual_content}\n"
+            if isinstance(text, str) and text.startswith(contextual_content):
+                text = text[len(contextual_content) :].lstrip()
 
         formatted_result += f"\nText: {text}"
 

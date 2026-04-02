@@ -208,7 +208,7 @@ class ChunkingConfig(BaseModel):
         "Requires enable_semantic_analysis=true. "
         "Increases payload size and ingestion time.",
     )
-    
+
     # Strategy-specific configurations
     strategies: StrategySpecificConfig = Field(
         default_factory=StrategySpecificConfig,

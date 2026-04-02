@@ -203,10 +203,10 @@ class ChunkingService:
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
 
-            # Add contextual embedding 
-            prefix = document.build_contextual_prefix()
+            # Add contextual embedding
+            prefix = document.build_contextual_content()
             for chunk in chunked_docs:
-                chunk.contextual_embedding_content = prefix + chunk.content
+                chunk.contextual_content = prefix + chunk.content
 
             # Optimized: Only calculate and log detailed metrics when debug logging is enabled
             if logging.getLogger().isEnabledFor(logging.DEBUG):
