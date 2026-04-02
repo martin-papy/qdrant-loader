@@ -27,7 +27,7 @@ class BasicResultFormatters:
         text = result.text
         contextual_content = getattr(result, "contextual_content", None)
         if isinstance(contextual_content, str) and contextual_content:
-            formatted_result += f"Context: {contextual_content}\n"
+            formatted_result += f"\nContext: {contextual_content}\n"
             if isinstance(text, str) and text.startswith(contextual_content):
                 text = text[len(contextual_content) :].lstrip()
 
