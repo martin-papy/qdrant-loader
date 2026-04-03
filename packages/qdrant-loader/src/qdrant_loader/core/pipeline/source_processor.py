@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Callable, Mapping
 
 from qdrant_loader.config.source_config import SourceConfig
-from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationError
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
@@ -78,6 +78,11 @@ class SourceProcessor:
                     )
                     all_documents.extend(documents)
 
+            except ConnectorConfigurationError:
+                # Fatal configuration error – re-raise immediately so the
+                # pipeline stops with a clear message instead of silently
+                # producing 0 documents.
+                raise
             except Exception as e:
                 logger.error(
                     f"Failed to process {source_type} source {source_name}: {e}",
