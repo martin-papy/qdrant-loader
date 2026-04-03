@@ -11,6 +11,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 from .document_pipeline import DocumentPipeline
 from .source_filter import SourceFilter
 from .source_processor import SourceProcessor
+from .workers.upsert_worker import PipelineResult
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -176,6 +177,7 @@ class PipelineOrchestrator:
             raise ValueError("Project manager not available")
 
         all_documents = []
+        aggregated_result = PipelineResult()
         project_ids = self.project_manager.list_project_ids()
 
         logger.info(f"Processing {len(project_ids)} projects")
@@ -189,7 +191,20 @@ class PipelineOrchestrator:
                     source=source,
                     force=force,
                 )
+                project_result = self.last_pipeline_result
                 all_documents.extend(project_documents)
+
+                if project_result is not None:
+                    aggregated_result.success_count += project_result.success_count
+                    aggregated_result.error_count += project_result.error_count
+                    aggregated_result.successfully_processed_documents.update(
+                        project_result.successfully_processed_documents
+                    )
+                    aggregated_result.failed_document_ids.update(
+                        project_result.failed_document_ids
+                    )
+                    aggregated_result.errors.extend(project_result.errors)
+
                 logger.debug(
                     f"Processed {len(project_documents)} documents from project: {project_id}"
                 )
@@ -199,6 +214,8 @@ class PipelineOrchestrator:
                 )
                 # Continue processing other projects
                 continue
+
+        self.last_pipeline_result = aggregated_result
 
         logger.info(
             f"Completed processing all projects: {len(all_documents)} total documents"

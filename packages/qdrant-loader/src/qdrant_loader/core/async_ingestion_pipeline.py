@@ -236,7 +236,14 @@ class AsyncIngestionPipeline:
                     self.orchestrator, "last_pipeline_result", None
                 )
                 total_chunks = getattr(pipeline_result, "success_count", 0)
-                total_size_bytes = sum(len(doc.content or "") for doc in documents)
+
+                def _safe_document_size(doc: Document) -> int:
+                    try:
+                        return int(doc.metadata.get("size", 0))
+                    except (TypeError, ValueError):
+                        return 0
+
+                total_size_bytes = sum(_safe_document_size(doc) for doc in documents)
 
                 self.monitor.start_batch(
                     "document_batch",

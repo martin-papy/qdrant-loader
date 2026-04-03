@@ -581,3 +581,104 @@ class TestPipelineOrchestrator:
         # Verify no updates were attempted (but initialization was called)
         self.state_manager.update_document_state.assert_not_called()
         self.state_manager.initialize.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_all_projects_aggregates_pipeline_results(self):
+        """Multi-project runs should aggregate pipeline results across projects."""
+        project_manager = Mock()
+        project_manager.list_project_ids.return_value = ["p1", "p2"]
+        orchestrator = PipelineOrchestrator(
+            self.settings, self.components, project_manager=project_manager
+        )
+
+        docs_by_project = {
+            "p1": [Mock(spec=Document, id="doc1")],
+            "p2": [Mock(spec=Document, id="doc2")],
+        }
+        results_by_project = {
+            "p1": Mock(
+                success_count=3,
+                error_count=1,
+                successfully_processed_documents={"doc1"},
+                failed_document_ids={"doc1-failed"},
+                errors=["p1-error"],
+            ),
+            "p2": Mock(
+                success_count=5,
+                error_count=2,
+                successfully_processed_documents={"doc2"},
+                failed_document_ids={"doc2-failed"},
+                errors=["p2-error"],
+            ),
+        }
+
+        async def mock_process_documents(**kwargs):
+            project_id = kwargs["project_id"]
+            orchestrator.last_pipeline_result = results_by_project[project_id]
+            return docs_by_project[project_id]
+
+        with patch.object(
+            orchestrator, "process_documents", side_effect=mock_process_documents
+        ):
+            documents = await orchestrator._process_all_projects()
+
+        assert len(documents) == 2
+        assert {doc.id for doc in documents} == {"doc1", "doc2"}
+
+        assert orchestrator.last_pipeline_result is not None
+        assert orchestrator.last_pipeline_result.success_count == 8
+        assert orchestrator.last_pipeline_result.error_count == 3
+        assert orchestrator.last_pipeline_result.successfully_processed_documents == {
+            "doc1",
+            "doc2",
+        }
+        assert orchestrator.last_pipeline_result.failed_document_ids == {
+            "doc1-failed",
+            "doc2-failed",
+        }
+        assert orchestrator.last_pipeline_result.errors == ["p1-error", "p2-error"]
+
+    @pytest.mark.asyncio
+    async def test_process_all_projects_handles_missing_project_results(self):
+        """Projects with no pipeline result should not break aggregate result."""
+        project_manager = Mock()
+        project_manager.list_project_ids.return_value = ["p1", "p2"]
+        orchestrator = PipelineOrchestrator(
+            self.settings, self.components, project_manager=project_manager
+        )
+
+        docs_by_project = {
+            "p1": [Mock(spec=Document, id="doc1")],
+            "p2": [],
+        }
+
+        result_p1 = Mock(
+            success_count=2,
+            error_count=0,
+            successfully_processed_documents={"doc1"},
+            failed_document_ids=set(),
+            errors=[],
+        )
+
+        async def mock_process_documents(**kwargs):
+            project_id = kwargs["project_id"]
+            if project_id == "p1":
+                orchestrator.last_pipeline_result = result_p1
+            else:
+                orchestrator.last_pipeline_result = None
+            return docs_by_project[project_id]
+
+        with patch.object(
+            orchestrator, "process_documents", side_effect=mock_process_documents
+        ):
+            documents = await orchestrator._process_all_projects()
+
+        assert len(documents) == 1
+        assert documents[0].id == "doc1"
+
+        assert orchestrator.last_pipeline_result is not None
+        assert orchestrator.last_pipeline_result.success_count == 2
+        assert orchestrator.last_pipeline_result.error_count == 0
+        assert orchestrator.last_pipeline_result.successfully_processed_documents == {
+            "doc1"
+        }

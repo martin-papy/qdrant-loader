@@ -353,10 +353,94 @@ class TestAsyncIngestionPipeline:
                 0,
                 [],
                 total_chunks=5,
-                total_size_bytes=28,
+                total_size_bytes=0,
             )
 
             assert result == sample_documents
+
+    @pytest.mark.asyncio
+    async def test_process_documents_uses_metadata_size_for_total_size_bytes(
+        self, mock_settings, mock_qdrant_manager
+    ):
+        """total_size_bytes should be summed from document metadata['size']."""
+        documents_with_size = [
+            Document(
+                content="short",
+                url="http://example.com/doc1",
+                content_type="text/plain",
+                source_type="test",
+                source="test_source",
+                title="Test Document 1",
+                metadata={"source": "test", "size": 100},
+            ),
+            Document(
+                content="very long content that should not be used for size metrics",
+                url="http://example.com/doc2",
+                content_type="text/plain",
+                source_type="test",
+                source="test_source",
+                title="Test Document 2",
+                metadata={"source": "test", "size": "250"},
+            ),
+            Document(
+                content="content present but invalid metadata size",
+                url="http://example.com/doc3",
+                content_type="text/plain",
+                source_type="test",
+                source="test_source",
+                title="Test Document 3",
+                metadata={"source": "test", "size": "invalid"},
+            ),
+        ]
+
+        with (
+            patch(
+                "qdrant_loader.core.async_ingestion_pipeline.PipelineComponentsFactory"
+            ),
+            patch(
+                "qdrant_loader.core.async_ingestion_pipeline.PipelineOrchestrator"
+            ) as mock_orchestrator_class,
+            patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
+            patch(
+                "qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"
+            ) as mock_monitor_class,
+            patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
+        ):
+            self._setup_path_mocks(mock_path)
+
+            mock_orchestrator = Mock()
+            mock_orchestrator.process_documents = AsyncMock(
+                return_value=documents_with_size
+            )
+            mock_orchestrator.last_pipeline_result = Mock(success_count=7)
+            mock_orchestrator_class.return_value = mock_orchestrator
+
+            mock_monitor = Mock()
+            mock_monitor.clear_metrics = Mock()
+            mock_monitor.start_operation = Mock()
+            mock_monitor.end_operation = Mock()
+            mock_monitor.start_batch = Mock()
+            mock_monitor.end_batch = Mock()
+            mock_monitor_class.return_value = mock_monitor
+
+            pipeline = AsyncIngestionPipeline(
+                settings=mock_settings, qdrant_manager=mock_qdrant_manager
+            )
+            pipeline.state_manager._initialized = True
+            pipeline.project_manager._initialized = True
+
+            result = await pipeline.process_documents(source_type="jira")
+
+            mock_monitor.end_batch.assert_called_once_with(
+                "document_batch",
+                3,
+                0,
+                [],
+                total_chunks=7,
+                total_size_bytes=350,
+            )
+            assert result == documents_with_size
 
     @pytest.mark.asyncio
     async def test_process_documents_error_handling(
