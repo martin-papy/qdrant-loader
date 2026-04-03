@@ -20,40 +20,41 @@ global:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  
+
   # Chunking configuration for tests
   chunking:
     chunk_size: 500
     chunk_overlap: 50
-  
+
   embedding:
     model: text-embedding-3-small
-    api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
-    batch_size: 10  # Smaller batch size for tests
-    
+    api_key: "${OPENAI_API_KEY}" # API key for the embedding service (required for OpenAI models)
+    batch_size: 10 # Smaller batch size for tests
+
   semantic_analysis:
-    num_topics: 3                    # Number of topics to extract using LDA
-    lda_passes: 10                   # Number of passes for LDA training
-    spacy_model: "en_core_web_md"    # spaCy model for text processing
-                                     # Options: en_core_web_sm (15MB, no vectors)
-                                     #          en_core_web_md (50MB, 20k vectors) - recommended
-                                     #          en_core_web_lg (750MB, 514k vectors)  
+    num_topics: 3 # Number of topics to extract using LDA
+    lda_passes: 10 # Number of passes for LDA training
+    spacy_model:
+      "en_core_web_md" # spaCy model for text processing
+      # Options: en_core_web_sm (15MB, no vectors)
+      #          en_core_web_md (50MB, 20k vectors) - recommended
+      #          en_core_web_lg (750MB, 514k vectors)
   state_management:
-    database_path: ":memory:"  # Use in-memory SQLite for tests
+    database_path: ":memory:" # Use in-memory SQLite for tests
     table_prefix: "test_qdrant_loader_"
     connection_pool:
-      size: 1  # Single connection for tests
-      timeout: 5  # Shorter timeout for tests
-  
+      size: 1 # Single connection for tests
+      timeout: 5 # Shorter timeout for tests
+
   # File conversion configuration for tests
   # Using smaller limits for faster test execution
   file_conversion:
     # Maximum file size for conversion (in bytes) - 10MB for tests
-    max_file_size: 10485760  # 10MB (smaller than production default)
-    
+    max_file_size: 10485760 # 10MB (smaller than production default)
+
     # Timeout for conversion operations (in seconds) - shorter for tests
-    conversion_timeout: 60  # 1 minute (shorter than production default)
-    
+    conversion_timeout: 60 # 1 minute (shorter than production default)
+
     # MarkItDown specific settings
     markitdown:
       # Disable LLM integration for tests to avoid API calls
@@ -71,14 +72,14 @@ projects:
     project_id: "default"
     display_name: "Test Project"
     description: "Default test project for unit tests"
-    
+
     # Source-specific configurations
     sources:
       publicdocs:
         test-docs:
           source_type: "publicdocs"
           source: "test-docs"
-          base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
+          base_url: https://docs.python.org/3/tutorial/ # Using Python docs as test site
           version: "3.12"
           content_type: html
           exclude_paths:
@@ -106,7 +107,7 @@ projects:
           token: "${REPO_TOKEN}"
           include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
           exclude_paths: ["src/test/**/*"]
-          file_types: ["*.md","*.java"]
+          file_types: ["*.md", "*.java"]
           max_file_size: 1048576
           depth: 1
 
@@ -143,6 +144,14 @@ projects:
           project_key: "${JIRA_PROJECT_KEY}"
           requests_per_minute: 60
           page_size: 50
+          issue_types:
+            - "Bug"
+            - "Story"
+            - "Task"
+          include_statuses:
+            - "Open"
+            - "In Progress"
+            - "Done"
           process_attachments: true
           track_last_sync: true
           token: "${JIRA_TOKEN}"
@@ -159,7 +168,7 @@ projects:
         test-files:
           source_type: "localfile"
           source: "test-files"
-          base_url: "file:///tmp/test-files"  # Test directory
+          base_url: "file:///tmp/test-files" # Test directory
           include_paths:
             - "docs/**"
             - "*.md"
@@ -175,7 +184,7 @@ projects:
             - "*.docx"
             - "*.xlsx"
             - "*.pptx"
-          max_file_size: 5242880  # 5MB for tests
+          max_file_size: 5242880 # 5MB for tests
 
           # File conversion settings for this source
           # Enable file conversion for testing
