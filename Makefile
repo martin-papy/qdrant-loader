@@ -55,16 +55,17 @@ clean-build: ## Clean build and test artifacts
 clean: clean-python clean-build ## Clean all build and cache artifacts
 
 build: ## Build both packages
-	cd packages/qdrant-loader && uv build
-	cd packages/qdrant-loader-mcp-server && uv build
+	rm -rf packages/qdrant-loader/dist/ packages/qdrant-loader-mcp-server/dist/
+	cd packages/qdrant-loader && uv build --out-dir dist/
+	cd packages/qdrant-loader-mcp-server && uv build --out-dir dist/
 
 build-loader: ## Build qdrant-loader package only
 	rm -rf packages/qdrant-loader/dist/
-	cd packages/qdrant-loader && uv build
+	cd packages/qdrant-loader && uv build --out-dir dist/
 
 build-mcp: ## Build mcp-server package only
 	rm -rf packages/qdrant-loader-mcp-server/dist/
-	cd packages/qdrant-loader-mcp-server && uv build
+	cd packages/qdrant-loader-mcp-server && uv build --out-dir dist/
 
 publish-loader: build-loader ## Publish qdrant-loader to PyPI
 	uv publish packages/qdrant-loader/dist/qdrant_loader-*
@@ -78,22 +79,22 @@ docs: ## Generate documentation
 setup-dev: ## Set up development environment
 	uv sync --all-packages --all-extras
 	@echo "Virtual environment ready at .venv"
-	@echo "Activate with:"
-	@echo "  source .venv/bin/activate  # On macOS/Linux"
-	@echo "  .venv\\Scripts\\activate     # On Windows"
+	@echo "Run commands with: uv run <command>"
+	@echo "Or activate manually: source .venv/bin/activate (macOS/Linux)"
+	@echo "  .venv\\Scripts\\activate (Windows)"
 
 check: lint quality test ## Run all checks (lint + quality + test)
 
 profile-pyspy:
 	@echo "Running py-spy..."
-	python -m qdrant_loader.cli.cli ingest --source-type=localfile & \
-	PID=$$!; sleep 2; py-spy record -o profile.svg --pid $$PID; kill $$PID; echo "Flamegraph saved to profile.svg"
+	uv run python -m qdrant_loader.cli.cli ingest --source-type=localfile & \
+	PID=$$!; sleep 2; uv run py-spy record -o profile.svg --pid $$PID; kill $$PID; echo "Flamegraph saved to profile.svg"
 
 profile-cprofile:
 	@echo "Running cProfile..."
-	python -m qdrant_loader.cli.cli ingest --source-type=localfile --profile
+	uv run python -m qdrant_loader.cli.cli ingest --source-type=localfile --profile
 	@echo "Opening SnakeViz..."
-	snakeviz profile.out
+	uv run snakeviz profile.out
 
 metrics:
 	@echo "Starting Prometheus metrics endpoint (to be implemented)"

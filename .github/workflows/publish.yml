@@ -61,7 +61,7 @@ jobs:
       - name: Build loader package
         run: |
           cd packages/qdrant-loader
-          uv build
+          uv build --out-dir dist/
           
       - name: Publish loader package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -89,7 +89,7 @@ jobs:
       - name: Build MCP server package
         run: |
           cd packages/qdrant-loader-mcp-server
-          uv build
+          uv build --out-dir dist/
           
       - name: Publish MCP server package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -117,7 +117,7 @@ jobs:
       - name: Build core package
         run: |
           cd packages/qdrant-loader-core
-          uv build
+          uv build --out-dir dist/
 
       - name: Publish core package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
