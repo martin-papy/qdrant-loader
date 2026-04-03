@@ -161,6 +161,35 @@ class BaseJiraConnector(BaseConnector):
                     ),
                 )
 
+    def _build_jql_filter(self, updated_after: datetime | None = None) -> str:
+        """Build JQL filter query with project key, issue types, and statuses.
+
+        Args:
+            updated_after: Optional datetime to filter issues updated after this time
+
+        Returns:
+            str: JQL filter query
+        """
+        jql = f'project = "{self.config.project_key}"'
+
+        # Add issue type filter if configured
+        if self.config.issue_types:
+            types_str = ", ".join(f'"{t}"' for t in self.config.issue_types)
+            jql += f" AND type IN ({types_str})"
+            logger.debug(f"Applied JIRA issue type filter: {self.config.issue_types}")
+
+        # Add status filter if configured
+        if self.config.include_statuses:
+            statuses_str = ", ".join(f'"{s}"' for s in self.config.include_statuses)
+            jql += f" AND status IN ({statuses_str})"
+            logger.debug(f"Applied JIRA status filter: {self.config.include_statuses}")
+
+        # Add updated_after filter if provided
+        if updated_after:
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+
+        return jql
+
     async def __aenter__(self):
         """Async context manager entry."""
         if not self._initialized:

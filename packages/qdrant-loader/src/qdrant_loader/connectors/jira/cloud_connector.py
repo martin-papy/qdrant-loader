@@ -59,9 +59,7 @@ class JiraCloudConnector(BaseJiraConnector):
         )
 
         while True:
-            jql = f'project = "{self.config.project_key}"'
-            if updated_after:
-                jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+            jql = self._build_jql_filter(updated_after)
 
             params = {
                 "jql": jql,
