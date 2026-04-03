@@ -637,6 +637,33 @@ class TestJiraConnector:
 
         assert jql == 'project = "TEST"'
 
+    def test_escape_jql_literal_handles_quotes_and_backslashes(self):
+        """Test JQL literal escaping for unsafe characters."""
+        assert JiraCloudConnector._escape_jql_literal('MY"PROJECT') == 'MY\\"PROJECT'
+        assert JiraCloudConnector._escape_jql_literal(r"ABC\DEF") == r"ABC\\DEF"
+        assert JiraCloudConnector._escape_jql_literal('A"B\\C') == 'A\\"B\\\\C'
+
+    def test_jql_filter_build_escapes_all_config_literals(self):
+        """Test JQL filter builder escapes project, issue type and status values."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key='MY"PROJECT\\KEY',
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            issue_types=['Bug"Type', r"Feature\Request"],
+            include_statuses=['Open"Status', r"In\Progress"],
+        )
+        connector = JiraCloudConnector(config)
+        jql = connector._build_jql_filter()
+
+        assert 'project = "MY\\"PROJECT\\\\KEY"' in jql
+        assert '"Bug\\"Type"' in jql
+        assert '"Feature\\\\Request"' in jql
+        assert '"Open\\"Status"' in jql
+        assert '"In\\\\Progress"' in jql
+
     @pytest.mark.asyncio
     async def test_cloud_issue_filtering(
         self, jira_cloud_config, mock_cloud_issue_data
