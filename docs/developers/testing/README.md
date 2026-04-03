@@ -29,47 +29,33 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-
-# Install packages in editable mode (workspace layout)
-pip install -e packages/qdrant-loader
-# Optional: MCP server if testing integration
-pip install -e packages/qdrant-loader-mcp-server
-
-# Install test tools
-pip install pytest pytest-asyncio pytest-cov pytest-mock requests-mock responses
+# Install all workspace packages with development dependencies
+# uv automatically creates and manages the virtual environment
+# All test tools (pytest, pytest-asyncio, pytest-cov, pytest-mock, etc.)
+# are declared as dev dependencies and installed automatically
+uv sync --all-packages --all-extras
 
 # Run all tests (verbose)
-pytest -v
+uv run pytest -v
 
-# Run with coverage per package (HTML reports under respective directories)
-# Test qdrant-loader package
-cd packages/qdrant-loader
-pytest -v --cov=src --cov-report=html
-
-# Test qdrant-loader-mcp-server package
-cd ../qdrant-loader-mcp-server
-pytest -v --cov=src --cov-report=html
-
-# Test website (from project root)
-cd ../..
-export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
-pytest tests/ --cov=website --cov-report=html
+# Run with coverage per package
+make test-loader    # qdrant-loader package
+make test-mcp       # qdrant-loader-mcp-server package
+make test-core      # qdrant-loader-core package
+make test-coverage  # all packages with HTML coverage report
 ```
 
 ### Running Specific Test Categories
 
 ```bash
 # Unit tests only
-pytest tests/unit/
+uv run pytest packages/qdrant-loader/tests/unit/
 # Integration tests only
-pytest tests/integration/
+uv run pytest packages/qdrant-loader/tests/integration/
 # Specific test file
-pytest tests/unit/core/test_qdrant_manager.py
+uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py
 # Specific test function
-pytest tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initialization_default_settings
+uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initialization_default_settings
 ```
 
 ## 🧪 Testing Framework
@@ -489,14 +475,15 @@ async def test_ingestion_performance(test_settings):
 # Run all quality checks
 make test
 make lint
-make format-check
-# Individual checks
-ruff check . # Linting
-ruff format --check . # Code formatting
-mypy . # Type checking
+make format
+# Individual checks via uv
+uv run ruff check .          # Linting
+uv run ruff format --check . # Code formatting check
 # Per-package test coverage
-cd packages/qdrant-loader && pytest --cov=src
-cd packages/qdrant-loader-mcp-server && pytest --cov=src
+make test-loader   # packages/qdrant-loader
+make test-mcp      # packages/qdrant-loader-mcp-server
+make test-core     # packages/qdrant-loader-core
+make test-coverage # all packages combined
 ```
 
 ### Package-specific quality gates
