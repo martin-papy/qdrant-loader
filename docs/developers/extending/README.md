@@ -43,15 +43,11 @@ QDrant Loader currently supports extension through:
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
-# Recommended: venv + editable installs
-python -m venv .venv && source .venv/bin/activate
-pip install -e packages/qdrant-loader
-
-# Optional: MCP package if developing integration
-pip install -e packages/qdrant-loader-mcp-server
+# Install all workspace packages with development dependencies
+uv sync --all-packages --all-extras
 
 # Run tests
-pytest -v
+uv run pytest -v
 ```
 
 ## 📊 Custom Data Source Connectors

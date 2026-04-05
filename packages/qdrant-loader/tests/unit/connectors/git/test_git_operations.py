@@ -473,5 +473,211 @@ class TestListFiles:
             git_operations.list_files()
 
 
+class TestNestedFileHandling:
+    """Test handling of nested files with mock path."""
+
+    def test_get_file_content_nested_path_with_windows_separators(
+        self, git_operations, mock_repo
+    ):
+        """Test file content retrieval with Windows separators cross-platform."""
+        git_operations.repo = mock_repo
+        expected_content = "import os"
+
+        # CI can run on Linux/macOS where relpath semantics differ for Windows-like paths.
+        # Mock relpath to isolate and verify path normalization behavior only.
+        with patch("os.path.relpath", return_value=r"src\nested\file.py"):
+            mock_repo.git.show.return_value = expected_content
+
+            content = git_operations.get_file_content("/irrelevant/absolute/path.py")
+
+            assert content == expected_content
+            # Verify path was normalized to Unix separators
+            mock_repo.git.show.assert_called_once_with("HEAD:src/nested/file.py")
+
+    def test_get_file_content_deeply_nested_path(self, git_operations, mock_repo):
+        """Test file content retrieval for deeply nested files."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/a/b/c/d/e/f/deep_file.txt"
+        expected_content = "Deep content"
+
+        mock_repo.working_dir = "/fake/repo/path"
+        mock_repo.git.show.return_value = expected_content
+
+        content = git_operations.get_file_content(file_path)
+
+        assert content == expected_content
+        mock_repo.git.show.assert_called_once_with("HEAD:a/b/c/d/e/f/deep_file.txt")
+
+    def test_get_file_content_path_with_spaces(self, git_operations, mock_repo):
+        """Test file content retrieval for paths with spaces."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/my module/sub dir/file with spaces.py"
+        expected_content = "# Code in file with spaces"
+
+        mock_repo.working_dir = "/fake/repo/path"
+        mock_repo.git.show.return_value = expected_content
+
+        content = git_operations.get_file_content(file_path)
+
+        assert content == expected_content
+        mock_repo.git.show.assert_called_once_with(
+            "HEAD:my module/sub dir/file with spaces.py"
+        )
+
+    def test_get_file_content_path_with_special_chars(self, git_operations, mock_repo):
+        """Test file content retrieval for paths with special characters."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/src-main/test_file-2024.py"
+        expected_content = "# Test code"
+
+        mock_repo.working_dir = "/fake/repo/path"
+        mock_repo.git.show.return_value = expected_content
+
+        content = git_operations.get_file_content(file_path)
+
+        assert content == expected_content
+        mock_repo.git.show.assert_called_once_with("HEAD:src-main/test_file-2024.py")
+
+    def test_list_files_nested_structure(self, git_operations, mock_repo):
+        """Test file listing with nested directory structure."""
+        git_operations.repo = mock_repo
+
+        nested_files = """src/main.py
+src/utils/helpers.py
+src/lib/core/engine.py
+tests/unit/test_main.py
+tests/integration/test_api.py
+config.yaml
+README.md"""
+
+        mock_repo.git.ls_tree.return_value = nested_files
+        mock_repo.working_dir = "/fake/repo"
+
+        result = git_operations.list_files()
+
+        # Verify the result contains the expected files
+        assert len(result) == 7
+        # Check that paths are joined correctly (os.path.join handles the separator)
+        assert any("src/main.py" in p or "src\\main.py" in p for p in result)
+        assert any("README.md" in p for p in result)
+        assert any("config.yaml" in p for p in result)
+
+    def test_get_last_commit_date_nested_file(self, git_operations, mock_repo):
+        """Test last commit date retrieval for nested file."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/src/utils/helpers.py"
+
+        mock_commit = MagicMock()
+        mock_commit.committed_datetime = datetime(2024, 3, 20, 14, 30, 0, tzinfo=UTC)
+        mock_repo.iter_commits.return_value = [mock_commit]
+        mock_repo.working_dir = "/fake/repo/path"
+
+        result = git_operations.get_last_commit_date(file_path)
+
+        assert result == datetime(2024, 3, 20, 14, 30, 0, tzinfo=UTC)
+        mock_repo.iter_commits.assert_called_once_with(
+            paths="src/utils/helpers.py", max_count=1
+        )
+
+    def test_get_first_commit_date_nested_file(self, git_operations, mock_repo):
+        """Test first commit date retrieval for nested file."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/src/lib/core/engine.py"
+
+        mock_commit = MagicMock()
+        mock_commit.committed_datetime = datetime(2024, 1, 5, 9, 0, 0, tzinfo=UTC)
+        mock_repo.iter_commits.return_value = [mock_commit]
+        mock_repo.working_dir = "/fake/repo/path"
+
+        result = git_operations.get_first_commit_date(file_path)
+
+        assert result == datetime(2024, 1, 5, 9, 0, 0, tzinfo=UTC)
+        mock_repo.iter_commits.assert_called_once_with(
+            paths="src/lib/core/engine.py", reverse=True, max_count=1
+        )
+
+    def test_to_git_path_normalization(self, git_operations):
+        """Test path normalization to git format."""
+        # Windows-style path
+        win_path = "src\\main\\utils\\helpers.py"
+        assert git_operations._to_git_path(win_path) == "src/main/utils/helpers.py"
+
+        # Already unix-style
+        unix_path = "src/main/utils/helpers.py"
+        assert git_operations._to_git_path(unix_path) == "src/main/utils/helpers.py"
+
+        # Mixed separators
+        mixed_path = "src\\main/utils\\helpers.py"
+        assert git_operations._to_git_path(mixed_path) == "src/main/utils/helpers.py"
+
+
+class TestExceptionPaths:
+    """Test exception paths for full coverage."""
+
+    def test_get_file_content_generic_exception_in_outer_try(
+        self, git_operations, mock_repo
+    ):
+        """Test file content when non-git exception occurs in outer try block."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/test.txt"
+
+        # Simulate an unexpected exception by patching os.path.relpath
+        with patch("os.path.relpath") as mock_relpath:
+            mock_relpath.side_effect = RuntimeError("Unexpected error in relpath")
+
+            with pytest.raises(RuntimeError):
+                git_operations.get_file_content(file_path)
+
+    def test_get_last_commit_date_broken_pipe_error(self, git_operations, mock_repo):
+        """Test last commit date with BrokenPipeError."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/test.txt"
+
+        # Make iter_commits raise BrokenPipeError
+        mock_repo.iter_commits.side_effect = BrokenPipeError("Git process terminated")
+
+        result = git_operations.get_last_commit_date(file_path)
+
+        assert result is None
+
+    def test_get_last_commit_date_unexpected_exception(self, git_operations, mock_repo):
+        """Test last commit date with unexpected exception."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/test.txt"
+
+        # Make iter_commits raise an unexpected exception
+        mock_repo.iter_commits.side_effect = RuntimeError("Unexpected error")
+
+        result = git_operations.get_last_commit_date(file_path)
+
+        assert result is None
+
+    def test_get_first_commit_date_broken_pipe_error(self, git_operations, mock_repo):
+        """Test first commit date with BrokenPipeError."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/test.txt"
+
+        # Make iter_commits raise BrokenPipeError
+        mock_repo.iter_commits.side_effect = BrokenPipeError("Git process terminated")
+
+        result = git_operations.get_first_commit_date(file_path)
+
+        assert result is None
+
+    def test_get_first_commit_date_unexpected_exception(
+        self, git_operations, mock_repo
+    ):
+        """Test first commit date with unexpected exception."""
+        git_operations.repo = mock_repo
+        file_path = "/fake/repo/path/test.txt"
+
+        # Make iter_commits raise an unexpected exception
+        mock_repo.iter_commits.side_effect = ValueError("Bad value")
+
+        result = git_operations.get_first_commit_date(file_path)
+
+        assert result is None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

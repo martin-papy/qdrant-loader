@@ -7,92 +7,94 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install both packages in development mode
-	pip install -e packages/qdrant-loader
-	pip install -e packages/qdrant-loader-mcp-server
+	uv sync --all-packages
 
 install-dev: ## Install both packages with development dependencies
-	pip install -e packages/qdrant-loader[dev]
-	pip install -e packages/qdrant-loader-mcp-server[dev]
+	uv sync --all-packages --all-extras
 
 test: ## Run all tests
-	pytest packages/
+	uv run pytest packages/
 
 test-loader: ## Run tests for qdrant-loader package only
-	pytest packages/qdrant-loader/tests/
+	uv run pytest packages/qdrant-loader/tests/
 
 test-mcp: ## Run tests for mcp-server package only
-	pytest packages/qdrant-loader-mcp-server/tests/
+	uv run pytest packages/qdrant-loader-mcp-server/tests/
 
 test-core: ## Run tests for qdrant-loader-core package only
-	pytest packages/qdrant-loader-core/tests/
+	uv run pytest packages/qdrant-loader-core/tests/
 
 test-coverage: ## Run tests with coverage report
-	pytest packages/ --cov=packages --cov-report=html --cov-report=term-missing
+	uv run pytest packages/ --cov=packages --cov-report=html --cov-report=term-missing
 
 quality: ## Run quality gates (import cycles, module sizes) for qdrant-loader
-	cd packages/qdrant-loader && pytest -q tests/unit/quality -v
+	cd packages/qdrant-loader && uv run pytest -q tests/unit/quality -v
 
 quality-all: ## Run quality gates for all packages (currently qdrant-loader and qdrant-loader-core)
-	cd packages/qdrant-loader && pytest -q tests/unit/quality -v
-	cd packages/qdrant-loader-core && pytest -q tests/unit/quality -v
+	cd packages/qdrant-loader && uv run pytest -q tests/unit/quality -v
+	cd packages/qdrant-loader-core && uv run pytest -q tests/unit/quality -v
 	# Add additional per-package quality directories here if/when created
 
 lint: ## Run linting on all packages
-	ruff check --fix .
+	uv run ruff check --fix .
 
 format: ## Format code in all packages
-	black .
-	isort .
-	ruff check --fix .
+	uv run black .
+	uv run isort .
+	uv run ruff check --fix .
 
-clean: ## Clean build artifacts
+clean-python: ## Clean Python cache files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
-	rm -rf packages/*/dist/
-	rm -rf packages/*/build/
-	rm -rf htmlcov/
-	rm -rf .coverage
-	rm -rf .pytest_cache/
+
+clean-build: ## Clean build and test artifacts
+	rm -rf dist/ packages/*/dist/ packages/*/build/
+	rm -rf htmlcov/ .coverage .pytest_cache/
+
+clean: clean-python clean-build ## Clean all build and cache artifacts
 
 build: ## Build both packages
-	cd packages/qdrant-loader && python -m build
-	cd packages/qdrant-loader-mcp-server && python -m build
+	rm -rf packages/qdrant-loader/dist/ packages/qdrant-loader-mcp-server/dist/
+	cd packages/qdrant-loader && uv build --out-dir dist/
+	cd packages/qdrant-loader-mcp-server && uv build --out-dir dist/
 
 build-loader: ## Build qdrant-loader package only
-	cd packages/qdrant-loader && python -m build
+	rm -rf packages/qdrant-loader/dist/
+	cd packages/qdrant-loader && uv build --out-dir dist/
 
 build-mcp: ## Build mcp-server package only
-	cd packages/qdrant-loader-mcp-server && python -m build
+	rm -rf packages/qdrant-loader-mcp-server/dist/
+	cd packages/qdrant-loader-mcp-server && uv build --out-dir dist/
 
 publish-loader: build-loader ## Publish qdrant-loader to PyPI
-	cd packages/qdrant-loader && python -m twine upload dist/*
+	uv publish packages/qdrant-loader/dist/qdrant_loader-*
 
 publish-mcp: build-mcp ## Publish mcp-server to PyPI
-	cd packages/qdrant-loader-mcp-server && python -m twine upload dist/*
+	uv publish packages/qdrant-loader-mcp-server/dist/qdrant_loader_mcp_server-*
 
 docs: ## Generate documentation
-	python website/build.py --output site --templates website/templates --base-url "http://127.0.0.1:3000/site/"
+	uv run python website/build.py --output site --templates website/templates --base-url "http://127.0.0.1:3000/site/"
 
 setup-dev: ## Set up development environment
-	python3.12 -m venv venv
-	@echo "Virtual environment created. Activate with:"
-	@echo "  source venv/bin/activate  # On macOS/Linux"
-	@echo "  venv\\Scripts\\activate     # On Windows"
-	@echo "Then run: make install-dev"
+	uv sync --all-packages --all-extras
+	@echo "Virtual environment ready at .venv"
+	@echo "Run commands with: uv run <command>"
+	@echo "Or activate manually: source .venv/bin/activate (macOS/Linux)"
+	@echo "  .venv\\Scripts\\activate (Windows)"
 
 check: lint quality test ## Run all checks (lint + quality + test)
 
 profile-pyspy:
 	@echo "Running py-spy..."
-	python -m qdrant_loader.cli.cli ingest --source-type=localfile & \
-	PID=$$!; sleep 2; py-spy record -o profile.svg --pid $$PID; kill $$PID; echo "Flamegraph saved to profile.svg"
+	uv run python -m qdrant_loader.cli.cli ingest --source-type=localfile & \
+	PID=$$!; sleep 2; uv run py-spy record -o profile.svg --pid $$PID; kill $$PID; echo "Flamegraph saved to profile.svg"
 
 profile-cprofile:
 	@echo "Running cProfile..."
-	python -m qdrant_loader.cli.cli ingest --source-type=localfile --profile
+	uv run python -m qdrant_loader.cli.cli ingest --source-type=localfile --profile
 	@echo "Opening SnakeViz..."
-	snakeviz profile.out
+	uv run snakeviz profile.out
 
 metrics:
 	@echo "Starting Prometheus metrics endpoint (to be implemented)"

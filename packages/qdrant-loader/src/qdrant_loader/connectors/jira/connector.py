@@ -161,6 +161,61 @@ class BaseJiraConnector(BaseConnector):
                     ),
                 )
 
+    @staticmethod
+    def _escape_jql_literal(value: str) -> str:
+        """Escape special characters in JQL string literals.
+
+        Escapes backslashes and double quotes to prevent JQL injection
+        and query breaking when config values contain these characters.
+
+        Args:
+            value: The string value to escape
+
+        Returns:
+            str: The escaped string safe for inclusion in JQL quoted literals
+        """
+        # Replace backslash first to avoid double-escaping
+        value = value.replace("\\", "\\\\")
+        # Then escape double quotes
+        value = value.replace('"', '\\"')
+        return value
+
+    def _build_jql_filter(self, updated_after: datetime | None = None) -> str:
+        """Build JQL filter query with project key, issue types, and statuses.
+
+        Args:
+            updated_after: Optional datetime to filter issues updated after this time
+
+        Returns:
+            str: JQL filter query
+        """
+        escaped_project_key = self._escape_jql_literal(self.config.project_key)
+        jql = f'project = "{escaped_project_key}"'
+
+        # Add issue type filter if configured
+        if self.config.issue_types:
+            escaped_types = [
+                self._escape_jql_literal(t) for t in self.config.issue_types
+            ]
+            types_str = ", ".join(f'"{t}"' for t in escaped_types)
+            jql += f" AND type IN ({types_str})"
+            logger.debug(f"Applied JIRA issue type filter: {self.config.issue_types}")
+
+        # Add status filter if configured
+        if self.config.include_statuses:
+            escaped_statuses = [
+                self._escape_jql_literal(s) for s in self.config.include_statuses
+            ]
+            statuses_str = ", ".join(f'"{s}"' for s in escaped_statuses)
+            jql += f" AND status IN ({statuses_str})"
+            logger.debug(f"Applied JIRA status filter: {self.config.include_statuses}")
+
+        # Add updated_after filter if provided
+        if updated_after:
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+
+        return jql
+
     async def __aenter__(self):
         """Async context manager entry."""
         if not self._initialized:

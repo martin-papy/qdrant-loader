@@ -1,6 +1,7 @@
 """Upsert worker for upserting embedded chunks to Qdrant."""
 
 import asyncio
+from collections import Counter
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -69,6 +70,7 @@ class UpsertWorker(BaseWorker):
                         vector=embedding,
                         payload={
                             "content": chunk.content,
+                            "contextual_content": chunk.contextual_content,
                             "metadata": {
                                 k: v
                                 for k, v in chunk.metadata.items()
@@ -132,6 +134,7 @@ class UpsertWorker(BaseWorker):
         logger.debug("UpsertWorker started")
         result = PipelineResult()
         batch = []
+        seen_chunk_ids: set[str] = set()
 
         try:
             async for chunk_embedding in embedded_chunks:
@@ -143,10 +146,48 @@ class UpsertWorker(BaseWorker):
 
                 # Process batch when it reaches the desired size
                 if len(batch) >= self.batch_size:
+                    batch_chunk_id_list = [str(chunk.id) for chunk, _ in batch]
+                    batch_chunk_ids = set(batch_chunk_id_list)
+                    batch_chunk_id_counts = Counter(batch_chunk_id_list)
                     success_count, error_count, successful_doc_ids, errors = (
                         await self.process(batch)
                     )
-                    result.success_count += success_count
+
+                    if success_count > 0:
+                        same_batch_duplicates = {
+                            chunk_id
+                            for chunk_id, count in batch_chunk_id_counts.items()
+                            if count > 1
+                        }
+                        cross_batch_duplicates = batch_chunk_ids & seen_chunk_ids
+                        duplicate_chunk_ids = (
+                            cross_batch_duplicates | same_batch_duplicates
+                        )
+                        new_chunk_ids = batch_chunk_ids - seen_chunk_ids
+
+                        if duplicate_chunk_ids:
+                            same_batch_duplicate_occurrences = sum(
+                                count - 1
+                                for count in batch_chunk_id_counts.values()
+                                if count > 1
+                            )
+                            logger.warning(
+                                "Detected chunk ID collisions during upsert; existing points will be overwritten",
+                                duplicate_count=len(duplicate_chunk_ids),
+                                same_batch_duplicate_count=len(same_batch_duplicates),
+                                same_batch_duplicate_occurrences=same_batch_duplicate_occurrences,
+                                cross_batch_duplicate_count=len(cross_batch_duplicates),
+                            )
+                            errors.append(
+                                "Detected duplicate chunk IDs during upsert: "
+                                f"{len(cross_batch_duplicates)} cross-batch IDs and "
+                                f"{same_batch_duplicate_occurrences} same-batch duplicate occurrences "
+                                f"across {len(same_batch_duplicates)} IDs"
+                            )
+
+                        seen_chunk_ids.update(batch_chunk_ids)
+                        result.success_count += len(new_chunk_ids)
+
                     result.error_count += error_count
                     result.successfully_processed_documents.update(successful_doc_ids)
                     result.errors.extend(errors)
@@ -154,10 +195,46 @@ class UpsertWorker(BaseWorker):
 
             # Process any remaining chunks in the final batch
             if batch and not self.shutdown_event.is_set():
+                batch_chunk_id_list = [str(chunk.id) for chunk, _ in batch]
+                batch_chunk_ids = set(batch_chunk_id_list)
+                batch_chunk_id_counts = Counter(batch_chunk_id_list)
                 success_count, error_count, successful_doc_ids, errors = (
                     await self.process(batch)
                 )
-                result.success_count += success_count
+
+                if success_count > 0:
+                    same_batch_duplicates = {
+                        chunk_id
+                        for chunk_id, count in batch_chunk_id_counts.items()
+                        if count > 1
+                    }
+                    cross_batch_duplicates = batch_chunk_ids & seen_chunk_ids
+                    duplicate_chunk_ids = cross_batch_duplicates | same_batch_duplicates
+                    new_chunk_ids = batch_chunk_ids - seen_chunk_ids
+
+                    if duplicate_chunk_ids:
+                        same_batch_duplicate_occurrences = sum(
+                            count - 1
+                            for count in batch_chunk_id_counts.values()
+                            if count > 1
+                        )
+                        logger.warning(
+                            "Detected chunk ID collisions during upsert; existing points will be overwritten",
+                            duplicate_count=len(duplicate_chunk_ids),
+                            same_batch_duplicate_count=len(same_batch_duplicates),
+                            same_batch_duplicate_occurrences=same_batch_duplicate_occurrences,
+                            cross_batch_duplicate_count=len(cross_batch_duplicates),
+                        )
+                        errors.append(
+                            "Detected duplicate chunk IDs during upsert: "
+                            f"{len(cross_batch_duplicates)} cross-batch IDs and "
+                            f"{same_batch_duplicate_occurrences} same-batch duplicate occurrences "
+                            f"across {len(same_batch_duplicates)} IDs"
+                        )
+
+                    seen_chunk_ids.update(batch_chunk_ids)
+                    result.success_count += len(new_chunk_ids)
+
                 result.error_count += error_count
                 result.successfully_processed_documents.update(successful_doc_ids)
                 result.errors.extend(errors)
