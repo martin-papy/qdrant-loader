@@ -761,6 +761,8 @@ class TestJiraConnector:
         assert '"Task"' in captured_jql
         assert "status IN " in captured_jql
         assert '"Done"' in captured_jql
+
+
 class TestJiraValidateConnection:
     """Tests for _validate_connection() - covers the 4 fatal config failure cases."""
 
@@ -769,6 +771,11 @@ class TestJiraValidateConnection:
         return JiraProjectConfig(
             base_url=HttpUrl("https://test.atlassian.net"),
             deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
         )
 
     def _http_error(self, status_code: int):

@@ -214,6 +214,7 @@ class BaseJiraConnector(BaseConnector):
                 f"Validation request for project '{self.config.project_key}' at "
                 f"'{self.base_url}' failed with HTTP {status}: {exc}"
             ) from exc
+
     @staticmethod
     def _escape_jql_literal(value: str) -> str:
         """Escape special characters in JQL string literals.
