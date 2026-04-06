@@ -232,6 +232,19 @@ class AsyncIngestionPipeline:
 
             # Update metrics
             if documents:
+                pipeline_result = getattr(
+                    self.orchestrator, "last_pipeline_result", None
+                )
+                total_chunks = getattr(pipeline_result, "success_count", 0)
+
+                def _safe_document_size(doc: Document) -> int:
+                    try:
+                        return int(doc.metadata.get("size", 0))
+                    except (TypeError, ValueError):
+                        return 0
+
+                total_size_bytes = sum(_safe_document_size(doc) for doc in documents)
+
                 self.monitor.start_batch(
                     "document_batch",
                     batch_size=len(documents),
@@ -243,7 +256,14 @@ class AsyncIngestionPipeline:
                     },
                 )
                 # Note: Success/error counts are handled internally by the new architecture
-                self.monitor.end_batch("document_batch", len(documents), 0, [])
+                self.monitor.end_batch(
+                    "document_batch",
+                    len(documents),
+                    0,
+                    [],
+                    total_chunks=total_chunks,
+                    total_size_bytes=total_size_bytes,
+                )
 
             self.monitor.end_operation("ingestion_process")
 

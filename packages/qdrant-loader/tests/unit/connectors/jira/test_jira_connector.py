@@ -579,7 +579,188 @@ class TestJiraConnector:
         connector = JiraDataCenterConnector(datacenter_config)
         assert connector._auto_detect_deployment_type() == JiraDeploymentType.DATACENTER
 
+    def test_jql_filter_build_with_issue_types(self, jira_cloud_config):
+        """Test JQL filter builder with issue_types."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            issue_types=["Bug", "Story"],
+        )
+        connector = JiraCloudConnector(config)
+        jql = connector._build_jql_filter()
 
+        assert 'project = "TEST"' in jql
+        assert "type IN " in jql
+        assert '"Bug"' in jql
+        assert '"Story"' in jql
+
+    def test_jql_filter_build_with_statuses(self, jira_cloud_config):
+        """Test JQL filter builder with include_statuses."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            include_statuses=["Open", "In Progress"],
+        )
+        connector = JiraCloudConnector(config)
+        jql = connector._build_jql_filter()
+
+        assert 'project = "TEST"' in jql
+        assert "status IN " in jql
+        assert '"Open"' in jql
+        assert '"In Progress"' in jql
+
+    def test_jql_filter_build_with_all_filters(self, jira_cloud_config):
+        """Test JQL filter builder with all filters combined."""
+        from datetime import datetime
+
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            issue_types=["Bug", "Story"],
+            include_statuses=["Open", "In Progress"],
+        )
+        connector = JiraCloudConnector(config)
+        updated_after = datetime(2024, 1, 1, 12, 0)
+        jql = connector._build_jql_filter(updated_after=updated_after)
+
+        assert 'project = "TEST"' in jql
+        assert "type IN " in jql
+        assert '"Bug"' in jql
+        assert '"Story"' in jql
+        assert "status IN " in jql
+        assert '"Open"' in jql
+        assert '"In Progress"' in jql
+        assert "updated >= " in jql
+        assert "2024-01-01" in jql
+
+    def test_jql_filter_build_no_filters(self, jira_cloud_config):
+        """Test JQL filter builder without any optional filters."""
+        connector = JiraCloudConnector(jira_cloud_config)
+        jql = connector._build_jql_filter()
+
+        assert jql == 'project = "TEST"'
+
+    def test_escape_jql_literal_handles_quotes_and_backslashes(self):
+        """Test JQL literal escaping for unsafe characters."""
+        assert JiraCloudConnector._escape_jql_literal('MY"PROJECT') == 'MY\\"PROJECT'
+        assert JiraCloudConnector._escape_jql_literal(r"ABC\DEF") == r"ABC\\DEF"
+        assert JiraCloudConnector._escape_jql_literal('A"B\\C') == 'A\\"B\\\\C'
+
+    def test_jql_filter_build_escapes_all_config_literals(self):
+        """Test JQL filter builder escapes project, issue type and status values."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key='MY"PROJECT\\KEY',
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            issue_types=['Bug"Type', r"Feature\Request"],
+            include_statuses=['Open"Status', r"In\Progress"],
+        )
+        connector = JiraCloudConnector(config)
+        jql = connector._build_jql_filter()
+
+        assert 'project = "MY\\"PROJECT\\\\KEY"' in jql
+        assert '"Bug\\"Type"' in jql
+        assert '"Feature\\\\Request"' in jql
+        assert '"Open\\"Status"' in jql
+        assert '"In\\\\Progress"' in jql
+
+    @pytest.mark.asyncio
+    async def test_cloud_issue_filtering(
+        self, jira_cloud_config, mock_cloud_issue_data
+    ):
+        """Test that issue filtering is applied in Cloud connector."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            issue_types=["Bug"],
+            include_statuses=["Open"],
+        )
+        connector = JiraCloudConnector(config)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_cloud_issue_data]}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues():
+                    issues.append(issue)
+                    break  # Just get the first one
+
+        # Verify filtering was applied in the JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "type IN " in captured_jql
+        assert '"Bug"' in captured_jql
+        assert "status IN " in captured_jql
+        assert '"Open"' in captured_jql
+
+    @pytest.mark.asyncio
+    async def test_datacenter_issue_filtering(
+        self, jira_data_center_config, mock_data_center_issue_data
+    ):
+        """Test that issue filtering is applied in Data Center connector."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://jira.company.com"),
+            deployment_type=JiraDeploymentType.DATACENTER,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-pat-token",
+            issue_types=["Bug", "Task"],
+            include_statuses=["Done"],
+        )
+        connector = JiraDataCenterConnector(config)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_data_center_issue_data], "total": 1}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues():
+                    issues.append(issue)
+                    break  # Just get the first one
+
+        # Verify filtering was applied in the JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "type IN " in captured_jql
+        assert '"Bug"' in captured_jql
+        assert '"Task"' in captured_jql
+        assert "status IN " in captured_jql
+        assert '"Done"' in captured_jql
 class TestJiraValidateConnection:
     """Tests for _validate_connection() - covers the 4 fatal config failure cases."""
 
@@ -588,11 +769,6 @@ class TestJiraValidateConnection:
         return JiraProjectConfig(
             base_url=HttpUrl("https://test.atlassian.net"),
             deployment_type=JiraDeploymentType.CLOUD,
-            project_key="TEST",
-            source="test-jira",
-            source_type=SourceType.JIRA,
-            token="test-token",
-            email="test@example.com",
         )
 
     def _http_error(self, status_code: int):

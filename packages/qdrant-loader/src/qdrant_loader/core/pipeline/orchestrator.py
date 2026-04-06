@@ -11,6 +11,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 from .document_pipeline import DocumentPipeline
 from .source_filter import SourceFilter
 from .source_processor import SourceProcessor
+from .workers.upsert_worker import PipelineResult
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -43,6 +44,7 @@ class PipelineOrchestrator:
         self.settings = settings
         self.components = components
         self.project_manager = project_manager
+        self.last_pipeline_result = None
 
     async def process_documents(
         self,
@@ -65,6 +67,7 @@ class PipelineOrchestrator:
             List of processed documents
         """
         logger.info("🚀 Starting document ingestion")
+        self.last_pipeline_result = None
 
         try:
             # Determine sources configuration to use
@@ -147,6 +150,7 @@ class PipelineOrchestrator:
             result = await self.components.document_pipeline.process_documents(
                 documents
             )
+            self.last_pipeline_result = result
 
             # Update document states for successfully processed documents
             await self._update_document_states(
@@ -173,6 +177,7 @@ class PipelineOrchestrator:
             raise ValueError("Project manager not available")
 
         all_documents = []
+        aggregated_result = PipelineResult()
         project_ids = self.project_manager.list_project_ids()
 
         logger.info(f"Processing {len(project_ids)} projects")
@@ -186,7 +191,20 @@ class PipelineOrchestrator:
                     source=source,
                     force=force,
                 )
+                project_result = self.last_pipeline_result
                 all_documents.extend(project_documents)
+
+                if project_result is not None:
+                    aggregated_result.success_count += project_result.success_count
+                    aggregated_result.error_count += project_result.error_count
+                    aggregated_result.successfully_processed_documents.update(
+                        project_result.successfully_processed_documents
+                    )
+                    aggregated_result.failed_document_ids.update(
+                        project_result.failed_document_ids
+                    )
+                    aggregated_result.errors.extend(project_result.errors)
+
                 logger.debug(
                     f"Processed {len(project_documents)} documents from project: {project_id}"
                 )
@@ -196,6 +214,8 @@ class PipelineOrchestrator:
                 )
                 # Continue processing other projects
                 continue
+
+        self.last_pipeline_result = aggregated_result
 
         logger.info(
             f"Completed processing all projects: {len(all_documents)} total documents"
