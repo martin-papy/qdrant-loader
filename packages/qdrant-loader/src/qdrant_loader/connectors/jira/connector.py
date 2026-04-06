@@ -171,15 +171,15 @@ class BaseJiraConnector(BaseConnector):
         # ── Step 1: reachability + authentication (/myself endpoint) ──────────
         try:
             await self._make_request("GET", "myself")
-        except requests.exceptions.ConnectionError as exc:
-            raise ConnectorConfigurationError(
-                f"Cannot connect to Jira at '{self.base_url}'. "
-                "Verify that base_url is correct and the server is reachable."
-            ) from exc
         except requests.exceptions.Timeout as exc:
             raise ConnectorConfigurationError(
                 f"Connection to Jira at '{self.base_url}' timed out. "
                 "Verify network connectivity and try again."
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise ConnectorConfigurationError(
+                f"Cannot connect to Jira at '{self.base_url}'. "
+                "Verify that base_url is correct and the server is reachable."
             ) from exc
         except requests.exceptions.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
@@ -205,16 +205,16 @@ class BaseJiraConnector(BaseConnector):
         # ── Step 2: project key exists and is accessible ───────────────────────
         try:
             await self._make_request("GET", f"project/{self.config.project_key}")
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out while validating "
+                f"project '{self.config.project_key}'."
+            ) from exc
         except requests.exceptions.ConnectionError as exc:
             raise ConnectorConfigurationError(
                 f"Connection to Jira at '{self.base_url}' was lost while validating "
                 f"project '{self.config.project_key}' (between validation steps). "
                 "Verify network connectivity and Jira availability."
-            ) from exc
-        except requests.exceptions.Timeout as exc:
-            raise ConnectorConfigurationError(
-                f"Connection to Jira at '{self.base_url}' timed out while validating "
-                f"project '{self.config.project_key}'."
             ) from exc
         except requests.exceptions.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
