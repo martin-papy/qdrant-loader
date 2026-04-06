@@ -168,17 +168,20 @@ class BaseJiraConnector(BaseConnector):
             ConnectorConfigurationError: for invalid URL, bad credentials,
                 missing permissions, or unknown project key.
         """
-        import requests as _requests
-
         # ── Step 1: reachability + authentication (/myself endpoint) ──────────
         try:
             await self._make_request("GET", "myself")
-        except _requests.exceptions.ConnectionError as exc:
+        except requests.exceptions.ConnectionError as exc:
             raise ConnectorConfigurationError(
                 f"Cannot connect to Jira at '{self.base_url}'. "
                 "Verify that base_url is correct and the server is reachable."
             ) from exc
-        except _requests.exceptions.HTTPError as exc:
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out. "
+                "Verify network connectivity and try again."
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
             if status == 401:
                 raise ConnectorConfigurationError(
@@ -194,11 +197,26 @@ class BaseJiraConnector(BaseConnector):
                 f"Validation request to Jira at '{self.base_url}' failed "
                 f"with HTTP {status}: {exc}"
             ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise ConnectorConfigurationError(
+                f"Validation request to Jira at '{self.base_url}' failed: {exc}"
+            ) from exc
 
         # ── Step 2: project key exists and is accessible ───────────────────────
         try:
             await self._make_request("GET", f"project/{self.config.project_key}")
-        except _requests.exceptions.HTTPError as exc:
+        except requests.exceptions.ConnectionError as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' was lost while validating "
+                f"project '{self.config.project_key}' (between validation steps). "
+                "Verify network connectivity and Jira availability."
+            ) from exc
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out while validating "
+                f"project '{self.config.project_key}'."
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else None
             if status == 404:
                 raise ConnectorConfigurationError(
@@ -213,6 +231,11 @@ class BaseJiraConnector(BaseConnector):
             raise ConnectorConfigurationError(
                 f"Validation request for project '{self.config.project_key}' at "
                 f"'{self.base_url}' failed with HTTP {status}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise ConnectorConfigurationError(
+                f"Validation request for project '{self.config.project_key}' at "
+                f"'{self.base_url}' failed: {exc}"
             ) from exc
 
     @staticmethod
