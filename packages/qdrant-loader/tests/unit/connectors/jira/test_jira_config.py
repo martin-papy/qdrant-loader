@@ -39,9 +39,13 @@ class TestValidateNoPlaceholders:
     """validate_no_placeholders – happy paths (no ${...} remaining)."""
 
     def test_all_real_values_accepted(self):
+        from urllib.parse import urlparse
+
         cfg = _make()
         assert cfg.project_key == "TEST"
-        assert str(cfg.base_url).startswith("https://test.atlassian.net")
+        parsed = urlparse(str(cfg.base_url))
+        assert parsed.scheme == "https"
+        assert parsed.hostname == "test.atlassian.net"
 
     def test_datacenter_no_email_accepted(self):
         """Data Center deployment does not require email."""

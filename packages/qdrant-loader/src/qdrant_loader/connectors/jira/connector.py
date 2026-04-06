@@ -190,7 +190,10 @@ class BaseJiraConnector(BaseConnector):
                     f"Access denied to Jira at '{self.base_url}' (HTTP 403). "
                     "The account does not have sufficient permissions."
                 ) from exc
-            raise
+            raise ConnectorConfigurationError(
+                f"Validation request to Jira at '{self.base_url}' failed "
+                f"with HTTP {status}: {exc}"
+            ) from exc
 
         # ── Step 2: project key exists and is accessible ───────────────────────
         try:
@@ -207,7 +210,10 @@ class BaseJiraConnector(BaseConnector):
                     f"No permission to access project '{self.config.project_key}' "
                     f"in Jira (HTTP 403)."
                 ) from exc
-            raise
+            raise ConnectorConfigurationError(
+                f"Validation request for project '{self.config.project_key}' at "
+                f"'{self.base_url}' failed with HTTP {status}: {exc}"
+            ) from exc
 
     async def __aenter__(self):
         """Async context manager entry."""
