@@ -278,8 +278,8 @@ grep -r "old_api_name" docs/
 
 ```bash
 # Check for broken internal links
-find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
-  xargs -I {} bash -c 'echo "Checking: {}"; grep -o "\[.*\](\.\/[^)]*)" {}'
+find docs -name "*.md" -exec grep -l "MARKDOWN_LINK_REGEX" {} \; | \
+  xargs -I {} bash -c 'echo "Checking: {}"; grep -o "MARKDOWN_LINK_REGEX" {}'
 ```
 
 ### Manual Review Process

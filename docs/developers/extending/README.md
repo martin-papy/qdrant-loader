@@ -526,7 +526,7 @@ Each connector demonstrates different patterns and can serve as examples for you
 
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Ask development questions
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report bugs or request features
-- **[Contributing Guide](../../CONTRIBUTING.md)** - Contribution guidelines
+- **[Contributing Guide](../../../CONTRIBUTING.md)** - Contribution guidelines
 
 ### Related Documentation
 

@@ -253,7 +253,7 @@ Available connectors:
 
 ## 📖 Detailed Guides
 
-### [Architecture Guide](./architecture.md)
+### [Architecture Guide](./architecture/README.md)
 
 Deep dive into system design, component interactions, and architectural decisions. Essential reading for understanding how QDrant Loader works internally.
 
@@ -265,7 +265,7 @@ Deep dive into system design, component interactions, and architectural decision
 - State management and change detection
 - MCP server integration
 
-### [Extending Guide](./extending.md)
+### [Extending Guide](./extending/README.md)
 
 Comprehensive guide for building custom functionality and connectors. Learn how to extend QDrant Loader for your specific needs.
 
@@ -277,7 +277,7 @@ Comprehensive guide for building custom functionality and connectors. Learn how 
 - Testing custom components
 - Packaging and distribution
 
-### [Testing Guide](./testing.md)
+### [Testing Guide](./testing/README.md)
 
 Testing strategies, frameworks, and best practices for ensuring code quality and reliability.
 
@@ -289,7 +289,7 @@ Testing strategies, frameworks, and best practices for ensuring code quality and
 - Mock and fixture usage
 - CI/CD integration
 
-### [Deployment Guide](./deployment.md)
+### [Deployment Guide](./deployment/README.md)
 
 Production deployment strategies, containerization, and operational best practices.
 
@@ -458,8 +458,8 @@ await pipeline.run()
 
 **Ready to start developing?** Choose your path:
 
-- **New to QDrant Loader?** Start with the [Architecture Guide](./architecture.md)
-- **Creating connectors?** Follow the [Extending Guide](./extending.md)
-- **Setting up CI/CD?** Use the [Deployment Guide](./deployment.md)
+- **New to QDrant Loader?** Start with the [Architecture Guide](./architecture/README.md)
+- **Creating connectors?** Follow the [Extending Guide](./extending/README.md)
+- **Setting up CI/CD?** Use the [Deployment Guide](./deployment/README.md)
 
 **Need help?** Join our community discussions or open an issue on GitHub!

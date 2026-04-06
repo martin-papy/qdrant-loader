@@ -215,26 +215,26 @@ docker ps | grep qdrant  # If using Docker
 
 #### **New Users**
 
-- Start with [Common Issues](./common-issues.html)
+- Start with [Common Issues](./common-issues.md)
 - Focus on installation and basic setup
 - Use quick fixes and simple solutions
 
 #### **Developers**
 
-- Check [Error Messages Reference](./error-messages-reference.html)
+- Check [Error Messages Reference](./error-messages-reference.md)
 - Use diagnostic tools and detailed logging
 - Implement error handling and monitoring
 
 #### **System Administrators**
 
-- Review [Performance Issues](./performance-issues.html)
+- Review [Performance Issues](./performance-issues.md)
 - Focus on [Connection Problems](./connection-problems.md)
 - Implement monitoring and alerting
 
 #### **Enterprise Users**
 
 - Emphasize [Connection Problems](./connection-problems.md) for proxy/firewall issues
-- Review [Performance Issues](./performance-issues.html) for optimization
+- Review [Performance Issues](./performance-issues.md) for optimization
 - Implement comprehensive monitoring
 
 ## 🛠️ Troubleshooting Methodology
@@ -331,7 +331,7 @@ watch -n 30 'free -h && df -h'
 
 - **GitHub Issues**: [Report bugs and get help](https://github.com/martin-papy/qdrant-loader/issues)
 - **Discussions**: [Community Q&A and tips](https://github.com/martin-papy/qdrant-loader/discussions)
-- **Documentation**: [Complete documentation](../../README.md)
+- **Documentation**: [Complete documentation](../../../README.md)
 
 ### Professional Support
 

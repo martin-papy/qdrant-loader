@@ -441,4 +441,4 @@ class ConfluenceConnector(BaseConnector):
 - **Monitoring and observability** - Enhanced metrics and logging
 
 ---
-**Ready to dive deeper?** Explore the [CLI Reference](../../users/cli-reference/README.md) for command-line usage or check out the [Extending Guide](../extending.md) to learn about extending QDrant Loader.
+**Ready to dive deeper?** Explore the [CLI Reference](../../users/cli-reference/README.md) for command-line usage or check out the [Extending Guide](../extending/README.md) to learn about extending QDrant Loader.

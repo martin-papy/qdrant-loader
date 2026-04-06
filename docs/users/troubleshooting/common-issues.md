@@ -581,7 +581,7 @@ qdrant-loader ingest --workspace .
 ### Support Channels
 
 - **GitHub Issues**: [Report bugs and feature requests](https://github.com/martin-papy/qdrant-loader/issues)
-- **Documentation**: [Check latest documentation](../../README.md)
+- **Documentation**: [Check latest documentation](../../../README.md)
 - **Discussions**: [Community Q&A](https://github.com/martin-papy/qdrant-loader/discussions)
 
 ### Issue Report Template
