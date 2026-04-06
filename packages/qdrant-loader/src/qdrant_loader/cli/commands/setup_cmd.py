@@ -359,7 +359,7 @@ def run_setup_advanced(output_dir: Path) -> None:
         "Embedding endpoint (leave empty for OpenAI default)",
         default="",
     )
-    vector_size: int = click.prompt("Vector size", default=1536, type=int)
+    vector_size: int = click.prompt("Vector size", default=1024, type=int)
 
     # ------------------------------------------------------------------
     # Step 3: Chunking settings
@@ -447,7 +447,6 @@ def run_setup_advanced(output_dir: Path) -> None:
         },
         "embedding": {
             "model": embedding_model,
-            "api_key": "${OPENAI_API_KEY}",
             "vector_size": vector_size,
         },
         "chunking": {

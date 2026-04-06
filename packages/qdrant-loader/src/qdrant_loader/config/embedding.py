@@ -18,16 +18,16 @@ class EmbeddingConfig(BaseConfig):
         default=100, description="Number of texts to embed in a single batch"
     )
     endpoint: str = Field(
-        default="https://api.openai.com/v1",
+        default="http://localhost:11434",
         description="Base URL for the embedding API endpoint",
     )
     tokenizer: str = Field(
-        default="cl100k_base",  # Default OpenAI tokenizer
+        default="none",  # Default OpenAI tokenizer
         description="Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models",
     )
     vector_size: int | None = Field(
-        default=1536,
-        description="Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)",
+        default=1024,
+        description="Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1024 for pplx models)",
     )
     max_tokens_per_request: int = Field(
         default=8000,

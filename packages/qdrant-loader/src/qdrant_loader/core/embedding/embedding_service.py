@@ -394,7 +394,7 @@ class EmbeddingService:
         )
         if not dimension:
             logger.warning(
-                "Embedding dimension not set in config; using 1536 (deprecated default). Set global.llm.embeddings.vector_size."
+                "Embedding dimension not set in config; using 1024 (deprecated default). Set global.llm.embeddings.vector_size."
             )
-            return 1536
+            return 1024
         return int(dimension)
