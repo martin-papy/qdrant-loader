@@ -50,6 +50,19 @@ def setup_test_environment():
     # Load environment variables first
     load_dotenv(env_path, override=True)
 
+    # Provide deterministic fallbacks so unit tests do not depend on CI secrets.
+    fallback_env = {
+        "LLM_API_KEY": "test-llm-api-key",
+        "QDRANT_API_KEY": "test-qdrant-api-key",
+        "REPO_TOKEN": "test-repo-token",
+        "CONFLUENCE_TOKEN": "test-confluence-token",
+        "CONFLUENCE_EMAIL": "test@example.com",
+        "JIRA_TOKEN": "test-jira-token",
+        "JIRA_EMAIL": "test@example.com",
+    }
+    for key, value in fallback_env.items():
+        os.environ.setdefault(key, value)
+
     # Initialize config using the same function as CLI
     initialize_config(config_path)
 

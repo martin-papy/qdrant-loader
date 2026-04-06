@@ -197,6 +197,21 @@ def mock_cloud_issue_data():
 class TestJiraConnector:
     """Test suite for BaseJiraConnector."""
 
+    @pytest.fixture(autouse=True)
+    def skip_validate_connection(self):
+        """Patch _validate_connection to a no-op for all tests in this class.
+
+        Tests here focus on other connector behaviour; connection validation
+        is covered separately in TestJiraValidateConnection.
+        """
+        from unittest.mock import AsyncMock
+
+        with patch(
+            "qdrant_loader.connectors.jira.connector.BaseJiraConnector._validate_connection",
+            new_callable=AsyncMock,
+        ):
+            yield
+
     @pytest.mark.asyncio
     async def test_cloud_initialization(self, jira_cloud_config):
         """Test Cloud connector initialization."""
@@ -746,3 +761,140 @@ class TestJiraConnector:
         assert '"Task"' in captured_jql
         assert "status IN " in captured_jql
         assert '"Done"' in captured_jql
+
+
+class TestJiraValidateConnection:
+    """Tests for _validate_connection() - covers the 4 fatal config failure cases."""
+
+    @pytest.fixture
+    def cloud_config(self):
+        return JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+        )
+
+    def _http_error(self, status_code: int):
+        """Build a requests.HTTPError with the given status code."""
+        import requests
+
+        resp = requests.Response()
+        resp.status_code = status_code
+        err = requests.exceptions.HTTPError(response=resp)
+        return err
+
+    # ── happy path ────────────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_validate_connection_success(self, cloud_config):
+        """No exception when /myself and /project both succeed."""
+
+        connector = JiraCloudConnector(cloud_config)
+
+        async def ok(*args, **kwargs):
+            return {"accountId": "abc", "key": "TEST", "name": "Test Project"}
+
+        with patch.object(connector, "_make_request", side_effect=ok):
+            # __aenter__ calls _validate_connection; should not raise
+            await connector.__aenter__()
+            assert connector._initialized is True
+
+    # ── invalid URL / unreachable host ────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_validate_connection_invalid_url_raises(self, cloud_config):
+        """ConnectionError on /myself → ConnectorConfigurationError."""
+        import requests
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        connector = JiraCloudConnector(cloud_config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            side_effect=requests.exceptions.ConnectionError("refused"),
+        ):
+            with pytest.raises(ConnectorConfigurationError, match="Cannot connect"):
+                await connector.__aenter__()
+
+    # ── invalid token (401) ────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_validate_connection_invalid_token_raises(self, cloud_config):
+        """HTTP 401 on /myself → ConnectorConfigurationError with auth message."""
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        connector = JiraCloudConnector(cloud_config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            side_effect=self._http_error(401),
+        ):
+            with pytest.raises(ConnectorConfigurationError, match="401"):
+                await connector.__aenter__()
+
+    # ── no permission (403 on /myself) ─────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_validate_connection_no_permission_raises(self, cloud_config):
+        """HTTP 403 on /myself → ConnectorConfigurationError with permission message."""
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        connector = JiraCloudConnector(cloud_config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            side_effect=self._http_error(403),
+        ):
+            with pytest.raises(ConnectorConfigurationError, match="403"):
+                await connector.__aenter__()
+
+    # ── wrong project key (404 on /project/{key}) ─────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_validate_connection_wrong_project_key_raises(self, cloud_config):
+        """HTTP 404 on /project/{key} → ConnectorConfigurationError with project message."""
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        connector = JiraCloudConnector(cloud_config)
+
+        call_count = 0
+
+        async def side_effect(method, endpoint, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:  # /myself succeeds
+                return {"accountId": "abc"}
+            raise self._http_error(404)  # /project/{key} fails
+
+        with patch.object(connector, "_make_request", side_effect=side_effect):
+            with pytest.raises(ConnectorConfigurationError, match="not found"):
+                await connector.__aenter__()
+
+    # ── no permission on project (403 on /project/{key}) ──────────────────────
+
+    @pytest.mark.asyncio
+    async def test_validate_connection_project_no_permission_raises(self, cloud_config):
+        """HTTP 403 on /project/{key} → ConnectorConfigurationError."""
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        connector = JiraCloudConnector(cloud_config)
+
+        call_count = 0
+
+        async def side_effect(method, endpoint, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:  # /myself succeeds
+                return {"accountId": "abc"}
+            raise self._http_error(403)  # /project/{key} → forbidden
+
+        with patch.object(connector, "_make_request", side_effect=side_effect):
+            with pytest.raises(ConnectorConfigurationError, match="403"):
+                await connector.__aenter__()

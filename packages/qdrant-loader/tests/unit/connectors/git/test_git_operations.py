@@ -131,8 +131,13 @@ class TestCloneOperations:
                     )
 
                     # Verify the URL was modified to include the token
+                    from urllib.parse import urlparse
+
                     call_args = mock_clone_from.call_args
-                    assert f"https://{auth_token}@github.com" in call_args[0][0]
+                    parsed = urlparse(call_args[0][0])
+                    assert parsed.scheme == "https"
+                    assert parsed.hostname == "github.com"
+                    assert parsed.username == auth_token
 
     def test_clone_with_retry_on_failure(self, git_operations, temp_dir):
         """Test cloning with retry on failure."""

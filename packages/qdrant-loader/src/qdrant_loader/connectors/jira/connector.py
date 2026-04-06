@@ -10,7 +10,7 @@ import requests
 from requests.auth import HTTPBasicAuth  # noqa: F401 - compatibility
 
 from qdrant_loader.config.types import SourceType
-from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationError
 from qdrant_loader.connectors.jira.auth import (
     auto_detect_deployment_type as _auto_detect_type,
 )
@@ -161,6 +161,83 @@ class BaseJiraConnector(BaseConnector):
                     ),
                 )
 
+    async def _validate_connection(self) -> None:
+        """Validate connectivity, auth, and project access before use.
+
+        Raises:
+            ConnectorConfigurationError: for invalid URL, bad credentials,
+                missing permissions, or unknown project key.
+        """
+        # ── Step 1: reachability + authentication (/myself endpoint) ──────────
+        try:
+            await self._make_request("GET", "myself")
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out. "
+                "Verify network connectivity and try again."
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise ConnectorConfigurationError(
+                f"Cannot connect to Jira at '{self.base_url}'. "
+                "Verify that base_url is correct and the server is reachable."
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 401:
+                raise ConnectorConfigurationError(
+                    f"Authentication failed for Jira at '{self.base_url}' (HTTP 401). "
+                    "Check that token and email are valid."
+                ) from exc
+            if status == 403:
+                raise ConnectorConfigurationError(
+                    f"Access denied to Jira at '{self.base_url}' (HTTP 403). "
+                    "The account does not have sufficient permissions."
+                ) from exc
+            raise ConnectorConfigurationError(
+                f"Validation request to Jira at '{self.base_url}' failed "
+                f"with HTTP {status}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise ConnectorConfigurationError(
+                f"Validation request to Jira at '{self.base_url}' failed: {exc}"
+            ) from exc
+
+        # ── Step 2: project key exists and is accessible ───────────────────────
+        try:
+            await self._make_request("GET", f"project/{self.config.project_key}")
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out while validating "
+                f"project '{self.config.project_key}'."
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' was lost while validating "
+                f"project '{self.config.project_key}' (between validation steps). "
+                "Verify network connectivity and Jira availability."
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 404:
+                raise ConnectorConfigurationError(
+                    f"Project '{self.config.project_key}' not found in Jira (HTTP 404). "
+                    "Check that project_key is correct."
+                ) from exc
+            if status == 403:
+                raise ConnectorConfigurationError(
+                    f"No permission to access project '{self.config.project_key}' "
+                    f"in Jira (HTTP 403)."
+                ) from exc
+            raise ConnectorConfigurationError(
+                f"Validation request for project '{self.config.project_key}' at "
+                f"'{self.base_url}' failed with HTTP {status}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise ConnectorConfigurationError(
+                f"Validation request for project '{self.config.project_key}' at "
+                f"'{self.base_url}' failed: {exc}"
+            ) from exc
+
     @staticmethod
     def _escape_jql_literal(value: str) -> str:
         """Escape special characters in JQL string literals.
@@ -219,6 +296,7 @@ class BaseJiraConnector(BaseConnector):
     async def __aenter__(self):
         """Async context manager entry."""
         if not self._initialized:
+            await self._validate_connection()
             self._initialized = True
         return self
 
