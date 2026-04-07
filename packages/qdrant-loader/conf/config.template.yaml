@@ -100,11 +100,11 @@ global:
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
-    endpoint: "${EMBEDDING_ENDPOINT}"      # e.g. http://localhost:11434/v1 for Ollama
-    model: "${EMBEDDING_MODEL}"            # e.g. argus-ai/pplx-embed-v1-0.6b:fp32
-    api_key: "${EMBEDDING_API_KEY}"        # use "ollama" for local Ollama
+    endpoint: "http://localhost:11434/v1"               # e.g. http://localhost:11434/v1 for Ollama
+    model: "argus-ai/pplx-embed-v1-0.6b:fp32"           # e.g. argus-ai/pplx-embed-v1-0.6b:fp32
+    api_key: "ollama"                                   # use "ollama" for local Ollama
     batch_size: 100
-    vector_size: 1024                      # must match your model's output dimensions
+    vector_size: 1024                                   # must match your model's output dimensions
     tokenizer: "none"
     max_tokens_per_request: 8000
     max_tokens_per_chunk: 8000

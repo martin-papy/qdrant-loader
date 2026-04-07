@@ -38,7 +38,6 @@ class VectorSearchService:
         *,
         embeddings_provider: Any | None = None,
         openai_client: Any | None = None,
-        embedding_model: str = "text-embedding-3-small",
     ):
         """Initialize the vector search service.
 
@@ -54,7 +53,6 @@ class VectorSearchService:
         self.qdrant_client = qdrant_client
         self.embeddings_provider = embeddings_provider
         self.openai_client = openai_client
-        self.embedding_model = embedding_model
         self.collection_name = collection_name
         self.min_score = min_score
 
@@ -150,18 +148,12 @@ class VectorSearchService:
                 self.logger.error("Provider embeddings failed", error=str(e))
                 raise
 
-        # Fallback to OpenAI client when provider is not configured
+        # Disable OpenAI fallback to avoid mixing embedding providers (1536 vs 1024 dims),
+        # which would break vector consistency in Qdrant.
         if self.openai_client is not None:
-            try:
-                response = await self.openai_client.embeddings.create(
-                    model=self.embedding_model,
-                    input=text,
-                )
-                return response.data[0].embedding
-            except Exception as e:
-                # Do not fall back silently; propagate error as tests expect
-                self.logger.error("Failed to get embedding", error=str(e))
-                raise
+            raise RuntimeError(
+                "OpenAI fallback is disabled. Please configure embeddings_provider."
+            )
 
         # Nothing configured
         raise RuntimeError("No embeddings provider or OpenAI client configured")

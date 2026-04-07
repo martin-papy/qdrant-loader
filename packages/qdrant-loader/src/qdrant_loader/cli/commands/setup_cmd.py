@@ -356,7 +356,7 @@ def run_setup_advanced(output_dir: Path) -> None:
         "Embedding model", default="argus-ai/pplx-embed-v1-0.6b:fp32"
     )
     embedding_endpoint: str = click.prompt(
-        "Embedding endpoint (leave empty for OpenAI default)",
+        "Embedding endpoint (Ollama local default)",
         default="http://localhost:11434/v1",
     )
     vector_size: int = click.prompt("Vector size", default=1024, type=int)
