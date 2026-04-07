@@ -102,7 +102,7 @@ def mock_openai_client():
     # Mock embeddings response
     embedding_response = MagicMock()
     embedding_data = MagicMock()
-    embedding_data.embedding = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
+    embedding_data.embedding = [0.1, 0.2] * 512  # 1024 dimensions
     embedding_response.data = [embedding_data]
 
     # Make the embeddings.create method async
@@ -481,12 +481,12 @@ async def test_get_embedding_success(hybrid_search, mock_openai_client):
     # Use the actual mock client instead of calling the real method
     embedding = await hybrid_search._get_embedding("test text")
 
-    assert len(embedding) == 1536  # 512 * 3
+    assert len(embedding) == 1024  # 512 * 2
     assert embedding[0] == 0.1
 
     # Verify OpenAI API was called correctly
     mock_openai_client.embeddings.create.assert_called_once_with(
-        model="text-embedding-3-small", input="test text"
+        model="argus-ai/pplx-embed-v1-0.6b:fp32", input="test text"
     )
 
 

@@ -3537,7 +3537,7 @@ wheels = [
 
 [[package]]
 name = "qdrant-loader"
-version = "0.8.1"
+version = "0.9.0"
 source = { editable = "packages/qdrant-loader" }
 dependencies = [
     { name = "aiosqlite", marker = "python_full_version < '3.13'" },
@@ -3632,7 +3632,7 @@ requires-dist = [
 
 [[package]]
 name = "qdrant-loader-core"
-version = "0.8.1"
+version = "0.9.0"
 source = { editable = "packages/qdrant-loader-core" }
 dependencies = [
     { name = "pydantic", marker = "python_full_version < '3.13'" },
@@ -3660,7 +3660,7 @@ provides-extras = ["openai", "ollama"]
 
 [[package]]
 name = "qdrant-loader-mcp-server"
-version = "0.8.1"
+version = "0.9.0"
 source = { editable = "packages/qdrant-loader-mcp-server" }
 dependencies = [
     { name = "click", marker = "python_full_version < '3.13'" },
@@ -3709,7 +3709,7 @@ requires-dist = [
 
 [[package]]
 name = "qdrant-loader-workspace"
-version = "0.8.1"
+version = "0.9.0"
 source = { editable = "." }
 
 [package.optional-dependencies]

@@ -38,6 +38,7 @@ class VectorSearchService:
         *,
         embeddings_provider: Any | None = None,
         openai_client: Any | None = None,
+        embedding_model: str = "text-embedding-3-small",
     ):
         """Initialize the vector search service.
 
@@ -53,6 +54,7 @@ class VectorSearchService:
         self.qdrant_client = qdrant_client
         self.embeddings_provider = embeddings_provider
         self.openai_client = openai_client
+        self.embedding_model = embedding_model
         self.collection_name = collection_name
         self.min_score = min_score
 
@@ -152,7 +154,7 @@ class VectorSearchService:
         if self.openai_client is not None:
             try:
                 response = await self.openai_client.embeddings.create(
-                    model="text-embedding-3-small",
+                    model=self.embedding_model,
                     input=text,
                 )
                 return response.data[0].embedding

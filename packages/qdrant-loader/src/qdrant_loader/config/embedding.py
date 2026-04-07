@@ -9,7 +9,7 @@ class EmbeddingConfig(BaseConfig):
     """Configuration for embedding generation."""
 
     model: str = Field(
-        default="argus-ai/pplx-embed-context-v1-0.6b:fp32",
+        default="argus-ai/pplx-embed-v1-0.6b:fp32",
         description="Embedding model to use",
     )
     api_key: str | None = Field(
@@ -19,7 +19,7 @@ class EmbeddingConfig(BaseConfig):
         default=100, description="Number of texts to embed in a single batch"
     )
     endpoint: str = Field(
-        default="http://localhost:11434",
+        default="http://localhost:11434/v1",
         description="Base URL for the embedding API endpoint",
     )
     tokenizer: str = Field(
@@ -28,7 +28,7 @@ class EmbeddingConfig(BaseConfig):
     )
     vector_size: int | None = Field(
         default=1024,
-        description="Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1024 for argus-ai/pplx-embed-context-v1-0.6b:fp32)",
+        description="Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1024 for argus-ai/pplx-embed-v1-0.6b:fp32)",
     )
     max_tokens_per_request: int = Field(
         default=8000,
