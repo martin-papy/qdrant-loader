@@ -47,97 +47,27 @@ class OllamaEmbeddings(EmbeddingsClient):
         if httpx is None:
             raise NotImplementedError("httpx not available for Ollama embeddings")
 
-        # Prefer OpenAI-compatible if base_url seems to expose /v1
-        use_v1 = "/v1" in (self._base_url or "")
+        url = _join_url(self._base_url, "/api/embed")
+        payload = {"model": self._model, "input": inputs}
         async with httpx.AsyncClient(timeout=self._timeout_s) as client:
             try:
-                if use_v1:
-                    # OpenAI-compatible embeddings endpoint
-                    url = _join_url(self._base_url, "/embeddings")
-                    payload = {"model": self._model, "input": inputs}
-                    resp = await client.post(url, json=payload, headers=self._headers)
-                    resp.raise_for_status()
-                    data = resp.json()
-                    logger.info(
-                        "LLM request",
-                        provider="ollama",
-                        operation="embeddings",
-                        model=self._model,
-                        base_host=self._base_url,
-                        inputs=len(inputs),
-                        # latency for v1 path hard to compute here; omitted for now
-                    )
-                    return [item["embedding"] for item in data.get("data", [])]
-                else:
-                    # Determine native endpoint preference: embed | embeddings | auto (default)
-                    native_pref = str(
-                        self._provider_options.get("native_endpoint", "auto")
-                    ).lower()
-                    prefer_embed = native_pref != "embeddings"
-
-                    # Try batch embed first when preferred
-                    if prefer_embed:
-                        url = _join_url(self._base_url, "/api/embed")
-                        payload = {"model": self._model, "input": inputs}
-                        try:
-                            resp = await client.post(
-                                url, json=payload, headers=self._headers
-                            )
-                            resp.raise_for_status()
-                            data = resp.json()
-                            vectors = data.get("embeddings")
-                            if not isinstance(vectors, list) or (
-                                len(vectors) != len(inputs)
-                            ):
-                                raise ValueError(
-                                    "Invalid embeddings response from /api/embed"
-                                )
-                            # Normalize to list[list[float]]
-                            norm = [list(vec) for vec in vectors]
-                            logger.info(
-                                "LLM request",
-                                provider="ollama",
-                                operation="embeddings",
-                                model=self._model,
-                                base_host=self._base_url,
-                                inputs=len(inputs),
-                                # latency for native batch path not measured in this stub
-                            )
-                            return norm
-                        except httpx.HTTPStatusError as exc:
-                            status = exc.response.status_code if exc.response else None
-                            # Fallback for servers that don't support /api/embed
-                            if status not in (404, 405, 501):
-                                raise
-
-                    # Per-item embeddings endpoint fallback or preference
-                    url = _join_url(self._base_url, "/api/embeddings")
-                    vectors2: list[list[float]] = []
-                    for text in inputs:
-                        payload = {"model": self._model, "input": text}
-                        resp = await client.post(
-                            url, json=payload, headers=self._headers
-                        )
-                        resp.raise_for_status()
-                        data = resp.json()
-                        emb = data.get("embedding")
-                        if emb is None and isinstance(data.get("data"), dict):
-                            emb = data["data"].get("embedding")
-                        if emb is None:
-                            raise ValueError(
-                                "Invalid embedding response from /api/embeddings"
-                            )
-                        vectors2.append(list(emb))
-                    logger.info(
-                        "LLM request",
-                        provider="ollama",
-                        operation="embeddings",
-                        model=self._model,
-                        base_host=self._base_url,
-                        inputs=len(inputs),
-                        # latency for per-item path not measured in this stub
-                    )
-                    return vectors2
+                resp = await client.post(url, json=payload, headers=self._headers)
+                resp.raise_for_status()
+                data = resp.json()
+                vectors = data.get("embeddings")
+                if not isinstance(vectors, list) or (len(vectors) != len(inputs)):
+                    raise ValueError("Invalid embeddings response from /api/embed")
+                # Normalize to list[list[float]]
+                norm = [list(vec) for vec in vectors]
+                logger.info(
+                    "LLM request",
+                    provider="ollama",
+                    operation="embeddings",
+                    model=self._model,
+                    base_host=self._base_url,
+                    inputs=len(inputs),
+                )
+                return norm
             except httpx.TimeoutException as exc:
                 raise LLMTimeoutError(str(exc))
             except httpx.HTTPStatusError as exc:
