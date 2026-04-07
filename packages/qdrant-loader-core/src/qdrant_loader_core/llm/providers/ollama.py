@@ -67,7 +67,6 @@ class OllamaEmbeddings(EmbeddingsClient):
                     model=self._model,
                     base_host=self._base_url,
                     inputs=len(inputs),
-                    # latency for native batch path not measured in this stub
                 )
                 return norm
             except httpx.TimeoutException as exc:

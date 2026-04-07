@@ -9,7 +9,7 @@ class EmbeddingConfig(BaseConfig):
     """Configuration for embedding generation."""
 
     model: str = Field(
-        default="text-embedding-3-small", description="OpenAI embedding model to use"
+        default="argus-ai/pplx-embed-context-v1-0.6b:fp32", description="Embedding model to use"
     )
     api_key: str | None = Field(
         default=None, description="API key for the embedding service"
@@ -22,7 +22,7 @@ class EmbeddingConfig(BaseConfig):
         description="Base URL for the embedding API endpoint",
     )
     tokenizer: str = Field(
-        default="none",  # Default OpenAI tokenizer
+        default="none",  # No tokenizer for non-OpenAI models
         description="Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models",
     )
     vector_size: int | None = Field(

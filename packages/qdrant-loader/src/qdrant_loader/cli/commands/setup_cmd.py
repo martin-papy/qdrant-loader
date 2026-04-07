@@ -353,7 +353,7 @@ def run_setup_advanced(output_dir: Path) -> None:
     _get_console().print("\n[bold cyan]Step 2: Embedding Configuration[/bold cyan]")
 
     embedding_model: str = click.prompt(
-        "Embedding model", default="text-embedding-3-small"
+        "Embedding model", default="argus-ai/pplx-embed-context-v1-0.6b:fp32"
     )
     embedding_endpoint: str = click.prompt(
         "Embedding endpoint (leave empty for OpenAI default)",
@@ -447,6 +447,7 @@ def run_setup_advanced(output_dir: Path) -> None:
         },
         "embedding": {
             "model": embedding_model,
+            "api_key": "${OPENAI_API_KEY}",
             "vector_size": vector_size,
         },
         "chunking": {

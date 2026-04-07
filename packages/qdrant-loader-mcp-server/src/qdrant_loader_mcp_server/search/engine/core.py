@@ -189,10 +189,10 @@ class SearchEngine:
                         vector_size = None
                 # 3) Deprecated fallback
                 if vector_size is None:
-                    vector_size = 1536
+                    vector_size = 1024
                     try:
                         self.logger.warning(
-                            "No vector_size provided via global.llm or env; falling back to 1536 (deprecated)."
+                            "No vector_size provided via global.llm or env; falling back to 1024 (deprecated)."
                         )
                     except Exception:
                         pass
