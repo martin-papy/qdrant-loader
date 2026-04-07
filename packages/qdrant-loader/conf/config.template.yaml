@@ -100,31 +100,26 @@ global:
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
-    endpoint: "http://localhost:8080/v1" # Optional. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
-    model: "BAAI/bge-small-en-v1.5" # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (example for local use) or text-embedding-3-small (for OpenAI use)
-    api_key: "${OPENAI_API_KEY}" # API key for the embedding service (required for OpenAI models)
-    batch_size: 100 # Number of chunks to process in one batch
-    vector_size: 384 # Optional. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
-    tokenizer: "none" # Optional. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
-    # Token limits (adjust based on your embedding model):
-    # - OpenAI text-embedding-3-small/large: 8192 tokens max
-    # - OpenAI text-embedding-ada-002: 8192 tokens max
-    # - BAAI/bge-small-en-v1.5: 512 tokens max
-    # - sentence-transformers models: varies (typically 256-512)
-    max_tokens_per_request: 8000 # Maximum total tokens per API request (leave buffer below model limit)
-    max_tokens_per_chunk: 8000 # Maximum tokens per individual chunk (should match model's context limit)
+    endpoint: "http://localhost:11434/v1"               # e.g. http://localhost:11434/v1 for Ollama
+    model: "argus-ai/pplx-embed-v1-0.6b:fp32"           # e.g. argus-ai/pplx-embed-v1-0.6b:fp32
+    api_key: "ollama"                                   # use "ollama" for local Ollama
+    batch_size: 100
+    vector_size: 1024                                   # must match your model's output dimensions
+    tokenizer: "none"
+    max_tokens_per_request: 8000
+    max_tokens_per_chunk: 8000
 
   # Unified LLM configuration (provider-agnostic)
   # New preferred configuration block; legacy embedding/markitdown fields still work
   llm:
-    provider: "openai" # openai | ollama | azure_openai | custom
-    base_url: "https://api.openai.com/v1" # For Azure use the resource root, e.g. https://<resource>.openai.azure.com
-    api_key: "${LLM_API_KEY}"
+    provider: "ollama" # openai | ollama | azure_openai | custom
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"
     api_version: null # Required for azure_openai (e.g., 2024-05-01-preview)
     headers: {}
     models:
-      embeddings: "text-embedding-3-small"
-      chat: "gpt-4o-mini"
+      embeddings: "argus-ai/pplx-embed-v1-0.6b:fp32"
+      chat: "llama3.2"
     tokenizer: "none" # cl100k_base | none
     request:
       timeout_s: 30
@@ -136,7 +131,7 @@ global:
       tpm: 2000000
       concurrency: 5
     embeddings:
-      vector_size: 1536
+      vector_size: 1024
     # Optional provider-specific options
     provider_options:
       # For Azure: set azure_endpoint explicitly if different from base_url

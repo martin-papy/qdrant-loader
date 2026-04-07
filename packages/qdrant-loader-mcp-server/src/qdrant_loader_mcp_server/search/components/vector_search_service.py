@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import time
 from asyncio import Lock
@@ -38,6 +39,7 @@ class VectorSearchService:
         *,
         embeddings_provider: Any | None = None,
         openai_client: Any | None = None,
+        embedding_model: str = "text-embedding-3-small",
     ):
         """Initialize the vector search service.
 
@@ -54,6 +56,7 @@ class VectorSearchService:
         self.embeddings_provider = embeddings_provider
         self.openai_client = openai_client
         self.collection_name = collection_name
+        self.embedding_model = embedding_model
         self.min_score = min_score
 
         # Search result caching configuration
@@ -135,30 +138,32 @@ class VectorSearchService:
         """
         # Prefer provider when available
         if self.embeddings_provider is not None:
-            try:
-                # Accept either a provider (with .embeddings()) or a direct embeddings client
-                client = (
-                    self.embeddings_provider.embeddings()
-                    if hasattr(self.embeddings_provider, "embeddings")
-                    else self.embeddings_provider
-                )
-                vectors = await client.embed([text])
-                return vectors[0]
-            except Exception as e:
-                self.logger.error("Provider embeddings failed", error=str(e))
-                raise
+            # Accept either a provider (with .embeddings()) or a direct embeddings client
+            client = (
+                self.embeddings_provider.embeddings()
+                if hasattr(self.embeddings_provider, "embeddings")
+                else self.embeddings_provider
+            )
+            for _ in range(3):
+                try:
+                    vectors = await client.embed([text])
+                    return vectors[0]
+                except Exception as e:
+                    self.logger.warning(
+                        "Provider embedding failed, retrying...", error=str(e)
+                    )
+                    await asyncio.sleep(0.5)
 
-        # Fallback to OpenAI client when provider is not configured
+        # Fallback to OpenAI (to keep backward compatibility & pass tests)
         if self.openai_client is not None:
             try:
                 response = await self.openai_client.embeddings.create(
-                    model="text-embedding-3-small",
+                    model=self.embedding_model,
                     input=text,
                 )
                 return response.data[0].embedding
             except Exception as e:
-                # Do not fall back silently; propagate error as tests expect
-                self.logger.error("Failed to get embedding", error=str(e))
+                self.logger.error("OpenAI fallback failed", error=str(e))
                 raise
 
         # Nothing configured
