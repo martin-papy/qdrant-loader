@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import time
 from asyncio import Lock
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
-
-from qdrant_loader.cli import asyncio
 
 if TYPE_CHECKING:
     from qdrant_client import AsyncQdrantClient
@@ -145,15 +144,21 @@ class VectorSearchService:
                 if hasattr(self.embeddings_provider, "embeddings")
                 else self.embeddings_provider
             )
+            last_error: Exception | None = None
             for _ in range(3):
                 try:
                     vectors = await client.embed([text])
                     return vectors[0]
                 except Exception as e:
+                    last_error = e
                     self.logger.warning(
                         "Provider embedding failed, retrying...", error=str(e)
                     )
                     await asyncio.sleep(0.5)
+                    if self.openai_client is None and last_error is not None:
+                        raise RuntimeError(
+                            "Embeddings provider failed after retries"
+                        ) from last_error
 
         # Fallback to OpenAI (to keep backward compatibility & pass tests)
         if self.openai_client is not None:
@@ -168,7 +173,7 @@ class VectorSearchService:
                 raise
 
         # Nothing configured
-        raise RuntimeError("No embeddings provider configured")
+        raise RuntimeError("No embeddings provider or OpenAI client configured")
 
     async def vector_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
