@@ -366,7 +366,7 @@ class Document(BaseModel):
             return None
         parts = [
             f"Source: {self.source_type}",
-            f"Document: {self.title}",
+            f"Title: {self.title}",
         ]
         project = self.metadata.get("project_name")
         if project:

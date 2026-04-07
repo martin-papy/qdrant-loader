@@ -207,7 +207,7 @@ class ChunkingService:
             prefix = document.build_contextual_content()
             for chunk in chunked_docs:
                 chunk.contextual_content = (
-                    f"{prefix}{chunk.content}" if prefix else chunk.content
+                    f"{prefix}" if prefix else ""
                 )
 
             # Optimized: Only calculate and log detailed metrics when debug logging is enabled
