@@ -360,6 +360,8 @@ def run_setup_advanced(output_dir: Path) -> None:
         default="http://localhost:11434/v1",
     )
     vector_size: int = click.prompt("Vector size", default=1024, type=int)
+    if vector_size <= 0:
+        raise click.BadParameter("Vector size must be a positive integer.")
 
     # ------------------------------------------------------------------
     # Step 3: Chunking settings

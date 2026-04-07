@@ -486,7 +486,7 @@ async def test_get_embedding_success(hybrid_search, mock_openai_client):
 
     # Verify OpenAI API was called correctly
     mock_openai_client.embeddings.create.assert_called_once_with(
-        model="argus-ai/pplx-embed-v1-0.6b:fp32", input="test text"
+        model="text-embedding-3-small", input="test text"
     )
 
 

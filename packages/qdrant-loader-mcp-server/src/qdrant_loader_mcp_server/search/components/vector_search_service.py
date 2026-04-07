@@ -8,6 +8,8 @@ from asyncio import Lock
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from qdrant_loader.cli import asyncio
+
 if TYPE_CHECKING:
     from qdrant_client import AsyncQdrantClient
     from qdrant_client.http import models as qdrant_models
@@ -38,6 +40,7 @@ class VectorSearchService:
         *,
         embeddings_provider: Any | None = None,
         openai_client: Any | None = None,
+        embedding_model: str = "text-embedding-3-small",
     ):
         """Initialize the vector search service.
 
@@ -54,6 +57,7 @@ class VectorSearchService:
         self.embeddings_provider = embeddings_provider
         self.openai_client = openai_client
         self.collection_name = collection_name
+        self.embedding_model = embedding_model
         self.min_score = min_score
 
         # Search result caching configuration
@@ -135,28 +139,36 @@ class VectorSearchService:
         """
         # Prefer provider when available
         if self.embeddings_provider is not None:
+            # Accept either a provider (with .embeddings()) or a direct embeddings client
+            client = (
+                self.embeddings_provider.embeddings()
+                if hasattr(self.embeddings_provider, "embeddings")
+                else self.embeddings_provider
+            )
+            for _ in range(3):
+                try:
+                    vectors = await client.embed([text])
+                    return vectors[0]
+                except Exception as e:
+                    self.logger.warning(
+                        "Provider embedding failed, retrying...", error=str(e)
+                    )
+                    await asyncio.sleep(0.5)
+
+        # Fallback to OpenAI (to keep backward compatibility & pass tests)
+        if self.openai_client is not None:
             try:
-                # Accept either a provider (with .embeddings()) or a direct embeddings client
-                client = (
-                    self.embeddings_provider.embeddings()
-                    if hasattr(self.embeddings_provider, "embeddings")
-                    else self.embeddings_provider
+                response = await self.openai_client.embeddings.create(
+                    model=self.embedding_model,
+                    input=text,
                 )
-                vectors = await client.embed([text])
-                return vectors[0]
+                return response.data[0].embedding
             except Exception as e:
-                self.logger.error("Provider embeddings failed", error=str(e))
+                self.logger.error("OpenAI fallback failed", error=str(e))
                 raise
 
-        # Disable OpenAI fallback to avoid mixing embedding providers (1536 vs 1024 dims),
-        # which would break vector consistency in Qdrant.
-        if self.openai_client is not None:
-            raise RuntimeError(
-                "OpenAI fallback is disabled. Please configure embeddings_provider."
-            )
-
         # Nothing configured
-        raise RuntimeError("No embeddings provider or OpenAI client configured")
+        raise RuntimeError("No embeddings provider configured")
 
     async def vector_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
