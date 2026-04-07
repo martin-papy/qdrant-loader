@@ -22,12 +22,12 @@ docs/
 
 ### Documentation Types
 
-| Type | Purpose | Audience | Update Frequency |
-|------|---------|----------|------------------|
-| **README files** | Project overview and quick start | Everyone | With major releases |
-| **Getting Started** | Onboarding and basic concepts | New users | With API changes |
-| **User Guides** | Feature documentation and workflows | End users | With feature changes |
-| **Developer Docs** | Architecture and contribution guides | Developers | With code changes |
+| Type                | Purpose                              | Audience   | Update Frequency     |
+| ------------------- | ------------------------------------ | ---------- | -------------------- |
+| **README files**    | Project overview and quick start     | Everyone   | With major releases  |
+| **Getting Started** | Onboarding and basic concepts        | New users  | With API changes     |
+| **User Guides**     | Feature documentation and workflows  | End users  | With feature changes |
+| **Developer Docs**  | Architecture and contribution guides | Developers | With code changes    |
 
 ## 📝 Documentation Guidelines
 
@@ -57,7 +57,7 @@ docs/
 
 #### Code Examples
 
-```markdown
+````markdown
 ## ✅ Good Example
 
 ```bash
@@ -75,6 +75,7 @@ qdrant-loader init --workspace .
 # Run ingestion
 qdrant-loader ingest --workspace .
 ```
+````
 
 ## ❌ Bad Example
 
@@ -87,13 +88,13 @@ pip install qdrant-loader
 
 ### When to Update Documentation
 
-| Trigger | Required Updates | Responsible |
-|---------|------------------|-------------|
-| **New Feature** | User guides, CLI docs, examples | Feature developer |
-| **CLI Changes** | CLI reference, integration guides | CLI developer |
-| **Bug Fixes** | Troubleshooting guides, known issues | Bug fixer |
-| **Configuration Changes** | Configuration reference, setup guides | Config developer |
-| **Architecture Changes** | Developer docs, architecture diagrams | Architect |
+| Trigger                   | Required Updates                      | Responsible       |
+| ------------------------- | ------------------------------------- | ----------------- |
+| **New Feature**           | User guides, CLI docs, examples       | Feature developer |
+| **CLI Changes**           | CLI reference, integration guides     | CLI developer     |
+| **Bug Fixes**             | Troubleshooting guides, known issues  | Bug fixer         |
+| **Configuration Changes** | Configuration reference, setup guides | Config developer  |
+| **Architecture Changes**  | Developer docs, architecture diagrams | Architect         |
 
 ### Documentation Review Process
 
@@ -164,7 +165,7 @@ pip install qdrant-loader
 
 #### 1. User Documentation
 
-```markdown
+````markdown
 # Feature: [Feature Name]
 
 ## Overview
@@ -183,6 +184,7 @@ Brief description of what the feature does and why it's useful.
 # Minimal example to get started
 qdrant-loader [command] [options]
 ```
+````
 
 ## Configuration
 
@@ -211,7 +213,7 @@ feature:
 
 #### 2. Developer Documentation
 
-```markdown
+````markdown
 # [Feature Name] Implementation
 
 ## Architecture
@@ -224,18 +226,19 @@ How the feature fits into the overall system.
 def new_feature_function(param1: str, param2: int) -> Result:
     """
     Description of the function.
-    
+
     Args:
         param1: Description
         param2: Description
-    
+
     Returns:
         Description of return value
-    
+
     Raises:
         ExceptionType: When this happens
     """
 ```
+````
 
 ## Extension Points
 
@@ -278,8 +281,8 @@ grep -r "old_api_name" docs/
 
 ```bash
 # Check for broken internal links
-find docs -name "*.md" -exec grep -l "MARKDOWN_LINK_REGEX" {} \; | \
-  xargs -I {} bash -c 'echo "Checking: {}"; grep -o "MARKDOWN_LINK_REGEX" {}'
+find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
+  xargs -I {} bash -c 'echo "Checking: {}"; grep -o "\[.*\](\.\/[^)]*)" {}'
 ```
 
 ### Manual Review Process
@@ -305,13 +308,13 @@ find docs -name "*.md" -exec grep -l "MARKDOWN_LINK_REGEX" {} \; | \
 
 ### Quality Indicators
 
-| Metric | Target | How to Measure |
-|--------|--------|----------------|
-| **User Success Rate** | >90% | User testing of getting started guides |
-| **Documentation Coverage** | 100% | All public CLI commands documented |
-| **Example Accuracy** | 100% | All code examples tested manually |
-| **Link Validity** | 100% | Manual link checking |
-| **Update Frequency** | <1 week | Time from code change to doc update |
+| Metric                     | Target  | How to Measure                         |
+| -------------------------- | ------- | -------------------------------------- |
+| **User Success Rate**      | >90%    | User testing of getting started guides |
+| **Documentation Coverage** | 100%    | All public CLI commands documented     |
+| **Example Accuracy**       | 100%    | All code examples tested manually      |
+| **Link Validity**          | 100%    | Manual link checking                   |
+| **Update Frequency**       | <1 week | Time from code change to doc update    |
 
 ### Tracking Documentation Debt
 
@@ -396,13 +399,13 @@ find docs -name "*.md" -exec grep -l "MARKDOWN_LINK_REGEX" {} \; | \
 
 ### Common Documentation Tasks
 
-| Task | Command/Process |
-|------|----------------|
-| **Create new guide** | Copy template, follow structure |
-| **Update CLI docs** | Update alongside code changes |
-| **Test examples** | Run all code examples manually |
-| **Check links** | Manual verification of internal links |
-| **Review changes** | Use documentation checklist |
+| Task                 | Command/Process                       |
+| -------------------- | ------------------------------------- |
+| **Create new guide** | Copy template, follow structure       |
+| **Update CLI docs**  | Update alongside code changes         |
+| **Test examples**    | Run all code examples manually        |
+| **Check links**      | Manual verification of internal links |
+| **Review changes**   | Use documentation checklist           |
 
 ### Documentation Structure Quick Reference
 

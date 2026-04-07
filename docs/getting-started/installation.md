@@ -8,7 +8,26 @@ Primary onboarding path: [quick-start.md](./quick-start.md)
 
 ## Package options
 
-- Data ingestion only:
+The core library is automatically installed as a dependency. Most users will want both the main package and MCP server for the complete experience.
+
+## 🔧 Prerequisites
+
+### System Requirements
+
+| Component   | Minimum                          | Recommended     |
+| ----------- | -------------------------------- | --------------- |
+| **Python**  | 3.12+                            | 3.12+           |
+| **Memory**  | 4GB RAM                          | 8GB+ RAM        |
+| **Storage** | 2GB free                         | 10GB+ free      |
+| **OS**      | Windows 10+, macOS 10.15+, Linux | Latest versions |
+
+### Required Services
+
+#### QDrant Vector Database
+
+QDrant Loader requires a QDrant instance to store vectors and metadata.
+
+##### Option 1: Docker
 
 ```bash
 pip install qdrant-loader
@@ -42,20 +61,42 @@ pip install "qdrant-loader-core[openai]"
 pip install "qdrant-loader-core[ollama]"
 ```
 
-## Platform notes
+## Development environment (recommended)
 
-### Windows
+Use this short workflow:
 
-Use PowerShell or Command Prompt with Python 3.12+ and verify Scripts path is available.
+- Dev adds a new library: `uv add <package>`
+- Pull latest code: `uv sync`
+- CI/Prod: `uv sync --frozen`
 
-```powershell
-qdrant-loader --version
-mcp-qdrant-loader --version
+Setup commands:
+
+```bash
+# Initial workspace setup
+uv sync --all-packages --all-extras
+
+# Verify installation
+uv run qdrant-loader --version
+uv run mcp-qdrant-loader --version
 ```
 
-### macOS and Linux
+When you need a new dependency during development:
 
-Use virtual environments if system Python is managed.
+```bash
+uv add fastapi
+uv sync
+```
+
+## Virtual environment note
+
+With uv, you normally do not need to manually create or activate a virtual environment.
+`uv sync` manages the project environment automatically.
+
+Create and activate your own venv only if your team or tooling explicitly requires manual venv control.
+
+### Method 3: Virtual Environment (Isolated)
+
+For users who want to keep QDrant Loader isolated:
 
 ```bash
 python -m venv .venv

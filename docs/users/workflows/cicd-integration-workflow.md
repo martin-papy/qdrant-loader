@@ -282,12 +282,11 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+          uv sync --all-packages --all-extras
       - name: Build loader package
         run: |
           cd packages/qdrant-loader
-          python -m build
+          uv build
       - name: Publish loader package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -409,8 +408,7 @@ website/templates/
 # Modify for your package structure
 - name: Install dependencies
   run: |
-    python -m pip install --upgrade pip
-    pip install -e packages/your-package[dev]
+    uv sync --all-packages --all-extras
 
 # Add your specific test requirements
 - name: Install system dependencies
@@ -459,7 +457,7 @@ on:
 - name: Build package
   run: |
     cd packages/your-package
-    python -m build
+    uv build
 ```
 
 ### Step 3: Configuration Management
@@ -591,7 +589,7 @@ git tag -l
 
 # Verify package build
 cd packages/qdrant-loader
-python -m build
+uv build
 ```
 
 1. **Secret Configuration Issues**

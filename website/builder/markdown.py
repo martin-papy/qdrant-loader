@@ -420,12 +420,22 @@ class MarkdownProcessor:
             r"\[([^\]]+)\]\(([^)]+\.md(?:#[^)]*)?)\)", replace_md_links, content
         )
         content = re.sub(
+            r"\[([^\]]+)\]\(([^)]*packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)/?)\)",
+            replace_md_links,
+            content,
+        )
+        content = re.sub(
             r"\[([^\]]+)\]\(([^)]*(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:/[^)]*)?(?:#[^)]*)?)\)",
             replace_md_links,
             content,
         )
         content = re.sub(
             r'(href=")([^"]+\.md(?:#[^"]*)?)(")', replace_href_links, content
+        )
+        content = re.sub(
+            r'(href=")([^"]*packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)/?)(")',
+            replace_href_links,
+            content,
         )
         content = re.sub(
             r'(href=")([^"]*(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:/[^"]*)?(?:#[^"]*)?)(")',
@@ -569,6 +579,21 @@ class MarkdownProcessor:
 
         # Only rewrite to absolute /docs when building from a source file context
         if source_file:
+            # Map monorepo package folder links to generated docs package aliases.
+            # This keeps source Markdown unchanged while ensuring website links resolve.
+            package_patterns = [
+                (r"^\.?/packages/qdrant-loader/?$", "/docs/packages/qdrant-loader/"),
+                (r"^\.?/packages/qdrant-loader-core/?$", "/docs/packages/core/"),
+                (
+                    r"^\.?/packages/qdrant-loader-mcp-server/?$",
+                    "/docs/packages/mcp-server/",
+                ),
+            ]
+            for pattern, replacement in package_patterns:
+                if re.match(pattern, link):
+                    link = replacement
+                    break
+
             # ../../docs/... -> /docs/...
             link = re.sub(r"^(?:\.{2}/)+docs/", "/docs/", link)
             # ./docs/... -> /docs/...

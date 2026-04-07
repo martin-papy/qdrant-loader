@@ -1,8 +1,8 @@
-# Best Practices for qdrant-loader
+# Developer Engineering Best Practices & PR Review Checklist
 
-> **Author:** nguyen.vu@cbtw.tech
-
-This guide outlines Pythonic patterns and AI engineering best practices for the qdrant-loader project.
+This guide defines technical engineering standards for qdrant-loader.
+Use this document for coding patterns, architecture decisions, testing standards, and review gates.
+For contribution workflow (setup, branching, PR process, issue templates), use the root `CONTRIBUTING.md`.
 
 ## 1. Pythonic Code Standards
 

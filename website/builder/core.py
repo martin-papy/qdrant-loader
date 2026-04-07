@@ -125,6 +125,10 @@ class WebsiteBuilder:
         # Capitalize words
         return " ".join(word.capitalize() for word in title.split())
 
+    def _to_posix_path(self, path: str) -> str:
+        """Normalize a path-like string for URLs/canonical metadata."""
+        return str(path).replace("\\", "/")
+
     def generate_project_info(self, **kwargs) -> dict:
         """Generate project information for templates."""
         project_info = {
@@ -237,6 +241,8 @@ class WebsiteBuilder:
         **extra_replacements,
     ) -> None:
         """Build a single page from template."""
+        output_filename = self._to_posix_path(output_filename)
+        canonical_path = self._to_posix_path(canonical_path)
         template_content = self.load_template(template_name)
 
         # Load a content template if available when no explicit content is given.
@@ -277,7 +283,7 @@ class WebsiteBuilder:
             "canonical_url": (
                 self.base_url.rstrip("/") + "/" + canonical_path
                 if self.base_url
-                else canonical_path
+                else "/" + canonical_path.lstrip("/")
             ),
             "author": project_info.get("name", "QDrant Loader"),
             "version": project_info.get("version", "0.4.0b1"),
@@ -459,17 +465,19 @@ class WebsiteBuilder:
 
         for item in sorted(docs_dir.iterdir()):
             if item.is_file() and item.suffix == ".md":
+                item_name = self._to_posix_path(item.name)
                 nav_data["children"].append(
                     {
                         "title": self._humanize_title(item.stem),
-                        "url": f"docs/{item.name}",
+                        "url": f"docs/{item_name}",
                     }
                 )
             elif item.is_dir():
+                item_name = self._to_posix_path(item.name)
                 nav_data["children"].append(
                     {
                         "title": self._humanize_title(item.name),
-                        "url": f"docs/{item.name}/",
+                        "url": f"docs/{item_name}/",
                     }
                 )
 
@@ -553,7 +561,9 @@ Sitemap: {site_base}/sitemap.xml
             # Find HTML files in site directory
             if self.output_dir.exists():
                 for html_file in self.output_dir.rglob("*.html"):
-                    rel_path = str(html_file.relative_to(self.output_dir))
+                    rel_path = self._to_posix_path(
+                        str(html_file.relative_to(self.output_dir))
+                    )
                     pages.append(rel_path)
 
         # Use provided date or current date
@@ -673,7 +683,7 @@ Sitemap: {site_base}/sitemap.xml
 
         # Process all markdown files in docs
         for item in sorted(docs_dir.rglob("*.md")):
-            relative_path = str(item.relative_to(docs_dir))
+            relative_path = self._to_posix_path(str(item.relative_to(docs_dir)))
             output_path = relative_path.replace(".md", ".html")
 
             structure["children"].append(
@@ -1030,19 +1040,27 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                                 index_file = directory / "index.html"
                                 if source_file.suffix == ".html":
                                     # Copy HTML file content directly (always overwrite to avoid stale links)
-                                    content = source_file.read_text()
-                                    index_file.write_text(content)
+                                    content = source_file.read_text(
+                                        encoding="utf-8", errors="ignore"
+                                    )
+                                    index_file.write_text(
+                                        content, encoding="utf-8", errors="ignore"
+                                    )
                                     print(
                                         f"📄 Generated index.html from {source_file.name}"
                                     )
                             else:
                                 # For source files, process through normal build pipeline
                                 relative_dir = directory.relative_to(docs_dir)
-                                output_path = f"docs/{relative_dir}/index.html"
+                                output_path = self._to_posix_path(
+                                    f"docs/{relative_dir}/index.html"
+                                )
 
                                 if source_file.suffix == ".html":
                                     # Copy HTML file content directly
-                                    content = source_file.read_text()
+                                    content = source_file.read_text(
+                                        encoding="utf-8", errors="ignore"
+                                    )
                                     self.build_page(
                                         "base.html",
                                         output_path,
