@@ -24,6 +24,7 @@ from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 # Initialize Rich console for enhanced output formatting.
 console = Console()
@@ -137,14 +138,15 @@ async def list(
             console.print(output)
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
+        safe_error = sanitize_exception_message(e)
         # Standardized error logging: user-friendly message + technical details + troubleshooting hint
         logger.error(
             "Failed to list projects from configuration",
-            error=str(e),
+            error=safe_error,
             error_type=type(e).__name__,
             suggestion="Try running 'qdrant-loader project validate' to check configuration",
         )
-        raise ClickException(f"Failed to list projects: {str(e)!s}") from e
+        raise ClickException(f"Failed to list projects: {safe_error}") from e
 
 
 @project_cli.command()
@@ -199,14 +201,15 @@ async def status(
             console.print(output)
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
+        safe_error = sanitize_exception_message(e)
         # Standardized error logging: user-friendly message + technical details + troubleshooting hint
         logger.error(
             "Failed to retrieve project status information",
-            error=str(e),
+            error=safe_error,
             error_type=type(e).__name__,
             suggestion="Verify project configuration and database connectivity",
         )
-        raise ClickException(f"Failed to get project status: {str(e)!s}") from e
+        raise ClickException(f"Failed to get project status: {safe_error}") from e
 
 
 @project_cli.command()
@@ -255,14 +258,15 @@ async def validate(
             raise ClickException("Project validation failed")
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
+        safe_error = sanitize_exception_message(e)
         # Standardized error logging: user-friendly message + technical details + troubleshooting hint
         logger.error(
             "Failed to validate project configurations",
-            error=str(e),
+            error=safe_error,
             error_type=type(e).__name__,
             suggestion="Check config.yaml syntax and data source accessibility",
         )
-        raise ClickException(f"Failed to validate projects: {str(e)!s}") from e
+        raise ClickException(f"Failed to validate projects: {safe_error}") from e
 
 
 async def _setup_project_manager(

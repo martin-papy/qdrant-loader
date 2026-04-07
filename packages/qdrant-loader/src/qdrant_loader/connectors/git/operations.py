@@ -22,6 +22,14 @@ class GitOperations:
         self.logger = LoggingConfig.get_logger(__name__)
         self.logger.info("Initializing GitOperations")
 
+    @staticmethod
+    def _to_git_path(path: str) -> str:
+        """Normalize a filesystem path to git pathspec format.
+
+        Git commands expect POSIX-style separators, even on Windows.
+        """
+        return path.replace("\\", "/")
+
     def clone(
         self,
         url: str,
@@ -155,6 +163,7 @@ class GitOperations:
 
             # Get the relative path from the repository root
             rel_path = os.path.relpath(file_path, self.repo.working_dir)
+            rel_path = self._to_git_path(rel_path)
 
             # Check if file exists in the repository
             try:
@@ -194,6 +203,7 @@ class GitOperations:
 
             # Get the relative path from the repository root
             rel_path = os.path.relpath(file_path, self.repo.working_dir)
+            rel_path = self._to_git_path(rel_path)
             self.logger.debug("Getting last commit date", file_path=rel_path)
 
             # Get the last commit for the file
@@ -259,6 +269,7 @@ class GitOperations:
 
             # Get the relative path from the repository root
             rel_path = os.path.relpath(file_path, self.repo.working_dir)
+            rel_path = self._to_git_path(rel_path)
             self.logger.debug("Getting creation date", file_path=rel_path)
 
             # Get the first commit for the file

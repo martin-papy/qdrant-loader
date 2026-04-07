@@ -10,6 +10,7 @@ from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 from .pipeline import (
     PipelineComponentsFactory,
@@ -161,23 +162,19 @@ class AsyncIngestionPipeline:
                         await self.project_manager.initialize(session)
                     logger.debug("Project manager initialization completed")
                 except Exception as e:
-                    # Standardized error logging: user-friendly message + technical details + stack trace
                     logger.error(
                         "Failed to initialize project manager during pipeline startup",
-                        error=str(e),
+                        error=sanitize_exception_message(e),
                         error_type=type(e).__name__,
                         suggestion="Check database connectivity and project configuration",
-                        exc_info=True,
                     )
                     raise
         except Exception as e:
-            # Standardized error logging: user-friendly message + technical details + stack trace
             logger.error(
                 "Pipeline initialization failed during startup sequence",
-                error=str(e),
+                error=sanitize_exception_message(e),
                 error_type=type(e).__name__,
                 suggestion="Check configuration, database connectivity, and system resources",
-                exc_info=True,
             )
             raise
 
@@ -232,6 +229,19 @@ class AsyncIngestionPipeline:
 
             # Update metrics
             if documents:
+                pipeline_result = getattr(
+                    self.orchestrator, "last_pipeline_result", None
+                )
+                total_chunks = getattr(pipeline_result, "success_count", 0)
+
+                def _safe_document_size(doc: Document) -> int:
+                    try:
+                        return int(doc.metadata.get("size", 0))
+                    except (TypeError, ValueError):
+                        return 0
+
+                total_size_bytes = sum(_safe_document_size(doc) for doc in documents)
+
                 self.monitor.start_batch(
                     "document_batch",
                     batch_size=len(documents),
@@ -243,7 +253,14 @@ class AsyncIngestionPipeline:
                     },
                 )
                 # Note: Success/error counts are handled internally by the new architecture
-                self.monitor.end_batch("document_batch", len(documents), 0, [])
+                self.monitor.end_batch(
+                    "document_batch",
+                    len(documents),
+                    0,
+                    [],
+                    total_chunks=total_chunks,
+                    total_size_bytes=total_size_bytes,
+                )
 
             self.monitor.end_operation("ingestion_process")
 
@@ -253,16 +270,15 @@ class AsyncIngestionPipeline:
             return documents
 
         except Exception as e:
-            # Standardized error logging: user-friendly message + technical details + stack trace
+            safe_error = sanitize_exception_message(e)
             logger.error(
                 "Document processing pipeline failed during ingestion",
-                error=str(e),
+                error=safe_error,
                 error_type=type(e).__name__,
                 documents_attempted=len(documents),
                 suggestion="Check data source connectivity, document formats, and system resources",
-                exc_info=True,
             )
-            self.monitor.end_operation("ingestion_process", error=str(e))
+            self.monitor.end_operation("ingestion_process", error=safe_error)
             raise
 
     async def cleanup(self):

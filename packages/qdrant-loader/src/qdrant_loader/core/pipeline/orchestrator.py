@@ -1,20 +1,18 @@
 """Main orchestrator for the ingestion pipeline."""
 
 from qdrant_loader.config import Settings, SourcesConfig
-from qdrant_loader.connectors.confluence import ConfluenceConnector
-from qdrant_loader.connectors.git import GitConnector
-from qdrant_loader.connectors.jira import JiraConnector
-from qdrant_loader.connectors.localfile import LocalFileConnector
-from qdrant_loader.connectors.publicdocs import PublicDocsConnector
+from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 from .document_pipeline import DocumentPipeline
 from .source_filter import SourceFilter
 from .source_processor import SourceProcessor
+from .workers.upsert_worker import PipelineResult
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -47,6 +45,7 @@ class PipelineOrchestrator:
         self.settings = settings
         self.components = components
         self.project_manager = project_manager
+        self.last_pipeline_result = None
 
     async def process_documents(
         self,
@@ -69,6 +68,7 @@ class PipelineOrchestrator:
             List of processed documents
         """
         logger.info("🚀 Starting document ingestion")
+        self.last_pipeline_result = None
 
         try:
             # Determine sources configuration to use
@@ -151,6 +151,7 @@ class PipelineOrchestrator:
             result = await self.components.document_pipeline.process_documents(
                 documents
             )
+            self.last_pipeline_result = result
 
             # Update document states for successfully processed documents
             await self._update_document_states(
@@ -163,7 +164,10 @@ class PipelineOrchestrator:
             return documents
 
         except Exception as e:
-            logger.error(f"❌ Pipeline orchestration failed: {e}", exc_info=True)
+            logger.error(
+                f"❌ Pipeline orchestration failed: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+            )
             raise
 
     async def _process_all_projects(
@@ -177,6 +181,7 @@ class PipelineOrchestrator:
             raise ValueError("Project manager not available")
 
         all_documents = []
+        aggregated_result = PipelineResult()
         project_ids = self.project_manager.list_project_ids()
 
         logger.info(f"Processing {len(project_ids)} projects")
@@ -190,16 +195,32 @@ class PipelineOrchestrator:
                     source=source,
                     force=force,
                 )
+                project_result = self.last_pipeline_result
                 all_documents.extend(project_documents)
+
+                if project_result is not None:
+                    aggregated_result.success_count += project_result.success_count
+                    aggregated_result.error_count += project_result.error_count
+                    aggregated_result.successfully_processed_documents.update(
+                        project_result.successfully_processed_documents
+                    )
+                    aggregated_result.failed_document_ids.update(
+                        project_result.failed_document_ids
+                    )
+                    aggregated_result.errors.extend(project_result.errors)
+
                 logger.debug(
                     f"Processed {len(project_documents)} documents from project: {project_id}"
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to process project {project_id}: {e}", exc_info=True
+                    f"Failed to process project {project_id}: {sanitize_exception_message(e)}",
+                    error_type=type(e).__name__,
                 )
                 # Continue processing other projects
                 continue
+
+        self.last_pipeline_result = aggregated_result
 
         logger.info(
             f"Completed processing all projects: {len(all_documents)} total documents"
@@ -216,34 +237,34 @@ class PipelineOrchestrator:
         if filtered_config.confluence:
             confluence_docs = (
                 await self.components.source_processor.process_source_type(
-                    filtered_config.confluence, ConfluenceConnector, "Confluence"
+                    filtered_config.confluence, get_connector_instance, "Confluence"
                 )
             )
             documents.extend(confluence_docs)
 
         if filtered_config.git:
             git_docs = await self.components.source_processor.process_source_type(
-                filtered_config.git, GitConnector, "Git"
+                filtered_config.git, get_connector_instance, "Git"
             )
             documents.extend(git_docs)
 
         if filtered_config.jira:
             jira_docs = await self.components.source_processor.process_source_type(
-                filtered_config.jira, JiraConnector, "Jira"
+                filtered_config.jira, get_connector_instance, "Jira"
             )
             documents.extend(jira_docs)
 
         if filtered_config.publicdocs:
             publicdocs_docs = (
                 await self.components.source_processor.process_source_type(
-                    filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
+                    filtered_config.publicdocs, get_connector_instance, "PublicDocs"
                 )
             )
             documents.extend(publicdocs_docs)
 
         if filtered_config.localfile:
             localfile_docs = await self.components.source_processor.process_source_type(
-                filtered_config.localfile, LocalFileConnector, "LocalFile"
+                filtered_config.localfile, get_connector_instance, "LocalFile"
             )
             documents.extend(localfile_docs)
 
@@ -292,7 +313,10 @@ class PipelineOrchestrator:
                 return changes["new"] + changes["updated"]
 
         except Exception as e:
-            logger.error(f"Error during change detection: {e}", exc_info=True)
+            logger.error(
+                f"Error during change detection: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+            )
             raise
 
     async def _update_document_states(

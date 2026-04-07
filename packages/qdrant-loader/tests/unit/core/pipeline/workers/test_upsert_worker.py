@@ -586,3 +586,92 @@ class TestUpsertWorker:
 
         # Verify qdrant_manager.upsert_points was called twice (one full batch + one final batch)
         assert self.mock_qdrant_manager.upsert_points.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_counts_unique_ids_only(self):
+        """Duplicate chunk IDs should overwrite points and be counted once."""
+        # Two chunks intentionally share the same ID
+        mock_chunk1 = Mock()
+        mock_chunk1.id = "same-chunk-id"
+        mock_chunk1.content = "Version 1"
+        mock_chunk1.source = "test_source"
+        mock_chunk1.source_type = "test"
+        mock_chunk1.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        mock_chunk1.metadata = {"parent_document": Mock(id="doc1")}
+
+        mock_chunk2 = Mock()
+        mock_chunk2.id = "same-chunk-id"
+        mock_chunk2.content = "Version 2"
+        mock_chunk2.source = "test_source"
+        mock_chunk2.source_type = "test"
+        mock_chunk2.created_at = datetime(2023, 1, 1, 12, 5, 0)
+        mock_chunk2.metadata = {"parent_document": Mock(id="doc2")}
+
+        async def embedded_chunks_iterator():
+            yield (mock_chunk1, [0.1, 0.2, 0.3])
+            yield (mock_chunk2, [0.4, 0.5, 0.6])
+
+        self.upsert_worker.batch_size = 1
+
+        with (
+            patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+            ),
+            patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.logger"
+            ) as mock_logger,
+        ):
+            result = await self.upsert_worker.process_embedded_chunks(
+                embedded_chunks_iterator()
+            )
+
+        # Count unique IDs only: 2 processed attempts, 1 unique stored point ID
+        assert result.success_count == 1
+        assert result.error_count == 0
+        assert len(result.errors) == 1
+        assert "duplicate chunk IDs" in result.errors[0]
+        mock_logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_detects_same_batch_duplicates(self):
+        """Duplicate IDs inside a single batch should be reported and counted once."""
+        mock_chunk1 = Mock()
+        mock_chunk1.id = "same-chunk-id"
+        mock_chunk1.content = "Version 1"
+        mock_chunk1.source = "test_source"
+        mock_chunk1.source_type = "test"
+        mock_chunk1.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        mock_chunk1.metadata = {"parent_document": Mock(id="doc1")}
+
+        mock_chunk2 = Mock()
+        mock_chunk2.id = "same-chunk-id"
+        mock_chunk2.content = "Version 2"
+        mock_chunk2.source = "test_source"
+        mock_chunk2.source_type = "test"
+        mock_chunk2.created_at = datetime(2023, 1, 1, 12, 5, 0)
+        mock_chunk2.metadata = {"parent_document": Mock(id="doc2")}
+
+        async def embedded_chunks_iterator():
+            yield (mock_chunk1, [0.1, 0.2, 0.3])
+            yield (mock_chunk2, [0.4, 0.5, 0.6])
+
+        # Keep both chunks in the same batch
+        self.upsert_worker.batch_size = 2
+
+        with (
+            patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+            ),
+            patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.logger"
+            ) as mock_logger,
+        ):
+            result = await self.upsert_worker.process_embedded_chunks(
+                embedded_chunks_iterator()
+            )
+
+        assert result.success_count == 1
+        assert result.error_count == 0
+        assert len(result.errors) == 1
+        assert "same-batch duplicate occurrences" in result.errors[0]
+        mock_logger.warning.assert_called()

@@ -103,19 +103,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
       - name: Install system dependencies
         run: |
           # Install ffmpeg for MarkItDown audio processing
           sudo apt-get update
           sudo apt-get install -y ffmpeg
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e packages/qdrant-loader[dev]
+        run: uv sync --all-packages --all-extras
       - name: Create test configuration
         run: |
           cd packages/qdrant-loader
@@ -128,8 +128,7 @@ jobs:
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
       - name: Run tests with coverage
         run: |
-          cd packages/qdrant-loader
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --cov-report=html:../../htmlcov-loader -v
+          uv run pytest packages/qdrant-loader/tests/ --cov=src --cov-report=xml:coverage-loader.xml --cov-report=html:htmlcov-loader -v
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -187,21 +186,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[docs]"
+        run: uv sync --all-packages --all-extras
       - name: Generate favicons
         run: |
-          python website/assets/generate_favicons.py
+          uv run python website/assets/generate_favicons.py
       - name: Build website using templates
         run: |
           echo "🚀 Building website using template system"
-          python website/build.py \
+          uv run python website/build.py \
             --output site \
             --templates website/templates \
             --coverage-artifacts coverage-artifacts/ \

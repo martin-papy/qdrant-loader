@@ -111,11 +111,12 @@ class TestSourceProcessor:
         """Test successful processing of source type."""
         processor = SourceProcessor()
 
-        # Create mock connector class
-        mock_connector_class = MagicMock()
-        mock_connector_instance = AsyncMock()
-        mock_connector_instance.get_documents.return_value = sample_documents
-        mock_connector_class.return_value = mock_connector_instance
+        # Create mock connector instance
+        mock_connector = MockConnector(mock_source_config)
+        mock_connector._documents = sample_documents
+
+        # mock factory
+        mock_connector_factory = MagicMock(return_value=mock_connector)
 
         source_configs = {"test_source": mock_source_config}
 
@@ -123,7 +124,7 @@ class TestSourceProcessor:
             "qdrant_loader.core.pipeline.source_processor.logger"
         ) as mock_logger:
             result = await processor.process_source_type(
-                source_configs, mock_connector_class, "test_type"
+                source_configs, mock_connector_factory, "test_type"
             )
 
         # Verify results
@@ -131,8 +132,7 @@ class TestSourceProcessor:
         assert result == sample_documents
 
         # Verify connector was created and called
-        mock_connector_class.assert_called_once_with(mock_source_config)
-        mock_connector_instance.get_documents.assert_called_once()
+        mock_connector_factory.assert_called_once_with(mock_source_config)
 
         # Verify logging
         mock_logger.debug.assert_called()
@@ -149,25 +149,29 @@ class TestSourceProcessor:
 
         source_configs = {"source_1": source_config_1, "source_2": source_config_2}
 
-        # Create mock connector class that returns different documents for each source
-        mock_connector_class = MagicMock()
-        mock_instances = []
+        # Create connectors corresponding to each source
+        connector_1 = MockConnector(source_config_1)
+        connector_1._documents = sample_documents[:1]
 
-        for _i, docs in enumerate([sample_documents[:1], sample_documents[1:]]):
-            mock_instance = AsyncMock()
-            mock_instance.get_documents.return_value = docs
-            mock_instances.append(mock_instance)
+        connector_2 = MockConnector(source_config_2)
+        connector_2._documents = sample_documents[1:]
 
-        mock_connector_class.side_effect = mock_instances
+        # Mock factory to return connectors sequentially
+        mock_connector_factory = MagicMock(side_effect=[connector_1, connector_2])
 
         result = await processor.process_source_type(
-            source_configs, mock_connector_class, "test_type"
+            source_configs, mock_connector_factory, "test_type"
         )
 
         # Verify all documents are collected
         assert len(result) == 2
         assert result[0] == sample_documents[0]
         assert result[1] == sample_documents[1]
+
+        # Verify factory is called once per source
+        assert mock_connector_factory.call_count == 2
+        mock_connector_factory.assert_any_call(source_config_1)
+        mock_connector_factory.assert_any_call(source_config_2)
 
     @pytest.mark.asyncio
     async def test_process_source_type_with_shutdown_event(self, mock_source_config):
@@ -177,19 +181,19 @@ class TestSourceProcessor:
 
         processor = SourceProcessor(shutdown_event=shutdown_event)
 
-        mock_connector_class = MagicMock()
         source_configs = {"test_source": mock_source_config}
+        mock_connector_factory = MagicMock()
 
         with patch(
             "qdrant_loader.core.pipeline.source_processor.logger"
         ) as mock_logger:
             result = await processor.process_source_type(
-                source_configs, mock_connector_class, "test_type"
+                source_configs, mock_connector_factory, "test_type"
             )
 
         # Should return empty list and not create connector
         assert result == []
-        mock_connector_class.assert_not_called()
+        mock_connector_factory.assert_not_called()
 
         # Verify shutdown logging
         mock_logger.info.assert_called()
@@ -207,11 +211,10 @@ class TestSourceProcessor:
         source_config.enable_file_conversion = True
 
         # Create mock connector that supports file conversion
-        mock_connector_instance = AsyncMock()
-        mock_connector_instance.get_documents.return_value = []
-        mock_connector_instance.set_file_conversion_config = MagicMock()
+        mock_connector_instance = MockConnector(source_config)
+        mock_connector_instance._documents = []
 
-        mock_connector_class = MagicMock(return_value=mock_connector_instance)
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
 
         source_configs = {"test_source": source_config}
 
@@ -219,13 +222,14 @@ class TestSourceProcessor:
             "qdrant_loader.core.pipeline.source_processor.logger"
         ) as mock_logger:
             await processor.process_source_type(
-                source_configs, mock_connector_class, "test_type"
+                source_configs, mock_connector_factory, "test_type"
             )
 
+        # Verify connector was created and called
+        mock_connector_factory.assert_called_once_with(source_config)
+
         # Verify file conversion config was set
-        mock_connector_instance.set_file_conversion_config.assert_called_once_with(
-            file_conversion_config
-        )
+        assert mock_connector_instance.file_conversion_config == file_conversion_config
 
         # Verify debug logging for file conversion
         debug_calls = [call[0][0] for call in mock_logger.debug.call_args_list]
@@ -242,20 +246,19 @@ class TestSourceProcessor:
         source_config = MagicMock(spec=SourceConfig)
         source_config.enable_file_conversion = False
 
-        mock_connector_instance = AsyncMock()
-        mock_connector_instance.get_documents.return_value = []
-        mock_connector_instance.set_file_conversion_config = MagicMock()
+        mock_connector_instance = MockConnector(source_config)
+        mock_connector_instance._documents = []
 
-        mock_connector_class = MagicMock(return_value=mock_connector_instance)
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
 
         source_configs = {"test_source": source_config}
 
         await processor.process_source_type(
-            source_configs, mock_connector_class, "test_type"
+            source_configs, mock_connector_factory, "test_type"
         )
 
         # Verify file conversion config was NOT set
-        mock_connector_instance.set_file_conversion_config.assert_not_called()
+        assert mock_connector_instance.file_conversion_config != file_conversion_config
 
     @pytest.mark.asyncio
     async def test_process_source_type_connector_without_file_conversion(
@@ -272,13 +275,13 @@ class TestSourceProcessor:
         mock_connector_instance.get_documents.return_value = []
         # Don't add set_file_conversion_config method
 
-        mock_connector_class = MagicMock(return_value=mock_connector_instance)
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
 
         source_configs = {"test_source": source_config}
 
         # Should not raise error and should complete successfully
         result = await processor.process_source_type(
-            source_configs, mock_connector_class, "test_type"
+            source_configs, mock_connector_factory, "test_type"
         )
 
         assert result == []
@@ -289,16 +292,18 @@ class TestSourceProcessor:
         processor = SourceProcessor()
 
         # Create mock connector that raises exception
-        mock_connector_class = MagicMock()
-        mock_connector_class.side_effect = Exception("Connector creation failed")
+        mock_connector_instance = MagicMock()
+        mock_connector_instance.side_effect = Exception("Connector creation failed")
 
         source_configs = {"test_source": mock_source_config}
+
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
 
         with patch(
             "qdrant_loader.core.pipeline.source_processor.logger"
         ) as mock_logger:
             result = await processor.process_source_type(
-                source_configs, mock_connector_class, "test_type"
+                source_configs, mock_connector_factory, "test_type"
             )
 
         # Should return empty list and continue processing
@@ -320,31 +325,38 @@ class TestSourceProcessor:
 
         source_configs = {"good_source": source_config_1, "bad_source": source_config_2}
 
-        # Create mock connector class that fails for one source
-        call_count = 0
+        # Create a successful connector
+        success_connector = MockConnector(source_config_1)
+        success_connector._documents = sample_documents
 
-        def mock_connector_side_effect(config):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:  # First call succeeds
-                mock_instance = AsyncMock()
-                mock_instance.get_documents.return_value = sample_documents
-                return mock_instance
-            else:  # Second call fails
-                raise Exception("Connection failed")
+        # Create a failing connector
+        failing_connector = MockConnector(source_config_2)
+        failing_connector.get_documents = AsyncMock(
+            side_effect=Exception("Connection failed")
+        )
 
-        mock_connector_class = MagicMock(side_effect=mock_connector_side_effect)
+        # Mock factory to return connectors based on config
+        def mock_connector_factory(config):
+            if config == source_config_1:
+                return success_connector
+            else:
+                return failing_connector
+
+        mock_connector_factory = MagicMock(side_effect=mock_connector_factory)
 
         with patch(
             "qdrant_loader.core.pipeline.source_processor.logger"
         ) as mock_logger:
             result = await processor.process_source_type(
-                source_configs, mock_connector_class, "test_type"
+                source_configs, mock_connector_factory, "test_type"
             )
 
         # Should get documents from successful source
         assert len(result) == 2
         assert result == sample_documents
+
+        # Verify factory is called for both sources
+        assert mock_connector_factory.call_count == 2
 
         # Should have logged both success and error
         mock_logger.info.assert_called()
@@ -355,16 +367,18 @@ class TestSourceProcessor:
         """Test processing with empty source configs."""
         processor = SourceProcessor()
 
-        mock_connector_class = MagicMock()
+        mock_connector_instance = MagicMock()
         source_configs = {}
 
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
+
         result = await processor.process_source_type(
-            source_configs, mock_connector_class, "test_type"
+            source_configs, mock_connector_factory, "test_type"
         )
 
         # Should return empty list
         assert result == []
-        mock_connector_class.assert_not_called()
+        mock_connector_factory.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_source_type_no_documents(self, mock_source_config):
@@ -373,7 +387,7 @@ class TestSourceProcessor:
 
         mock_connector_instance = AsyncMock()
         mock_connector_instance.get_documents.return_value = []
-        mock_connector_class = MagicMock(return_value=mock_connector_instance)
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
 
         source_configs = {"test_source": mock_source_config}
 
@@ -381,7 +395,7 @@ class TestSourceProcessor:
             "qdrant_loader.core.pipeline.source_processor.logger"
         ) as mock_logger:
             result = await processor.process_source_type(
-                source_configs, mock_connector_class, "test_type"
+                source_configs, mock_connector_factory, "test_type"
             )
 
         # Should return empty list
@@ -401,11 +415,13 @@ class TestSourceProcessor:
 
         mock_connector_instance = AsyncMock()
         mock_connector_instance.get_documents.return_value = sample_documents
-        mock_connector_class = MagicMock(return_value=mock_connector_instance)
+        mock_connector_factory = MagicMock(return_value=mock_connector_instance)
 
         source_configs = {"test_source": mock_source_config}
 
-        await processor.process_source_type(source_configs, mock_connector_class, "git")
+        await processor.process_source_type(
+            source_configs, mock_connector_factory, "git"
+        )
 
         # Verify specific logging patterns
         debug_calls = [call[0][0] for call in mock_logger.debug.call_args_list]

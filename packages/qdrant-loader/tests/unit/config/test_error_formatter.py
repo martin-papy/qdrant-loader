@@ -209,6 +209,18 @@ class TestPrintConfigErrorValueError:
         output = _capture_print_config_error(error)
         assert len(output.strip()) > 0
 
+    def test_print_config_error_value_error_redacts_sensitive_values(self):
+        """ValueError output masks secrets before printing to terminal."""
+        error = ValueError(
+            "JIRA_TOKEN=ATATT-sensitive-value OPENAI_API_KEY=sk-proj-abc"
+        )
+        output = _capture_print_config_error(error)
+
+        assert "ATATT-sensitive-value" not in output
+        assert "sk-proj-abc" not in output
+        assert "JIRA_TOKEN=**" in output
+        assert "OPENAI_API_KEY=**" in output
+
 
 # ---------------------------------------------------------------------------
 # print_config_error – generic / unknown exception type

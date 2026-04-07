@@ -1,6 +1,7 @@
 """Jira connector implementation."""
 
 import asyncio
+from abc import abstractmethod
 from collections.abc import AsyncGenerator
 from datetime import datetime
 from urllib.parse import urlparse  # noqa: F401 - may be used in URL handling
@@ -9,7 +10,7 @@ import requests
 from requests.auth import HTTPBasicAuth  # noqa: F401 - compatibility
 
 from qdrant_loader.config.types import SourceType
-from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationError
 from qdrant_loader.connectors.jira.auth import (
     auto_detect_deployment_type as _auto_detect_type,
 )
@@ -52,8 +53,8 @@ from qdrant_loader.utils.logging import LoggingConfig
 logger = LoggingConfig.get_logger(__name__)
 
 
-class JiraConnector(BaseConnector):
-    """Jira connector for fetching and processing issues."""
+class BaseJiraConnector(BaseConnector):
+    """Base class for all Jira connectors."""
 
     def __init__(self, config: JiraProjectConfig):
         """Initialize the Jira connector.
@@ -160,9 +161,142 @@ class JiraConnector(BaseConnector):
                     ),
                 )
 
+    async def _validate_connection(self) -> None:
+        """Validate connectivity, auth, and project access before use.
+
+        Raises:
+            ConnectorConfigurationError: for invalid URL, bad credentials,
+                missing permissions, or unknown project key.
+        """
+        # ── Step 1: reachability + authentication (/myself endpoint) ──────────
+        try:
+            await self._make_request("GET", "myself")
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out. "
+                "Verify network connectivity and try again."
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise ConnectorConfigurationError(
+                f"Cannot connect to Jira at '{self.base_url}'. "
+                "Verify that base_url is correct and the server is reachable."
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 401:
+                raise ConnectorConfigurationError(
+                    f"Authentication failed for Jira at '{self.base_url}' (HTTP 401). "
+                    "Check that token and email are valid."
+                ) from exc
+            if status == 403:
+                raise ConnectorConfigurationError(
+                    f"Access denied to Jira at '{self.base_url}' (HTTP 403). "
+                    "The account does not have sufficient permissions."
+                ) from exc
+            raise ConnectorConfigurationError(
+                f"Validation request to Jira at '{self.base_url}' failed "
+                f"with HTTP {status}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise ConnectorConfigurationError(
+                f"Validation request to Jira at '{self.base_url}' failed: {exc}"
+            ) from exc
+
+        # ── Step 2: project key exists and is accessible ───────────────────────
+        try:
+            await self._make_request("GET", f"project/{self.config.project_key}")
+        except requests.exceptions.Timeout as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' timed out while validating "
+                f"project '{self.config.project_key}'."
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise ConnectorConfigurationError(
+                f"Connection to Jira at '{self.base_url}' was lost while validating "
+                f"project '{self.config.project_key}' (between validation steps). "
+                "Verify network connectivity and Jira availability."
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 404:
+                raise ConnectorConfigurationError(
+                    f"Project '{self.config.project_key}' not found in Jira (HTTP 404). "
+                    "Check that project_key is correct."
+                ) from exc
+            if status == 403:
+                raise ConnectorConfigurationError(
+                    f"No permission to access project '{self.config.project_key}' "
+                    f"in Jira (HTTP 403)."
+                ) from exc
+            raise ConnectorConfigurationError(
+                f"Validation request for project '{self.config.project_key}' at "
+                f"'{self.base_url}' failed with HTTP {status}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise ConnectorConfigurationError(
+                f"Validation request for project '{self.config.project_key}' at "
+                f"'{self.base_url}' failed: {exc}"
+            ) from exc
+
+    @staticmethod
+    def _escape_jql_literal(value: str) -> str:
+        """Escape special characters in JQL string literals.
+
+        Escapes backslashes and double quotes to prevent JQL injection
+        and query breaking when config values contain these characters.
+
+        Args:
+            value: The string value to escape
+
+        Returns:
+            str: The escaped string safe for inclusion in JQL quoted literals
+        """
+        # Replace backslash first to avoid double-escaping
+        value = value.replace("\\", "\\\\")
+        # Then escape double quotes
+        value = value.replace('"', '\\"')
+        return value
+
+    def _build_jql_filter(self, updated_after: datetime | None = None) -> str:
+        """Build JQL filter query with project key, issue types, and statuses.
+
+        Args:
+            updated_after: Optional datetime to filter issues updated after this time
+
+        Returns:
+            str: JQL filter query
+        """
+        escaped_project_key = self._escape_jql_literal(self.config.project_key)
+        jql = f'project = "{escaped_project_key}"'
+
+        # Add issue type filter if configured
+        if self.config.issue_types:
+            escaped_types = [
+                self._escape_jql_literal(t) for t in self.config.issue_types
+            ]
+            types_str = ", ".join(f'"{t}"' for t in escaped_types)
+            jql += f" AND type IN ({types_str})"
+            logger.debug(f"Applied JIRA issue type filter: {self.config.issue_types}")
+
+        # Add status filter if configured
+        if self.config.include_statuses:
+            escaped_statuses = [
+                self._escape_jql_literal(s) for s in self.config.include_statuses
+            ]
+            statuses_str = ", ".join(f'"{s}"' for s in escaped_statuses)
+            jql += f" AND status IN ({statuses_str})"
+            logger.debug(f"Applied JIRA status filter: {self.config.include_statuses}")
+
+        # Add updated_after filter if provided
+        if updated_after:
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+
+        return jql
+
     async def __aenter__(self):
         """Async context manager entry."""
         if not self._initialized:
+            await self._validate_connection()
             self._initialized = True
         return self
 
@@ -170,16 +304,10 @@ class JiraConnector(BaseConnector):
         """Async context manager exit."""
         self._initialized = False
 
+    @abstractmethod
     def _get_api_url(self, endpoint: str) -> str:
-        """Construct the full API URL for an endpoint.
-
-        Args:
-            endpoint: API endpoint path
-
-        Returns:
-            str: Full API URL
-        """
-        return f"{self.base_url}/rest/api/2/{endpoint}"
+        """Construct the full API URL for an endpoint."""
+        ...
 
     async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated request to the Jira API.
@@ -265,147 +393,29 @@ class JiraConnector(BaseConnector):
             )
             raise
 
-    def _make_sync_request(self, jql: str, **kwargs):
-        """
-        Make a synchronous request to the Jira API, converting parameters as needed:
-        - Format datetime values in JQL to 'yyyy-MM-dd HH:mm' format
-        """
-        # Format datetime values in JQL query
-        for key, value in kwargs.items():
-            if isinstance(value, datetime):
-                formatted_date = value.strftime("%Y-%m-%d %H:%M")
-                jql = jql.replace(f"{{{key}}}", f"'{formatted_date}'")
-
-        # Use the new _make_request method for consistency
-        params = {
-            "jql": jql,
-            "startAt": kwargs.get("start", 0),
-            "maxResults": kwargs.get("limit", self.config.page_size),
-            "expand": "changelog",
-            "fields": "*all",
-        }
-
-        return asyncio.run(self._make_request("GET", "search", params=params))
-
+    @abstractmethod
     async def get_issues(
         self, updated_after: datetime | None = None
     ) -> AsyncGenerator[JiraIssue, None]:
-        """
-        Get all issues from Jira.
-
-        Args:
-            updated_after: Optional datetime to filter issues updated after this time
-
-        Yields:
-            JiraIssue objects
-        """
-        start_at = 0
-        page_size = self.config.page_size
-        total_issues = 0
-
-        logger.info(
-            "🎫 Starting JIRA issue retrieval",
-            project_key=self.config.project_key,
-            page_size=page_size,
-            updated_after=updated_after.isoformat() if updated_after else None,
-        )
-
-        while True:
-            jql = f'project = "{self.config.project_key}"'
-            if updated_after:
-                jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
-
-            params = {
-                "jql": jql,
-                "startAt": start_at,
-                "maxResults": page_size,
-                "expand": "changelog",
-                "fields": "*all",
-            }
-
-            logger.debug(
-                "Fetching JIRA issues page",
-                start_at=start_at,
-                page_size=page_size,
-                jql=jql,
-            )
-
-            try:
-                response = await self._make_request("GET", "search", params=params)
-            except Exception as e:
-                logger.error(
-                    "Failed to fetch JIRA issues page",
-                    start_at=start_at,
-                    page_size=page_size,
-                    error=str(e),
-                    error_type=type(e).__name__,
-                )
-                raise
-
-            if not response or not response.get("issues"):
-                logger.debug(
-                    "No more JIRA issues found, stopping pagination",
-                    start_at=start_at,
-                    total_processed=start_at,
-                )
-                break
-
-            issues = response["issues"]
-
-            # Update total count if not set
-            if total_issues == 0:
-                total_issues = response.get("total", 0)
-                logger.info(f"🎫 Found {total_issues} JIRA issues to process")
-
-            # Log progress every 100 issues instead of every 50
-            progress_log_interval = 100
-
-            for i, issue in enumerate(issues):
-                try:
-                    parsed_issue = self._parse_issue(issue)
-                    yield parsed_issue
-
-                    if (start_at + i + 1) % progress_log_interval == 0:
-                        progress_percent = (
-                            round((start_at + i + 1) / total_issues * 100, 1)
-                            if total_issues > 0
-                            else 0
-                        )
-                        logger.info(
-                            f"🎫 Progress: {start_at + i + 1}/{total_issues} issues ({progress_percent}%)"
-                        )
-
-                except Exception as e:
-                    logger.error(
-                        "Failed to parse JIRA issue",
-                        issue_id=issue.get("id"),
-                        issue_key=issue.get("key"),
-                        error=str(e),
-                        error_type=type(e).__name__,
-                    )
-                    # Continue processing other issues instead of failing completely
-                    continue
-
-            # Check if we've processed all issues
-            start_at += len(issues)
-            if start_at >= total_issues:
-                logger.info(
-                    f"✅ Completed JIRA issue retrieval: {start_at} issues processed"
-                )
-                break
+        """Get all issues from Jira."""
+        ...
 
     def _parse_issue(self, raw_issue: dict) -> JiraIssue:
+        """Parse a raw issue from the Jira response into a JiraIssue object."""
         return _parse_issue_helper(raw_issue)
 
     def _parse_user(
         self, raw_user: dict | None, required: bool = False
     ) -> JiraUser | None:
+        """Parse a raw user from the Jira response into a JiraUser object."""
         return _parse_user_helper(raw_user, required)
 
     def _parse_attachment(self, raw_attachment: dict) -> JiraAttachment:
+        """Parse a raw attachment from the Jira response into a JiraAttachment object."""
         return _parse_attachment_helper(raw_attachment)
 
     def _parse_comment(self, raw_comment: dict) -> JiraComment:
+        """Parse a raw comment from the Jira response into a JiraComment object."""
         return _parse_comment_helper(raw_comment)
 
     def _get_issue_attachments(self, issue: JiraIssue) -> list[AttachmentMetadata]:
