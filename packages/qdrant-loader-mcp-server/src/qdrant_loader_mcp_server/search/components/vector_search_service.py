@@ -144,21 +144,15 @@ class VectorSearchService:
                 if hasattr(self.embeddings_provider, "embeddings")
                 else self.embeddings_provider
             )
-            last_error: Exception | None = None
             for _ in range(3):
                 try:
                     vectors = await client.embed([text])
                     return vectors[0]
                 except Exception as e:
-                    last_error = e
                     self.logger.warning(
                         "Provider embedding failed, retrying...", error=str(e)
                     )
                     await asyncio.sleep(0.5)
-        if self.openai_client is None and last_error is not None:
-            raise RuntimeError(
-                "Embeddings provider failed after retries"
-            ) from last_error
 
         # Fallback to OpenAI (to keep backward compatibility & pass tests)
         if self.openai_client is not None:
