@@ -7,7 +7,10 @@ import re
 _SENSITIVE_FIELD_RE = re.compile(
     r"(?i)(?P<quote>['\"]?)(?P<key>[a-z0-9_\-]*(?:token|api[_-]?key|password|secret|access[_-]?key|private[_-]?key)[a-z0-9_\-]*)(?P=quote)\s*(?P<sep>[:=])\s*(?P<value>'[^']*'|\"[^\"]*\"|[^,\s}\]]+)"
 )
-_INPUT_VALUE_RE = re.compile(r"input_value\s*=\s*([^,\n]+)", re.IGNORECASE)
+_INPUT_VALUE_RE = re.compile(
+    r"input_value\s*=\s*(\{(?:[^{}]|\{[^{}]*\})*\}|\[(?:[^\[\]]|\[[^\[\]]*\])*\]|'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|[^,\n]+)",
+    re.IGNORECASE | re.DOTALL,
+)
 _BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*bearer\s+)([^\s,]+)")
 _OPENAI_KEY_RE = re.compile(r"\bsk-[a-zA-Z0-9\-_]{12,}\b")
 

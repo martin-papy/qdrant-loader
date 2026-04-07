@@ -278,7 +278,9 @@ class AsyncIngestionPipeline:
                 documents_attempted=len(documents),
                 suggestion="Check data source connectivity, document formats, and system resources",
             )
-            self.monitor.end_operation("ingestion_process", error=safe_error)
+            self.monitor.end_operation(
+                "ingestion_process", success=False, error=safe_error
+            )
             raise
 
     async def cleanup(self):

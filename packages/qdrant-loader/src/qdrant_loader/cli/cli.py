@@ -211,7 +211,7 @@ def _load_config(
         elif isinstance(e, ClickException):
             raise e from None
         else:
-            safe_error = sanitize_exception_message(e)
+            safe_error = sanitize_exception_message(e) or type(e).__name__
             _get_logger().error("config_load_failed", error=safe_error)
             raise ClickException(f"Failed to load configuration: {safe_error}") from e
 
@@ -265,7 +265,7 @@ async def _run_init(settings, force: bool) -> None:
                 collection=settings.qdrant_collection_name,
             )
     except Exception as e:
-        safe_error = sanitize_exception_message(e)
+        safe_error = sanitize_exception_message(e) or type(e).__name__
         _get_logger().error("init_failed", error=safe_error)
         raise ClickException(f"Failed to initialize collection: {safe_error}") from e
 
@@ -459,7 +459,7 @@ def config(
     except Exception as e:
         from qdrant_loader.utils.logging import LoggingConfig
 
-        safe_error = sanitize_exception_message(e)
+        safe_error = sanitize_exception_message(e) or type(e).__name__
         LoggingConfig.get_logger(__name__).error("config_failed", error=safe_error)
         raise ClickException(f"Failed to display configuration: {safe_error}") from e
 

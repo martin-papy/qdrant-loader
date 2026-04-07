@@ -346,4 +346,7 @@ class PipelineOrchestrator:
                 )
                 logger.debug(f"Updated document state for {doc.id}")
             except Exception as e:
-                logger.error(f"Failed to update document state for {doc.id}: {e}")
+                logger.error(
+                    f"Failed to update document state for {doc.id}: {sanitize_exception_message(e)}",
+                    error_type=type(e).__name__,
+                )
