@@ -155,10 +155,10 @@ class VectorSearchService:
                         "Provider embedding failed, retrying...", error=str(e)
                     )
                     await asyncio.sleep(0.5)
-                    if self.openai_client is None and last_error is not None:
-                        raise RuntimeError(
-                            "Embeddings provider failed after retries"
-                        ) from last_error
+        if self.openai_client is None and last_error is not None:
+            raise RuntimeError(
+                "Embeddings provider failed after retries"
+            ) from last_error
 
         # Fallback to OpenAI (to keep backward compatibility & pass tests)
         if self.openai_client is not None:
