@@ -561,7 +561,7 @@ find /tmp/test-repo -name "*.py" | head -10
 curl -H "Authorization: token $REPO_TOKEN" https://api.github.com/repos/org/repo
 ```
 
-## <img src="../../../../../assets/icons/library/test-tuble-icon.svg" width="32" alt="Documentation"> Monitoring and Processing
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Documentation"> Monitoring and Processing
 
 ### Check Processing Status
 

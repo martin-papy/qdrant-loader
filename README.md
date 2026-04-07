@@ -65,7 +65,7 @@ Model Context Protocol server providing search capabilities to AI development to
 
 **Key Features:**
 
-- **MCP Protocol 2025-06-32**: Latest protocol compliance with dual transport support (stdio + HTTP)
+- **MCP Protocol 2025-06-18**: Latest protocol compliance with dual transport support (stdio + HTTP)
 - **Advanced search tools**: Semantic search, hierarchy-aware search, attachment discovery, and conflict detection
 - **Cross-document intelligence**: Document similarity, clustering, relationship analysis, and knowledge graphs
 - **Streaming capabilities**: Server-Sent Events (SSE) for real-time search results
