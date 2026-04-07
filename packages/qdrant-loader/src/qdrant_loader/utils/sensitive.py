@@ -41,6 +41,6 @@ def redact_sensitive_data(text: str, mask: str = "**") -> str:
     return redacted
 
 
-def sanitize_exception_message(error: Exception, mask: str = "**") -> str:
-    """Convert an exception to a safe, redacted message string."""
+def sanitize_exception_message(error: Exception | str, mask: str = "**") -> str:
+    """Convert an exception or message string to a safe, redacted message."""
     return redact_sensitive_data(str(error), mask=mask)

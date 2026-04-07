@@ -491,7 +491,7 @@ class TestAsyncIngestionPipeline:
 
             # Verify error was logged in metrics
             mock_monitor.end_operation.assert_called_once_with(
-                "ingestion_process", error="Test processing error"
+                "ingestion_process", success=False, error="Test processing error"
             )
 
     @pytest.mark.asyncio

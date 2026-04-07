@@ -300,7 +300,9 @@ class AsyncIngestionPipeline:
             try:
                 prometheus_metrics.stop_metrics_server()
             except Exception as e:
-                logger.warning(f"Error stopping metrics server: {e}")
+                logger.warning(
+                    f"Error stopping metrics server: {sanitize_exception_message(e)}"
+                )
 
             # Use resource manager for cleanup
             if hasattr(self, "resource_manager"):
@@ -308,7 +310,9 @@ class AsyncIngestionPipeline:
 
             logger.info("Pipeline cleanup completed")
         except Exception as e:
-            logger.error(f"Error during pipeline cleanup: {e}")
+            logger.error(
+                f"Error during pipeline cleanup: {sanitize_exception_message(e)}"
+            )
 
     def __del__(self):
         """Destructor to ensure cleanup."""

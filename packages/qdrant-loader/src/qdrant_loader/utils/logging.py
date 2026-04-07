@@ -551,7 +551,7 @@ class LoggingConfig:
                 try:
                     return redact_sensitive_data(value, mask="***REDACTED***")
                 except Exception:
-                    return value
+                    return "***REDACTED***"
 
             def _deep_redact(obj):
                 try:
