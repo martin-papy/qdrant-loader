@@ -207,7 +207,7 @@ global_config:
     request:
       batch_size: 100
     embeddings:
-      vector_size: "${VECTOR_SIZE}"
+      vector_size: ${VECTOR_SIZE}
   
   file_conversion:
     max_file_size: 52428800  # 50MB
