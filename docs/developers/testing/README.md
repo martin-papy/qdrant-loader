@@ -62,14 +62,14 @@ uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py::Tes
 
 ### Core Testing Tools
 
-| Tool | Purpose | Usage |
-|------|---------|-------|
-| **pytest** | Test runner and framework | Main testing framework |
-| **pytest-asyncio** | Async test support | Testing async functions |
-| **pytest-cov** | Coverage reporting | Code coverage analysis |
-| **pytest-mock** | Mocking utilities | Mock external dependencies |
-| **requests-mock** | HTTP mocking | Mock external HTTP calls |
-| **pytest-timeout** | Test timeouts | Prevent hanging tests |
+| Tool               | Purpose                   | Usage                      |
+| ------------------ | ------------------------- | -------------------------- |
+| **pytest**         | Test runner and framework | Main testing framework     |
+| **pytest-asyncio** | Async test support        | Testing async functions    |
+| **pytest-cov**     | Coverage reporting        | Code coverage analysis     |
+| **pytest-mock**    | Mocking utilities         | Mock external dependencies |
+| **requests-mock**  | HTTP mocking              | Mock external HTTP calls   |
+| **pytest-timeout** | Test timeouts             | Prevent hanging tests      |
 
 ### Test Configuration
 
@@ -110,19 +110,19 @@ def setup_test_environment():
     # Create necessary directories
     data_dir = Path("./data")
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Load test configuration
     config_path = Path("tests/config.test.yaml")
     env_path = Path("tests/.env.test")
-    
+
     # Load environment variables first
     load_dotenv(env_path, override=True)
-    
+
     # Initialize config using the same function as CLI
     initialize_config(config_path)
-    
+
     yield
-    
+
     # Clean up after all tests
     if data_dir.exists():
         shutil.rmtree(data_dir)
@@ -149,9 +149,9 @@ def qdrant_client(test_global_config):
         url=os.getenv("QDRANT_URL"),
         api_key=os.getenv("QDRANT_API_KEY")
     )
-    
+
     yield client
-    
+
     # Cleanup: Delete test collection after tests
     collection_name = os.getenv("QDRANT_COLLECTION_NAME")
     if collection_name:
@@ -162,7 +162,7 @@ def qdrant_client(test_global_config):
 def clean_collection(qdrant_client):
     """Ensure the test collection is empty before each test."""
     collection_name = os.getenv("QDRANT_COLLECTION_NAME")
-    
+
     if collection_name:
         qdrant_client.delete_collection(collection_name)
         qdrant_client.create_collection(
@@ -186,7 +186,7 @@ from qdrant_loader.core.document import Document
 def create_mock_qdrant_client():
     """Create a mock QdrantClient."""
     client = Mock()
-    
+
     # Configure mock methods
     client.get_collections.return_value = Mock(collections=[])
     client.create_collection = Mock()
@@ -195,19 +195,19 @@ def create_mock_qdrant_client():
     client.search.return_value = []
     client.delete_collection = Mock()
     client.delete = Mock()
-    
+
     return client
 
 
 def create_mock_settings():
     """Create mock settings for testing."""
     from qdrant_loader.config import Settings
-    
+
     settings = Mock(spec=Settings)
     settings.qdrant_url = "http://localhost:6333"
     settings.qdrant_api_key = None
     settings.qdrant_collection_name = "test_collection"
-    
+
     return settings
 ```
 
@@ -225,7 +225,7 @@ from qdrant_loader.core.qdrant_manager import QdrantManager, QdrantConnectionErr
 
 class TestQdrantManager:
     """Test cases for QdrantManager."""
-    
+
     @pytest.fixture
     def mock_settings(self):
         """Mock settings for testing."""
@@ -234,7 +234,7 @@ class TestQdrantManager:
         settings.qdrant_api_key = None
         settings.qdrant_collection_name = "test_collection"
         return settings
-    
+
     @pytest.fixture
     def mock_qdrant_client(self):
         """Mock QdrantClient for testing."""
@@ -244,7 +244,7 @@ class TestQdrantManager:
         client.upsert = Mock()
         client.search.return_value = []
         return client
-    
+
     def test_initialization_default_settings(self, mock_settings, mock_global_config):
         """Test QdrantManager initialization with default settings."""
         with (
@@ -261,7 +261,7 @@ class TestQdrantManager:
             manager = QdrantManager()
             assert manager.settings == mock_settings
             assert manager.collection_name == "test_collection"
-    
+
     @pytest.mark.asyncio
     async def test_upsert_points_success(self, mock_settings, mock_qdrant_client):
         """Test successful point upsert."""
@@ -271,11 +271,11 @@ class TestQdrantManager:
         ):
             manager = QdrantManager(mock_settings)
             manager.client = mock_qdrant_client
-            
+
             points = [
                 {"id": "1", "vector": [0.1, 0.2, 0.3], "payload": {"text": "test"}}
             ]
-            
+
             await manager.upsert_points(points)
             mock_qdrant_client.upsert.assert_called_once()
 ```
@@ -292,11 +292,11 @@ from qdrant_loader.cli.cli import cli
 
 class TestCliCommands:
     """Test CLI command functionality."""
-    
+
     def setup_method(self):
         """Setup test runner."""
         self.runner = CliRunner()
-    
+
     @patch("qdrant_loader.cli.cli._setup_logging")
     @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
@@ -317,10 +317,10 @@ class TestCliCommands:
         mock_pipeline.process_documents = Mock(return_value=[])
         mock_pipeline.cleanup = Mock()
         mock_pipeline_class.return_value = mock_pipeline
-        
+
         # Run command
         result = self.runner.invoke(cli, ["ingest"])
-        
+
         # Verify success
         assert result.exit_code == 0
         mock_pipeline.initialize.assert_called_once()
@@ -347,7 +347,7 @@ def test_document_creation():
         source="test_source",
         url="http://example.com/doc1"
     )
-    
+
     assert doc.title == "Test Document"
     assert doc.content == "This is test content"
     assert doc.source_type == "test"
@@ -365,7 +365,7 @@ def test_document_id_consistency():
         source="source",
         url="http://example.com"
     )
-    
+
     doc2 = Document(
         title="Test",
         content_type="text/plain",
@@ -374,7 +374,7 @@ def test_document_id_consistency():
         source="source",
         url="http://example.com"
     )
-    
+
     assert doc1.id == doc2.id
 ```
 
@@ -396,20 +396,20 @@ async def test_full_ingestion_pipeline(test_settings):
     """Test complete ingestion pipeline."""
     # Create QdrantManager
     qdrant_manager = QdrantManager(test_settings)
-    
+
     # Initialize pipeline
     pipeline = AsyncIngestionPipeline(
         settings=test_settings,
         qdrant_manager=qdrant_manager
     )
-    
+
     try:
         # Initialize pipeline
         await pipeline.initialize()
-        
+
         # Run ingestion for a specific project
         documents = await pipeline.process_documents(project_id="test-project")
-        
+
         # Verify results
         assert isinstance(documents, list)
     finally:
@@ -422,15 +422,15 @@ async def test_cli_integration(tmp_path):
     """Test CLI integration."""
     from qdrant_loader.cli.cli import cli
     from click.testing import CliRunner
-    
+
     runner = CliRunner()
-    
+
     # Test init command
     result = runner.invoke(cli, [
         '--workspace', str(tmp_path),
         'init'
     ])
-    
+
     assert result.exit_code == 0
 ```
 
@@ -450,16 +450,16 @@ from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 async def test_ingestion_performance(test_settings):
     """Benchmark ingestion performance."""
     pipeline = AsyncIngestionPipeline(settings=test_settings)
-    
+
     start_time = time.time()
-    
+
     try:
         await pipeline.initialize()
         documents = await pipeline.process_documents(project_id="test-project")
-        
+
         end_time = time.time()
         duration = end_time - start_time
-        
+
         # Performance assertions
         assert duration < 30.0  # Should complete in under 30 seconds
         assert isinstance(documents, list)
@@ -502,9 +502,9 @@ name: Test and Coverage
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -512,24 +512,24 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12", "3.13"]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      
+
       - name: Install dependencies
         run: poetry install --with dev
-      
+
       - name: Run tests
         run: poetry run pytest --cov=src --cov-report=xml
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -596,8 +596,9 @@ def test_with_mock(mock_function):
 
 ### Contributing Tests
 
-- **[Contributing Guide](../../../CONTRIBUTING.md)** - How to contribute tests
+- **[Contributing Guide](/docs/CONTRIBUTING.md)** - How to contribute tests
 - **[Development Setup](../README.md)** - Development environment setup
 
 ---
+
 **Ready to write tests?** Start with unit tests for individual components or check out the existing test suite for patterns and examples.

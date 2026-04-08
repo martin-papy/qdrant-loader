@@ -416,31 +416,36 @@ class MarkdownProcessor:
 
         # Apply conversions - expanded patterns to catch more file types
         # Catch .md files and well-known files without extensions
+        package_link_pattern_md = (
+            r"\[([^\]]+)\]\(((?:\./|\.\./|/)?packages/"
+            r"(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)"
+            r"(?:/[^)#]*)?(?:#[^)]*)?)\)"
+        )
+        package_link_pattern_href = (
+            r'(href=")((?:\./|\.\./|/)?packages/'
+            r'(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)'
+            r'(?:/[^"#]*)?(?:#[^"]*)?)(")'
+        )
+        well_known_link_pattern_md = (
+            r"\[([^\]]+)\]\(((?:\./|\.\./|/)?"
+            r"(?:packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?:/[^)#]*)?/)?"
+            r"(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:\.md)?(?:#[^)]*)?)\)"
+        )
+        well_known_link_pattern_href = (
+            r'(href=")((?:\./|\.\./|/)?'
+            r'(?:packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?:/[^"#]*)?/)?'
+            r'(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:\.md)?(?:#[^"]*)?)(")'
+        )
+
+        content = re.sub(package_link_pattern_md, replace_md_links, content)
+        content = re.sub(well_known_link_pattern_md, replace_md_links, content)
         content = re.sub(
             r"\[([^\]]+)\]\(([^)]+\.md(?:#[^)]*)?)\)", replace_md_links, content
         )
-        content = re.sub(
-            r"\[([^\]]+)\]\(([^)]*packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)/?)\)",
-            replace_md_links,
-            content,
-        )
-        content = re.sub(
-            r"\[([^\]]+)\]\(([^)]*(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:/[^)]*)?(?:#[^)]*)?)\)",
-            replace_md_links,
-            content,
-        )
+        content = re.sub(package_link_pattern_href, replace_href_links, content)
+        content = re.sub(well_known_link_pattern_href, replace_href_links, content)
         content = re.sub(
             r'(href=")([^"]+\.md(?:#[^"]*)?)(")', replace_href_links, content
-        )
-        content = re.sub(
-            r'(href=")([^"]*packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)/?)(")',
-            replace_href_links,
-            content,
-        )
-        content = re.sub(
-            r'(href=")([^"]*(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:/[^"]*)?(?:#[^"]*)?)(")',
-            replace_href_links,
-            content,
         )
 
         # The following normalizations are only applied during site builds (when source_file is provided).

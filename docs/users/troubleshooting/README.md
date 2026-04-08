@@ -331,7 +331,7 @@ watch -n 30 'free -h && df -h'
 
 - **GitHub Issues**: [Report bugs and get help](https://github.com/martin-papy/qdrant-loader/issues)
 - **Discussions**: [Community Q&A and tips](https://github.com/martin-papy/qdrant-loader/discussions)
-- **Documentation**: [Complete documentation](../../../README.md)
+- **Documentation**: [Complete documentation](/docs/README.md)
 
 ### Professional Support
 

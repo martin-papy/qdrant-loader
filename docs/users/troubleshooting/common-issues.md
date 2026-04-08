@@ -136,7 +136,7 @@ projects:
       localfile:
         my-docs:
           include_paths:
-            - "*.md"  # Only markdown files
+            - "*.md" # Only markdown files
 ```
 
 ```yaml
@@ -297,7 +297,7 @@ export OPENAI_API_KEY="your-key-here"  # Legacy support
 # Ensure URLs are complete and accessible
 global:
   qdrant:
-    url: "https://your-qdrant-instance.com"  # Include protocol
+    url: "https://your-qdrant-instance.com" # Include protocol
 ```
 
 ### Issue: Environment variables not loaded
@@ -581,12 +581,12 @@ qdrant-loader ingest --workspace .
 ### Support Channels
 
 - **GitHub Issues**: [Report bugs and feature requests](https://github.com/martin-papy/qdrant-loader/issues)
-- **Documentation**: [Check latest documentation](../../../README.md)
+- **Documentation**: [Check latest documentation](/docs/README.md)
 - **Discussions**: [Community Q&A](https://github.com/martin-papy/qdrant-loader/discussions)
 
 ### Issue Report Template
 
-```markdown
+````markdown
 ## Issue Description
 
 Brief description of the problem
@@ -617,6 +617,7 @@ What actually happened
 ```yaml
 [Paste relevant configuration (sanitized)]
 ```
+````
 
 ## Logs
 
@@ -647,3 +648,4 @@ qdrant-loader config --workspace .
 **Most common issues resolved!** 🎉
 
 This guide covers the majority of issues users encounter. For specific error messages, check the [Error Messages Reference](./error-messages-reference.md), and for performance-related problems, see the [Performance Issues Guide](./performance-issues.md).
+```
