@@ -100,17 +100,17 @@ global:
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
-    endpoint: "http://localhost:11434/v1"
+    endpoint: "${LLM_BASE_URL}"
     # Ollama: Local Ollama OpenAI-compatible endpoint
     # OpenAI equivalent: https://api.openai.com/v1       
-    model: "argus-ai/pplx-embed-v1-0.6b:fp32" 
+    model: "${LLM_EMBEDDING_MODEL}" 
     # Ollama: Local embedding model name
     # OpenAI equivalent: text-embedding-3-small   (1536 dimensions, cheaper)
-    api_key: "ollama"
+    api_key: "${LLM_API_KEY}"
     # Ollama: Use the fixed value "ollama" (no real auth)
     # OpenAI: Your real API key (e.g. sk-xxxx)
     batch_size: 100
-    vector_size: 1024
+    vector_size: ${VECTOR_SIZE}
     # MUST match model output dimension
     # OpenAI: text-embedding-3-small → 1536                      
     tokenizer: "none"
@@ -122,14 +122,14 @@ global:
   # Unified LLM configuration (provider-agnostic)
   # New preferred configuration block; legacy embedding/markitdown fields still work
   llm:
-    provider: "ollama" # openai | ollama | azure_openai | custom
-    base_url: "http://localhost:11434/v1" # OpenAI: https://api.openai.com/v1
-    api_key: "ollama" # Ollama: Use the fixed value "ollama" (no real auth), OpenAI: Your real API key (e.g. sk-xxxx)
+    provider: "${LLM_PROVIDER}" # openai | ollama | azure_openai | custom
+    base_url: "${LLM_BASE_URL}" # OpenAI: https://api.openai.com/v1
+    api_key: "${LLM_API_KEY}" # Ollama: Use "ollama", OpenAI: real API key
     api_version: null # Required for azure_openai (e.g., 2024-05-01-preview)
     headers: {}
     models:
-      embeddings: "argus-ai/pplx-embed-v1-0.6b:fp32" #OpenAI equivalent: text-embedding-3-small
-      chat: "llama3.2" #OpenAI equivalent: gpt-4o or gpt-3.5-turbo
+      embeddings: "${LLM_EMBEDDING_MODEL}" #OpenAI equivalent: text-embedding-3-small
+      chat: "${LLM_CHAT_MODEL}" #OpenAI equivalent: gpt-4o or gpt-3.5-turbo
     tokenizer: "none" # OpenAI: "cl100k_base"
     request:
       timeout_s: 30
