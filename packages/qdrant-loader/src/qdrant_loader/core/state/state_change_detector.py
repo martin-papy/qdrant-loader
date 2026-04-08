@@ -144,6 +144,7 @@ class StateChangeDetector:
             source_type=source_type,
             url=url,
             title="Deleted Document",
+            is_deleted=True,
             metadata={
                 "uri": document_state.uri,
                 "title": "Deleted Document",

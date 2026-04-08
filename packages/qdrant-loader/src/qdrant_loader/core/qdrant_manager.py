@@ -240,6 +240,39 @@ class QdrantManager:
             )
             raise
 
+    async def delete_points(self, point_ids: list[str]) -> None:
+        """Delete points from the collection.
+
+        Args:
+            point_ids: List of point IDs to delete
+        """
+        self.logger.debug(
+            "Deleting points",
+            extra={"point_count": len(point_ids), "collection": self.collection_name},
+        )
+
+        try:
+            client = self._ensure_client_connected()
+            await asyncio.to_thread(
+                client.delete,
+                collection_name=self.collection_name,
+                points=point_ids,
+            )
+            self.logger.debug(
+                "Successfully deleted points",
+                extra={"point_count": len(point_ids), "collection": self.collection_name},
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to delete points",
+                extra={
+                    "error": str(e),
+                    "point_count": len(point_ids),
+                    "collection": self.collection_name,
+                },
+            )
+            raise
+
     def search(
         self, query_vector: list[float], limit: int = 5
     ) -> list[models.ScoredPoint]:

@@ -64,49 +64,68 @@ class UpsertWorker(BaseWorker):
 
         try:
             with prometheus_metrics.UPSERT_DURATION.time():
-                points = [
-                    models.PointStruct(
-                        id=chunk.id,
-                        vector=embedding,
-                        payload={
-                            "content": chunk.content,
-                            "contextual_content": chunk.contextual_content,
+                # Separate deleted and non-deleted chunks
+                deleted_chunks = []
+                non_deleted_chunks = []
+
+                for chunk, embedding in batch:
+                    if chunk.metadata.get("is_deleted", False):
+                        deleted_chunks.append(chunk)
+                    else:
+                        non_deleted_chunks.append((chunk, embedding))
+
+                # Handle non-deleted chunks (upsert)
+                if non_deleted_chunks:
+                    points = [
+                        models.PointStruct(
+                            id=chunk.id,
+                            vector=embedding,
+                            payload={
+                                "content": chunk.content,
+                                "contextual_content": chunk.contextual_content,
                             "metadata": {
-                                k: v
-                                for k, v in chunk.metadata.items()
-                                if k != "parent_document"
+                                    k: v
+                                    for k, v in chunk.metadata.items()
+                                    if k != "parent_document"
+                                },
+                                "source": chunk.source,
+                                "source_type": chunk.source_type,
+                                "created_at": chunk.created_at.isoformat(),
+                                "updated_at": (
+                                    getattr(
+                                        chunk, "updated_at", chunk.created_at
+                                    ).isoformat()
+                                    if hasattr(chunk, "updated_at")
+                                    else chunk.created_at.isoformat()
+                                ),
+                                "title": getattr(
+                                    chunk, "title", chunk.metadata.get("title", "")
+                                ),
+                                "url": getattr(chunk, "url", chunk.metadata.get("url", "")),
+                                "document_id": chunk.metadata.get(
+                                    "parent_document_id", chunk.id
+                                ),
                             },
-                            "source": chunk.source,
-                            "source_type": chunk.source_type,
-                            "created_at": chunk.created_at.isoformat(),
-                            "updated_at": (
-                                getattr(
-                                    chunk, "updated_at", chunk.created_at
-                                ).isoformat()
-                                if hasattr(chunk, "updated_at")
-                                else chunk.created_at.isoformat()
-                            ),
-                            "title": getattr(
-                                chunk, "title", chunk.metadata.get("title", "")
-                            ),
-                            "url": getattr(chunk, "url", chunk.metadata.get("url", "")),
-                            "document_id": chunk.metadata.get(
-                                "parent_document_id", chunk.id
-                            ),
-                        },
+                        )
+                        for chunk, embedding in non_deleted_chunks
+                    ]
+
+                    await self.qdrant_manager.upsert_points(points)
+                    success_count += len(points)
+                    successful_doc_ids.update(
+                        chunk.metadata["parent_document"].id for chunk, _ in non_deleted_chunks
                     )
-                    for chunk, embedding in batch
-                ]
 
-                await self.qdrant_manager.upsert_points(points)
-                prometheus_metrics.INGESTED_DOCUMENTS.inc(len(points))
-                success_count = len(points)
+                # Handle deleted chunks (delete)
+                if deleted_chunks:
+                    document_ids = list(set(chunk.metadata["parent_document"].id for chunk in deleted_chunks))
+                    await self.qdrant_manager.delete_points_by_document_id(document_ids)
+                    success_count += len(deleted_chunks)
+                    successful_doc_ids.update(
+                        chunk.metadata["parent_document"].id for chunk in deleted_chunks
+                    )
 
-                # Mark parent documents as successfully processed
-                for chunk, _ in batch:
-                    parent_doc = chunk.metadata.get("parent_document")
-                    if parent_doc:
-                        successful_doc_ids.add(parent_doc.id)
+                prometheus_metrics.INGESTED_DOCUMENTS.inc(success_count)
 
         except Exception as e:
             for chunk, _ in batch:

@@ -304,8 +304,8 @@ class PipelineOrchestrator:
                     f"{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
                 )
 
-                # Return new and updated documents
-                return changes["new"] + changes["updated"]
+                # Return new, updated, and deleted documents
+                return changes["new"] + changes["updated"] + changes["deleted"]
 
         except Exception as e:
             logger.error(f"Error during change detection: {e}", exc_info=True)

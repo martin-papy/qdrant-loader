@@ -84,6 +84,7 @@ class ChunkingWorker(BaseWorker):
                 # Add document reference to chunk for later state tracking
                 for chunk in chunks:
                     chunk.metadata["parent_document"] = document
+                    chunk.metadata["is_deleted"] = document.is_deleted
 
                 logger.debug(f"Chunked doc {document.id} into {len(chunks)} chunks")
                 return chunks

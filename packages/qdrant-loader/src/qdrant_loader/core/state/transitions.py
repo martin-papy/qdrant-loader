@@ -175,7 +175,7 @@ async def update_document_state(
         if document_state_record:
             document_state_record.title = document.title  # type: ignore
             document_state_record.content_hash = document.content_hash  # type: ignore
-            document_state_record.is_deleted = False  # type: ignore
+            document_state_record.is_deleted = document.is_deleted  # type: ignore
             document_state_record.updated_at = now  # type: ignore
 
             document_state_record.is_converted = is_converted  # type: ignore
@@ -230,7 +230,7 @@ async def update_document_state(
                 url=document.url,
                 title=document.title,
                 content_hash=document.content_hash,
-                is_deleted=False,
+                is_deleted=document.is_deleted,
                 created_at=now,
                 updated_at=now,
                 is_converted=is_converted,
