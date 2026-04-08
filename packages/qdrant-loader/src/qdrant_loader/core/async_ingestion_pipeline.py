@@ -320,7 +320,9 @@ class AsyncIngestionPipeline:
             # Can't await in __del__, so use the sync cleanup method
             self._sync_cleanup()
         except Exception as e:
-            logger.error(f"Error in destructor cleanup: {e}")
+            logger.error(
+                f"Error in destructor cleanup: {sanitize_exception_message(e)}"
+            )
 
     def _sync_cleanup(self):
         """Synchronous cleanup for destructor and signal handlers."""
@@ -335,19 +337,23 @@ class AsyncIngestionPipeline:
             if hasattr(self, "monitor"):
                 self.monitor.save_metrics()
         except Exception as e:
-            logger.error(f"Error saving metrics: {e}")
+            logger.error(f"Error saving metrics: {sanitize_exception_message(e)}")
 
         # Stop metrics server
         try:
             prometheus_metrics.stop_metrics_server()
         except Exception as e:
-            logger.error(f"Error stopping metrics server: {e}")
+            logger.error(
+                f"Error stopping metrics server: {sanitize_exception_message(e)}"
+            )
 
         # Use resource manager sync cleanup
         try:
             if hasattr(self, "resource_manager"):
                 self.resource_manager._cleanup()
         except Exception as e:
-            logger.error(f"Error in resource manager cleanup: {e}")
+            logger.error(
+                f"Error in resource manager cleanup: {sanitize_exception_message(e)}"
+            )
 
         logger.info("Pipeline cleanup completed (sync)")
