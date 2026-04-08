@@ -14,8 +14,8 @@ This page is the MCP hub. Detailed instructions are split into dedicated pages t
 - Setup and client integration: [Setup & Integration Guide](./setup-and-integration.md)
 - Tool capabilities and examples: [Search Capabilities & Examples](./search-capabilities.md)
 - Tool-specific references:
-  - [Attachment Search Guide](./attachment-search.md)
-  - [Hierarchy Search Guide](./hierarchy-search.md)
+  - **[Attachment Search Guide](./attachment-search.md)**
+  - **[Hierarchy Search Guide](./hierarchy-search.md)**
 
 ## Prerequisites
 
@@ -25,8 +25,8 @@ This page is the MCP hub. Detailed instructions are split into dedicated pages t
 
 Configuration references:
 
-- [LLM Provider Guide](../../configuration/llm-provider-guide.md)
-- [Environment Variables Reference](../../configuration/environment-variables.md)
+- **[LLM Provider Guide](../../configuration/llm-provider-guide.md)**
+- **[Environment Variables Reference](../../configuration/environment-variables.md)**
 
 ## Quick run
 

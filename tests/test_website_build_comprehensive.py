@@ -225,6 +225,20 @@ class TestWebsiteBuilderMarkdown:
         # Should convert basic markdown
         assert "<h1>Test Header</h1>" in result
 
+    def test_markdown_to_html_renders_task_list_checkboxes(self):
+        """Task list markers should render as clickable checkbox inputs."""
+        builder = WebsiteBuilder()
+
+        markdown = "- [ ] Pending item\n- [x] Done item"
+        result = builder.markdown_to_html(markdown)
+
+        assert 'type="checkbox"' in result
+        assert 'disabled' not in result
+        assert 'task-list-item' in result
+        assert 'checked' in result
+        assert "Pending item" in result
+        assert "Done item" in result
+
 
 class TestWebsiteBuilderPageBuilding:
     """Test page building functionality."""

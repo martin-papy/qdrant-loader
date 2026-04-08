@@ -128,8 +128,8 @@ mcp-qdrant-loader
 
 Detailed integration guides:
 
-- [Setup and Integration Guide](../users/detailed-guides/mcp-server/setup-and-integration.md)
-- [Search Capabilities Guide](../users/detailed-guides/mcp-server/search-capabilities.md)
+- **[Setup and Integration Guide](../users/detailed-guides/mcp-server/setup-and-integration.md)**
+- **[Search Capabilities Guide](../users/detailed-guides/mcp-server/search-capabilities.md)**
 
 ## Step 7. Validate in your AI tool
 

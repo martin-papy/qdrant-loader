@@ -221,8 +221,8 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 
 ### Migration Resources
 
-- [Configuration File Reference](./docs/users/configuration/config-file-reference.md) - Complete new schema
-- [Environment Variables](./docs/users/configuration/environment-variables.md) - Updated variable names
+- **[Configuration File Reference](./docs/users/configuration/config-file-reference.md)** - Complete new schema
+- **[Environment Variables](./docs/users/configuration/environment-variables.md)** - Updated variable names
 
 ### 🛠️ Developer Resources
 

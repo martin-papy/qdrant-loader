@@ -11,7 +11,7 @@ This section is intentionally lean. Start here, then follow one canonical onboar
 
 ## After onboarding
 
-- [User guides](../users/README.md)
-- [Configuration reference](../users/configuration/README.md)
-- [MCP guide](../users/detailed-guides/mcp-server/README.md)
-- [Developer docs](../developers/README.md)
+- **[User guides](../users/README.md)**
+- **[Configuration reference](../users/configuration/README.md)**
+- **[MCP guide](../users/detailed-guides/mcp-server/README.md)**
+- **[Developer docs](../developers/README.md)**

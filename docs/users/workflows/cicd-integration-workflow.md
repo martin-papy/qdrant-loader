@@ -670,8 +670,8 @@ gh run watch <run-id>
 
 ## 📚 Additional Resources
 
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
-- [GitHub Pages Deployment](https://docs.github.com/en/pages)
-- [QDrant Loader CLI Reference](../cli-reference/README.md)
-- [Configuration Guide](../configuration/README.md)
+- **[GitHub Actions Documentation](https://docs.github.com/en/actions)**
+- **[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)**
+- **[GitHub Pages Deployment](https://docs.github.com/en/pages)**
+- **[QDrant Loader CLI Reference](../cli-reference/README.md)**
+- **[Configuration Guide](../configuration/README.md)**

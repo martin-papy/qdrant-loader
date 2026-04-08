@@ -167,11 +167,13 @@ global:
 
 ```markdown
 # Good: Consistent formatting
+
 - **Feature 1**: Description of the feature
 - **Feature 2**: Description of the feature
 - **Feature 3**: Description of the feature
 
 # Bad: Inconsistent formatting
+
 - Feature 1: Description
 - **Feature 2** - Description
 - Feature 3 (Description)
@@ -185,7 +187,7 @@ global:
 
 ```markdown
 | Column 1 | Column 2 | Column 3 |
-|----------|----------|----------|
+| -------- | -------- | -------- |
 | Value 1  | Value 2  | Value 3  |
 | Value 4  | Value 5  | Value 6  |
 ```
@@ -200,9 +202,11 @@ global:
 
 ```markdown
 # Good: Descriptive and relative
+
 See the [Configuration Guide](../../users/configuration/) for details.
 
 # Bad: Generic text and absolute
+
 Click [here](https://github.com/user/repo/docs/config.md) for more info.
 ```
 
@@ -213,9 +217,11 @@ Click [here](https://github.com/user/repo/docs/config.md) for more info.
 
 ```markdown
 # Good: Context provided
+
 Learn more about vector databases in the [Qdrant documentation](https://qdrant.tech/documentation/).
 
 # Bad: No context
+
 Check out [this link](https://qdrant.tech/documentation/).
 ```
 
@@ -402,9 +408,9 @@ Before publishing documentation, verify:
 
 ### References
 
-- [GitHub Markdown Guide](https://guides.github.com/features/mastering-markdown/)
-- [Google Developer Documentation Style Guide](https://developers.google.com/style)
-- [Microsoft Writing Style Guide](https://docs.microsoft.com/en-us/style-guide/welcome/)
+- **[GitHub Markdown Guide](https://guides.github.com/features/mastering-markdown/)**
+- **[Google Developer Documentation Style Guide](https://developers.google.com/style)**
+- **[Microsoft Writing Style Guide](https://docs.microsoft.com/en-us/style-guide/welcome/)**
 
 ---
 

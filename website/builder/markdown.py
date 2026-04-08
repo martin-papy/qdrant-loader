@@ -49,6 +49,9 @@ class MarkdownProcessor:
             # Add Bootstrap classes
             html = self.add_bootstrap_classes(html)
 
+            # Render GitHub-style task list markers as clickable checkboxes
+            html = self.render_task_list_checkboxes(html)
+
             # Ensure heading IDs
             html = self.ensure_heading_ids(html)
 
@@ -59,6 +62,8 @@ class MarkdownProcessor:
             html = self._basic_markdown_to_html_no_regex(markdown_content)
             # Apply Bootstrap classes to fallback HTML too
             html = self.add_bootstrap_classes(html)
+            # Render task lists in fallback mode too
+            html = self.render_task_list_checkboxes(html)
             # Ensure heading IDs
             html = self.ensure_heading_ids(html)
             return html
@@ -380,6 +385,39 @@ class MarkdownProcessor:
         )
 
         return html_content
+
+    def render_task_list_checkboxes(self, html_content: str) -> str:
+        """Render markdown task-list markers as checkbox inputs."""
+
+        def add_class(attrs: str, class_name: str) -> str:
+            class_match = re.search(r'class="([^"]*)"', attrs)
+            if class_match:
+                classes = class_match.group(1).split()
+                if class_name not in classes:
+                    classes.append(class_name)
+                return re.sub(
+                    r'class="([^"]*)"', f'class="{" ".join(classes)}"', attrs
+                )
+            return f'{attrs} class="{class_name}"'
+
+        def replace_task_item(match: re.Match) -> str:
+            attrs = match.group("attrs") or ""
+            marker = match.group("marker")
+            body = match.group("body")
+            checked_attr = " checked" if marker.lower() == "x" else ""
+            attrs = add_class(attrs, "task-list-item")
+            return (
+                f'<li{attrs}>'
+                f'<input class="form-check-input me-2" type="checkbox"{checked_attr}>'
+                f"{body}</li>"
+            )
+
+        return re.sub(
+            r"<li(?P<attrs>[^>]*)>\s*\[(?P<marker>[ xX])\]\s*(?P<body>.*?)</li>",
+            replace_task_item,
+            html_content,
+            flags=re.DOTALL,
+        )
 
     def extract_title_from_markdown(self, markdown_content: str) -> str:
         """Extract title from markdown content."""
