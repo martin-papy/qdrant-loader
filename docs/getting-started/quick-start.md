@@ -2,7 +2,7 @@
 
 This is the canonical onboarding path for QDrant Loader.
 
-## What you will do
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="What You'll Accomplish"> What You'll Accomplish
 
 In one flow, you will:
 
@@ -14,13 +14,13 @@ In one flow, you will:
 
 Estimated time: 10 to 15 minutes.
 
-## Prerequisites
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Prerequisites"> Prerequisites
 
 - Python 3.12+
 - Docker (or an existing QDrant instance)
 - One LLM provider key (OpenAI, Azure OpenAI, Ollama, or OpenAI-compatible)
 
-## Step 1. Install packages
+## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Install packages"> Step 1. Install packages
 
 ```bash
 pip install qdrant-loader qdrant-loader-mcp-server
@@ -35,7 +35,7 @@ mcp-qdrant-loader --version
 
 If you need OS-specific install help, see [Installation Guide](./installation.md).
 
-## Step 2. Start QDrant
+## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="Start QDrant"> Step 2. Start QDrant
 
 Local Docker option:
 
@@ -45,7 +45,7 @@ docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 Or use QDrant Cloud and copy URL/API key.
 
-## Step 3. Create workspace
+## <img src="../../../assets/icons/library/robot-icon.svg" width="32" alt="Create workspace"> Step 3. Create workspace
 
 Recommended (wizard):
 
@@ -62,7 +62,7 @@ cd my-qdrant-workspace
 qdrant-loader init --workspace .
 ```
 
-## Step 4. Configure environment
+## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Configure environment"> Step 4. Configure environment
 
 Create or edit `.env`:
 
@@ -82,7 +82,7 @@ Canonical configuration references:
 - LLM provider setup: [LLM Provider Guide](../users/configuration/llm-provider-guide.md)
 - Environment variables: [Environment Variables Reference](../users/configuration/environment-variables.md)
 
-## Step 5. Add a minimal config and ingest
+## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="Add minimal config"> Step 5. Add a minimal config and ingest
 
 Create `config.yaml`:
 
@@ -120,7 +120,7 @@ printf "# Hello QDrant Loader\n\nThis is my first document.\n" > docs/sample.md
 qdrant-loader ingest --workspace .
 ```
 
-## Step 6. Start MCP server
+## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Start MCP server"> Step 6. Start MCP server
 
 ```bash
 mcp-qdrant-loader
@@ -131,7 +131,7 @@ Detailed integration guides:
 - **[Setup and Integration Guide](../users/detailed-guides/mcp-server/setup-and-integration.md)**
 - **[Search Capabilities Guide](../users/detailed-guides/mcp-server/search-capabilities.md)**
 
-## Step 7. Validate in your AI tool
+## <img src="../../../assets/icons/library/search-icon.svg" width="32" alt="Validate"> Step 7. Validate in your AI tool
 
 In Cursor/Claude/Windsurf, run a query like:
 
@@ -139,8 +139,14 @@ In Cursor/Claude/Windsurf, run a query like:
 
 If results are returned from ingested content, setup is complete.
 
-## Next steps
+## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Next steps"> Next steps
 
 - Configuration deep dive: [Configuration Reference](../users/configuration/config-file-reference.md)
 - Data sources: [Data Sources Guide](../users/detailed-guides/data-sources/README.md)
 - Troubleshooting: [Troubleshooting Guide](../users/troubleshooting/README.md)
+
+---
+
+**🎉 Quick Start Complete!**
+
+You're now ready to explore the full power of QDrant Loader. The next step is reviewing the Core Concepts summarized in Getting Started, or dive into the [User Guides](../users/) for specific features and workflows.

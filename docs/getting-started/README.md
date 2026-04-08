@@ -1,4 +1,4 @@
-# Getting Started with QDrant Loader
+# <img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Getting started icon"> Getting Started with QDrant Loader
 
 This section is intentionally lean. Start here, then follow one canonical onboarding flow.
 

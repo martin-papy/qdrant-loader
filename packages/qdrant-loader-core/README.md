@@ -8,7 +8,7 @@ Shared core library for the QDrant Loader ecosystem.
 
 For provider, configuration, and architecture details, use the documentation links below.
 
-## Installation
+## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
 
 ```bash
 pip install qdrant-loader-core
@@ -21,13 +21,13 @@ pip install "qdrant-loader-core[openai]"
 pip install "qdrant-loader-core[ollama]"
 ```
 
-## Canonical Documentation
+## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
 - **[Monorepo overview](../../README.md)**
 - **[Developer hub](../../docs/developers/README.md)**
 - **[Architecture hub](../../docs/developers/architecture/README.md)**
 - **[User configuration reference](../../docs/users/configuration/config-file-reference.md)**
 
-## Contributing
+## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md).**

@@ -8,19 +8,19 @@ Data ingestion package for the QDrant Loader ecosystem.
 
 For full setup and configuration, start with the documentation links below.
 
-## Installation
+## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
 
 ```bash
 pip install qdrant-loader
 ```
 
-## CLI
+## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="CLI"> CLI
 
 ```bash
 qdrant-loader --help
 ```
 
-## Canonical Documentation
+## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
 - **[Monorepo overview](../../README.md)**
 - **[Quick start](../../docs/getting-started/quick-start.md)**
@@ -28,6 +28,6 @@ qdrant-loader --help
 - **[Configuration reference](../../docs/users/configuration/README.md)**
 - **[Data source guides](../../docs/users/detailed-guides/data-sources/README.md)**
 
-## Contributing
+## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)**.

@@ -1,4 +1,4 @@
-# User Documentation
+# <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="User Documentation"> User Documentation
 
 This section is for day-2 usage: configuration depth, source-specific guides, workflows, and troubleshooting.
 

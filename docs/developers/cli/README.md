@@ -11,7 +11,7 @@ This document provides comprehensive reference for developing with the QDrant Lo
 - [Development Patterns](#-development-patterns)
 - [Testing](#-testing)
 
-## 🚀 Main CLI Commands
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Main CLI Commands
 
 The QDrant Loader provides a focused set of commands for data ingestion and project management.
 
@@ -224,7 +224,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true # Recommended for Cursor
 }
 ```
 
-## 🔧 Configuration
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration
 
 ### Workspace Mode (Recommended)
 
@@ -280,7 +280,7 @@ JIRA_EMAIL=your-email@company.com
 | 4    | Authentication Error | Invalid credentials for data sources               |
 | 5    | Processing Error     | Error during data processing or ingestion          |
 
-## 🔧 Development Patterns
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Development Patterns
 
 ### Automation and Scripting
 
@@ -442,7 +442,7 @@ echo "Testing search functionality..."
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | \ timeout 5s mcp-qdrant-loader 2>/dev/null || echo "Search test completed"
 ```
 
-## 📚 Related Documentation
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Related Documentation
 
 ### Core Documentation
 

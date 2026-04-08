@@ -8,7 +8,7 @@ Model Context Protocol server package for QDrant Loader.
 
 For MCP setup, tool references, and AI tool integration, start with the documentation links below.
 
-## Installation
+## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
 
 ```bash
 pip install qdrant-loader-mcp-server
@@ -20,13 +20,13 @@ pip install qdrant-loader-mcp-server
 mcp-qdrant-loader --help
 ```
 
-## Canonical Documentation
+## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
 - **[Monorepo overview](../../README.md)**
 - **[MCP server guide](../../docs/users/detailed-guides/mcp-server/README.md)**
 - **[MCP setup and integration](../../docs/users/detailed-guides/mcp-server/setup-and-integration.md)**
 - **[MCP search capabilities](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)**
 
-## Contributing
+## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)**.

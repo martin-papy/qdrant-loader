@@ -2,7 +2,7 @@
 
 This guide covers the hierarchy search capabilities of the QDrant Loader MCP Server, enabling you to navigate and understand the structure of your knowledge base with AI assistance.
 
-## 🎯 Overview
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview"> Overview
 
 The hierarchy search tool is designed specifically for **Confluence documents** where document relationships and organization matter. It's particularly powerful for:
 
@@ -17,7 +17,7 @@ The hierarchy search tool is designed specifically for **Confluence documents** 
 - **Navigation Aid**: Helps explore and understand documentation organization
 - **Completeness Checking**: Identifies gaps in documentation structure
 
-## 🏗️ How Hierarchy Search Works
+## <img src="../../../../../assets/icons/library/architect-icon.svg" width="32" alt="How Hierarchy Search Works"> How Hierarchy Search Works
 
 ### Document Relationships
 
@@ -49,7 +49,7 @@ Query: "API documentation structure"
 4. Structured Results (organized by hierarchy)
 ```
 
-## 🔧 Hierarchy Search Parameters
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Search"> Hierarchy Search Parameters
 
 > **Important**: Hierarchy search currently only works with **Confluence documents**. Other document types (Git repositories, local files, etc.) do not contain the hierarchical metadata required for this search type.
 
@@ -90,7 +90,7 @@ Query: "API documentation structure"
 - **`parent_title`** (string): Filter by parent page title
 - **`root_only`** (boolean): Show only root pages (no parent)
 
-## 📊 Understanding Hierarchy Results
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Result"> Understanding Hierarchy Results
 
 ### Result Structure
 
@@ -122,7 +122,7 @@ Each result includes hierarchy metadata displayed with icons:
 - **⬇️ Children**: Number of direct child documents (when > 0)
 - **🔗 URL**: Link to the source document
 
-## 🎯 Use Cases and Examples
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Examples"> Use Cases and Examples
 
 ### 1. Documentation Navigation
 
@@ -334,7 +334,7 @@ Found 8 results organized by hierarchy:
    🔗 https://wiki.company.com/api/errors
 ```
 
-## 🔍 Advanced Hierarchy Search Techniques
+## <img src="../../../../../assets/icons/library/search-icon.svg" width="32" alt="Advanced Hierarchy Search Techniques"> Advanced Hierarchy Search Techniques
 
 ### 1. Depth-Based Filtering
 
@@ -392,7 +392,7 @@ Results: Only documents at exactly 2 levels deep
 
 Results: All documents under "API Documentation" organized by structure
 
-## 🎨 Hierarchy Visualization
+## <img src="../../../../../assets/icons/library/palette-icon.svg" width="32" alt="Hierarchy Visualization"> Hierarchy Visualization
 
 ### Tree Structure Display
 
@@ -446,7 +446,7 @@ API rate limiting policies and implementation guidelines for preventing abuse...
 🔗 https://wiki.company.com/api/security/rate-limiting
 ```
 
-## 🔧 Optimization Strategies
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Optimization Strategies"> Optimization Strategies
 
 ### 1. Query Optimization
 
@@ -527,7 +527,7 @@ API rate limiting policies and implementation guidelines for preventing abuse...
 }
 ```
 
-## 🎯 Best Practices
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Best Practice"> Best Practices
 
 ### 1. Query Design
 
@@ -584,7 +584,7 @@ API rate limiting policies and implementation guidelines for preventing abuse...
 }
 ```
 
-## 🔗 Integration with Other Search Tools
+## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Integration with Other Search Tools"> Integration with Other Search Tools
 
 ### Combining with Semantic Search
 
@@ -614,14 +614,14 @@ API rate limiting policies and implementation guidelines for preventing abuse...
    → Find supporting files
 ```
 
-## 🔗 Related Documentation
+## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Related Documentation"> Related Documentation
 
 - **[MCP Server Overview](./README.md)** - Complete MCP server guide
 - **[Search Capabilities](./search-capabilities.md)** - All search tools overview
 - **[Attachment Search](./attachment-search.md)** - File attachment search
 - **[Setup and Integration](./setup-and-integration.md)** - MCP server setup
 
-## 📋 Hierarchy Search Checklist
+## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Checklist"> Hierarchy Search Checklist
 
 - [ ] **Understand hierarchy structure** in your knowledge base
 - [ ] **Use structure-focused queries** for navigation

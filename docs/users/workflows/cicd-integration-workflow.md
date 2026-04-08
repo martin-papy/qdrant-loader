@@ -2,7 +2,7 @@
 
 This comprehensive guide shows how to implement automated documentation pipelines and continuous knowledge base updates using QDrant Loader in CI/CD environments. This workflow is based on the actual CI/CD pipelines used in the QDrant Loader project itself, providing real-world examples and best practices.
 
-## 🎯 Overview
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview"> Overview
 
 The QDrant Loader project uses a sophisticated CI/CD pipeline with three main workflows:
 
@@ -25,7 +25,7 @@ This workflow ensures code quality, documentation accuracy, and seamless deploym
 🔧 Force Deploy Option - Emergency deployment without waiting for test artifacts
 ```
 
-## 🏗️ Architecture Overview
+## <img src="../../../../assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture Overview
 
 ```mermaid
 graph TD
@@ -44,7 +44,7 @@ graph TD
     O[Workflow Run Completion] --> G
 ```
 
-## 📋 Prerequisites
+## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Prerequisites"> Prerequisites
 
 ### Repository Setup
 
@@ -73,7 +73,7 @@ JIRA_TOKEN=your_jira_token
 JIRA_EMAIL=your_jira_email
 ```
 
-## 🚀 Actual CI/CD Implementation
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Implementation"> Actual CI/CD Implementation
 
 ### Workflow 1: Test and Coverage
 
@@ -293,7 +293,7 @@ jobs:
           packages-dir: packages/qdrant-loader/dist/
 ```
 
-## 🔧 Implementing Similar Workflows
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Workflows"> Implementing Similar Workflows
 
 ### Manual Documentation Deployment
 
@@ -520,7 +520,7 @@ CONFLUENCE_TOKEN=placeholder
 JIRA_TOKEN=placeholder
 ```
 
-## 📊 Monitoring and Observability
+## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Templates"> Monitoring and Observability
 
 ### Workflow Monitoring
 
@@ -556,7 +556,7 @@ Test results are automatically processed and displayed:
 3. **Failure Notifications**: Failed tests trigger notifications
 4. **Branch Protection**: Tests must pass before merging
 
-## 🔧 Troubleshooting
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshouting"> Troubleshooting
 
 ### Common Issues
 
@@ -638,7 +638,7 @@ gh run download <run-id> --name test-status-<run-id>
 gh run watch <run-id>
 ```
 
-## 📚 Best Practices
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Best Practices"> Best Practices
 
 ### 1. Workflow Design
 
@@ -668,7 +668,7 @@ gh run watch <run-id>
 - **Build Verification**: Test package builds before publishing
 - **Trusted Publishing**: Use OIDC for secure PyPI publishing
 
-## 📚 Additional Resources
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Additional Resources"> Additional Resources
 
 - **[GitHub Actions Documentation](https://docs.github.com/en/actions)**
 - **[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)**

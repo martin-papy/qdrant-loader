@@ -2,7 +2,7 @@
 
 Connect QDrant Loader to JIRA to index project tickets, issues, requirements, and project management data. This guide covers setup for both JIRA Cloud and JIRA Data Center.
 
-## 🎯 What Gets Processed
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Processed Icon"> What Gets Processed
 
 When you connect to JIRA, QDrant Loader can process:
 
@@ -11,7 +11,7 @@ When you connect to JIRA, QDrant Loader can process:
 - **Attachments** - Files attached to issues (when enabled)
 - **Project information** - Project descriptions and metadata
 
-## 🔧 Authentication Setup
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Setup Icon"> Authentication Setup
 
 ### JIRA Cloud
 
@@ -46,7 +46,7 @@ export JIRA_EMAIL=your-email@company.com
 export JIRA_TOKEN=your_personal_access_token
 ```
 
-## ⚙️ Configuration
+## <img src="../../../../../assets/icons/library/setting-icon.svg" width="32" alt="Configuration"> Configuration
 
 ### Basic Configuration
 
@@ -165,7 +165,7 @@ projects:
           token: "${DEV_JIRA_TOKEN}"
 ```
 
-## 🎯 Configuration Options
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Configuration Icon"> Configuration Options
 
 ### Validator Requirements
 
@@ -201,7 +201,7 @@ projects:
 | `issue_types` | list | Issue types to include | All types |
 | `include_statuses` | list | Issue statuses to include | All statuses |
 
-## 🚀 Usage Examples
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Examples Icon"> Usage Examples
 
 ### Software Development Team
 
@@ -326,7 +326,7 @@ projects:
           download_attachments: true
 ```
 
-## 🧪 Testing and Validation
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Icon"> Testing and Validation
 
 ### Initialize and Configure
 
@@ -364,7 +364,7 @@ qdrant-loader ingest --workspace . --project my-project
 qdrant-loader ingest --workspace . --log-level debug
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting Icon"> Troubleshooting
 
 ### Common Issues
 
@@ -475,7 +475,7 @@ curl -u "email:token" \
   "https://domain.atlassian.net/rest/api/2/issue/PROJ-123"
 ```
 
-## 📊 Monitoring and Performance
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Monitoring Icon"> Monitoring and Performance
 
 ### Check Processing Status
 
@@ -500,7 +500,7 @@ Monitor these aspects for JIRA processing:
 - **Attachment download time** - Time to download and process files
 - **Memory usage** - Peak memory during processing
 
-## 🔄 Best Practices
+## <img src="../../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Practices Icon"> Best Practices
 
 ### Project Organization
 
@@ -529,7 +529,7 @@ Monitor these aspects for JIRA processing:
 2. **Use structured descriptions** - Follow description templates
 3. **Regular data cleanup** - Archive or close old issues
 
-## 📚 Related Documentation
+## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation Icon"> Related Documentation
 
 - **[File Conversion](../file-conversion/)** - Processing JIRA attachments
 - **[Configuration Reference](../../configuration/)** - Complete configuration options

@@ -16,7 +16,7 @@ import requests
 class LinkChecker:
     def __init__(
         self,
-        base_url="http://127.0.0.1:3000/website/site/",
+        base_url="http://127.0.0.1:3000/website/site",
         max_depth=3,
         check_external=True,
     ):

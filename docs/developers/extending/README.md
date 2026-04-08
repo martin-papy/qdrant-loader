@@ -2,7 +2,7 @@
 
 This guide provides instructions for extending QDrant Loader with custom functionality. QDrant Loader is designed with a modular architecture that allows for extension through custom connectors and configuration.
 
-## 🎯 Extension Overview
+## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Extension Overview
 
 QDrant Loader currently supports extension through:
 
@@ -34,7 +34,7 @@ QDrant Loader currently supports extension through:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Development Environment Setup
+## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Development Environment Setup
 
 ### Prerequisites
 
@@ -174,7 +174,7 @@ def create_connector(source_type: str, config: SourceConfig) -> BaseConnector:
     raise ValueError(f"Unknown source type: {source_type}")
 ```
 
-## 📄 Document Model
+## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Note icon"> Document Model
 
 The `Document` model is the core data structure used throughout QDrant Loader. It uses Pydantic BaseModel:
 
@@ -227,7 +227,7 @@ document = Document(
 )
 ```
 
-## 🔧 Configuration Extensions
+## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration Extensions
 
 ### Custom Configuration Classes
 
@@ -280,7 +280,7 @@ projects:
           exclude_tags: ["draft", "private"]
 ```
 
-## 🔄 File Conversion Extensions
+## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Reload icon"> File Conversion Extensions
 
 QDrant Loader uses the MarkItDown library for file conversion. You can extend file conversion capabilities by:
 
@@ -388,7 +388,7 @@ async def test_custom_connector_integration():
     assert len(result) > 0
 ```
 
-## 📦 Packaging Extensions
+## <img src="../../../../assets/icons/library/package-icon.svg" width="32" alt="Package icon"> Packaging Extensions
 
 ### Creating a Package (entry point optional)
 
@@ -508,7 +508,7 @@ class GitHubConnector(BaseAPIConnector):
         pass
 ```
 
-## 📚 Available Connectors
+## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Available Connectors
 
 QDrant Loader includes several built-in connectors you can reference:
 

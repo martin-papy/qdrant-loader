@@ -95,6 +95,36 @@ class JiraProjectConfig(SourceConfig):
         return v or os.getenv("JIRA_EMAIL")
 
     @model_validator(mode="after")
+    def validate_no_placeholders(self) -> Self:
+        """Fail immediately if any required field still contains an un-substituted ${VAR} placeholder."""
+        import re
+
+        _placeholder = re.compile(r"\$\{[^}]+\}")
+
+        fields_to_check: dict[str, str | None] = {
+            "project_key": self.project_key,
+            "base_url": str(self.base_url) if self.base_url else None,
+            "token": self.token,
+            "email": self.email,
+        }
+
+        bad: list[str] = []
+        for field_name, value in fields_to_check.items():
+            if value and _placeholder.search(value):
+                # Extract the variable name for a helpful hint
+                var = _placeholder.search(value).group(0)  # type: ignore[union-attr]
+                bad.append(f"  - {field_name}: {var} (env var not set)")
+
+        if bad:
+            raise ValueError(
+                "Jira source config contains un-substituted environment variables.\n"
+                "Set the following variables in your .env file or shell before running:\n"
+                + "\n".join(bad)
+            )
+
+        return self
+
+    @model_validator(mode="after")
     def validate_auth_config(self) -> Self:
         """Validate authentication configuration based on deployment type."""
         if self.deployment_type == JiraDeploymentType.CLOUD:
