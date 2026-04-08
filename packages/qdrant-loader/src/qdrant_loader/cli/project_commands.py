@@ -136,6 +136,8 @@ async def list(
             echo(output)
         else:
             console.print(output)
+    except ClickException:
+        raise
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         safe_error = sanitize_exception_message(e)
@@ -199,6 +201,8 @@ async def status(
             echo(output)
         else:
             console.print(output)
+    except ClickException:
+        raise
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         safe_error = sanitize_exception_message(e)
@@ -256,6 +260,8 @@ async def validate(
                     console.print(f"  [red]•[/red] {error}")
         if not all_valid:
             raise ClickException("Project validation failed")
+    except ClickException:
+        raise
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         safe_error = sanitize_exception_message(e)

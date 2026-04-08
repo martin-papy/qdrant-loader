@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import signal
 import time
+import traceback
 from pathlib import Path
 
 from click.exceptions import ClickException
@@ -165,11 +166,13 @@ async def run_ingest_command(
                 sanitize_exception_message(e)
                 or f"Empty exception of type: {type(e).__name__}"
             )
+            sanitized_traceback = sanitize_exception_message(traceback.format_exc())
             end_to_end_duration = time.perf_counter() - ingest_start_time
             logger.error(
                 "Document ingestion process failed during execution",
                 error=error_msg,
                 error_type=type(e).__name__,
+                sanitized_traceback=sanitized_traceback,
                 end_to_end_duration_seconds=round(end_to_end_duration, 2),
                 suggestion=(
                     "Check data sources, configuration, and system resources. "
@@ -195,11 +198,13 @@ async def run_ingest_command(
             sanitize_exception_message(e)
             or f"Empty exception of type: {type(e).__name__}"
         )
+        sanitized_traceback = sanitize_exception_message(traceback.format_exc())
         end_to_end_duration = time.perf_counter() - ingest_start_time
         logger.error(
             "Unexpected error during ingestion command execution",
             error=error_msg,
             error_type=type(e).__name__,
+            sanitized_traceback=sanitized_traceback,
             end_to_end_duration_seconds=round(end_to_end_duration, 2),
             suggestion="Check logs above for specific error details and verify system configuration",
         )

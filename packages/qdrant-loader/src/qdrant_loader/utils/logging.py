@@ -535,6 +535,14 @@ class LoggingConfig:
                 "secret",
                 "password",
             }
+            sensitive_key_pattern = re.compile(
+                r"(?i)(?:^|[_-])(token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|authorization)(?:$|[_-])"
+            )
+
+            def _is_sensitive_key(key: object) -> bool:
+                if not isinstance(key, str):
+                    return False
+                return key in sensitive_keys or bool(sensitive_key_pattern.search(key))
 
             def _mask(value: str) -> str:
                 try:
@@ -558,7 +566,7 @@ class LoggingConfig:
                     if isinstance(obj, dict):
                         red = {}
                         for k, v in obj.items():
-                            if k in sensitive_keys:
+                            if _is_sensitive_key(k):
                                 red[k] = (
                                     _mask(v) if isinstance(v, str) else "***REDACTED***"
                                 )

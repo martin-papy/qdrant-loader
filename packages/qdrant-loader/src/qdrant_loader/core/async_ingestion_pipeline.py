@@ -1,5 +1,6 @@
 """Refactored async ingestion pipeline using the new modular architecture."""
 
+import traceback
 from pathlib import Path
 
 from qdrant_loader.config import Settings, SourcesConfig
@@ -161,11 +162,15 @@ class AsyncIngestionPipeline:
                     async with session_factory() as session:  # type: ignore
                         await self.project_manager.initialize(session)
                     logger.debug("Project manager initialization completed")
+
                 except Exception as e:
                     logger.error(
                         "Failed to initialize project manager during pipeline startup",
                         error=sanitize_exception_message(e),
                         error_type=type(e).__name__,
+                        sanitized_traceback=sanitize_exception_message(
+                            traceback.format_exc()
+                        ),
                         suggestion="Check database connectivity and project configuration",
                     )
                     raise
@@ -174,6 +179,7 @@ class AsyncIngestionPipeline:
                 "Pipeline initialization failed during startup sequence",
                 error=sanitize_exception_message(e),
                 error_type=type(e).__name__,
+                sanitized_traceback=sanitize_exception_message(traceback.format_exc()),
                 suggestion="Check configuration, database connectivity, and system resources",
             )
             raise
@@ -203,7 +209,6 @@ class AsyncIngestionPipeline:
 
         # Reset metrics for new run
         self.monitor.clear_metrics()
-
         self.monitor.start_operation(
             "ingestion_process",
             metadata={
@@ -275,6 +280,7 @@ class AsyncIngestionPipeline:
                 "Document processing pipeline failed during ingestion",
                 error=safe_error,
                 error_type=type(e).__name__,
+                sanitized_traceback=sanitize_exception_message(traceback.format_exc()),
                 documents_attempted=len(documents),
                 suggestion="Check data source connectivity, document formats, and system resources",
             )

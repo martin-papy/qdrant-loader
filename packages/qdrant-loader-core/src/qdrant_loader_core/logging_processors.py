@@ -33,6 +33,14 @@ def redact_processor(
         "secret",
         "password",
     }
+    sensitive_key_pattern = re.compile(
+        r"(?i)(?:^|[_-])(token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|authorization)(?:$|[_-])"
+    )
+
+    def is_sensitive_key(key: Any) -> bool:
+        if not isinstance(key, str):
+            return False
+        return key in sensitive_keys or bool(sensitive_key_pattern.search(key))
 
     def mask(value: str) -> str:
         try:
@@ -50,7 +58,7 @@ def redact_processor(
                 return {
                     k: (
                         mask(v)
-                        if k in sensitive_keys and isinstance(v, str)
+                        if is_sensitive_key(k) and isinstance(v, str)
                         else deep_redact(v)
                     )
                     for k, v in obj.items()

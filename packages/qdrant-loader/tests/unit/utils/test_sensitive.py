@@ -26,6 +26,29 @@ def test_redact_sensitive_data_masks_pydantic_input_value() -> None:
     assert "input_value=**" in redacted
 
 
+def test_redact_sensitive_data_masks_deeply_nested_input_value() -> None:
+    raw = (
+        "Validation error ... input_value={'outer': {'inner': [{'token': 'ATATT-secret'}, "
+        "{'client_secret': 'top-secret'}]}, 'ok': 1}, input_type=dict"
+    )
+    redacted = redact_sensitive_data(raw)
+
+    assert "ATATT-secret" not in redacted
+    assert "top-secret" not in redacted
+    assert "input_value=**" in redacted
+    assert "input_type=dict" in redacted
+
+
+def test_redact_sensitive_data_masks_quoted_input_value_with_commas() -> None:
+    raw = 'Validation error ... input_value="token=abc,secret=def", input_type=str'
+    redacted = redact_sensitive_data(raw)
+
+    assert "token=abc" not in redacted
+    assert "secret=def" not in redacted
+    assert "input_value=**" in redacted
+    assert "input_type=str" in redacted
+
+
 def test_sanitize_exception_message_masks_openai_key() -> None:
     error = ValueError("OPENAI_API_KEY=sk-proj-abcdef123456")
     safe = sanitize_exception_message(error)

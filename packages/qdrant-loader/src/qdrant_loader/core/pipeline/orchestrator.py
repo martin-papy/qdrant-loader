@@ -1,5 +1,7 @@
 """Main orchestrator for the ingestion pipeline."""
 
+import traceback
+
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
@@ -167,6 +169,7 @@ class PipelineOrchestrator:
             logger.error(
                 f"❌ Pipeline orchestration failed: {sanitize_exception_message(e)}",
                 error_type=type(e).__name__,
+                sanitized_traceback=sanitize_exception_message(traceback.format_exc()),
             )
             raise
 
@@ -216,6 +219,9 @@ class PipelineOrchestrator:
                 logger.error(
                     f"Failed to process project {project_id}: {sanitize_exception_message(e)}",
                     error_type=type(e).__name__,
+                    sanitized_traceback=sanitize_exception_message(
+                        traceback.format_exc()
+                    ),
                 )
                 # Continue processing other projects
                 continue
