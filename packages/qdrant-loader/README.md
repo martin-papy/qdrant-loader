@@ -90,6 +90,50 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 ```
 
 ### 2. Environment Configuration
+#### 🧠 LLM Provider Support
+
+This system is designed to support **both local and cloud-based Large Language Model (LLM) providers**.
+
+Currently supported providers:
+
+- **Ollama** — local models (**default and preferred**)
+- **OpenAI** — cloud-based models
+
+The system uses a **unified configuration approach**, allowing you to switch providers without changing application code.
+
+---
+
+#### 🖥️ Ollama (Local Models – Recommended)
+
+Ollama is the **default and recommended provider**, especially for local development and privacy-sensitive environments.
+
+#### Prerequisites
+
+To use **local models with Ollama**, ensure the following:
+
+1. **Ollama is installed and running on your machine**
+
+   - Ollama must be accessible at the configured endpoint  
+     (default: `http://localhost:11434`).
+
+   - Installation guide:  
+     https://ollama.com/download
+
+2. **Required models must be pulled locally before running the system**
+
+   - For embedding generation, the following model is required:
+
+   ```bash
+   ollama pull argus-ai/pplx-embed-v1-0.6b:fp32
+
+🖥️ OpenAI (Cloud Models)
+The system also supports OpenAI as a cloud-based LLM provider.
+#### Requirements: 
+**To use OpenAI, you must:**
+- Set the provider: `LLM_PROVIDER=openai`
+- Configure the OpenAI endpoint: `LLM_BASE_URL=https://api.openai.com/v1`
+- Provide a valid API key: `OPENAI_API_KEY=your_openai_key`
+
 
 Edit `.env` file:
 
@@ -99,15 +143,44 @@ QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=my_docs
 QDRANT_API_KEY=your_api_key  # Required for QDrant Cloud
 
-# LLM Configuration (new unified approach)
-LLM_PROVIDER=openai
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=your_openai_key
-LLM_EMBEDDING_MODEL=text-embedding-3-small
-LLM_CHAT_MODEL=gpt-4o-mini
+
+# =========================
+# LLM Configuration (Unified, Ollama-first)
+# =========================
+
+LLM_PROVIDER=ollama #openai
+# Possible values:
+#   - ollama (default, local)
+#   - openai (cloud)
+
+LLM_BASE_URL=http://localhost:11434/v1
+# Ollama: Local OpenAI-compatible endpoint
+# OpenAI equivalent: https://api.openai.com/v1
+
+LLM_API_KEY=ollama
+# Ollama: Always use "ollama" (no authentication required)
+# OpenAI: Use your real API key (e.g. sk-xxxx)
+
+
+LLM_EMBEDDING_MODEL=argus-ai/pplx-embed-v1-0.6b:fp32
+# Ollama: Local embedding model
+# OpenAI equivalent:
+#   - text-embedding-3-small (1536 dims)
+
+
+LLM_CHAT_MODEL=llama3.1:8b
+# Ollama: Local chat / instruction model
+# OpenAI equivalent:
+#   - gpt-4o
+#   - gpt-4o-mini
+
+VECTOR_SIZE=1024
+# OpenAI: 1536
+
 
 # Legacy (still supported)
 OPENAI_API_KEY=your_openai_key
+# Only used when LLM_PROVIDER=openai
 
 # State Management
 STATE_DB_PATH=./state.db
@@ -125,16 +198,16 @@ global_config:
     chunk_overlap: 200
   
   llm:
-    provider: "openai"
-    base_url: "https://api.openai.com/v1"
-    api_key: "${LLM_API_KEY}"
+    provider: "${LLM_PROVIDER}"
+    base_url: "${LLM_BASE_URL}"
+    api_key: "${LLM_API_KEY}" # {OPENAI_API_KEY} if LLM_ PROVIDER=openai
     models:
-      embeddings: "text-embedding-3-small"
-      chat: "gpt-4o-mini"
+      embeddings: "${LLM_EMBEDDING_MODEL}"
+      chat: "${LLM_CHAT_MODEL}"
     request:
       batch_size: 100
     embeddings:
-      vector_size: 1536
+      vector_size: "${VECTOR_SIZE}"
   
   file_conversion:
     max_file_size: 52428800  # 50MB

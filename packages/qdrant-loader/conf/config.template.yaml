@@ -100,12 +100,22 @@ global:
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
-    endpoint: "http://localhost:11434/v1"               # e.g. http://localhost:11434/v1 for Ollama
-    model: "argus-ai/pplx-embed-v1-0.6b:fp32"           # e.g. argus-ai/pplx-embed-v1-0.6b:fp32
-    api_key: "ollama"                                   # use "ollama" for local Ollama
+    endpoint: "http://localhost:11434/v1"
+    # Ollama: Local Ollama OpenAI-compatible endpoint
+    # OpenAI equivalent: https://api.openai.com/v1       
+    model: "argus-ai/pplx-embed-v1-0.6b:fp32" 
+    # Ollama: Local embedding model name
+    # OpenAI equivalent: text-embedding-3-small   (1536 dimensions, cheaper)
+    api_key: "ollama"
+    # Ollama: Use the fixed value "ollama" (no real auth)
+    # OpenAI: Your real API key (e.g. sk-xxxx)
     batch_size: 100
-    vector_size: 1024                                   # must match your model's output dimensions
+    vector_size: 1024
+    # MUST match model output dimension
+    # OpenAI: text-embedding-3-small → 1536                      
     tokenizer: "none"
+    # Ollama: "none"
+    # OpenAI: "cl100k_base"
     max_tokens_per_request: 8000
     max_tokens_per_chunk: 8000
 
@@ -113,14 +123,14 @@ global:
   # New preferred configuration block; legacy embedding/markitdown fields still work
   llm:
     provider: "ollama" # openai | ollama | azure_openai | custom
-    base_url: "http://localhost:11434/v1"
-    api_key: "ollama"
+    base_url: "http://localhost:11434/v1" # OpenAI: https://api.openai.com/v1
+    api_key: "ollama" # Ollama: Use the fixed value "ollama" (no real auth), OpenAI: Your real API key (e.g. sk-xxxx)
     api_version: null # Required for azure_openai (e.g., 2024-05-01-preview)
     headers: {}
     models:
-      embeddings: "argus-ai/pplx-embed-v1-0.6b:fp32"
-      chat: "llama3.2"
-    tokenizer: "none" # cl100k_base | none
+      embeddings: "argus-ai/pplx-embed-v1-0.6b:fp32" #OpenAI equivalent: text-embedding-3-small
+      chat: "llama3.2" #OpenAI equivalent: gpt-4o or gpt-3.5-turbo
+    tokenizer: "none" # OpenAI: "cl100k_base"
     request:
       timeout_s: 30
       max_retries: 3

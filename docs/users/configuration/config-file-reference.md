@@ -61,11 +61,11 @@ global:
     base_url: ${LLM_BASE_URL} # e.g. https://api.openai.com/v1, http://localhost:11434/v1
     api_key: ${LLM_API_KEY} # optional for local providers like Ollama
     models:
-      embeddings: ${LLM_EMBEDDING_MODEL} # e.g. text-embedding-3-small | nomic-embed-text | bge-small-en-v1.5
+      embeddings: ${LLM_EMBEDDING_MODEL} # e.g. text-embedding-3-small | argus-ai/pplx-embed-v1-0.6b:fp32
       chat: ${LLM_CHAT_MODEL} # e.g. gpt-4o-mini | llama3.1:8b-instruct
     tokenizer: cl100k_base # cl100k_base | none
     embeddings:
-      vector_size: 1536 # set according to chosen embedding model
+      vector_size: ${VECTOR_SIZE}
 
 projects:
   my-project:
@@ -95,13 +95,13 @@ global:
   llm:
     provider: ${LLM_PROVIDER}
     base_url: ${LLM_BASE_URL}
-    api_key: ${LLM_API_KEY}
+    api_key: ${LLM_API_KEY} # {OPENAI_API_KEY} if LLM_ PROVIDER=openai
     api_version: ${LLM_API_VERSION}  # Required for azure_openai
     headers: {}
     models:
       embeddings: ${LLM_EMBEDDING_MODEL}
       chat: ${LLM_CHAT_MODEL}
-    tokenizer: cl100k_base
+    tokenizer: none | # OpenAI: cl100k_base
     request:
       timeout_s: 30
       max_retries: 3
@@ -313,18 +313,18 @@ global:
     # Required: Provider and endpoint
     provider: ${LLM_PROVIDER}
     base_url: ${LLM_BASE_URL}
-    api_key: ${LLM_API_KEY}
+    api_key: ${LLM_API_KEY} # {OPENAI_API_KEY} if LLM_ PROVIDER=openai
     # Required: Models
     models:
       embeddings: ${LLM_EMBEDDING_MODEL}
       chat: ${LLM_CHAT_MODEL}
     # Optional: Tokenizer and policies
-    tokenizer: cl100k_base
+    tokenizer: none | # OpenAI: cl100k_base
     request:
       timeout_s: 30
       max_retries: 3
     embeddings:
-      vector_size: 1536
+      vector_size: ${VECTOR_SIZE}
 
 > Deprecation: `global.embedding.*` is still honored but will be removed in a future release. Migrate to `global.llm.*`.
 ```
