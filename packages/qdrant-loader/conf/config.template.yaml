@@ -35,9 +35,9 @@
 global:
   # Qdrant vector database configuration
   qdrant:
-    url: "http://localhost:6333"
-    api_key: null # Optional API key for Qdrant Cloud
-    collection_name: "default_collection" # Collection name used by all projects
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}" # Optional API key for Qdrant Cloud
+    collection_name: "${QDRANT_COLLECTION_NAME}" # Collection name used by all projects
 
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
