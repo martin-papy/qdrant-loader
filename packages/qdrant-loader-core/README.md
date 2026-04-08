@@ -23,11 +23,11 @@ pip install "qdrant-loader-core[ollama]"
 
 ## Canonical Documentation
 
-- Monorepo overview: [README](../../README.md)
-- Developer hub: [docs/developers/README.md](../../docs/developers/README.md)
-- Architecture hub: [docs/developers/architecture/README.md](../../docs/developers/architecture/README.md)
-- User configuration reference: [docs/users/configuration/config-file-reference.md](../../docs/users/configuration/config-file-reference.md)
+- [Monorepo overview](../../README.md)
+- [Developer hub](../../docs/developers/README.md)
+- [Architecture hub](../../docs/developers/architecture/README.md)
+- [User configuration reference](../../docs/users/configuration/config-file-reference.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md).
+See [CONTRIBUTING](../../CONTRIBUTING.md).

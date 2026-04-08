@@ -33,7 +33,7 @@ qdrant-loader --version
 mcp-qdrant-loader --version
 ```
 
-If you need OS-specific install help, see [installation.md](./installation.md).
+If you need OS-specific install help, see [Installation Guide](./installation.md).
 
 ## Step 2. Start QDrant
 
@@ -79,8 +79,8 @@ LLM_CHAT_MODEL=gpt-4o-mini
 
 Canonical configuration references:
 
-- LLM provider setup: [../users/configuration/llm-provider-guide.md](../users/configuration/llm-provider-guide.md)
-- Environment variables: [../users/configuration/environment-variables.md](../users/configuration/environment-variables.md)
+- LLM provider setup: [LLM Provider Guide](../users/configuration/llm-provider-guide.md)
+- Environment variables: [Environment Variables Reference](../users/configuration/environment-variables.md)
 
 ## Step 5. Add a minimal config and ingest
 
@@ -128,8 +128,8 @@ mcp-qdrant-loader
 
 Detailed integration guides:
 
-- [../users/detailed-guides/mcp-server/setup-and-integration.md](../users/detailed-guides/mcp-server/setup-and-integration.md)
-- [../users/detailed-guides/mcp-server/search-capabilities.md](../users/detailed-guides/mcp-server/search-capabilities.md)
+- [Setup and Integration Guide](../users/detailed-guides/mcp-server/setup-and-integration.md)
+- [Search Capabilities Guide](../users/detailed-guides/mcp-server/search-capabilities.md)
 
 ## Step 7. Validate in your AI tool
 
@@ -141,6 +141,6 @@ If results are returned from ingested content, setup is complete.
 
 ## Next steps
 
-- Configuration deep dive: [../users/configuration/config-file-reference.md](../users/configuration/config-file-reference.md)
-- Data sources: [../users/detailed-guides/data-sources/README.md](../users/detailed-guides/data-sources/README.md)
-- Troubleshooting: [../users/troubleshooting/README.md](../users/troubleshooting/README.md)
+- Configuration deep dive: [Configuration Reference](../users/configuration/config-file-reference.md)
+- Data sources: [Data Sources Guide](../users/detailed-guides/data-sources/README.md)
+- Troubleshooting: [Troubleshooting Guide](../users/troubleshooting/README.md)

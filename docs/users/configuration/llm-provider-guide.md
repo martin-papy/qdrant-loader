@@ -96,6 +96,6 @@ Common examples:
 
 ## Related references
 
-- Variables: [environment-variables.md](./environment-variables.md)
-- YAML schema: [config-file-reference.md](./config-file-reference.md)
-- Security: [security-considerations.md](./security-considerations.md)
+- Variables: [Environment Variables Reference](./environment-variables.md)
+- YAML schema: [Configuration File Reference](./config-file-reference.md)
+- Security: [Security Considerations](./security-considerations.md)

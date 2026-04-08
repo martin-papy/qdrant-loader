@@ -22,12 +22,12 @@ qdrant-loader --help
 
 ## Canonical Documentation
 
-- Monorepo overview: [README](../../README.md)
-- Quick start: [docs/getting-started/quick-start.md](../../docs/getting-started/quick-start.md)
-- Installation details: [docs/getting-started/installation.md](../../docs/getting-started/installation.md)
-- Configuration reference: [docs/users/configuration/README.md](../../docs/users/configuration/README.md)
-- Data source guides: [docs/users/detailed-guides/data-sources/README.md](../../docs/users/detailed-guides/data-sources/README.md)
+- [Monorepo overview](../../README.md)
+- [Quick start](../../docs/getting-started/quick-start.md)
+- [Installation details](../../docs/getting-started/installation.md)
+- [Configuration reference](../../docs/users/configuration/README.md)
+- [Data source guides](../../docs/users/detailed-guides/data-sources/README.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md).
+See [CONTRIBUTING](../../CONTRIBUTING.md).

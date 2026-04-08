@@ -4,7 +4,7 @@ Quick Start is now the primary setup flow.
 
 Use this page only for platform-specific notes, dependency choices, and install troubleshooting.
 
-Primary onboarding path: [quick-start.md](./quick-start.md)
+Primary onboarding path: [Quick Start](./quick-start.md)
 
 ## Package options
 
@@ -111,4 +111,4 @@ pip install qdrant-loader qdrant-loader-mcp-server
 - QDrant is reachable at configured URL
 - LLM API key is set
 
-Then continue with [quick-start.md](./quick-start.md).
+Then continue with [Quick Start](./quick-start.md).

@@ -64,7 +64,7 @@ qdrant-loader ingest --workspace .
 
 ## What to customize next
 
-- Add more sources (Git/Confluence/Jira): [../users/detailed-guides/data-sources/README.md](../users/detailed-guides/data-sources/README.md)
-- Tune chunking and global settings: [../users/configuration/config-file-reference.md](../users/configuration/config-file-reference.md)
-- Configure provider-specific LLM details: [../users/configuration/llm-provider-guide.md](../users/configuration/llm-provider-guide.md)
-- Full variable reference: [../users/configuration/environment-variables.md](../users/configuration/environment-variables.md)
+- Add more sources (Git/Confluence/Jira): [Data Sources Guide](../users/detailed-guides/data-sources/README.md)
+- Tune chunking and global settings: [Configuration Reference](../users/configuration/config-file-reference.md)
+- Configure provider-specific LLM details: [LLM Provider Guide](../users/configuration/llm-provider-guide.md)
+- Full variable reference: [Environment Variables Reference](../users/configuration/environment-variables.md)

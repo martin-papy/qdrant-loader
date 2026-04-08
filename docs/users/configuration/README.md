@@ -4,10 +4,10 @@ This section defines the canonical configuration entry points.
 
 ## Start here
 
-1. Environment variables: [environment-variables.md](./environment-variables.md)
-2. LLM providers and model mapping: [llm-provider-guide.md](./llm-provider-guide.md)
-3. Full YAML schema: [config-file-reference.md](./config-file-reference.md)
-4. Security practices: [security-considerations.md](./security-considerations.md)
+1. Environment variables: [Environment Variables Reference](./environment-variables.md)
+2. LLM providers and model mapping: [LLM Provider Guide](./llm-provider-guide.md)
+3. Full YAML schema: [Configuration File Reference](./config-file-reference.md)
+4. Security practices: [Security Considerations](./security-considerations.md)
 
 ## Quick baseline
 
@@ -57,6 +57,6 @@ projects:
 
 ## Notes
 
-- Keep provider-specific details only in [llm-provider-guide.md](./llm-provider-guide.md).
-- Keep all variable definitions only in [environment-variables.md](./environment-variables.md).
-- Keep schema-level field details only in [config-file-reference.md](./config-file-reference.md).
+- Keep provider-specific details only in [LLM Provider Guide](./llm-provider-guide.md).
+- Keep all variable definitions only in [Environment Variables Reference](./environment-variables.md).
+- Keep schema-level field details only in [Configuration File Reference](./config-file-reference.md).

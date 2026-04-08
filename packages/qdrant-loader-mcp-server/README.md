@@ -22,11 +22,11 @@ mcp-qdrant-loader --help
 
 ## Canonical Documentation
 
-- Monorepo overview: [README](../../README.md)
-- MCP server guide: [docs/users/detailed-guides/mcp-server/README.md](../../docs/users/detailed-guides/mcp-server/README.md)
-- MCP setup and integration: [docs/users/detailed-guides/mcp-server/setup-and-integration.md](../../docs/users/detailed-guides/mcp-server/setup-and-integration.md)
-- MCP search capabilities: [docs/users/detailed-guides/mcp-server/search-capabilities.md](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)
+- [Monorepo overview](../../README.md)
+- [MCP server guide](../../docs/users/detailed-guides/mcp-server/README.md)
+- [MCP setup and integration](../../docs/users/detailed-guides/mcp-server/setup-and-integration.md)
+- [MCP search capabilities](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md).
+See [CONTRIBUTING](../../CONTRIBUTING.md).
