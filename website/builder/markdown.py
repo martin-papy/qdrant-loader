@@ -623,19 +623,22 @@ class MarkdownProcessor:
         # Only rewrite to absolute /docs when building from a source file context
         if source_file:
             # Map monorepo package folder links to generated docs package aliases.
-            # This keeps source Markdown unchanged while ensuring website links resolve.
-            package_patterns = [
-                (r"^\.?/packages/qdrant-loader/?$", "/docs/packages/qdrant-loader/"),
-                (r"^\.?/packages/qdrant-loader-core/?$", "/docs/packages/core/"),
-                (
-                    r"^\.?/packages/qdrant-loader-mcp-server/?$",
-                    "/docs/packages/mcp-server/",
-                ),
-            ]
-            for pattern, replacement in package_patterns:
-                if re.match(pattern, link):
-                    link = replacement
-                    break
+            # Supports ./packages/, ../packages/, /packages/, and bare packages/ variants.
+            # Preserves any trailing subpath while replacing only the package prefix.
+            package_aliases = {
+                "qdrant-loader": "qdrant-loader",
+                "qdrant-loader-core": "core",
+                "qdrant-loader-mcp-server": "mcp-server",
+            }
+            package_match = re.match(
+                r"^(?:\./|\.\./|/)?packages/(?P<pkg>qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?P<rest>(?:/.*)?)$",
+                link,
+            )
+            if package_match:
+                package_name = package_match.group("pkg")
+                trailing_path = package_match.group("rest") or "/"
+                alias = package_aliases.get(package_name, package_name)
+                link = f"/docs/packages/{alias}{trailing_path}"
 
             # ../../docs/... -> /docs/...
             link = re.sub(r"^(?:\.{2}/)+docs/", "/docs/", link)

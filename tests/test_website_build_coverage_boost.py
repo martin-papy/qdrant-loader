@@ -241,6 +241,32 @@ Regular paragraph text.
         result = processor._process_link_path("CONTRIBUTING", "packages/test/README.md")
         assert result == "/docs/CONTRIBUTING.html"
 
+        # Package aliases should be normalized consistently for all accepted variants
+        result = processor._process_link_path(
+            "./packages/qdrant-loader-core/README.md#usage",
+            "docs/users/README.md",
+        )
+        assert result == "/docs/packages/core/README.html#usage"
+
+        result = processor._process_link_path(
+            "../packages/qdrant-loader-mcp-server/setup-and-integration.md#transport",
+            "docs/users/README.md",
+        )
+        assert (
+            result
+            == "/docs/packages/mcp-server/setup-and-integration.html#transport"
+        )
+
+        result = processor._process_link_path(
+            "/packages/qdrant-loader/README.md", "docs/users/README.md"
+        )
+        assert result == "/docs/packages/qdrant-loader/README.html"
+
+        result = processor._process_link_path(
+            "packages/qdrant-loader-core", "docs/users/README.md"
+        )
+        assert result == "/docs/packages/core/"
+
 
 class TestAssetManagerCoverage:
     """Test asset manager to increase coverage."""
