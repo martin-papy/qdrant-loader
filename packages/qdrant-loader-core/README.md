@@ -6,7 +6,7 @@
 
 Shared core library for the QDrant Loader ecosystem.
 
-This package README is intentionally lean. Provider, configuration, and architecture details are maintained in one place under the repository docs.
+For provider, configuration, and architecture details, use the documentation links below.
 
 ## Installation
 

@@ -6,7 +6,7 @@
 
 Data ingestion package for the QDrant Loader ecosystem.
 
-This package README is intentionally lean. The canonical setup and configuration guides are centralized under the repository docs to avoid duplicated instructions.
+For full setup and configuration, start with the documentation links below.
 
 ## Installation
 

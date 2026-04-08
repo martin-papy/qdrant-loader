@@ -258,6 +258,12 @@ Regular paragraph text.
         )
 
         result = processor._process_link_path(
+            "../../packages/qdrant-loader-core/README.md#usage",
+            "docs/users/README.md",
+        )
+        assert result == "/docs/packages/core/README.html#usage"
+
+        result = processor._process_link_path(
             "/packages/qdrant-loader/README.md", "docs/users/README.md"
         )
         assert result == "/docs/packages/qdrant-loader/README.html"

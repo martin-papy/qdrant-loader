@@ -6,7 +6,7 @@
 
 Model Context Protocol server package for QDrant Loader.
 
-This package README is intentionally lean. MCP setup, tool references, and AI tool integration are centralized in docs to avoid duplicate setup instructions.
+For MCP setup, tool references, and AI tool integration, start with the documentation links below.
 
 ## Installation
 

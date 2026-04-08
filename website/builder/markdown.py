@@ -455,12 +455,12 @@ class MarkdownProcessor:
         # Apply conversions - expanded patterns to catch more file types
         # Catch .md files and well-known files without extensions
         package_link_pattern_md = (
-            r"\[([^\]]+)\]\(((?:\./|\.\./|/)?packages/"
+            r"\[([^\]]+)\]\(((?:(?:\.\./)+|\./|/)?packages/"
             r"(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)"
             r"(?:/[^)#]*)?(?:#[^)]*)?)\)"
         )
         package_link_pattern_href = (
-            r'(href=")((?:\./|\.\./|/)?packages/'
+            r'(href=")((?:(?:\.\./)+|\./|/)?packages/'
             r'(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)'
             r'(?:/[^"#]*)?(?:#[^"]*)?)(")'
         )
@@ -631,7 +631,7 @@ class MarkdownProcessor:
                 "qdrant-loader-mcp-server": "mcp-server",
             }
             package_match = re.match(
-                r"^(?:\./|\.\./|/)?packages/(?P<pkg>qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?P<rest>(?:/.*)?)$",
+                r"^(?:(?:\.\./)+|\./|/)?packages/(?P<pkg>qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?P<rest>(?:/.*)?)$",
                 link,
             )
             if package_match:
