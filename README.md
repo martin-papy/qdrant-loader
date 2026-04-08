@@ -7,26 +7,28 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Changelog v0.9.0](./CHANGELOG.md)** - Latest improvements and bug fixes
+<img src="/assets/icons/library/note-icon.svg" width="32" alt="Changelog"> **[Changelog v0.8.0](./CHANGELOG.md)** - Latest improvements and bug fixes
 
+<div align="left">
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
+</div>
 
-## 🎯 What is QDrant Loader?
+## <img src="../assets/icons/library/target-icon.svg" width="32" alt="Target"/> What is QDrant Loader?
 
 QDrant Loader is a data ingestion and retrieval system that collects content from multiple sources, processes and vectorizes it, then provides intelligent search capabilities through a Model Context Protocol (MCP) server for AI development tools.
 
 **Perfect for:**
 
-- 🤖 **AI-powered development** with Cursor, Windsurf, and other MCP-compatible tools
-- 📚 **Knowledge base creation** from technical documentation
-- 🔍 **Intelligent code assistance** with contextual information
-- 🏢 **Enterprise content integration** from multiple data sources
+- 🤖 AI-powered development with Cursor, Windsurf, and other MCP-compatible tools
+- 📚 Knowledge base creation from technical documentation
+- 🔍 Intelligent code assistance with contextual information
+- 🏢 Enterprise content integration from multiple data sources
 
-## 📦 Packages
+## <img src="../assets/icons/library/package-icon.svg" width="32" alt="Packages"/> Packages
 
 This monorepo contains three complementary packages:
 
-### 🔄 [QDrant Loader](./packages/qdrant-loader/)
+### <img src="../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Reload"/> [QDrant Loader](./packages/qdrant-loader/)
 
 Data ingestion and processing engine
 
@@ -41,7 +43,7 @@ Collects and vectorizes content from multiple sources into QDrant vector databas
 - **Multi-project support**: Organize sources into projects with shared collections
 - **Provider-agnostic LLM**: OpenAI, Azure OpenAI, Ollama, and custom endpoints with unified configuration
 
-### ⚙️ [QDrant Loader Core](./packages/qdrant-loader-core/)
+### <img src="../assets/icons/library/setting-icon.svg" width="32" alt="Core"/> [QDrant Loader Core](./packages/qdrant-loader-core/)
 
 Core library and LLM abstraction layer
 
@@ -55,7 +57,7 @@ Provides the foundational components and provider-agnostic LLM interface used by
 - **Error Handling**: Robust error handling and retry mechanisms
 - **Logging**: Structured logging with configurable levels
 
-### 🔌 [QDrant Loader MCP Server](./packages/qdrant-loader-mcp-server/)
+### <img src="../assets/icons/library/plug-icon.svg" width="32" alt="MCP Server"/> [QDrant Loader MCP Server](./packages/qdrant-loader-mcp-server/)
 
 AI development integration layer
 
@@ -69,7 +71,7 @@ Model Context Protocol server providing search capabilities to AI development to
 - **Streaming capabilities**: Server-Sent Events (SSE) for real-time search results
 - **Production-ready**: HTTP transport with security, session management, and health checks
 
-## 🚀 Quick Start
+## <img src="../assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"/> Quick Start
 
 ### Installation
 
@@ -151,7 +153,7 @@ pip install qdrant-loader-mcp-server  # MCP server only
    mcp-qdrant-loader --env /path/tp/your/.env
    ```
 
-## 🔧 Integration with Cursor
+## <img src="../assets/icons/library/wrench-icon.svg" width="32" alt="Integration"/> Integration with Cursor
 
 Add to your Cursor settings (`.cursor/mcp.json`):
 
@@ -195,23 +197,22 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - _"What are the deployment requirements for this service?"_
 - _"Find all attachments related to database schema"_
 
-## 📚 Documentation
+## <img src="../assets/icons/library/book-icon.svg" width="32" alt="Documentation"/> Documentation
 
-### 🚀 Getting Started
+### Getting Started
 
 - **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
 - **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
 - **Core Concepts** - Covered inline in Getting Started
 
-### 👥 User Guides
+### User Guides
 
 - **[Configuration](./docs/users/configuration/)** - Complete configuration reference
 - **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA setup
 - **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
-## ⚠️ Migration Guide (v0.7.1+)
-
+## <img src="../assets/icons/library/warning-icon.svg" width="32" alt="Migration"/> Migration Guide (v0.7.1+)
 ### LLM Configuration Migration Required
 
 - **New unified configuration**: `global.llm.*` replaces legacy `global.embedding.*` and `file_conversion.markitdown.*`
@@ -224,13 +225,13 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - [Configuration File Reference](./docs/users/configuration/config-file-reference.md) - Complete new schema
 - [Environment Variables](./docs/users/configuration/environment-variables.md) - Updated variable names
 
-### 🛠️ Developer Resources
+### Developer Resources
 
 - **[Architecture](./docs/developers/architecture/)** - System design overview
 - **[Testing](./docs/developers/testing/)** - Testing guide and best practices
 - **[Contributing](./CONTRIBUTING.md)** - Development setup and guidelines
 
-## 🤝 Contributing
+## <img src="../assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing"/> Contributing
 
 We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
 
@@ -254,7 +255,7 @@ pip install -e "packages/qdrant-loader[dev]"
 pip install -e "packages/qdrant-loader-mcp-server[dev]"
 ```
 
-## 📄 License
+## <img src="../assets/icons/library/file-icon.svg" width="32" alt="License"/> License
 
 This project is licensed under the GNU GPLv3 - see the [LICENSE](LICENSE) file for details.
 

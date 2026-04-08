@@ -1,12 +1,11 @@
 # QDrant Loader MCP Server
-
 [![PyPI](https://img.shields.io/pypi/v/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
 [![Python](https://img.shields.io/pypi/pyversions/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A Model Context Protocol (MCP) server that provides advanced Retrieval-Augmented Generation (RAG) capabilities to AI development tools. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
-## 🚀 What It Does
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Rocket Icon"> What It Does
 
 The MCP Server bridges your QDrant knowledge base with AI development tools:
 
@@ -16,7 +15,7 @@ The MCP Server bridges your QDrant knowledge base with AI development tools:
 - **Streams responses** for fast, real-time search results
 - **Preserves relationships** between documents, attachments, and parent content
 
-## 🔌 Supported AI Tools
+## <img src="/assets/icons/library/plug-icon.svg" width="32" alt="Plug Icon"> Supported AI Tools
 
 | Tool                | Status          | Integration Features                                                         |
 | ------------------- | --------------- | ---------------------------------------------------------------------------- |
@@ -25,7 +24,7 @@ The MCP Server bridges your QDrant knowledge base with AI development tools:
 | **Claude Desktop**  | ✅ Compatible   | Direct MCP integration, conversational search interface                      |
 | **Other MCP Tools** | ✅ Compatible   | Any tool supporting MCP 2024-11-05 specification                             |
 
-## 🔍 Advanced Search Capabilities
+## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Advanced Search Capabilities"> Advanced Search Capabilities
 
 ### Three Specialized Search Tools
 
@@ -73,7 +72,7 @@ For complete parameter references and usage examples for all tools, see:
 - `docs/users/detailed-guides/mcp-server/search-capabilities.md`
 - `docs/users/detailed-guides/mcp-server/setup-and-integration.md`
 
-## 📦 Installation
+## <img src="/assets/icons/library/package-icon.svg" width="32" alt="Package Icon"> Installation
 
 ### From PyPI (Recommended)
 
@@ -101,7 +100,7 @@ For full functionality with data ingestion:
 pip install qdrant-loader qdrant-loader-mcp-server
 ```
 
-## ⚡ Quick Start
+## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
 
 ### 1. Environment Setup
 
@@ -139,7 +138,7 @@ mcp-qdrant-loader --help
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | mcp-qdrant-loader
 ```
 
-## 🔧 Configuration
+## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench Icon"> Configuration
 
 ### Environment Variables
 
@@ -192,7 +191,7 @@ export SEARCH_MAX_CONCURRENT=2
 mcp-qdrant-loader --transport http --workers 4
 ```
 
-## 🎯 AI Tool Integration
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> AI Tool Integration
 
 ### Cursor IDE Integration
 
@@ -259,7 +258,7 @@ Add to Claude Desktop's configuration:
 }
 ```
 
-## 🎯 Usage Examples
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target Icon"> Usage Examples
 
 ### In Cursor IDE
 
@@ -291,7 +290,7 @@ Show me all child pages under the API Documentation section
 Find all Excel files uploaded by john.doe in the last month
 ```
 
-## 🏗️ Architecture
+## <img src="/assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture
 
 ### MCP Protocol Implementation
 
@@ -320,7 +319,7 @@ Claude    Tool Call   Similarity     Hierarchy        Relationship Info
 Other     Streaming   Ranking        Attachments      Source Attribution
 ```
 
-## 🔍 Search Tool Details
+## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Search Tool Details"> Search Tool Details
 
 ### Universal Search (`search`)
 
@@ -401,7 +400,7 @@ Other     Streaming   Ranking        Attachments      Source Attribution
 }
 ```
 
-## 🧪 Testing
+## <img src="/assets/icons/library/testing-icon.svg" width="32" alt="Testing"> Testing
 
 ```bash
 # Run all tests
@@ -414,7 +413,7 @@ pytest --cov=qdrant_loader_mcp_server packages/qdrant-loader-mcp-server/tests/
 pytest -m "mcp" packages/qdrant-loader-mcp-server/tests/
 ```
 
-## 🤝 Contributing
+## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Hand Sake Icon"> Contributing
 
 This package is part of the QDrant Loader monorepo. See the [main contributing guide](../../CONTRIBUTING.md) for details.
 
@@ -432,20 +431,20 @@ pip install -e "packages/qdrant-loader-mcp-server[dev]"
 pytest packages/qdrant-loader-mcp-server/tests/
 ```
 
-## 📚 Documentation
+## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Book Icon"> Documentation
 
 - **[Complete Documentation](../../docs/)** - Comprehensive guides and references
 - **[Getting Started](../../docs/getting-started/)** - Quick start and core concepts
 - **[MCP Server Guide](../../docs/users/detailed-guides/mcp-server/)** - Detailed MCP server documentation
 - **[Developer Docs](../../docs/developers/)** - Architecture and API reference
 
-## 🆘 Support
+## <img src="/assets/icons/library/sos-icon.svg" width="32" alt="Support"> Support
 
 - **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
 - **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
 - **[Documentation](../../docs/)** - Comprehensive guides
 
-## 📄 License
+## <img src="/assets/icons/library/file-icon.svg" width="32" alt="License Icon"> License
 
 This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) file for details.
 

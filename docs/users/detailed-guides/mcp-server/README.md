@@ -1,8 +1,10 @@
 # MCP Server Guide
 
+<img src="/assets/icons/library/note-icon.svg" width="32" alt="MCP icon">
+
 The QDrant Loader MCP (Model Context Protocol) Server enables seamless integration with AI development tools like Cursor IDE, Windsurf, and Claude Desktop. This guide covers everything you need to know about setting up and using our **intelligent search system**.
 
-## 🎯 Overview
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Overview
 
 The MCP Server acts as a bridge between your AI tools and your QDrant Loader knowledge base, providing **intelligent search capabilities** that go beyond simple keyword matching. Our system includes semantic understanding, hierarchy navigation, attachment analysis, and cross-document intelligence.
 
@@ -19,7 +21,7 @@ The MCP Server acts as a bridge between your AI tools and your QDrant Loader kno
 ✅ **Real-Time Integration** - Live access from your AI development environment  
 ✅ **Multi-Source Support** - Works with Git, Confluence, JIRA, and local files
 
-## 🚀 Quick Start
+## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Quick Start
 
 ### 1. Prerequisites
 
@@ -164,7 +166,7 @@ Example: Cluster "API documentation" by topic
 → Creates: Authentication cluster, Implementation cluster, Troubleshooting cluster
 ```
 
-## 🎯 Integration Examples
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Integration Examples
 
 ### Development Workflow with Cursor
 
@@ -242,7 +244,7 @@ Support Documentation (Supporting):
 This gives you a complete foundation for implementing notifications effectively.
 ```
 
-## ⚙️ Configuration
+## <img src="/assets/icons/library/setting-icon.svg" width="32" alt="Setting icon"> Configuration
 
 ### Environment Variables
 
@@ -293,7 +295,7 @@ For teams with multiple knowledge bases:
 }
 ```
 
-## 🔧 Troubleshooting
+## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Troubleshooting
 
 ### Common Issues
 
@@ -334,7 +336,7 @@ curl http://localhost:6333/collections/documents
 - **Cursor Integration** - Coming later
 - **[Troubleshooting](../../troubleshooting/)** - Common issues and solutions
 
-## 🚀 Advanced Usage
+## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Advanced Usage
 
 ### Multi-Tool Search Strategies
 

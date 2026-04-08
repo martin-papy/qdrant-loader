@@ -2,7 +2,7 @@
 
 This comprehensive guide shows how to implement effective team collaboration workflows using QDrant Loader for cross-team knowledge sharing, streamlined onboarding, and collaborative documentation systems. Whether you're managing knowledge across multiple teams, onboarding new team members, or facilitating cross-functional collaboration, this workflow provides practical solutions using QDrant Loader's actual capabilities.
 
-## 🎯 Overview
+## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview"> Overview
 
 The team collaboration workflow focuses on breaking down knowledge silos, facilitating information sharing across teams, and creating efficient onboarding processes. This workflow is essential for organizations that need to maintain shared knowledge bases and enable effective collaboration across different departments and teams.
 
@@ -35,7 +35,7 @@ graph TD
     N[Public Documentation] --> E
 ```
 
-## 📋 Prerequisites
+## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Prerequisites Icon"> Prerequisites
 
 ### Required Tools
 
@@ -57,7 +57,7 @@ graph TD
 └── 📈 Marketing Team
 ```
 
-## 🚀 Step-by-Step Implementation
+## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Implementation Icon"> Step-by-Step Implementation
 
 ### Step 1: Multi-Team Configuration
 
@@ -844,7 +844,7 @@ EOF
 echo "Monthly review completed: $REVIEW_DIR/$(date +%Y-%m)/monthly-review.md"
 ```
 
-## 📊 Usage Examples
+## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Examples Icon"> Usage Examples
 
 ### Daily Collaboration Tasks
 
@@ -885,7 +885,7 @@ qdrant-loader config --workspace . --format json
 qdrant-loader config --workspace .
 ```
 
-## 🔧 Troubleshooting
+## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
 
 ### Common Issues
 
@@ -930,7 +930,7 @@ echo "LLM_API_KEY: ${LLM_API_KEY:0:10}..."
 echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."  # Legacy
 ```
 
-## 📋 Best Practices
+## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Best Practices Icon"> Best Practices
 
 ### Team Collaboration
 

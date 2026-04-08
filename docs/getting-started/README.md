@@ -1,5 +1,7 @@
 # Getting Started with QDrant Loader
 
+<img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Getting started icon">
+
 Welcome to QDrant Loader! This section will help you understand, install, and start using QDrant Loader effectively, whether you're a content creator, researcher, developer, or system administrator.
 
 ## 🎯 Choose Your Path

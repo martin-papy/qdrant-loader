@@ -631,19 +631,19 @@ Sitemap: {site_base}/sitemap.xml
             toc_html = self.add_bootstrap_classes(toc_html)
 
         wrapped_content = f"""
-<section class=\"py-5\">
-  <div class=\"container\">
+<section>
+    <div class=\"container-fluid\">
     <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block\">
+      <aside class=\"col-lg-3 d-none d-lg-block p-0\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9\">
+      <div class=\"col-lg-9 container-content\">
         {html_content}
       </div>
     </div>
-  </div>
+</div>
 </section>
 """
 
@@ -965,19 +965,19 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                     toc_html = self.add_bootstrap_classes(toc_html)
 
                 wrapped_content = f"""
-<section class=\"py-5\">
-  <div class=\"container\">
+<section>
+   <div class=\"container-fluid\">
     <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block\">
+      <aside class=\"col-lg-3 d-none d-lg-block p-0\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9\">
+      <div class=\"col-lg-9 container-content\">
         {html_content}
       </div>
     </div>
-  </div>
+    </div>
 </section>
 """
 
@@ -1030,8 +1030,8 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                                 index_file = directory / "index.html"
                                 if source_file.suffix == ".html":
                                     # Copy HTML file content directly (always overwrite to avoid stale links)
-                                    content = source_file.read_text()
-                                    index_file.write_text(content)
+                                    content = source_file.read_text(encoding="utf-8")
+                                    index_file.write_text(content, encoding="utf-8")
                                     print(
                                         f"📄 Generated index.html from {source_file.name}"
                                     )
@@ -1042,7 +1042,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
 
                                 if source_file.suffix == ".html":
                                     # Copy HTML file content directly
-                                    content = source_file.read_text()
+                                    content = source_file.read_text(encoding="utf-8")
                                     self.build_page(
                                         "base.html",
                                         output_path,

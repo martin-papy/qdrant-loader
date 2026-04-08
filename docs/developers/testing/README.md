@@ -2,11 +2,11 @@
 
 This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, and quality assurance practices.
 
-## 🎯 Testing Overview
+## <img src="/assets/icons/library/testing-icon.svg" width="32" alt="Testing Overview"> Testing Overview
 
 QDrant Loader follows a comprehensive testing strategy to ensure reliability, performance, and maintainability:
 
-### 🧪 Testing Philosophy
+### Testing Philosophy
 
 1. **Test-Driven Development** - Write tests before implementing features
 2. **Comprehensive Coverage** - Aim for 85%+ test coverage
@@ -14,13 +14,13 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 4. **Real-World Testing** - Integration tests with actual services
 5. **Performance Validation** - Regular performance benchmarking
 
-### 📚 Testing Categories
+### Testing Categories
 
 - **Unit Testing** - Testing individual components in isolation
 - **Integration Testing** - Testing component interactions and end-to-end workflows
 - **Quality Assurance** - Code quality, review processes, and standards
 
-## 🚀 Quick Start
+## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
 
 ### Test Environment Setup
 
@@ -58,7 +58,7 @@ uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py
 uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initialization_default_settings
 ```
 
-## 🧪 Testing Framework
+## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Framework"> Testing Framework
 
 ### Core Testing Tools
 
@@ -89,7 +89,7 @@ tests/
 └── test_website_build.py
 ```
 
-## 🔧 Test Fixtures and Utilities
+## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Test Fixtures and Utilities"> Test Fixtures and Utilities
 
 ### Common Fixtures
 
@@ -211,7 +211,7 @@ def create_mock_settings():
     return settings
 ```
 
-## 🧪 Unit Testing Patterns
+## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Partterns"> Unit Testing Patterns
 
 ### Testing Core Components
 
@@ -378,7 +378,7 @@ def test_document_id_consistency():
     assert doc1.id == doc2.id
 ```
 
-## 🔗 Integration Testing
+## <img src="/assets/icons/library/linked-icon.svg" width="32" alt="Integration Testing"> Integration Testing
 
 ### Full Pipeline Testing
 
@@ -434,7 +434,7 @@ async def test_cli_integration(tmp_path):
     assert result.exit_code == 0
 ```
 
-## 📊 Performance Testing
+## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Performance Testing"> Performance Testing
 
 ### Benchmarking
 
@@ -467,7 +467,7 @@ async def test_ingestion_performance(test_settings):
         await pipeline.cleanup()
 ```
 
-## 🔍 Quality Assurance
+## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Quality Assurance"> Quality Assurance
 
 ### Code Quality Checks
 
@@ -536,7 +536,7 @@ jobs:
           file: ./coverage.xml
 ```
 
-## 📚 Testing Best Practices
+## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Testing Best"> Testing Best Practices
 
 ### Guidelines
 
@@ -586,7 +586,7 @@ def test_with_mock(mock_function):
     assert result == "expected_result"
 ```
 
-## 🆘 Getting Help
+## <img src="/assets/icons/library/sos-icon.svg" width="32" alt="Getting Help"> Getting Help
 
 ### Testing Support
 
