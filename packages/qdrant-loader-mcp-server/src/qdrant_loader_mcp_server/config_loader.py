@@ -259,9 +259,6 @@ def load_config(cli_config: Path | None) -> tuple[Config, dict[str, Any], bool]:
                 },
             }
             return cfg, effective, used_file
-        except ValueError:
-            # Re-raise ValueError (e.g. unresolved env vars) — must not be swallowed
-            raise
         except Exception as e:
             logger.warning(
                 "Failed to load config file; falling back to env-only", error=str(e)

@@ -186,6 +186,7 @@ class PipelineOrchestrator:
 
         all_documents = []
         aggregated_result = PipelineResult()
+        failed_projects: list[str] = []
         project_ids = self.project_manager.list_project_ids()
 
         logger.info(f"Processing {len(project_ids)} projects")
@@ -218,15 +219,20 @@ class PipelineOrchestrator:
                 )
             except ConnectorConfigurationError as e:
                 logger.error(
-                    f"Fatal configuration error in project {project_id}: "
+                    f"Configuration error in project {project_id}: "
                     f"{sanitize_exception_message(e)}. "
-                    "Pipeline cannot continue — check connector settings.",
+                    "Skipping this project — check connector settings.",
                     error_type=type(e).__name__,
                     sanitized_traceback=sanitize_exception_message(
                         traceback.format_exc()
                     ),
                 )
-                raise
+                aggregated_result.errors.append(
+                    f"Configuration error in project {project_id}: "
+                    f"{sanitize_exception_message(e)}"
+                )
+                failed_projects.append(project_id)
+                continue
             except Exception as e:
                 logger.error(
                     f"Failed to process project {project_id}: {sanitize_exception_message(e)}",
@@ -235,14 +241,27 @@ class PipelineOrchestrator:
                         traceback.format_exc()
                     ),
                 )
+                failed_projects.append(project_id)
                 # Continue processing other projects
                 continue
 
         self.last_pipeline_result = aggregated_result
 
-        logger.info(
-            f"Completed processing all projects: {len(all_documents)} total documents"
-        )
+        total_count = len(project_ids)
+        failed_count = len(failed_projects)
+        success_count = total_count - failed_count
+        if failed_count > 0:
+            logger.warning(
+                f"Completed processing projects: {success_count}/{total_count} succeeded, "
+                f"{failed_count} failed. Check errors above for details.",
+                total_projects=total_count,
+                successful_projects=success_count,
+                failed_projects=failed_count,
+            )
+        else:
+            logger.info(
+                f"Completed processing all projects: {len(all_documents)} total documents"
+            )
         return all_documents
 
     async def _collect_documents_from_sources(

@@ -177,14 +177,17 @@ class TestLegacyEmbeddingMigration:
 # ---------------------------------------------------------------------------
 
 
-class TestLoadConfigValueErrorPropagation:
-    def test_unresolved_env_var_raises_through_load_config(self, tmp_path, monkeypatch):
-        """ValueError from _substitute_env_vars must NOT be swallowed by load_config."""
+class TestLoadConfigValueErrorFallback:
+    def test_unresolved_env_var_falls_back_to_env_only(self, tmp_path, monkeypatch):
+        """ValueError from _substitute_env_vars should trigger env-only fallback (existing business logic)."""
         monkeypatch.delenv("MISSING_VAR", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-fallback")
         config_file = tmp_path / "config.yaml"
         config_file.write_text(
             "global:\n  qdrant:\n    url: ${MISSING_VAR}\n"
         )
         monkeypatch.setenv("MCP_CONFIG", str(config_file))
-        with pytest.raises(ValueError, match="MISSING_VAR"):
-            load_config(None)
+        cfg, effective, used_file = load_config(None)
+        # Should NOT raise — falls back to env-only mode
+        assert not used_file
+        assert cfg.openai.api_key == "sk-fallback"
