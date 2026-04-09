@@ -375,11 +375,11 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 
 ### Templates and Examples
 
-- **[Feature Documentation Template](./templates/feature-template.md)**
+- **[Feature Documentation Template](./templates/feature-template.md)** - Reusable structure for feature docs with sections that reviewers expect.
 
 ### Style Guides
 
-- **[Writing Style Guide](./style-guide.md)**
+- **[Writing Style Guide](./style-guide.md)** - Voice, formatting, and readability rules for consistent documentation quality.
 
 ## 🆘 Getting Help
 

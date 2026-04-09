@@ -408,9 +408,9 @@ Before publishing documentation, verify:
 
 ### References
 
-- **[GitHub Markdown Guide](https://guides.github.com/features/mastering-markdown/)**
-- **[Google Developer Documentation Style Guide](https://developers.google.com/style)**
-- **[Microsoft Writing Style Guide](https://docs.microsoft.com/en-us/style-guide/welcome/)**
+- **[GitHub Markdown Guide](https://guides.github.com/features/mastering-markdown/)** - Markdown syntax and best practices for readable technical pages.
+- **[Google Developer Documentation Style Guide](https://developers.google.com/style)** - Practical guidance for clarity, structure, and developer-first wording.
+- **[Microsoft Writing Style Guide](https://docs.microsoft.com/en-us/style-guide/welcome/)** - Terminology and tone standards for concise product documentation.
 
 ---
 

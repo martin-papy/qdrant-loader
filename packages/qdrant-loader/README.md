@@ -17,8 +17,8 @@ For full setup and configuration, start with the documentation links below.
 
 For detailed source setup and conversion behavior, see:
 
-- **[Data source guides](../../docs/users/detailed-guides/data-sources)**
-- **[File conversion guide](../../docs/users/detailed-guides/file-conversion)**
+- **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and public docs.
+- **[File conversion guide](../../docs/users/detailed-guides/file-conversion)** - Supported formats, conversion behavior, and practical tuning options.
 
 ## <img src="/assets/icons/library/file-icon.svg" width="32" alt="File icon"> File Conversion Support
 
@@ -79,9 +79,9 @@ Local Files    20+ Formats     Cleaning        Tokens    Endpoints   State Track
 
 Implementation details for tuning and troubleshooting are covered in:
 
-- **[Configuration reference](../../docs/users/configuration)**
-- **[Common workflows](../../docs/users/workflows/common-workflows.md)**
-- **[Troubleshooting guide](../../docs/users/troubleshooting)**
+- **[Configuration reference](../../docs/users/configuration)** - Full settings model, defaults, and production-ready examples.
+- **[Common workflows](../../docs/users/workflows/common-workflows.md)** - Proven end-to-end paths for ingestion, maintenance, and operations.
+- **[Troubleshooting guide](../../docs/users/troubleshooting)** - Common failure patterns and step-by-step fixes.
 
 ## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
 

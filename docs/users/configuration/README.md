@@ -1,4 +1,4 @@
-﻿# Configuration Reference
+# Configuration Reference
 
 This section provides comprehensive documentation for configuring QDrant Loader. Learn how to set up data sources, optimize performance, configure security, and customize behavior for your specific needs.
 

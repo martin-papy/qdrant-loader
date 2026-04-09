@@ -1,4 +1,4 @@
-﻿# Developer Documentation
+# Developer Documentation
 
 <img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Dev docs icon">
 

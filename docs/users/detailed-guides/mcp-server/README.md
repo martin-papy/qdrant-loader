@@ -1,4 +1,4 @@
-﻿# <img src="/assets/icons/library/note-icon.svg" width="32" alt="MCP icon"> MCP Server Guide
+# <img src="/assets/icons/library/note-icon.svg" width="32" alt="MCP icon"> MCP Server Guide
 
 This page is the MCP hub. Detailed instructions are split into dedicated pages to avoid duplicate setup content.
 
@@ -25,8 +25,8 @@ This page is the MCP hub. Detailed instructions are split into dedicated pages t
 
 Configuration references:
 
-- **[LLM Provider Guide](../../configuration/llm-provider-guide.md)**
-- **[Environment Variables Reference](../../configuration/environment-variables.md)**
+- **[LLM Provider Guide](../../configuration/llm-provider-guide.md)** - Provider-specific setup for embeddings/chat compatibility with MCP.
+- **[Environment Variables Reference](../../configuration/environment-variables.md)** - Required runtime variables for authentication, logging, and server behavior.
 
 ## <img src="../../../assets/icons/library/thunder-icon.svg" width="32" alt="Thunder icon"> Quick run
 
@@ -118,4 +118,3 @@ If the tool returns results from your indexed content, MCP integration is workin
 - MCP setup/runtime issues: [Setup & Integration Guide](./setup-and-integration.md)
 - Search behavior and tool semantics: [Search Capabilities & Examples](./search-capabilities.md)
 - General configuration issues: [Troubleshooting Guide](../../troubleshooting/)
-

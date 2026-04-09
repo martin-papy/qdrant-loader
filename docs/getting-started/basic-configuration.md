@@ -1,4 +1,4 @@
-﻿# Basic Configuration
+# Basic Configuration
 
 This guide covers only the starter configuration pattern.
 

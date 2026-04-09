@@ -1,4 +1,4 @@
-﻿# Troubleshooting Guide
+# Troubleshooting Guide
 
 Welcome to the QDrant Loader troubleshooting guide! This section provides comprehensive solutions for common issues, performance problems, and error messages you might encounter. Whether you're a new user or an experienced developer, these guides will help you quickly identify and resolve problems.
 

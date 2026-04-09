@@ -1,4 +1,4 @@
-﻿# CLI Development Guide
+# CLI Development Guide
 
 This document provides comprehensive reference for developing with the QDrant Loader command-line interface (CLI) and MCP server. All commands, options, and examples are verified against the actual implementation.
 

@@ -45,7 +45,7 @@ logger.info("LLM ready")
 
 - Secrets (API keys/tokens) are redacted in logs
 - For MCP integrations, `MCP_DISABLE_CONSOLE_LOGGING=true` is recommended
-- Environment variable reference: [Environment Variables](../../docs/users/configuration/environment-variables.md) - Required and optional environment variables for setup, authentication, and runtime behavior.
+- [Environment variable reference](../../docs/users/configuration/environment-variables.md) - Required and optional environment variables for setup, authentication, and runtime behavior.
 
 ## <img src="/assets/icons/library/error-icon.svg"  width="32" alt="Error Handling"> Error Handling
 
