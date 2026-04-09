@@ -1,7 +1,6 @@
 """Source processor for handling different source types."""
 
 import asyncio
-import traceback
 from collections.abc import Callable, Mapping
 
 from qdrant_loader.config.source_config import SourceConfig
@@ -90,9 +89,6 @@ class SourceProcessor:
                 logger.error(
                     f"Failed to process {source_type} source {source_name}: {safe_error}",
                     error_type=type(e).__name__,
-                    sanitized_traceback=sanitize_exception_message(
-                        traceback.format_exc()
-                    ),
                 )
                 # Continue processing other sources even if one fails
                 continue
