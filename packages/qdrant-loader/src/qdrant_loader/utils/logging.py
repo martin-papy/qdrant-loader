@@ -5,6 +5,8 @@ import re
 
 import structlog
 
+from qdrant_loader.utils.sensitive import redact_sensitive_data
+
 
 class QdrantVersionFilter(logging.Filter):
     """Filter to suppress Qdrant version check warnings."""
@@ -533,6 +535,14 @@ class LoggingConfig:
                 "secret",
                 "password",
             }
+            sensitive_key_pattern = re.compile(
+                r"(?i)(?:^|[_-])(token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|authorization)(?:$|[_-])"
+            )
+
+            def _is_sensitive_key(key: object) -> bool:
+                if not isinstance(key, str):
+                    return False
+                return key in sensitive_keys or bool(sensitive_key_pattern.search(key))
 
             def _mask(value: str) -> str:
                 try:
@@ -545,12 +555,18 @@ class LoggingConfig:
                 except Exception:
                     return "***REDACTED***"
 
+            def _sanitize_string(value: str) -> str:
+                try:
+                    return redact_sensitive_data(value, mask="***REDACTED***")
+                except Exception:
+                    return "***REDACTED***"
+
             def _deep_redact(obj):
                 try:
                     if isinstance(obj, dict):
                         red = {}
                         for k, v in obj.items():
-                            if k in sensitive_keys:
+                            if _is_sensitive_key(k):
                                 red[k] = (
                                     _mask(v) if isinstance(v, str) else "***REDACTED***"
                                 )
@@ -559,6 +575,8 @@ class LoggingConfig:
                         return red
                     if isinstance(obj, list):
                         return [_deep_redact(i) for i in obj]
+                    if isinstance(obj, str):
+                        return _sanitize_string(obj)
                     return obj
                 except Exception:
                     return obj

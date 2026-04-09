@@ -109,3 +109,20 @@ def test_redact_processor_masks_nested_fields():
     assert "***REDACTED***" in out["nested"]["list"][0]["password"]
     # Non-sensitive content preserved
     assert out["note"] == "keep"
+
+
+def test_redact_processor_masks_pattern_sensitive_keys():
+    logging_mod = import_module("qdrant_loader_core.logging")
+    redact = logging_mod.redact_processor
+
+    event = {
+        "jira_token": "ATATT-super-secret",
+        "nested": {"client_secret": "very-secret"},
+        "ok": "safe",
+    }
+
+    out = redact(None, "info", event)
+
+    assert "***REDACTED***" in out["jira_token"]
+    assert "***REDACTED***" in out["nested"]["client_secret"]
+    assert out["ok"] == "safe"

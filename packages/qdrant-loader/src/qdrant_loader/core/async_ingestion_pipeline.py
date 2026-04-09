@@ -10,6 +10,7 @@ from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 from .pipeline import (
     PipelineComponentsFactory,
@@ -160,24 +161,21 @@ class AsyncIngestionPipeline:
                     async with session_factory() as session:  # type: ignore
                         await self.project_manager.initialize(session)
                     logger.debug("Project manager initialization completed")
+
                 except Exception as e:
-                    # Standardized error logging: user-friendly message + technical details + stack trace
                     logger.error(
                         "Failed to initialize project manager during pipeline startup",
-                        error=str(e),
+                        error=sanitize_exception_message(e),
                         error_type=type(e).__name__,
                         suggestion="Check database connectivity and project configuration",
-                        exc_info=True,
                     )
                     raise
         except Exception as e:
-            # Standardized error logging: user-friendly message + technical details + stack trace
             logger.error(
                 "Pipeline initialization failed during startup sequence",
-                error=str(e),
+                error=sanitize_exception_message(e),
                 error_type=type(e).__name__,
                 suggestion="Check configuration, database connectivity, and system resources",
-                exc_info=True,
             )
             raise
 
@@ -206,7 +204,6 @@ class AsyncIngestionPipeline:
 
         # Reset metrics for new run
         self.monitor.clear_metrics()
-
         self.monitor.start_operation(
             "ingestion_process",
             metadata={
@@ -273,16 +270,17 @@ class AsyncIngestionPipeline:
             return documents
 
         except Exception as e:
-            # Standardized error logging: user-friendly message + technical details + stack trace
+            safe_error = sanitize_exception_message(e)
             logger.error(
                 "Document processing pipeline failed during ingestion",
-                error=str(e),
+                error=safe_error,
                 error_type=type(e).__name__,
                 documents_attempted=len(documents),
                 suggestion="Check data source connectivity, document formats, and system resources",
-                exc_info=True,
             )
-            self.monitor.end_operation("ingestion_process", error=str(e))
+            self.monitor.end_operation(
+                "ingestion_process", success=False, error=safe_error
+            )
             raise
 
     async def cleanup(self):
@@ -302,7 +300,9 @@ class AsyncIngestionPipeline:
             try:
                 prometheus_metrics.stop_metrics_server()
             except Exception as e:
-                logger.warning(f"Error stopping metrics server: {e}")
+                logger.warning(
+                    f"Error stopping metrics server: {sanitize_exception_message(e)}"
+                )
 
             # Use resource manager for cleanup
             if hasattr(self, "resource_manager"):
@@ -310,7 +310,9 @@ class AsyncIngestionPipeline:
 
             logger.info("Pipeline cleanup completed")
         except Exception as e:
-            logger.error(f"Error during pipeline cleanup: {e}")
+            logger.error(
+                f"Error during pipeline cleanup: {sanitize_exception_message(e)}"
+            )
 
     def __del__(self):
         """Destructor to ensure cleanup."""
@@ -318,7 +320,9 @@ class AsyncIngestionPipeline:
             # Can't await in __del__, so use the sync cleanup method
             self._sync_cleanup()
         except Exception as e:
-            logger.error(f"Error in destructor cleanup: {e}")
+            logger.error(
+                f"Error in destructor cleanup: {sanitize_exception_message(e)}"
+            )
 
     def _sync_cleanup(self):
         """Synchronous cleanup for destructor and signal handlers."""
@@ -333,19 +337,23 @@ class AsyncIngestionPipeline:
             if hasattr(self, "monitor"):
                 self.monitor.save_metrics()
         except Exception as e:
-            logger.error(f"Error saving metrics: {e}")
+            logger.error(f"Error saving metrics: {sanitize_exception_message(e)}")
 
         # Stop metrics server
         try:
             prometheus_metrics.stop_metrics_server()
         except Exception as e:
-            logger.error(f"Error stopping metrics server: {e}")
+            logger.error(
+                f"Error stopping metrics server: {sanitize_exception_message(e)}"
+            )
 
         # Use resource manager sync cleanup
         try:
             if hasattr(self, "resource_manager"):
                 self.resource_manager._cleanup()
         except Exception as e:
-            logger.error(f"Error in resource manager cleanup: {e}")
+            logger.error(
+                f"Error in resource manager cleanup: {sanitize_exception_message(e)}"
+            )
 
         logger.info("Pipeline cleanup completed (sync)")
