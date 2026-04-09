@@ -46,6 +46,7 @@ class JiraDataCenterConnector(BaseJiraConnector):
         start_at = 0
         page_size = self.config.page_size
         total_issues = 0
+        processed_count = 0
 
         logger.info(
             "🎫 Starting JIRA issue retrieval",
@@ -91,6 +92,7 @@ class JiraDataCenterConnector(BaseJiraConnector):
                     "No more JIRA issues found, stopping pagination",
                     start_at=start_at,
                     total_processed=start_at,
+                    issues_processed=processed_count,
                 )
                 break
 
@@ -108,6 +110,7 @@ class JiraDataCenterConnector(BaseJiraConnector):
                 try:
                     parsed_issue = self._parse_issue(issue)
                     yield parsed_issue
+                    processed_count += 1
 
                     if (start_at + i + 1) % progress_log_interval == 0:
                         progress_percent = (
@@ -134,6 +137,8 @@ class JiraDataCenterConnector(BaseJiraConnector):
             start_at += len(issues)
             if start_at >= total_issues:
                 logger.info(
-                    f"✅ Completed JIRA issue retrieval: {start_at} issues processed"
+                    f"✅ Completed JIRA issue retrieval: "
+                    f"{start_at} issues attempted, "
+                    f"{processed_count} successfully processed"
                 )
                 break

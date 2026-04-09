@@ -289,7 +289,7 @@ class BaseJiraConnector(BaseConnector):
 
         # Add updated_after filter if provided
         if updated_after:
-            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M:%S')}'"
 
         return jql
 

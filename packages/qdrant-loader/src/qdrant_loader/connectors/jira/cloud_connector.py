@@ -48,6 +48,7 @@ class JiraCloudConnector(BaseJiraConnector):
         next_page_token: str | None = None
         processed_count = 0
         page_size = self.config.page_size
+        attempted_count = 0
         # Log progress every 100 issues instead of every 50
         progress_log_interval = 100
 
@@ -124,11 +125,14 @@ class JiraCloudConnector(BaseJiraConnector):
                     # Continue processing other issues instead of failing completely
                     continue
 
+            attempted_count += len(issues)
             # Check next page token
             next_page_token = response.get("nextPageToken")
             is_last = response.get("isLast")
             if is_last or not next_page_token:
                 logger.info(
-                    f"✅ Completed JIRA issue retrieval: {processed_count} issues processed"
+                    f"✅ Completed JIRA issue retrieval: "
+                    f"{attempted_count} issues attempted, "
+                    f"{processed_count} successfully processed"
                 )
                 break

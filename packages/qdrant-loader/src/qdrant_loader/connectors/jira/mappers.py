@@ -80,7 +80,9 @@ def parse_comment(raw_comment: dict[str, Any]) -> JiraComment:
         raise ValueError("Missing author in Jira comment")
 
     body = raw_comment.get("body")
-    if body is not None and not isinstance(body, str):
+    if body is None:
+        body = ""
+    elif not isinstance(body, str):
         if not isinstance(body, dict):
             raise ValueError(f"Unexpected body type in Jira comment: {type(body)}")
         body = adf_to_oneline_fulltext(body)
