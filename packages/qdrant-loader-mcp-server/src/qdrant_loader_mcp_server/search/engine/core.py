@@ -212,6 +212,7 @@ class SearchEngine:
                     openai_client=self.openai_client,
                     collection_name=config.collection_name,
                     search_config=search_config,
+                    embedding_model=openai_config.model,
                 )
 
             # Initialize operation modules
