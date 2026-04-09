@@ -1,6 +1,16 @@
 # LLM Provider Guide
 
 This is the canonical source for LLM provider configuration.
+This system is designed to support **both local and cloud-based Large Language Model (LLM) providers**.
+
+Currently supported providers:
+
+- **Ollama** — local models (**default and preferred**)
+- **OpenAI** — cloud-based models
+
+The system uses a **unified configuration approach**, allowing you to switch providers without changing application code.
+
+---
 
 ## Required fields
 
@@ -12,6 +22,7 @@ LLM_BASE_URL=https://api.openai.com/v1
 LLM_API_KEY=your-api-key
 LLM_EMBEDDING_MODEL=text-embedding-3-small
 LLM_CHAT_MODEL=gpt-4o-mini
+VECTOR_SIZE=1536
 ```
 
 ```yaml
@@ -24,7 +35,7 @@ global:
       embeddings: "${LLM_EMBEDDING_MODEL}"
       chat: "${LLM_CHAT_MODEL}"
     embeddings:
-      vector_size: 1536
+      vector_size: ${VECTOR_SIZE}
 ```
 
 ## Provider profiles
@@ -37,6 +48,7 @@ LLM_BASE_URL=https://api.openai.com/v1
 LLM_API_KEY=sk-your-openai-key
 LLM_EMBEDDING_MODEL=text-embedding-3-small
 LLM_CHAT_MODEL=gpt-4o-mini
+VECTOR_SIZE=1536
 ```
 
 ### Azure OpenAI
@@ -48,6 +60,7 @@ LLM_API_KEY=your-azure-key
 LLM_API_VERSION=2024-05-01-preview
 LLM_EMBEDDING_MODEL=<embedding-deployment-name>
 LLM_CHAT_MODEL=<chat-deployment-name>
+VECTOR_SIZE=1536
 ```
 
 Notes:
@@ -55,14 +68,35 @@ Notes:
 - Use the resource root in `LLM_BASE_URL`.
 - Use deployment names for `LLM_*_MODEL` values.
 
-### Ollama
+### Ollama (Local Models – Recommended)
+
+Ollama is the **default and recommended provider**, especially for local development and privacy-sensitive environments.
+
+#### Prerequisites
+
+To use **local models with Ollama**, ensure the following:
+
+1. **Ollama is installed and running on your machine**
+   - Ollama must be accessible at the configured endpoint  
+     (default: `http://localhost:11434`).
+
+   - Installation guide:  
+     https://ollama.com/download
+
+2. **Required models must be pulled locally before running the system**
+   - For embedding generation, the following model is required:
+
+   ```bash
+   ollama pull argus-ai/pplx-embed-v1-0.6b:fp32
+   ```
 
 ```bash
 LLM_PROVIDER=ollama
 LLM_BASE_URL=http://localhost:11434/v1
-LLM_API_KEY=dummy
-LLM_EMBEDDING_MODEL=nomic-embed-text
-LLM_CHAT_MODEL=llama3.1:8b-instruct
+LLM_API_KEY=ollama # no authentication required
+LLM_EMBEDDING_MODEL=argus-ai/pplx-embed-v1-0.6b:fp32
+LLM_CHAT_MODEL=llama3.1:8b
+VECTOR_SIZE=1024
 ```
 
 Notes:
