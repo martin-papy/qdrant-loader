@@ -193,6 +193,23 @@ Regular paragraph text.
         assert 'id="test"' in result
         assert 'class="test"' in result
 
+    def test_render_task_list_checkboxes(self):
+        """Test rendering markdown task markers as checkboxes."""
+        from website.builder.markdown import MarkdownProcessor
+
+        processor = MarkdownProcessor()
+        html = (
+            '<ul><li>[ ] Pending item</li><li class="existing">[x] Done item</li></ul>'
+        )
+
+        result = processor.render_task_list_checkboxes(html)
+
+        assert result.count('type="checkbox"') == 2
+        assert result.count('disabled') == 2
+        assert 'task-list-item' in result
+        assert 'checked' in result
+        assert 'existing task-list-item' in result or 'task-list-item existing' in result
+
     def test_convert_markdown_links_edge_cases(self):
         """Test markdown link conversion edge cases."""
         from website.builder.markdown import MarkdownProcessor
@@ -240,38 +257,6 @@ Regular paragraph text.
         # Test well-known files
         result = processor._process_link_path("CONTRIBUTING", "packages/test/README.md")
         assert result == "/docs/CONTRIBUTING.html"
-
-        # Package aliases should be normalized consistently for all accepted variants
-        result = processor._process_link_path(
-            "./packages/qdrant-loader-core/README.md#usage",
-            "docs/users/README.md",
-        )
-        assert result == "/docs/packages/core/README.html#usage"
-
-        result = processor._process_link_path(
-            "../packages/qdrant-loader-mcp-server/setup-and-integration.md#transport",
-            "docs/users/README.md",
-        )
-        assert (
-            result
-            == "/docs/packages/mcp-server/setup-and-integration.html#transport"
-        )
-
-        result = processor._process_link_path(
-            "../../packages/qdrant-loader-core/README.md#usage",
-            "docs/users/README.md",
-        )
-        assert result == "/docs/packages/core/README.html#usage"
-
-        result = processor._process_link_path(
-            "/packages/qdrant-loader/README.md", "docs/users/README.md"
-        )
-        assert result == "/docs/packages/qdrant-loader/README.html"
-
-        result = processor._process_link_path(
-            "packages/qdrant-loader-core", "docs/users/README.md"
-        )
-        assert result == "/docs/packages/core/"
 
 
 class TestAssetManagerCoverage:

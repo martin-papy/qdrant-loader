@@ -1,4 +1,4 @@
-# Troubleshooting Guide
+﻿# Troubleshooting Guide
 
 Welcome to the QDrant Loader troubleshooting guide! This section provides comprehensive solutions for common issues, performance problems, and error messages you might encounter. Whether you're a new user or an experienced developer, these guides will help you quickly identify and resolve problems.
 
@@ -34,9 +34,9 @@ grep -r "your error message" docs/users/troubleshooting/
 # See: Error Messages Reference → [specific error category]
 ```
 
-##  Troubleshooting Guides
+## Troubleshooting Guides
 
-### 🔧<img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> [Common Issues](./common-issues.md)
+### <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> [Common Issues](./common-issues.md)
 
 **Start here for most problems!** Covers the most frequently encountered issues with step-by-step solutions.
 

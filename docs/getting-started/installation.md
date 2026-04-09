@@ -10,6 +10,24 @@ Primary onboarding path: [Quick Start](./quick-start.md)
 
 The core library is automatically installed as a dependency. Most users will want both the main package and MCP server for the complete experience.
 
+- Main package only:
+
+```bash
+pip install qdrant-loader
+```
+
+- MCP server only:
+
+```bash
+pip install qdrant-loader-mcp-server
+```
+
+- Full experience (recommended):
+
+```bash
+pip install qdrant-loader qdrant-loader-mcp-server
+```
+
 ## 🔧 Prerequisites
 
 ### System Requirements
@@ -30,20 +48,16 @@ QDrant Loader requires a QDrant instance to store vectors and metadata.
 ##### Option 1: Docker
 
 ```bash
-pip install qdrant-loader
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
-- MCP server only:
+##### Option 2: QDrant Cloud
 
-```bash
-pip install qdrant-loader-mcp-server
-```
+Use QDrant Cloud and copy your cluster URL + API key into `.env`.
 
-- Full experience (recommended):
+##### Option 3: Local Installation
 
-```bash
-pip install qdrant-loader qdrant-loader-mcp-server
-```
+Use the official QDrant installation guide for your platform.
 
 ## Optional LLM extras
 
@@ -94,6 +108,14 @@ With uv, you normally do not need to manually create or activate a virtual envir
 
 Create and activate your own venv only if your team or tooling explicitly requires manual venv control.
 
+## Platform-specific notes
+
+- **Windows**: Use PowerShell and activate venv with `\.venv\Scripts\Activate.ps1`.
+- **macOS/Linux**: Activate venv with `source .venv/bin/activate`.
+- **Permissions**: If global pip install fails, prefer uv workflow or a project virtual environment.
+
+For command-level options (`--workspace`, `--config`, `--env`), see [CLI Commands](../users/cli-reference/commands.md).
+
 ### Method 3: Virtual Environment (Isolated)
 
 For users who want to keep QDrant Loader isolated:
@@ -104,11 +126,31 @@ source .venv/bin/activate
 pip install qdrant-loader qdrant-loader-mcp-server
 ```
 
+## Installation Checklist
+
+- [ ] **Python 3.12+** installed and accessible
+- [ ] **QDrant database** running (Docker, Cloud, or local)
+- [ ] **LLM API key** obtained and configured (OpenAI, Azure OpenAI, Ollama, or compatible)
+- [ ] **qdrant-loader** package installed
+- [ ] **qdrant-loader-mcp-server** package installed (if using MCP)
+- [ ] `qdrant-loader --version` works
+- [ ] `mcp-qdrant-loader --version` works (if MCP server installed)
+- [ ] **Basic configuration** created
+- [ ] **QDrant connection** tested
+- [ ] You can run `qdrant-loader init --workspace .` without configuration errors
+- [ ] **Ready for Quick Start** guide
+
 ## Verification checklist
 
-- `qdrant-loader --version` works
-- `mcp-qdrant-loader --version` works
-- QDrant is reachable at configured URL
-- LLM API key is set
+- [ ] `qdrant-loader --version` works
+- [ ] `mcp-qdrant-loader --version` works
+- [ ] QDrant is reachable at configured URL
+- [ ] LLM API key is set
 
 Then continue with [Quick Start](./quick-start.md).
+
+## Install troubleshooting
+
+- Python and dependency setup issues: [Troubleshooting](../users/troubleshooting)
+- Configuration and environment variable errors: [Error Messages Reference](../users/troubleshooting/error-messages-reference.md)
+- Complete configuration options: [Configuration File Reference](../users/configuration/config-file-reference.md)

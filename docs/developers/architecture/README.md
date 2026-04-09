@@ -1,4 +1,4 @@
-# Architecture Overview
+﻿# Architecture Overview
 
 <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Architecture icon">
 
@@ -257,38 +257,38 @@ async def _collect_documents_from_sources(
 ) -> list[Document]:
     """Collect documents from all configured sources."""
     documents = []
-    
+
     # Process each source type with direct connector instantiation
     if filtered_config.confluence:
         confluence_docs = await self.components.source_processor.process_source_type(
             filtered_config.confluence, ConfluenceConnector, "Confluence"
         )
         documents.extend(confluence_docs)
-    
+
     if filtered_config.git:
         git_docs = await self.components.source_processor.process_source_type(
             filtered_config.git, GitConnector, "Git"
         )
         documents.extend(git_docs)
-    
+
     if filtered_config.jira:
         jira_docs = await self.components.source_processor.process_source_type(
             filtered_config.jira, JiraConnector, "Jira"
         )
         documents.extend(jira_docs)
-    
+
     if filtered_config.publicdocs:
         publicdocs_docs = await self.components.source_processor.process_source_type(
             filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
         )
         documents.extend(publicdocs_docs)
-    
+
     if filtered_config.localfile:
         localfile_docs = await self.components.source_processor.process_source_type(
             filtered_config.localfile, LocalFileConnector, "LocalFile"
         )
         documents.extend(localfile_docs)
-    
+
     return documents
 ```
 
@@ -309,21 +309,21 @@ QDrant Loader uses SQLite with SQLAlchemy for state management:
 ```python
 class StateManager:
     """Manages state for document ingestion."""
-    
+
     def __init__(self, config: StateManagementConfig):
         self.config = config
         self._engine = None
         self._session_factory = None
-    
+
     async def initialize(self):
         """Initialize the database schema and connection."""
         db_url = self.config.database_path
         if not db_url.startswith("sqlite:///"):
             db_url = f"sqlite:///{db_url}"
-        
+
         self._engine = create_async_engine(f"sqlite+aiosqlite:///{db_file}")
         self._session_factory = async_sessionmaker(bind=self._engine)
-        
+
         # Initialize schema
         async with self._engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -337,16 +337,16 @@ async def update_document_state(
 ) -> DocumentStateRecord:
     """Update document state for change detection."""
     content_hash = hashlib.sha256(document.content.encode()).hexdigest()
-    
+
     # Check if document exists and has changed
     existing = await self.get_document_state_record(
         document.source_type, document.source, document.id, project_id
     )
-    
+
     if existing and existing.content_hash == content_hash:
         # No changes detected
         return existing
-    
+
     # Update or create new state record
     # ... implementation details
 ```
@@ -360,7 +360,7 @@ The entire pipeline is built on async/await patterns:
 ```python
 class AsyncIngestionPipeline:
     """Main async ingestion pipeline."""
-    
+
     async def process_documents(
         self,
         project_id: str | None = None,
@@ -382,11 +382,11 @@ class AsyncIngestionPipeline:
 ```python
 class QdrantManager:
     """Manages QDrant operations with batching."""
-    
+
     async def upsert_points(self, points: list[dict]) -> None:
         """Upsert points in batches."""
         batch_size = self.batch_size  # Configurable batch size
-        
+
         for i in range(0, len(points), batch_size):
             batch = points[i:i + batch_size]
             await self._upsert_batch(batch)
@@ -401,7 +401,7 @@ Each connector handles its own authentication:
 ```python
 class ConfluenceConnector(BaseConnector):
     """Confluence connector with authentication."""
-    
+
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
         if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
@@ -443,4 +443,5 @@ class ConfluenceConnector(BaseConnector):
 - **Monitoring and observability** - Enhanced metrics and logging
 
 ---
-**Ready to dive deeper?** Explore the [CLI Reference](../../users/cli-reference/README.md) for command-line usage or check out the [Extending Guide](../extending/README.md) to learn about extending QDrant Loader.
+
+**Ready to dive deeper?** Explore the [CLI Reference](../../users/cli-reference/) for command-line usage or check out the [Extending Guide](../extending/) to learn about extending QDrant Loader.

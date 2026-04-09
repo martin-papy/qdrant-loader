@@ -1,4 +1,4 @@
-# CI/CD Integration Workflow
+﻿# CI/CD Integration Workflow
 
 This comprehensive guide shows how to implement automated documentation pipelines and continuous knowledge base updates using QDrant Loader in CI/CD environments. This workflow is based on the actual CI/CD pipelines used in the QDrant Loader project itself, providing real-world examples and best practices.
 
@@ -673,5 +673,5 @@ gh run watch <run-id>
 - **[GitHub Actions Documentation](https://docs.github.com/en/actions)**
 - **[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)**
 - **[GitHub Pages Deployment](https://docs.github.com/en/pages)**
-- **[QDrant Loader CLI Reference](../cli-reference/README.md)**
-- **[Configuration Guide](../configuration/README.md)**
+- **[QDrant Loader CLI Reference](../cli-reference/)**
+- **[Configuration Guide](../configuration/)**

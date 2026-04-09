@@ -1,4 +1,4 @@
-# Basic Configuration
+﻿# Basic Configuration
 
 This guide covers only the starter configuration pattern.
 
@@ -64,7 +64,13 @@ qdrant-loader ingest --workspace .
 
 ## What to customize next
 
-- Add more sources (Git/Confluence/Jira): [Data Sources Guide](../users/detailed-guides/data-sources/README.md)
+- Add more sources (Git/Confluence/Jira): [Data Sources Guide](../users/detailed-guides/data-sources/)
 - Tune chunking and global settings: [Configuration Reference](../users/configuration/config-file-reference.md)
 - Configure provider-specific LLM details: [LLM Provider Guide](../users/configuration/llm-provider-guide.md)
 - Full variable reference: [Environment Variables Reference](../users/configuration/environment-variables.md)
+- Workspace and config loading modes: [Workspace Mode](../users/configuration/workspace-mode.md)
+- Secure credentials and file permissions: [Security Considerations](../users/configuration/security-considerations.md)
+- Validation and common config errors: [Troubleshooting](../users/troubleshooting/)
+- Multi-environment setup patterns: [Common Workflows](../users/workflows/common-workflows.md)
+- Performance tuning guidance: [Performance Issues](../users/troubleshooting/performance-issues.md)
+

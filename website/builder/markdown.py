@@ -421,7 +421,7 @@ class MarkdownProcessor:
             attrs = add_class(attrs, "task-list-item")
             return (
                 f'<li{attrs}>'
-                f'<input class="form-check-input me-2" type="checkbox"{checked_attr}>'
+                f'<input class="form-check-input me-2" type="checkbox"{checked_attr} disabled>'
                 f"{body}</li>"
             )
 
@@ -467,36 +467,30 @@ class MarkdownProcessor:
 
         # Apply conversions - expanded patterns to catch more file types
         # Catch .md files and well-known files without extensions
-        package_link_pattern_md = (
-            r"\[([^\]]+)\]\(((?:(?:\.\./)+|\./|/)?packages/"
-            r"(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)"
-            r"(?:/[^)#]*)?(?:#[^)]*)?)\)"
-        )
-        package_link_pattern_href = (
-            r'(href=")((?:(?:\.\./)+|\./|/)?packages/'
-            r'(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)'
-            r'(?:/[^"#]*)?(?:#[^"]*)?)(")'
-        )
         well_known_link_pattern_md = (
-            r"\[([^\]]+)\]\(((?:\./|\.\./|/)?"
-            r"(?:packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?:/[^)#]*)?/)?"
-            r"(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:\.md)?(?:#[^)]*)?)\)"
+            r"\[([^\]]+)\]\(((?:(?:\.\./)+|\./|/)?"
+            r"(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:/[^)]*)?(?:#[^)]*)?)\)"
         )
         well_known_link_pattern_href = (
-            r'(href=")((?:\./|\.\./|/)?'
-            r'(?:packages/(?:qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?:/[^"#]*)?/)?'
-            r'(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:\.md)?(?:#[^"]*)?)(")'
+            r'(href=")((?:(?:\.\./)+|\./|/)?'
+            r'(?:LICENSE|README|CHANGELOG|CONTRIBUTING)(?:/[^"]*)?(?:#[^"]*)?)(")'
         )
 
-        content = re.sub(package_link_pattern_md, replace_md_links, content)
-        content = re.sub(well_known_link_pattern_md, replace_md_links, content)
         content = re.sub(
             r"\[([^\]]+)\]\(([^)]+\.md(?:#[^)]*)?)\)", replace_md_links, content
         )
-        content = re.sub(package_link_pattern_href, replace_href_links, content)
-        content = re.sub(well_known_link_pattern_href, replace_href_links, content)
+        content = re.sub(
+            well_known_link_pattern_md,
+            replace_md_links,
+            content,
+        )
         content = re.sub(
             r'(href=")([^"]+\.md(?:#[^"]*)?)(")', replace_href_links, content
+        )
+        content = re.sub(
+            well_known_link_pattern_href,
+            replace_href_links,
+            content,
         )
 
         # The following normalizations are only applied during site builds (when source_file is provided).
@@ -635,24 +629,6 @@ class MarkdownProcessor:
 
         # Only rewrite to absolute /docs when building from a source file context
         if source_file:
-            # Map monorepo package folder links to generated docs package aliases.
-            # Supports ./packages/, ../packages/, /packages/, and bare packages/ variants.
-            # Preserves any trailing subpath while replacing only the package prefix.
-            package_aliases = {
-                "qdrant-loader": "qdrant-loader",
-                "qdrant-loader-core": "core",
-                "qdrant-loader-mcp-server": "mcp-server",
-            }
-            package_match = re.match(
-                r"^(?:(?:\.\./)+|\./|/)?packages/(?P<pkg>qdrant-loader|qdrant-loader-core|qdrant-loader-mcp-server)(?P<rest>(?:/.*)?)$",
-                link,
-            )
-            if package_match:
-                package_name = package_match.group("pkg")
-                trailing_path = package_match.group("rest") or "/"
-                alias = package_aliases.get(package_name, package_name)
-                link = f"/docs/packages/{alias}{trailing_path}"
-
             # ../../docs/... -> /docs/...
             link = re.sub(r"^(?:\.{2}/)+docs/", "/docs/", link)
             # ./docs/... -> /docs/...

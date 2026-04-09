@@ -1,6 +1,6 @@
-# Quick Start Guide
+﻿# Quick Start Guide
 
-This is the canonical onboarding path for QDrant Loader.
+Get up and running with QDrant Loader in 5 minutes! This guide walks you through your first document ingestion and AI tool integration.
 
 ## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="What You'll Accomplish"> What You'll Accomplish
 
@@ -62,6 +62,8 @@ cd my-qdrant-workspace
 qdrant-loader init --workspace .
 ```
 
+Need more control over prompts and templates? See [CLI setup command options](../users/cli-reference/commands.md).
+
 ## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Configure environment"> Step 4. Configure environment
 
 Create or edit `.env`:
@@ -118,12 +120,24 @@ Create sample content and ingest:
 mkdir docs
 printf "# Hello QDrant Loader\n\nThis is my first document.\n" > docs/sample.md
 qdrant-loader ingest --workspace .
+# Expected output:
+# 📁 Scanning directory: my-project/
+# 📄 Processing: 2 files found
+# ✅ Ingested: 2 documents, multiple chunks
+# 🔍 Collection: quickstart
 ```
+
+For Git/Confluence/Jira and advanced source filters, see [Data Sources Guide](../users/detailed-guides/data-sources/).
 
 ## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Start MCP server"> Step 6. Start MCP server
 
 ```bash
 mcp-qdrant-loader
+# Expected output:
+# 🚀 QDrant Loader MCP Server starting...
+# 📡 Server running on stdio
+# 🔍 Available tools: search, hierarchy_search, attachment_search
+# ✅ Ready for connections
 ```
 
 Detailed integration guides:
@@ -142,8 +156,15 @@ If results are returned from ingested content, setup is complete.
 ## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Next steps"> Next steps
 
 - Configuration deep dive: [Configuration Reference](../users/configuration/config-file-reference.md)
-- Data sources: [Data Sources Guide](../users/detailed-guides/data-sources/README.md)
-- Troubleshooting: [Troubleshooting Guide](../users/troubleshooting/README.md)
+- Data sources: [Data Sources Guide](../users/detailed-guides/data-sources/)
+- Troubleshooting: [Troubleshooting Guide](../users/troubleshooting/)
+
+## <img src="../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Completion checklist"> Quick Success Checklist
+
+- [ ] `qdrant-loader --version` and `mcp-qdrant-loader --version` return successfully
+- [ ] `qdrant-loader ingest --workspace .` finishes without errors
+- [ ] MCP server starts with `mcp-qdrant-loader`
+- [ ] Your AI tool returns results from ingested documents
 
 ---
 

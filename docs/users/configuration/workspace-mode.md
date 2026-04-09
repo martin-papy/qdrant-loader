@@ -174,8 +174,8 @@ Each project in the configuration has:
 # View all configured projects and their settings
 qdrant-loader config --workspace .
 
-# Note: Dedicated project management commands (list, status, validate) 
-# are not currently implemented in the CLI. Project information is 
+# Note: Dedicated project management commands (list, status, validate)
+# are not currently implemented in the CLI. Project information is
 # displayed through the config command.
 ```
 
@@ -294,7 +294,7 @@ global:
   processing:
     chunk_size: 1500
     chunk_overlap: 200
-  
+
   # LLM configuration (new unified approach)
   llm:
     provider: "openai"
@@ -309,7 +309,7 @@ global:
       max_retries: 3
     embeddings:
       vector_size: 1536
-  
+
   # File conversion settings
   file_conversion:
     max_file_size: 52428800 # 50MB
@@ -433,7 +433,7 @@ Workspace mode support for the MCP server is planned for future releases, which 
 
 - **[Configuration File Reference](./config-file-reference.md)** - Complete YAML configuration options
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration
-- **[CLI Reference](../cli-reference/README.md)** - Command-line interface documentation
+- **[CLI Reference](../cli-reference/)** - Command-line interface documentation
 - **[MCP Server Setup](../detailed-guides/mcp-server/setup-and-integration.md)** - MCP server integration guide
 
 ---

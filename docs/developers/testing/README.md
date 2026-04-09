@@ -597,7 +597,7 @@ def test_with_mock(mock_function):
 ### Contributing Tests
 
 - **[Contributing Guide](/docs/CONTRIBUTING.md)** - How to contribute tests
-- **[Development Setup](../README.md)** - Development environment setup
+- **[Development Setup](../)** - Development environment setup
 
 ---
 

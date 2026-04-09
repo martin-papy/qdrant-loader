@@ -1,4 +1,4 @@
-# Developer Documentation
+﻿# Developer Documentation
 
 <img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Dev docs icon">
 
@@ -196,10 +196,10 @@ Available connectors:
    # Make changes
    # Run tests
    make test
-   
+
    # Check code quality
    make lint
-   
+
    # Commit changes
    git commit -m "feat: add new feature"
    ```
@@ -255,7 +255,7 @@ Available connectors:
 
 ## 📖 Detailed Guides
 
-### [Architecture Guide](./architecture/README.md)
+### [Architecture Guide](./architecture/)
 
 Deep dive into system design, component interactions, and architectural decisions. Essential reading for understanding how QDrant Loader works internally.
 
@@ -267,7 +267,7 @@ Deep dive into system design, component interactions, and architectural decision
 - State management and change detection
 - MCP server integration
 
-### [Extending Guide](./extending/README.md)
+### [Extending Guide](./extending/)
 
 Comprehensive guide for building custom functionality and connectors. Learn how to extend QDrant Loader for your specific needs.
 
@@ -279,7 +279,7 @@ Comprehensive guide for building custom functionality and connectors. Learn how 
 - Testing custom components
 - Packaging and distribution
 
-### [Testing Guide](./testing/README.md)
+### [Testing Guide](./testing/)
 
 Testing strategies, frameworks, and best practices for ensuring code quality and reliability.
 
@@ -291,7 +291,7 @@ Testing strategies, frameworks, and best practices for ensuring code quality and
 - Mock and fixture usage
 - CI/CD integration
 
-### [Deployment Guide](./deployment/README.md)
+### [Deployment Guide](./deployment/)
 
 Production deployment strategies, containerization, and operational best practices.
 
@@ -460,8 +460,8 @@ await pipeline.run()
 
 **Ready to start developing?** Choose your path:
 
-- **New to QDrant Loader?** Start with the [Architecture Guide](./architecture/README.md)
-- **Creating connectors?** Follow the [Extending Guide](./extending/README.md)
-- **Setting up CI/CD?** Use the [Deployment Guide](./deployment/README.md)
+- **New to QDrant Loader?** Start with the [Architecture Guide](./architecture/)
+- **Creating connectors?** Follow the [Extending Guide](./extending/)
+- **Setting up CI/CD?** Use the [Deployment Guide](./deployment/)
 
 **Need help?** Join our community discussions or open an issue on GitHub!

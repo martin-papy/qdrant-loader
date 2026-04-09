@@ -1,4 +1,4 @@
-# CLI Development Guide
+﻿# CLI Development Guide
 
 This document provides comprehensive reference for developing with the QDrant Loader command-line interface (CLI) and MCP server. All commands, options, and examples are verified against the actual implementation.
 
@@ -466,8 +466,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 ### Contributing to CLI
 
 - **[Contributing Guide](/docs/CONTRIBUTING.md)** - How to contribute
-- **[Testing Guide](../testing/README.md)** - Testing CLI functionality
+- **[Testing Guide](../testing/)** - Testing CLI functionality
 
 ---
 
-**Ready to develop with the CLI?** Start with the basic commands above or check out the [Architecture Overview](../architecture/README.md) for detailed system design information.
+**Ready to develop with the CLI?** Start with the basic commands above or check out the [Architecture Overview](../architecture/) for detailed system design information.

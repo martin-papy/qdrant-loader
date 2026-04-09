@@ -4,9 +4,84 @@
 [![Python](https://img.shields.io/pypi/pyversions/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-Data ingestion package for the QDrant Loader ecosystem.
+A powerful data ingestion engine that collects and vectorizes technical content from multiple sources for storage in QDrant vector database. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
 For full setup and configuration, start with the documentation links below.
+
+## <img src="/assets/icons/library/target-icon.svg" width="32" alt="What It Does"> What It Does
+
+- Collects content from Git repositories, Confluence, JIRA, public documentation sites, and local files
+- Converts supported file types (via MarkItDown) when enabled per source
+- Chunks, embeds, and stores content in QDrant for semantic retrieval
+- Supports incremental ingestion workflows through the CLI
+
+For detailed source setup and conversion behavior, see:
+
+- **[Data source guides](../../docs/users/detailed-guides/data-sources)**
+- **[File conversion guide](../../docs/users/detailed-guides/file-conversion)**
+
+## <img src="/assets/icons/library/file-icon.svg" width="32" alt="File icon"> File Conversion Support
+
+Automatically converts diverse file formats using Microsoft's MarkItDown:
+
+### Supported Formats
+
+- **Documents**: PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
+- **Images**: PNG, JPEG, GIF, BMP, TIFF (with optional OCR)
+- **Archives**: ZIP files with automatic extraction
+- **Data**: JSON, CSV, XML, YAML
+- **Audio**: MP3, WAV (transcription support)
+- **E-books**: EPUB format
+- **And more**: 20+ file types supported
+
+### Key Features
+
+- **Automatic detection**: Files are converted when `enable_file_conversion: true`
+- **Attachment processing**: Downloads and converts attachments from all sources
+- **Fallback handling**: Graceful handling when conversion fails
+- **Metadata preservation**: Original file information is maintained
+- **Performance optimized**: Configurable limits for size, timeouts, and throughput
+
+## <img src="/assets/icons/library/architect-icon.svg" width="32" alt="Data Flow"> Data Flow
+
+```text
+Data Sources → File Conversion → Text Processing → Chunking → Embedding → QDrant Storage
+	↓              ↓               ↓            ↓          ↓           ↓
+Git Repos      PDF/Office      Preprocessing   Smart     OpenAI      Vector DB
+Confluence     Images/Audio    Metadata        Chunks    Local       Collections
+JIRA           Archives        Extraction      Overlap   Custom      Incremental
+Public Docs    Documents       Filtering       Context   Providers   Updates
+Local Files    20+ Formats     Cleaning        Tokens    Endpoints   State Tracking
+```
+
+## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Search Icon"> Advanced Features
+
+### Incremental Updates
+
+- **Change detection** for all source types
+- **Efficient synchronization** with minimal reprocessing
+- **State persistence** across runs
+- **Conflict resolution** for concurrent updates
+
+### Performance Optimization
+
+- **Batch processing** for efficient embedding generation
+- **Rate limiting** to respect API limits
+- **Parallel processing** for multiple sources
+- **Memory management** for large datasets
+
+### Error Handling
+
+- **Robust retry mechanisms** for transient failures
+- **Graceful degradation** when sources are unavailable
+- **Detailed logging** for troubleshooting
+- **Recovery strategies** for partial failures
+
+Implementation details for tuning and troubleshooting are covered in:
+
+- **[Configuration reference](../../docs/users/configuration)**
+- **[Common workflows](../../docs/users/workflows/common-workflows.md)**
+- **[Troubleshooting guide](../../docs/users/troubleshooting)**
 
 ## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
 
@@ -20,13 +95,28 @@ pip install qdrant-loader
 qdrant-loader --help
 ```
 
+## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
+
+```bash
+# Initialize collection and metadata structures
+qdrant-loader init --workspace .
+
+# Ingest from configured projects/sources
+qdrant-loader ingest --workspace .
+
+# Check workspace status
+qdrant-loader project --workspace . status
+```
+
+For full workspace bootstrapping (.env, config.yaml, and source templates), see **[Quick start](../../docs/getting-started/quick-start.md)**.
+
 ## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
-- **[Monorepo overview](../../README.md)**
+- **[Monorepo overview](../../)**
 - **[Quick start](../../docs/getting-started/quick-start.md)**
 - **[Installation details](../../docs/getting-started/installation.md)**
-- **[Configuration reference](../../docs/users/configuration/README.md)**
-- **[Data source guides](../../docs/users/detailed-guides/data-sources/README.md)**
+- **[Configuration reference](../../docs/users/configuration)**
+- **[Data source guides](../../docs/users/detailed-guides/data-sources)**
 
 ## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 

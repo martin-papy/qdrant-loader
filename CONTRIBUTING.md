@@ -1,4 +1,4 @@
-# Contributing to QDrant Loader
+﻿# Contributing to QDrant Loader
 
 Thank you for your interest in contributing to QDrant Loader! This guide will help you get started with contributing to our monorepo ecosystem.
 

@@ -1,6 +1,6 @@
-# Configuration Reference
+﻿# Configuration Reference
 
-This section defines the canonical configuration entry points.
+This section provides comprehensive documentation for configuring QDrant Loader. Learn how to set up data sources, optimize performance, configure security, and customize behavior for your specific needs.
 
 ## Start here
 
@@ -8,6 +8,15 @@ This section defines the canonical configuration entry points.
 2. LLM providers and model mapping: [LLM Provider Guide](./llm-provider-guide.md)
 3. Full YAML schema: [Configuration File Reference](./config-file-reference.md)
 4. Security practices: [Security Considerations](./security-considerations.md)
+5. Runtime flags and setup modes: [CLI Commands](../cli-reference/commands.md)
+6. Workspace-vs-traditional config loading: [Workspace Mode](./workspace-mode.md)
+
+## Choose your path
+
+- New workspace in minutes: use [Quick Start](../../getting-started/quick-start.md)
+- Minimal first config: use [Basic Configuration](../../getting-started/basic-configuration.md)
+- Team or production rollout: use [Configuration File Reference](./config-file-reference.md) and [Security Considerations](./security-considerations.md)
+- Troubleshoot config or env issues: use [Troubleshooting](../troubleshooting/)
 
 ## Quick baseline
 
@@ -60,3 +69,11 @@ projects:
 - Keep provider-specific details only in [LLM Provider Guide](./llm-provider-guide.md).
 - Keep all variable definitions only in [Environment Variables Reference](./environment-variables.md).
 - Keep schema-level field details only in [Configuration File Reference](./config-file-reference.md).
+
+## Quick validation checklist
+
+- [ ] `qdrant-loader config --workspace .` loads without errors
+- [ ] Required env vars are set for your chosen provider
+- [ ] At least one project and one source are configured
+- [ ] QDrant URL and collection name are valid
+

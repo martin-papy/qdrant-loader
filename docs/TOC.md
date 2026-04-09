@@ -7,25 +7,24 @@
    - Basic Configuration (`docs/getting-started/basic-configuration.md`)
 
 1. **User Guides**
-   - Data Sources (`docs/users/detailed-guides/data-sources/README.md`)
-   - File Conversion (`docs/users/detailed-guides/file-conversion/README.md`)
-   - MCP Server (`docs/users/detailed-guides/mcp-server/README.md`)
-   - Workflows (`docs/users/workflows/README.md`)
-   - Troubleshooting (`docs/users/troubleshooting/README.md`)
+   - Data Sources (`docs/users/detailed-guides/data-sources/`)
+   - File Conversion (`docs/users/detailed-guides/file-conversion/`)
+   - MCP Server (`docs/users/detailed-guides/mcp-server/`)
+   - Workflows (`docs/users/workflows/`)
+   - Troubleshooting (`docs/users/troubleshooting/`)
 
 1. **Reference**
-   - CLI Reference (`docs/users/cli-reference/README.md`)
-   - Configuration Reference (`docs/users/configuration/README.md`)
+   - CLI Reference (`docs/users/cli-reference/`)
+   - Configuration Reference (`docs/users/configuration/`)
    - LLM Provider Guide (`docs/users/configuration/llm-provider-guide.md`)
 
 1. **Developer Docs**
-   - Architecture (`docs/developers/architecture/README.md`)
-   - Extending (`docs/developers/extending/README.md`)
-   - Testing (`docs/developers/testing/README.md`)
-   - Deployment (`docs/developers/deployment/README.md`)
-   - CLI Development (`docs/developers/cli/README.md`)
-   - Documentation Guide (`docs/developers/documentation/README.md`)
-   - Engineering Best Practices (`docs/developers/contributing/README.md`)
+   - Architecture (`docs/developers/architecture/`)
+   - Extending (`docs/developers/extending/`)
+   - Testing (`docs/developers/testing/`)
+   - Deployment (`docs/developers/deployment/`)
+   - CLI Development (`docs/developers/cli/`)
+   - Documentation Guide (`docs/developers/documentation/`)
 
 1. **Project & Community**
    - Contributing (`CONTRIBUTING.md`)
@@ -33,5 +32,5 @@
 
 ---
 
-Last Updated: 2026-04-07  
+Last Updated: 2026-04-09  
 Maintainer: Qdrant-loader Team
