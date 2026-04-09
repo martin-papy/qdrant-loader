@@ -163,12 +163,12 @@ For system-level architecture, see **[Architecture guide](../../docs/developers/
 
 ## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
-- **[Monorepo overview](../../)**
-- **[MCP server guide](../../docs/users/detailed-guides/mcp-server/)**
-- **[MCP setup and integration](../../docs/users/detailed-guides/mcp-server/setup-and-integration.md)**
-- **[MCP search capabilities](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)**
-- **[Environment variables reference](../../docs/users/configuration/environment-variables.md)**
+- **[Monorepo overview](../../)** - Repository layout, package responsibilities, and navigation entry points.
+- **[MCP server guide](../../docs/users/detailed-guides/mcp-server/)** - End-to-end overview of MCP usage with QDrant Loader.
+- **[MCP setup and integration](../../docs/users/detailed-guides/mcp-server/setup-and-integration.md)** - Tool-specific setup steps and integration configuration.
+- **[MCP search capabilities](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)** - Available search tools, parameters, and usage patterns.
+- **[Environment variables reference](../../docs/users/configuration/environment-variables.md)** - Required and optional runtime variables for server behavior.
 
 ## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
-See **[CONTRIBUTING](../../CONTRIBUTING.md)**.
+See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

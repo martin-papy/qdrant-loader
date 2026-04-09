@@ -112,12 +112,12 @@ For full workspace bootstrapping (.env, config.yaml, and source templates), see 
 
 ## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
-- **[Monorepo overview](../../)**
-- **[Quick start](../../docs/getting-started/quick-start.md)**
-- **[Installation details](../../docs/getting-started/installation.md)**
-- **[Configuration reference](../../docs/users/configuration)**
-- **[Data source guides](../../docs/users/detailed-guides/data-sources)**
+- **[Monorepo overview](../../)** - Project structure, packages, and top-level navigation across the repository.
+- **[Quick start](../../docs/getting-started/quick-start.md)** - Fast setup path from install to first successful ingestion.
+- **[Installation details](../../docs/getting-started/installation.md)** - Platform-specific install methods and dependency requirements.
+- **[Configuration reference](../../docs/users/configuration)** - Configuration model, options, and practical examples.
+- **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and more.
 
 ## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
-See **[CONTRIBUTING](../../CONTRIBUTING.md)**.
+See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

@@ -81,8 +81,8 @@ LLM_CHAT_MODEL=gpt-4o-mini
 
 Canonical configuration references:
 
-- LLM provider setup: [LLM Provider Guide](../users/configuration/llm-provider-guide.md)
-- Environment variables: [Environment Variables Reference](../users/configuration/environment-variables.md)
+- [LLM Provider Guide](../users/configuration/llm-provider-guide.md) - Pick the right provider profile and copy a known-good `.env` template.
+- [Environment Variables Reference](../users/configuration/environment-variables.md) - Validate required keys fast and avoid common startup/auth errors.
 
 ## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="Add minimal config"> Step 5. Add a minimal config and ingest
 
@@ -155,9 +155,9 @@ If results are returned from ingested content, setup is complete.
 
 ## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Next steps"> Next steps
 
-- Configuration deep dive: [Configuration Reference](../users/configuration/config-file-reference.md)
-- Data sources: [Data Sources Guide](../users/detailed-guides/data-sources/)
-- Troubleshooting: [Troubleshooting Guide](../users/troubleshooting/)
+- [Configuration Reference](../users/configuration/config-file-reference.md) - Tune chunking, embeddings, and project-level behavior for production use.
+- [Data Sources Guide](../users/detailed-guides/data-sources/) - Expand beyond local files with Git, Confluence, Jira, and public docs.
+- [Troubleshooting Guide](../users/troubleshooting/) - Diagnose ingestion/search issues quickly with practical fix paths.
 
 ## <img src="../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Completion checklist"> Quick Success Checklist
 

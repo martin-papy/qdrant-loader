@@ -45,7 +45,7 @@ logger.info("LLM ready")
 
 - Secrets (API keys/tokens) are redacted in logs
 - For MCP integrations, `MCP_DISABLE_CONSOLE_LOGGING=true` is recommended
-- Environment variable reference: [docs/users/configuration/environment-variables.md](../../docs/users/configuration/environment-variables.md)
+- Environment variable reference: [Environment Variables](../../docs/users/configuration/environment-variables.md) - Required and optional environment variables for setup, authentication, and runtime behavior.
 
 ## <img src="/assets/icons/library/error-icon.svg"  width="32" alt="Error Handling"> Error Handling
 
@@ -59,12 +59,12 @@ Catch provider-normalized exceptions from `qdrant_loader_core.llm.errors`:
 
 ## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
 
-- **[Monorepo overview](../../)**
-- **[Developer hub](../../docs/developers)**
-- **[Architecture hub](../../docs/developers/architecture)**
-- **[User configuration reference](../../docs/users/configuration/config-file-reference.md)**
-- **[User error troubleshooting](../../docs/users/troubleshooting/error-messages-reference.md)**
+- **[Monorepo overview](../../)** - Project structure, packages, and high-level navigation across the repository.
+- **[Developer hub](../../docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
+- **[Architecture hub](../../docs/developers/architecture)** - System design, component interactions, and core technical decisions.
+- **[User configuration reference](../../docs/users/configuration/config-file-reference.md)** - Complete config schema and practical setup examples.
+- **[User error troubleshooting](../../docs/users/troubleshooting/error-messages-reference.md)** - Common error messages, root causes, and recommended fixes.
 
 ## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
 
-See **[CONTRIBUTING](../../CONTRIBUTING.md).**
+See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

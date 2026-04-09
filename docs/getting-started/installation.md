@@ -1,6 +1,6 @@
 # Installation Guide
 
-Quick Start is now the primary setup flow.
+This guide walks you through installing QDrant Loader and its MCP server on your system. Choose the installation method that best fits your needs.
 
 Use this page only for platform-specific notes, dependency choices, and install troubleshooting.
 
