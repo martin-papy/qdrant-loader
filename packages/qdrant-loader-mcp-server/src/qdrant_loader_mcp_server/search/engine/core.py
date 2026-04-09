@@ -188,8 +188,15 @@ class SearchEngine:
                                 data = yaml.safe_load(f) or {}
                             llm = data.get("global", {}).get("llm") or {}
                             emb = llm.get("embeddings") or {}
-                            if isinstance(emb.get("vector_size"), int):
-                                vector_size = int(emb["vector_size"])
+                            raw_size = emb.get("vector_size")
+                            if raw_size is not None:
+                                if not isinstance(raw_size, int) or raw_size <= 0:
+                                    raise ValueError(
+                                        f"global.llm.embeddings.vector_size must be a positive integer, got: {raw_size!r}"
+                                    )
+                                vector_size = raw_size
+                    except ValueError:
+                        raise
                     except Exception:
                         vector_size = None
                 # 4) Deprecated fallback
