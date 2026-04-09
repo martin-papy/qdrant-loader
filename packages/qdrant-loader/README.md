@@ -125,8 +125,9 @@ To use **local models with Ollama**, ensure the following:
 
    ```bash
    ollama pull argus-ai/pplx-embed-v1-0.6b:fp32
+   ```
 
-🖥️ OpenAI (Cloud Models)
+#### 🖥️ OpenAI (Cloud Models)
 The system also supports OpenAI as a cloud-based LLM provider.
 #### Requirements: 
 **To use OpenAI, you must:**

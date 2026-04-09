@@ -319,7 +319,7 @@ global:
       embeddings: ${LLM_EMBEDDING_MODEL}
       chat: ${LLM_CHAT_MODEL}
     # Optional: Tokenizer and policies
-    tokenizer: none | # OpenAI: cl100k_base
+    tokenizer: none # OpenAI: cl100k_base
     request:
       timeout_s: 30
       max_retries: 3
