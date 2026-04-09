@@ -172,10 +172,27 @@ class SearchEngine:
                         vector_size = int(env_size)
                 except Exception:
                     vector_size = None
-                # 2) From resolved config object (preferred over re-reading raw file)
+                # 2) From resolved config object
                 if vector_size is None and openai_config.vector_size is not None:
                     vector_size = openai_config.vector_size
-                # 3) Deprecated fallback
+                # 3) From MCP_CONFIG file if present (fallback if config object missing vector_size)
+                if vector_size is None:
+                    try:
+                        from pathlib import Path
+
+                        cfg_path = os.getenv("MCP_CONFIG")
+                        if cfg_path and Path(cfg_path).exists():
+                            import yaml
+
+                            with open(cfg_path, encoding="utf-8") as f:
+                                data = yaml.safe_load(f) or {}
+                            llm = data.get("global", {}).get("llm") or {}
+                            emb = llm.get("embeddings") or {}
+                            if isinstance(emb.get("vector_size"), int):
+                                vector_size = int(emb["vector_size"])
+                    except Exception:
+                        vector_size = None
+                # 4) Deprecated fallback
                 if vector_size is None:
                     vector_size = 1536
                     try:
