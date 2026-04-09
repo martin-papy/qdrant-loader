@@ -1,5 +1,7 @@
 """Main orchestrator for the ingestion pipeline."""
 
+import traceback
+
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
@@ -7,6 +9,7 @@ from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 from .document_pipeline import DocumentPipeline
 from .source_filter import SourceFilter
@@ -163,7 +166,11 @@ class PipelineOrchestrator:
             return documents
 
         except Exception as e:
-            logger.error(f"❌ Pipeline orchestration failed: {e}", exc_info=True)
+            logger.error(
+                f"❌ Pipeline orchestration failed: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+                sanitized_traceback=sanitize_exception_message(traceback.format_exc()),
+            )
             raise
 
     async def _process_all_projects(
@@ -210,7 +217,11 @@ class PipelineOrchestrator:
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to process project {project_id}: {e}", exc_info=True
+                    f"Failed to process project {project_id}: {sanitize_exception_message(e)}",
+                    error_type=type(e).__name__,
+                    sanitized_traceback=sanitize_exception_message(
+                        traceback.format_exc()
+                    ),
                 )
                 # Continue processing other projects
                 continue
@@ -308,7 +319,10 @@ class PipelineOrchestrator:
                 return changes["new"] + changes["updated"]
 
         except Exception as e:
-            logger.error(f"Error during change detection: {e}", exc_info=True)
+            logger.error(
+                f"Error during change detection: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+            )
             raise
 
     async def _update_document_states(
@@ -338,4 +352,7 @@ class PipelineOrchestrator:
                 )
                 logger.debug(f"Updated document state for {doc.id}")
             except Exception as e:
-                logger.error(f"Failed to update document state for {doc.id}: {e}")
+                logger.error(
+                    f"Failed to update document state for {doc.id}: {sanitize_exception_message(e)}",
+                    error_type=type(e).__name__,
+                )

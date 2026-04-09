@@ -8,6 +8,7 @@ from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationE
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -84,9 +85,10 @@ class SourceProcessor:
                 # producing 0 documents.
                 raise
             except Exception as e:
+                safe_error = sanitize_exception_message(e)
                 logger.error(
-                    f"Failed to process {source_type} source {source_name}: {e}",
-                    exc_info=True,
+                    f"Failed to process {source_type} source {source_name}: {safe_error}",
+                    error_type=type(e).__name__,
                 )
                 # Continue processing other sources even if one fails
                 continue

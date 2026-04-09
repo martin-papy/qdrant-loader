@@ -5,6 +5,8 @@ from pathlib import Path
 
 from click.exceptions import ClickException
 
+from qdrant_loader.utils.sensitive import sanitize_exception_message
+
 
 def run_show_config(
     workspace: Path | None,
@@ -115,4 +117,5 @@ def run_show_config(
     except ClickException:
         raise
     except Exception as e:
-        raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
+        safe_error = sanitize_exception_message(e)
+        raise ClickException(f"Failed to display configuration: {safe_error}") from e

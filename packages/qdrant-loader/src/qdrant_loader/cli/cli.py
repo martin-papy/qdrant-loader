@@ -11,6 +11,7 @@ from click.utils import echo
 
 # async_command is needed at module level for @async_command decorator on commands.
 from qdrant_loader.cli.asyncio import async_command  # noqa: F401
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 # Heavy modules are lazy-imported to keep CLI startup fast.
 
@@ -210,8 +211,9 @@ def _load_config(
         elif isinstance(e, ClickException):
             raise e from None
         else:
-            _get_logger().error("config_load_failed", error=str(e))
-            raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+            safe_error = sanitize_exception_message(e) or type(e).__name__
+            _get_logger().error("config_load_failed", error=safe_error)
+            raise ClickException(f"Failed to load configuration: {safe_error}") from e
 
 
 def _check_settings():
@@ -263,8 +265,9 @@ async def _run_init(settings, force: bool) -> None:
                 collection=settings.qdrant_collection_name,
             )
     except Exception as e:
-        _get_logger().error("init_failed", error=str(e))
-        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+        safe_error = sanitize_exception_message(e) or type(e).__name__
+        _get_logger().error("init_failed", error=safe_error)
+        raise ClickException(f"Failed to initialize collection: {safe_error}") from e
 
 
 @cli.command()
@@ -456,8 +459,9 @@ def config(
     except Exception as e:
         from qdrant_loader.utils.logging import LoggingConfig
 
-        LoggingConfig.get_logger(__name__).error("config_failed", error=str(e))
-        raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
+        safe_error = sanitize_exception_message(e) or type(e).__name__
+        LoggingConfig.get_logger(__name__).error("config_failed", error=safe_error)
+        raise ClickException(f"Failed to display configuration: {safe_error}") from e
 
 
 # Add project management commands with lazy import
