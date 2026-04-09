@@ -717,7 +717,7 @@ class MarkdownProcessor:
                 icon_html = default_svg
 
             # Add the current heading with icon (if any)
-            toc_html += f'<li><a href="#' + heading_id + f'">{icon_html}{display_text}</a></li>\n'
+            toc_html += '<li><a href="#' + heading_id + f'">{icon_html}{display_text}</a></li>\n'
 
         # Close all remaining open lists
         while open_lists > 0:
