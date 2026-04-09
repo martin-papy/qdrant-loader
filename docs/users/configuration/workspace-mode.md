@@ -290,8 +290,8 @@ sources:
 
 ```yaml
 global:
-  # Processing configuration
-  processing:
+  # Chunking configuration
+  chunking:
     chunk_size: 1500
     chunk_overlap: 200
 

@@ -39,7 +39,7 @@ global:
       chat: "${LLM_CHAT_MODEL}"
     embeddings:
       vector_size: 1536
-  processing:
+  chunking:
     chunk_size: 1500
     chunk_overlap: 200
 
@@ -73,4 +73,3 @@ qdrant-loader ingest --workspace .
 - Validation and common config errors: [Troubleshooting](../users/troubleshooting/)
 - Multi-environment setup patterns: [Common Workflows](../users/workflows/common-workflows.md)
 - Performance tuning guidance: [Performance Issues](../users/troubleshooting/performance-issues.md)
-
