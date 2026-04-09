@@ -3,6 +3,7 @@
 import traceback
 
 from qdrant_loader.config import Settings, SourcesConfig
+from qdrant_loader.connectors.base import ConnectorConfigurationError
 from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.project_manager import ProjectManager
@@ -215,6 +216,17 @@ class PipelineOrchestrator:
                 logger.debug(
                     f"Processed {len(project_documents)} documents from project: {project_id}"
                 )
+            except ConnectorConfigurationError as e:
+                logger.error(
+                    f"Fatal configuration error in project {project_id}: "
+                    f"{sanitize_exception_message(e)}. "
+                    "Pipeline cannot continue — check connector settings.",
+                    error_type=type(e).__name__,
+                    sanitized_traceback=sanitize_exception_message(
+                        traceback.format_exc()
+                    ),
+                )
+                raise
             except Exception as e:
                 logger.error(
                     f"Failed to process project {project_id}: {sanitize_exception_message(e)}",

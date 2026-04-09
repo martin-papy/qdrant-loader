@@ -682,3 +682,28 @@ class TestPipelineOrchestrator:
         assert orchestrator.last_pipeline_result.successfully_processed_documents == {
             "doc1"
         }
+
+    @pytest.mark.asyncio
+    async def test_process_all_projects_raises_connector_configuration_error(self):
+        """ConnectorConfigurationError must NOT be swallowed in multi-project runs."""
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        project_manager = Mock()
+        project_manager.list_project_ids.return_value = ["p1", "p2"]
+        orchestrator = PipelineOrchestrator(
+            self.settings, self.components, project_manager=project_manager
+        )
+
+        async def mock_process_documents(**kwargs):
+            if kwargs["project_id"] == "p1":
+                raise ConnectorConfigurationError(
+                    "Authentication failed for Jira (HTTP 401)"
+                )
+            return []
+
+        with patch.object(
+            orchestrator, "process_documents", side_effect=mock_process_documents
+        ):
+            with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
+                with pytest.raises(ConnectorConfigurationError, match="401"):
+                    await orchestrator._process_all_projects()

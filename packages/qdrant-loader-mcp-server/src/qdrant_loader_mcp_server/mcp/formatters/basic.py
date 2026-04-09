@@ -25,7 +25,7 @@ class BasicResultFormatters:
         formatted_result += f"Source: {result.source_type}"
 
         text = result.text
-        contextual_content = getattr(result, "contextual_content", None)
+        contextual_content = result.contextual_content
         if isinstance(contextual_content, str) and contextual_content:
             formatted_result += f"\nContext: {contextual_content}\n"
             if isinstance(text, str) and text.startswith(contextual_content):

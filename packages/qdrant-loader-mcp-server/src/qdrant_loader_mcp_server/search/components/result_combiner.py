@@ -78,6 +78,7 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "contextual_content": result.get("contextual_content", ""),
                     "wrrf_score": self._scorer.vector_weight
                     * (1 / (rank + WRRF_CONSTANT)),
                 }
@@ -105,6 +106,7 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "contextual_content": result.get("contextual_content", ""),
                     "wrrf_score": self._scorer.keyword_weight
                     * (1 / (rank + WRRF_CONSTANT)),
                 }

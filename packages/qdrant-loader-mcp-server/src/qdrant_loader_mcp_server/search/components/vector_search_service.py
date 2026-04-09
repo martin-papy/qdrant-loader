@@ -293,6 +293,7 @@ class VectorSearchService:
                 "source": hit.payload.get("source", "") if hit.payload else "",
                 "created_at": hit.payload.get("created_at", "") if hit.payload else "",
                 "updated_at": hit.payload.get("updated_at", "") if hit.payload else "",
+                "contextual_content": hit.payload.get("contextual_content", "") if hit.payload else "",
             }
 
             extracted_results.append(extracted)

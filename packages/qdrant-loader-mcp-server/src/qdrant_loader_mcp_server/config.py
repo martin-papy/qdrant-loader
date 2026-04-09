@@ -288,6 +288,7 @@ class OpenAIConfig(BaseModel):
     api_key: str | None = None
     model: str = "text-embedding-3-small"
     chat_model: str = "gpt-3.5-turbo"
+    vector_size: int | None = None  # From global.llm.embeddings.vector_size or migrated from legacy
 
 
 class Config(BaseModel):

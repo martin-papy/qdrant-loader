@@ -9,11 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import os
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx
-import yaml
 
 if TYPE_CHECKING:
     from qdrant_client import AsyncQdrantClient
@@ -174,19 +172,9 @@ class SearchEngine:
                         vector_size = int(env_size)
                 except Exception:
                     vector_size = None
-                # 2) From MCP_CONFIG file if present
-                if vector_size is None:
-                    try:
-                        cfg_path = os.getenv("MCP_CONFIG")
-                        if cfg_path and Path(cfg_path).exists():
-                            with open(cfg_path, encoding="utf-8") as f:
-                                data = yaml.safe_load(f) or {}
-                            llm = data.get("global", {}).get("llm") or {}
-                            emb = llm.get("embeddings") or {}
-                            if isinstance(emb.get("vector_size"), int):
-                                vector_size = int(emb["vector_size"])
-                    except Exception:
-                        vector_size = None
+                # 2) From resolved config object (preferred over re-reading raw file)
+                if vector_size is None and openai_config.vector_size is not None:
+                    vector_size = openai_config.vector_size
                 # 3) Deprecated fallback
                 if vector_size is None:
                     vector_size = 1536
