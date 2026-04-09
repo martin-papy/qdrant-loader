@@ -364,6 +364,7 @@ def initialize_engine_components(
     enable_intent_adaptation: bool,
     search_config: Any | None,
     processing_config: Any | None,
+    embedding_model: str = "text-embedding-3-small",
 ) -> None:
     """Initialize all engine components and wire optional processing hooks."""
     # Analyzer and query processor
@@ -385,7 +386,7 @@ def initialize_engine_components(
         search_config=search_config,
         embeddings_provider=embeddings_provider,
         openai_client=openai_client,
-        embedding_model="text-embedding-3-small",
+        embedding_model=embedding_model,
     )
     keyword_search_service = create_keyword_search_service(
         qdrant_client=qdrant_client, collection_name=collection_name

@@ -141,7 +141,9 @@ global:
       tpm: 2000000
       concurrency: 5
     embeddings:
-      vector_size: 1024
+      vector_size: ${VECTOR_SIZE}
+      # MUST match model output dimension
+      # OpenAI: text-embedding-3-small → 1536
     # Optional provider-specific options
     provider_options:
       # For Azure: set azure_endpoint explicitly if different from base_url
