@@ -7,7 +7,7 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-<img src="/assets/icons/library/note-icon.svg" width="32" alt="Changelog"> **[Changelog v0.8.0](./CHANGELOG.md)** - Latest improvements and bug fixes
+<img src="/assets/icons/library/note-icon.svg" width="32" alt="Changelog"> **[Changelog v1.0.0](./CHANGELOG.md)** - Latest improvements and bug fixes
 
 <div align="left">
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
