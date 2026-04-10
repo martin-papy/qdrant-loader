@@ -626,10 +626,12 @@ class TestUpsertWorker:
             )
 
         # Count unique IDs only: 2 processed attempts, 1 unique stored point ID
+        # Second batch (doc2) has duplicate chunk ID with first batch (doc1) → doc2 is affected
         assert result.success_count == 1
-        assert result.error_count == 0
+        assert result.error_count == 1  # doc2 affected by cross-batch duplicate
         assert len(result.errors) == 1
         assert "duplicate chunk IDs" in result.errors[0]
+        assert "affecting 1 document(s)" in result.errors[0]
         mock_logger.warning.assert_called()
 
     @pytest.mark.asyncio
@@ -671,7 +673,10 @@ class TestUpsertWorker:
             )
 
         assert result.success_count == 1
-        assert result.error_count == 0
+        assert (
+            result.error_count == 2
+        )  # Both doc1 and doc2 affected by same-batch duplicates
         assert len(result.errors) == 1
         assert "same-batch duplicate occurrences" in result.errors[0]
+        assert "affecting 2 document(s)" in result.errors[0]
         mock_logger.warning.assert_called()

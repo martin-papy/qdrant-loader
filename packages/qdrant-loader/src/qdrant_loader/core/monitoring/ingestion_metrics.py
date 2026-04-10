@@ -199,25 +199,32 @@ class IngestionMonitor:
         metrics.errors = errors or []
         metrics.is_completed = True
 
-        # Calculate total chunks from explicit value first, fallback to tracked document metadata.
-        computed_total_chunks = 0
-        for doc_id, doc_metrics in self.ingestion_metrics.items():
-            if doc_id.startswith("doc_") and doc_metrics.metadata.get("num_chunks"):
-                computed_total_chunks += doc_metrics.metadata["num_chunks"]
+        # Calculate total chunks: explicit value → batch-scoped chunk_sizes → fallback to metadata
+        if total_chunks is not None:
+            effective_total_chunks = total_chunks
+        elif chunk_sizes:
+            # chunk_sizes contains individual chunk sizes in bytes; count chunks by length.
+            effective_total_chunks = len(chunk_sizes)
+        else:
+            # Fallback: sum only doc_* entries in self.ingestion_metrics
+            computed_total_chunks = 0
+            for doc_id, doc_metrics in self.ingestion_metrics.items():
+                if doc_id.startswith("doc_") and doc_metrics.metadata.get("num_chunks"):
+                    computed_total_chunks += doc_metrics.metadata["num_chunks"]
+            effective_total_chunks = computed_total_chunks
 
-        effective_total_chunks = (
-            total_chunks if total_chunks is not None else computed_total_chunks
-        )
-
-        # Calculate total size from explicit value first, fallback to tracked document metadata.
-        computed_total_size = 0
-        for doc_id, doc_metrics in self.ingestion_metrics.items():
-            if doc_id.startswith("doc_") and doc_metrics.metadata.get("size"):
-                computed_total_size += doc_metrics.metadata["size"]
-
-        effective_total_size = (
-            total_size_bytes if total_size_bytes is not None else computed_total_size
-        )
+        # Calculate total size: explicit value → batch-scoped document_sizes → fallback to metadata
+        if total_size_bytes is not None:
+            effective_total_size = total_size_bytes
+        elif document_sizes:
+            effective_total_size = sum(document_sizes)
+        else:
+            # Fallback: sum only doc_* entries in self.ingestion_metrics
+            computed_total_size = 0
+            for doc_id, doc_metrics in self.ingestion_metrics.items():
+                if doc_id.startswith("doc_") and doc_metrics.metadata.get("size"):
+                    computed_total_size += doc_metrics.metadata["size"]
+            effective_total_size = computed_total_size
 
         # Update processing stats
         self.processing_stats.update_rates(

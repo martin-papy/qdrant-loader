@@ -166,26 +166,44 @@ class UpsertWorker(BaseWorker):
                         new_chunk_ids = batch_chunk_ids - seen_chunk_ids
 
                         if duplicate_chunk_ids:
+                            # Identify documents with duplicate chunks
+                            duplicate_doc_ids = set()
+                            for chunk, _ in batch:
+                                if str(chunk.id) in duplicate_chunk_ids:
+                                    parent_doc = chunk.metadata.get("parent_document")
+                                    if parent_doc:
+                                        duplicate_doc_ids.add(parent_doc.id)
+
+                            # Remove documents with duplicate chunks from success
+                            successful_doc_ids -= duplicate_doc_ids
+
+                            # Count duplicate occurrences as errors
                             same_batch_duplicate_occurrences = sum(
                                 count - 1
                                 for count in batch_chunk_id_counts.values()
                                 if count > 1
                             )
+                            total_duplicate_impact = len(duplicate_doc_ids)
+
                             logger.warning(
                                 "Detected chunk ID collisions during upsert; existing points will be overwritten",
                                 duplicate_count=len(duplicate_chunk_ids),
                                 same_batch_duplicate_count=len(same_batch_duplicates),
                                 same_batch_duplicate_occurrences=same_batch_duplicate_occurrences,
                                 cross_batch_duplicate_count=len(cross_batch_duplicates),
+                                affected_documents=total_duplicate_impact,
                             )
                             errors.append(
                                 "Detected duplicate chunk IDs during upsert: "
                                 f"{len(cross_batch_duplicates)} cross-batch IDs and "
                                 f"{same_batch_duplicate_occurrences} same-batch duplicate occurrences "
-                                f"across {len(same_batch_duplicates)} IDs"
+                                f"across {len(same_batch_duplicates)} IDs affecting {total_duplicate_impact} document(s): "
+                                f"{sorted(duplicate_doc_ids)}"
                             )
+                            result.error_count += total_duplicate_impact
 
-                        seen_chunk_ids.update(batch_chunk_ids)
+                        # Only update seen_chunk_ids with non-duplicate IDs
+                        seen_chunk_ids.update(new_chunk_ids)
                         result.success_count += len(new_chunk_ids)
 
                     result.error_count += error_count
@@ -213,26 +231,44 @@ class UpsertWorker(BaseWorker):
                     new_chunk_ids = batch_chunk_ids - seen_chunk_ids
 
                     if duplicate_chunk_ids:
+                        # Identify documents with duplicate chunks
+                        duplicate_doc_ids = set()
+                        for chunk, _ in batch:
+                            if str(chunk.id) in duplicate_chunk_ids:
+                                parent_doc = chunk.metadata.get("parent_document")
+                                if parent_doc:
+                                    duplicate_doc_ids.add(parent_doc.id)
+
+                        # Remove documents with duplicate chunks from success
+                        successful_doc_ids -= duplicate_doc_ids
+
+                        # Count duplicate occurrences as errors
                         same_batch_duplicate_occurrences = sum(
                             count - 1
                             for count in batch_chunk_id_counts.values()
                             if count > 1
                         )
+                        total_duplicate_impact = len(duplicate_doc_ids)
+
                         logger.warning(
                             "Detected chunk ID collisions during upsert; existing points will be overwritten",
                             duplicate_count=len(duplicate_chunk_ids),
                             same_batch_duplicate_count=len(same_batch_duplicates),
                             same_batch_duplicate_occurrences=same_batch_duplicate_occurrences,
                             cross_batch_duplicate_count=len(cross_batch_duplicates),
+                            affected_documents=total_duplicate_impact,
                         )
                         errors.append(
                             "Detected duplicate chunk IDs during upsert: "
                             f"{len(cross_batch_duplicates)} cross-batch IDs and "
                             f"{same_batch_duplicate_occurrences} same-batch duplicate occurrences "
-                            f"across {len(same_batch_duplicates)} IDs"
+                            f"across {len(same_batch_duplicates)} IDs affecting {total_duplicate_impact} document(s): "
+                            f"{sorted(duplicate_doc_ids)}"
                         )
+                        result.error_count += total_duplicate_impact
 
-                    seen_chunk_ids.update(batch_chunk_ids)
+                    # Only update seen_chunk_ids with non-duplicate IDs
+                    seen_chunk_ids.update(new_chunk_ids)
                     result.success_count += len(new_chunk_ids)
 
                 result.error_count += error_count
