@@ -41,6 +41,7 @@ class HybridSearchEngine(HybridEngineAPI):
         enable_intent_adaptation: bool = True,
         search_config: SearchConfig | None = None,
         processing_config: HybridProcessingConfig | None = None,
+        embedding_model: str = "text-embedding-3-small",
     ):
         """Initialize the hybrid search service.
 
@@ -67,6 +68,7 @@ class HybridSearchEngine(HybridEngineAPI):
         self.keyword_weight = keyword_weight
         self.metadata_weight = metadata_weight
         self.min_score = min_score
+        self.embedding_model = embedding_model
         self.logger = LoggingConfig.get_logger(__name__)
 
         # Centralized initialization via builder
@@ -87,6 +89,7 @@ class HybridSearchEngine(HybridEngineAPI):
             enable_intent_adaptation=enable_intent_adaptation,
             search_config=search_config,
             processing_config=effective_processing_config,
+            embedding_model=embedding_model,
         )
 
     @property
