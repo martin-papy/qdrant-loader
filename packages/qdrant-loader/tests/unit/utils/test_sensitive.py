@@ -83,6 +83,22 @@ def test_redact_sensitive_data_masks_non_bearer_authorization_equals() -> None:
     assert "authorization=**" in redacted
 
 
+def test_redact_sensitive_data_masks_quoted_authorization_with_space() -> None:
+    raw = 'Authorization: "Basic user:pass with space"'
+    redacted = redact_sensitive_data(raw)
+
+    assert "user:pass with space" not in redacted
+    assert "Authorization:**" in redacted
+
+
+def test_redact_sensitive_data_masks_single_quoted_authorization() -> None:
+    raw = "authorization: 'token my secret value'"
+    redacted = redact_sensitive_data(raw)
+
+    assert "my secret value" not in redacted
+    assert "authorization:**" in redacted
+
+
 def test_sanitize_exception_message_falls_back_to_exception_type_on_empty() -> None:
     safe = sanitize_exception_message(Exception())
 

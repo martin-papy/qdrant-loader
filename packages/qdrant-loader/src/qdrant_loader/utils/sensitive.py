@@ -10,7 +10,7 @@ _SENSITIVE_FIELD_RE = re.compile(
 _INPUT_VALUE_PREFIX_RE = re.compile(r"input_value\s*=\s*", re.IGNORECASE)
 _BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*bearer\s+)([^\s,]+)")
 _AUTHORIZATION_RE = re.compile(
-    r"(?i)(authorization\s*[:=]\s*)(?:(?:bearer|basic|token)\s+)?[^\s,]+"
+    r'(?i)(authorization\s*[:=]\s*)(?:(?:bearer|basic|token)\s+)?(?:"[^"]*"|\'[^\']*\'|[^\s,]+)'
 )
 _OPENAI_KEY_RE = re.compile(r"\bsk-[a-zA-Z0-9\-_]{12,}\b")
 
