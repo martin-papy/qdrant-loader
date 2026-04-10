@@ -65,3 +65,19 @@ def test_sanitize_exception_message_masks_jira_config_repr() -> None:
 
     assert "ATATT-very-secret-token" not in safe
     assert "token=**" in safe
+
+
+def test_redact_sensitive_data_masks_non_bearer_authorization_colon() -> None:
+    raw = "Authorization: Basic dXNlcjpwYXNz"
+    redacted = redact_sensitive_data(raw)
+
+    assert "dXNlcjpwYXNz" not in redacted
+    assert "Authorization:**" in redacted
+
+
+def test_redact_sensitive_data_masks_non_bearer_authorization_equals() -> None:
+    raw = "authorization=plain-secret-value"
+    redacted = redact_sensitive_data(raw)
+
+    assert "plain-secret-value" not in redacted
+    assert "authorization=**" in redacted
