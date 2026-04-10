@@ -682,3 +682,54 @@ class TestPipelineOrchestrator:
         assert orchestrator.last_pipeline_result.successfully_processed_documents == {
             "doc1"
         }
+
+    @pytest.mark.asyncio
+    async def test_process_all_projects_continues_on_connector_configuration_error(
+        self,
+    ):
+        """ConnectorConfigurationError should be logged and tracked, not crash the pipeline.
+
+        Other projects must continue processing. The error is recorded in
+        aggregated_result so callers can report it.
+        """
+        from qdrant_loader.connectors.base import ConnectorConfigurationError
+
+        project_manager = Mock()
+        project_manager.list_project_ids.return_value = ["p1", "p2"]
+        orchestrator = PipelineOrchestrator(
+            self.settings, self.components, project_manager=project_manager
+        )
+
+        async def mock_process_documents(**kwargs):
+            if kwargs["project_id"] == "p1":
+                raise ConnectorConfigurationError(
+                    "Authentication failed for Jira (HTTP 401)"
+                )
+            return []
+
+        with patch.object(
+            orchestrator, "process_documents", side_effect=mock_process_documents
+        ):
+            with patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_log:
+                # Should NOT raise — continues to p2
+                result = await orchestrator._process_all_projects()
+
+                # p1 failed but p2 still processed
+                assert isinstance(result, list)
+
+                # Config error tracked in aggregated result errors list
+                assert any(
+                    "Configuration error" in e and "p1" in e
+                    for e in orchestrator.last_pipeline_result.errors
+                )
+
+                # Logger called with error for p1
+                mock_log.error.assert_called()
+                error_call = mock_log.error.call_args_list[0]
+                assert "p1" in str(error_call)
+
+                # Summary warning logged (at least 1 failed project)
+                warning_calls = [
+                    str(c) for c in mock_log.warning.call_args_list
+                ]
+                assert any("failed" in w for w in warning_calls)

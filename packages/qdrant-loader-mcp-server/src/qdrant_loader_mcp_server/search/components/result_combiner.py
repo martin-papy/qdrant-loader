@@ -78,6 +78,7 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "contextual_content": result.get("contextual_content", ""),
                     "wrrf_score": self._scorer.vector_weight
                     * (1 / (rank + WRRF_CONSTANT)),
                 }
@@ -87,6 +88,14 @@ class ResultCombiner:
             text = result["text"]
             if text in combined_dict:
                 combined_dict[text]["keyword_score"] = result["score"]
+                # Backfill contextual_content if vector entry was empty
+                if (
+                    not combined_dict[text].get("contextual_content")
+                    and result.get("contextual_content")
+                ):
+                    combined_dict[text]["contextual_content"] = result[
+                        "contextual_content"
+                    ]
                 # Sum
                 combined_dict[text]["wrrf_score"] += self._scorer.keyword_weight * (
                     1 / (rank + WRRF_CONSTANT)
@@ -105,6 +114,7 @@ class ResultCombiner:
                     "source": result.get("source", ""),
                     "created_at": result.get("created_at", ""),
                     "updated_at": result.get("updated_at", ""),
+                    "contextual_content": result.get("contextual_content", ""),
                     "wrrf_score": self._scorer.keyword_weight
                     * (1 / (rank + WRRF_CONSTANT)),
                 }

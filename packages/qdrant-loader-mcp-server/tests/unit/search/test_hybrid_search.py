@@ -2064,3 +2064,38 @@ def test_extract_metadata_info_comprehensive(hybrid_search):
     assert info["original_file_type"] == "docx"
     assert info["is_excel_sheet"] is False
     assert info["chunk_index"] == 1
+
+
+# ============================================================================
+# contextual_content propagation test
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_contextual_content_propagates_through_search(
+    mock_qdrant_client, mock_openai_client
+):
+    """contextual_content must flow from Qdrant payload through WRRF merge to HybridSearchResult."""
+    # Patch payloads to include contextual_content
+    ctx = "This chunk is about authentication flow for the Jira connector."
+    for point in mock_qdrant_client.query_points.return_value.points:
+        point.payload["contextual_content"] = ctx
+    for point, _ in [mock_qdrant_client.scroll.return_value]:
+        if isinstance(point, list):
+            for p in point:
+                p.payload["contextual_content"] = ctx
+
+    engine = HybridSearchEngine(
+        qdrant_client=mock_qdrant_client,
+        openai_client=mock_openai_client,
+        collection_name="test_collection",
+    )
+    engine._get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3] * 512)
+
+    results = await engine.search("authentication", limit=5)
+
+    assert len(results) > 0
+    assert isinstance(results[0], HybridSearchResult)
+    # The key assertion: contextual_content must not be None
+    assert results[0].contextual_content is not None
+    assert "authentication" in results[0].contextual_content
