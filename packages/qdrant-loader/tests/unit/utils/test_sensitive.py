@@ -81,3 +81,17 @@ def test_redact_sensitive_data_masks_non_bearer_authorization_equals() -> None:
 
     assert "plain-secret-value" not in redacted
     assert "authorization=**" in redacted
+
+
+def test_sanitize_exception_message_falls_back_to_exception_type_on_empty() -> None:
+    safe = sanitize_exception_message(Exception())
+
+    assert safe == "Exception"
+
+
+def test_sanitize_exception_message_falls_back_to_placeholder_for_empty_string() -> (
+    None
+):
+    safe = sanitize_exception_message("")
+
+    assert safe == "<redacted>"

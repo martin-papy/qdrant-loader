@@ -221,6 +221,20 @@ class TestPrintConfigErrorValueError:
         assert "JIRA_TOKEN=**" in output
         assert "OPENAI_API_KEY=**" in output
 
+    def test_print_config_error_value_error_uses_raw_message_for_suggestion(self):
+        """Suggestion matching should use raw error text, not the sanitized display text."""
+        error = ValueError("source is required")
+
+        with patch(
+            "qdrant_loader.config.error_formatter.sanitize_exception_message",
+            return_value="**",
+        ):
+            output = _capture_print_config_error(error)
+
+        assert "Suggestion:" in output
+        assert "Add at least one source under" in output
+        assert "sources:" in output
+
 
 # ---------------------------------------------------------------------------
 # print_config_error – generic / unknown exception type

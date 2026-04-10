@@ -34,7 +34,7 @@ def redact_processor(
         "password",
     }
     sensitive_key_pattern = re.compile(
-        r"(?i)(?:^|[_-]|(?<=[a-z]))(token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|authorization)(?:$|[_-]|(?=[A-Z]))"
+        r"(?:^|[_-]|(?<=[a-z]))(?i:token|secret|password|api[_-]?key|access[_-]?key|private[_-]?key|authorization)(?:$|[_-]|(?=[A-Z]))"
     )
 
     def is_sensitive_key(key: Any) -> bool:

@@ -126,3 +126,30 @@ def test_redact_processor_masks_pattern_sensitive_keys():
     assert "***REDACTED***" in out["jira_token"]
     assert "***REDACTED***" in out["nested"]["client_secret"]
     assert out["ok"] == "safe"
+
+
+def test_redact_processor_camelcase_false_positives_not_redacted():
+    """Keys that contain a sensitive keyword as a substring but not at a word
+    boundary should NOT be redacted (camelCase boundary guards must be
+    case-sensitive)."""
+    logging_mod = import_module("qdrant_loader_core.logging")
+    redact = logging_mod.redact_processor
+
+    event = {
+        # "secret" is a prefix of "secretion" — no uppercase follows, so no match
+        "secretionRate": "safe-value",
+        # "apiKey" is a substring of "notapiKeyish" — no uppercase follows "ish"
+        "notapiKeyish": "safe-value",
+        # Sanity-check: genuine sensitive camelCase keys must still be redacted
+        "apiKey": "sk-ABCDEFGHIJKLMNOP",
+        "jiraApiKey": "ATATT-super-secret",
+    }
+
+    out = redact(None, "info", event)
+
+    # False-positives must pass through untouched
+    assert out["secretionRate"] == "safe-value", "secretionRate should not be redacted"
+    assert out["notapiKeyish"] == "safe-value", "notapiKeyish should not be redacted"
+    # True sensitive keys must still be masked
+    assert "***REDACTED***" in out["apiKey"], "apiKey should be redacted"
+    assert "***REDACTED***" in out["jiraApiKey"], "jiraApiKey should be redacted"

@@ -122,4 +122,12 @@ def redact_sensitive_data(text: str, mask: str = "**") -> str:
 
 def sanitize_exception_message(error: Exception | str, mask: str = "**") -> str:
     """Convert an exception or message string to a safe, redacted message."""
-    return redact_sensitive_data(str(error), mask=mask)
+    redacted = redact_sensitive_data(str(error), mask=mask)
+
+    if redacted and redacted.strip():
+        return redacted
+
+    if isinstance(error, Exception):
+        return error.__class__.__name__
+
+    return "<redacted>"
