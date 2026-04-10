@@ -202,7 +202,7 @@ class IngestionMonitor:
         # Calculate total chunks: explicit value → batch-scoped chunk_sizes → fallback to metadata
         if total_chunks is not None:
             effective_total_chunks = total_chunks
-        elif chunk_sizes:
+        elif chunk_sizes is not None:
             # chunk_sizes contains individual chunk sizes in bytes; count chunks by length.
             effective_total_chunks = len(chunk_sizes)
         else:
@@ -216,7 +216,7 @@ class IngestionMonitor:
         # Calculate total size: explicit value → batch-scoped document_sizes → fallback to metadata
         if total_size_bytes is not None:
             effective_total_size = total_size_bytes
-        elif document_sizes:
+        elif document_sizes is not None:
             effective_total_size = sum(document_sizes)
         else:
             # Fallback: sum only doc_* entries in self.ingestion_metrics
