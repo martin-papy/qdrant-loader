@@ -234,6 +234,8 @@ class SearchEngine:
             self._strategy_selector = StrategySelector(self)
 
             self.logger.info("Successfully connected to Qdrant", url=config.url)
+        except ValueError:
+            raise
         except Exception as e:
             self.logger.error(
                 "Failed to connect to Qdrant server",
@@ -244,7 +246,7 @@ class SearchEngine:
             raise RuntimeError(
                 f"Failed to connect to Qdrant server at {config.url}. "
                 "Please ensure Qdrant is running and accessible."
-            ) from None  # Suppress the original exception
+            ) from e
 
     async def cleanup(self) -> None:
         """Cleanup resources."""
