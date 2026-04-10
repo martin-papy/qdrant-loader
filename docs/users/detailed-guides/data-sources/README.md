@@ -2,7 +2,7 @@
 
 QDrant Loader supports multiple data sources to help you index and search across all your organization's knowledge. This guide provides an overview of all supported sources and links to detailed configuration guides.
 
-## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Supported Data Sources
+## 🎯 Supported Data Sources
 
 ### 📁 [Git Repositories](git-repositories.md)
 
@@ -147,7 +147,7 @@ Crawl and index public documentation websites, API references, and external know
 
 ---
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> File Conversion
+## 🔧 File Conversion
 
 All data sources that handle files benefit from QDrant Loader's comprehensive [file conversion capabilities](../file-conversion/):
 
@@ -168,7 +168,7 @@ All data sources that handle files benefit from QDrant Loader's comprehensive [f
 - **Metadata Extraction**: Preserve file metadata and properties
 - **Batch Processing**: Efficient processing of large file collections
 
-## <img src="../../../../../assets/icons/library/setting-icon.svg" width="32" alt="Setting icon"> Configuration Overview
+## ⚙️ Configuration Overview
 
 ### Multi-Project Configuration Structure
 
@@ -281,7 +281,7 @@ export JIRA_EMAIL="user@company.com"
 export JIRA_TOKEN="ATATT3xFfGF0xxxxxxxxxxxx"
 ```
 
-## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Quick Start Examples
+## 🚀 Quick Start Examples
 
 ### Development Team
 
@@ -484,7 +484,7 @@ qdrant-loader ingest --workspace . --project my-project --source-type git
 qdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
 ```
 
-## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Test icon"> Monitoring and Management
+## 🧪 Monitoring and Management
 
 ### Configuration Validation
 
@@ -541,7 +541,7 @@ projects:
             - "**/*.txt"
 ```
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -607,7 +607,7 @@ qdrant-loader config --help
 qdrant-loader ingest --help
 ```
 
-## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Detailed Guides
+## 📚 Detailed Guides
 
 Each data source has comprehensive documentation covering:
 

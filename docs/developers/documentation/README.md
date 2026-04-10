@@ -2,11 +2,11 @@
 
 Welcome to the QDrant Loader documentation maintenance guide! This section provides comprehensive guidance for developers on how to properly update, maintain, and contribute to the project documentation.
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Overview
+## 🎯 Overview
 
 QDrant Loader uses a comprehensive documentation system designed to serve both end users and developers. As a developer, you play a crucial role in keeping this documentation accurate, up-to-date, and useful.
 
-## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Bock icon"> Documentation Architecture
+## 📚 Documentation Architecture
 
 ### Structure Overview
 
@@ -84,7 +84,7 @@ pip install qdrant-loader
 # Configure and run
 ```
 
-## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Reload icon"> Documentation Maintenance Workflow
+## 🔄 Documentation Maintenance Workflow
 
 ### When to Update Documentation
 
@@ -304,7 +304,7 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
    - Identify confusing sections
    - Improve navigation and structure
 
-## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Test icon"> Documentation Metrics
+## 🧪 Documentation Metrics
 
 ### Quality Indicators
 
@@ -338,7 +338,7 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 - [ ] **Enhancement**: Add video tutorials
 ```
 
-## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Best Practices
+## 🚀 Best Practices
 
 ### For Feature Developers
 
@@ -364,7 +364,7 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 4. **Validate audience** - Ensure docs match the intended audience
 5. **Verify navigation** - Check that docs are discoverable
 
-## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Resources and Tools
+## 📚 Resources and Tools
 
 ### Documentation Tools
 
@@ -395,7 +395,7 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 
 ---
 
-## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Note icon"> Quick Reference
+## 📝 Quick Reference
 
 ### Common Documentation Tasks
 

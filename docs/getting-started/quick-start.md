@@ -2,7 +2,7 @@
 
 Get up and running with QDrant Loader in 5 minutes! This guide walks you through your first document ingestion and AI tool integration.
 
-## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="What You'll Accomplish"> What You'll Accomplish
+## 🎯 What You'll Accomplish
 
 In one flow, you will:
 
@@ -14,13 +14,13 @@ In one flow, you will:
 
 Estimated time: 10 to 15 minutes.
 
-## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Prerequisites"> Prerequisites
+## 🔧 Prerequisites
 
 - Python 3.12+
 - Docker (or an existing QDrant instance)
 - One LLM provider key (OpenAI, Azure OpenAI, Ollama, or OpenAI-compatible)
 
-## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Install packages"> Step 1. Install packages
+## 🚀 Step 1. Install packages
 
 ```bash
 pip install qdrant-loader qdrant-loader-mcp-server
@@ -35,7 +35,7 @@ mcp-qdrant-loader --version
 
 If you need OS-specific install help, see [Installation Guide](./installation.md).
 
-## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="Start QDrant"> Step 2. Start QDrant
+## 📄 Step 2. Start QDrant
 
 Local Docker option:
 
@@ -45,7 +45,7 @@ docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 Or use QDrant Cloud and copy URL/API key.
 
-## <img src="../../../assets/icons/library/robot-icon.svg" width="32" alt="Create workspace"> Step 3. Create workspace
+## 🤖 Step 3. Create workspace
 
 Recommended (wizard):
 
@@ -64,7 +64,7 @@ qdrant-loader init --workspace .
 
 Need more control over prompts and templates? See [CLI setup command options](../users/cli-reference/commands.md).
 
-## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Configure environment"> Step 4. Configure environment
+## 🔧 Step 4. Configure environment
 
 Create or edit `.env`:
 
@@ -84,7 +84,7 @@ Canonical configuration references:
 - [LLM Provider Guide](../users/configuration/llm-provider-guide.md) - Pick the right provider profile and copy a known-good `.env` template.
 - [Environment Variables Reference](../users/configuration/environment-variables.md) - Validate required keys fast and avoid common startup/auth errors.
 
-## <img src="../../../assets/icons/library/file-icon.svg" width="32" alt="Add minimal config"> Step 5. Add a minimal config and ingest
+## 📄 Step 5. Add a minimal config and ingest
 
 Create `config.yaml`:
 
@@ -129,7 +129,7 @@ qdrant-loader ingest --workspace .
 
 For Git/Confluence/Jira and advanced source filters, see [Data Sources Guide](../users/detailed-guides/data-sources/).
 
-## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Start MCP server"> Step 6. Start MCP server
+## 📚 Step 6. Start MCP server
 
 ```bash
 mcp-qdrant-loader
@@ -145,7 +145,7 @@ Detailed integration guides:
 - **[Setup and Integration Guide](../users/detailed-guides/mcp-server/setup-and-integration.md)** - Connect MCP in Cursor, Claude Desktop, and other clients step by step.
 - **[Search Capabilities Guide](../users/detailed-guides/mcp-server/search-capabilities.md)** - Learn each search tool, parameters, and practical query patterns.
 
-## <img src="../../../assets/icons/library/search-icon.svg" width="32" alt="Validate"> Step 7. Validate in your AI tool
+## 🔍 Step 7. Validate in your AI tool
 
 In Cursor/Claude/Windsurf, run a query like:
 
@@ -153,13 +153,13 @@ In Cursor/Claude/Windsurf, run a query like:
 
 If results are returned from ingested content, setup is complete.
 
-## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Next steps"> Next steps
+## 🎯 Next steps
 
 - [Configuration Reference](../users/configuration/config-file-reference.md) - Tune chunking, embeddings, and project-level behavior for production use.
 - [Data Sources Guide](../users/detailed-guides/data-sources/) - Expand beyond local files with Git, Confluence, Jira, and public docs.
 - [Troubleshooting Guide](../users/troubleshooting/) - Diagnose ingestion/search issues quickly with practical fix paths.
 
-## <img src="../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Completion checklist"> Quick Success Checklist
+## 🧪 Quick Success Checklist
 
 - [ ] `qdrant-loader --version` and `mcp-qdrant-loader --version` return successfully
 - [ ] `qdrant-loader ingest --workspace .` finishes without errors

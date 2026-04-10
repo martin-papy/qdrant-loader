@@ -6,14 +6,14 @@
 
 A Model Context Protocol (MCP) server that brings advanced RAG search to AI development tools. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
-## <img src="/assets/icons/library/target-icon.svg" width="32" alt="What It Does"> What It Does
+## 🎯 What It Does
 
 - **Intelligent search** via semantic, hierarchy-aware, and attachment-focused tools
 - **Seamless integration** with Cursor, Windsurf, Claude Desktop, and any MCP-compatible tool
 - **Context understanding** — document hierarchies, file relationships, and rich metadata
 - **Streaming responses** for fast, real-time search results
 
-## <img src="/assets/icons/library/plug-icon.svg" width="32" alt="Supported AI Tools"> Supported AI Tools
+## 🔌 Supported AI Tools
 
 | Tool                | Status          | Integration Features                                                         |
 | ------------------- | --------------- | ---------------------------------------------------------------------------- |
@@ -24,7 +24,7 @@ A Model Context Protocol (MCP) server that brings advanced RAG search to AI deve
 
 For per-tool JSON configuration, see **[MCP setup and integration](../../docs/users/detailed-guides/mcp-server/setup-and-integration.md)**.
 
-## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Search Tools"> Search Tools
+## 🔍 Search Tools
 
 ### Core search tools
 
@@ -40,7 +40,7 @@ For per-tool JSON configuration, see **[MCP setup and integration](../../docs/us
 
 For full parameter references and usage examples, see **[MCP search capabilities](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)**.
 
-## <img src="/assets/icons/library/package-icon.svg" width="32" alt="Installation"> Installation
+## 📦 Installation
 
 ```bash
 pip install qdrant-loader-mcp-server
@@ -52,7 +52,7 @@ For the full ingestion + MCP pipeline:
 pip install qdrant-loader qdrant-loader-mcp-server
 ```
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
+## 🚀 Quick Start
 
 ### 1. Set environment variables
 
@@ -81,7 +81,7 @@ mcp-qdrant-loader --help
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | mcp-qdrant-loader
 ```
 
-## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Configuration"> Configuration
+## 🔧 Configuration
 
 ### Environment variables
 
@@ -122,7 +122,7 @@ export SEARCH_MAX_CONCURRENT=2
 mcp-qdrant-loader --transport http --workers 4
 ```
 
-## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Usage Examples"> Usage Examples
+## 🎯 Usage Examples
 
 Ask your AI assistant in natural language:
 
@@ -131,7 +131,7 @@ Ask your AI assistant in natural language:
 - _"Find all PDF attachments related to database schema"_
 - _"Show me the hierarchy of pages under the Architecture section"_
 
-## <img src="/assets/icons/library/architect-icon.svg" width="32" alt="Architecture"> Architecture
+## 🏗️ Architecture
 
 ### MCP Protocol Implementation
 
@@ -161,7 +161,7 @@ Other     Streaming   Ranking        Attachments      Source Attribution
 
 For system-level architecture, see **[Architecture guide](../../docs/developers/architecture/)**.
 
-## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
+## 📚 Canonical Documentation
 
 - **[Monorepo overview](../../)** - Repository layout, package responsibilities, and navigation entry points.
 - **[MCP server guide](../../docs/users/detailed-guides/mcp-server/)** - End-to-end overview of MCP usage with QDrant Loader.
@@ -169,6 +169,6 @@ For system-level architecture, see **[Architecture guide](../../docs/developers/
 - **[MCP search capabilities](../../docs/users/detailed-guides/mcp-server/search-capabilities.md)** - Available search tools, parameters, and usage patterns.
 - **[Environment variables reference](../../docs/users/configuration/environment-variables.md)** - Required and optional runtime variables for server behavior.
 
-## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
+## 🤝 Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

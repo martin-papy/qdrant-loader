@@ -1,21 +1,21 @@
-# <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="User Documentation"> User Documentation
+# 📚 User Documentation
 
 Welcome to the QDrant Loader user documentation! This section provides comprehensive guides for using QDrant Loader effectively, whether you're a content creator, researcher, system administrator, or anyone who needs to work with technical content and AI-powered tools.
 
 If you are new, start with the [Quick Start Guide](../getting-started/quick-start.md).
 
-## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Main Sections
+## 🎯 Main Sections
 
 This documentation is organized to help you accomplish specific tasks and understand all the features available to you:
 
-### <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Detailed Guides
+### 📚 Detailed Guides
 
 - **[Data Sources](./detailed-guides/data-sources/)** - Complete guides for all supported data sources
 - **[File Conversion](./detailed-guides/file-conversion/)** - Everything about processing different file types
 - **[MCP Server](./detailed-guides/mcp-server/)** - AI development integration and search capabilities
 - **[Workflows](./workflows/)** - Common, CI/CD, content management, development, and team collaboration
 
-### <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration
+### 🔧 Configuration
 
 - **[Configuration Reference](./configuration/)** - Complete configuration options and examples
 - **[Environment Variables](./configuration/environment-variables.md)** - All environment settings explained
@@ -25,12 +25,12 @@ This documentation is organized to help you accomplish specific tasks and unders
 - **[CLI Reference](./cli-reference/)** - Complete command-line interface documentation
 - **[Commands](./cli-reference/commands.md)** - All commands with examples and options
 
-### <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Troubleshooting
+### 🔧 Troubleshooting
 
 - **[Troubleshooting Guide](./troubleshooting/)** - Solutions to common problems
 - **[Common Issues](./troubleshooting/common-issues.md)** - FAQ and quick fixes
 
-## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Quick Navigation
+## 🚀 Quick Navigation
 
 ### I want to
 
@@ -42,7 +42,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 - [Local files](./detailed-guides/data-sources/local-files.md) - Documents and files on your system
 - [Public documentation](./detailed-guides/data-sources/public-docs.md) - External websites and docs
 
-#### <img src="../../../assets/icons/library/note-icon.svg" width="32" alt="note icon"> **Process different file types**
+#### 📝 **Process different file types**
 
 - [File conversion guide](./detailed-guides/file-conversion/) - Comprehensive file type support
 
@@ -51,16 +51,16 @@ This documentation is organized to help you accomplish specific tasks and unders
 - [Search capabilities](./detailed-guides/mcp-server/search-capabilities.md) - Semantic and intelligent search
 - [Hierarchy navigation](./detailed-guides/mcp-server/hierarchy-search.md) - Document structure understanding
 
-#### <img src="../../../assets/icons/library/setting-icon.svg" width="32" alt="Setting icon"> **Configure and optimize**
+#### ⚙️ **Configure and optimize**
 
 - [Environment setup](./configuration/environment-variables.md) - Required and optional settings
 - [Security considerations](./configuration/security-considerations.md) - API keys and permissions
 
-#### <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> **Solve problems**
+#### 🔧 **Solve problems**
 
 - [Common issues](./troubleshooting/common-issues.md) - Quick solutions to frequent problems
 
-## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> User Personas and Workflows
+## 🎯 User Personas and Workflows
 
 ### 📝 Content Creators and Technical Writers
 
@@ -98,7 +98,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 1. [Configuration reference](./configuration/) - Complete setup guide
 2. [Security considerations](./configuration/security-considerations.md) - Secure deployment
 
-## <img src="../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Test icon"> Feature Coverage
+## 🧪 Feature Coverage
 
 ### Data Sources
 
