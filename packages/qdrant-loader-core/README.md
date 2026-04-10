@@ -6,146 +6,65 @@
 
 Shared core library for the QDrant Loader ecosystem. It provides a provider‑agnostic LLM layer (embeddings and chat), configuration mapping, safe logging, and normalized error handling used by the CLI and MCP Server packages.
 
-## 🚀 What It Provides
+For provider, configuration, and architecture details, use the documentation links below.
 
-- **Provider‑agnostic LLM facade**: OpenAI, Azure OpenAI, OpenAI‑compatible, and Ollama
-- **Unified async APIs**:
-  - `EmbeddingsClient.embed(inputs: list[str]) -> list[list[float]]`
-  - `ChatClient.chat(messages: list[dict], **kwargs) -> dict`
-  - `TokenCounter.count(text: str) -> int`
-- **Typed settings and mapping**: `LLMSettings.from_global_config(...)` supports the new `global.llm` schema and maps legacy fields with deprecation warnings
-- **Structured logging with redaction**: `LoggingConfig.setup(...)` masks secrets and reduces noisy logs
-- **Normalized errors**: consistent exceptions across providers (`TimeoutError`, `RateLimitedError`, `InvalidRequestError`, `AuthError`, `ServerError`)
-- **Optional dependencies** via extras: `openai`, `ollama`
+## 🎯 What It Provides
+
+- Provider-agnostic LLM facade for OpenAI, Azure OpenAI, OpenAI-compatible endpoints, and Ollama
+- Unified async APIs for embeddings and chat clients
+- Typed configuration mapping via `LLMSettings.from_global_config(...)`
+- Structured logging with secret redaction
+- Normalized provider exceptions for predictable handling across backends
 
 ## 📦 Installation
 
 ```bash
-# Minimal core
 pip install qdrant-loader-core
+```
 
-# With OpenAI/Azure OpenAI support
+With extras:
+
+```bash
 pip install "qdrant-loader-core[openai]"
-
-# With Ollama support
 pip install "qdrant-loader-core[ollama]"
-
-# From source (development)
-git clone https://github.com/martin-papy/qdrant-loader.git
-cd qdrant-loader
-pip install -e packages/qdrant-loader-core
 ```
 
-## ⚡ Quick Start
+## 📄 Logging
 
-Example using the new `global.llm` schema:
-
-```yaml
-global:
-  llm:
-    provider: "openai"            # openai | azure_openai | ollama | openai_compat
-    base_url: "https://api.openai.com/v1"
-    api_key: "${LLM_API_KEY}"
-    models:
-      embeddings: "text-embedding-3-small"
-      chat: "gpt-4o-mini"
-```
-
-```python
-import asyncio
-from qdrant_loader_core.llm.settings import LLMSettings
-from qdrant_loader_core.llm.factory import create_provider
-
-global_config = {
-    "llm": {
-        "provider": "openai",
-        "base_url": "https://api.openai.com/v1",
-        "api_key": "${LLM_API_KEY}",
-        "models": {"embeddings": "text-embedding-3-small", "chat": "gpt-4o-mini"},
-    }
-}
-
-settings = LLMSettings.from_global_config(global_config)
-provider = create_provider(settings)
-
-async def main() -> None:
-    vectors = await provider.embeddings().embed(["hello", "world"])  # list[list[float]]
-    reply = await provider.chat().chat([
-        {"role": "system", "content": "You are helpful."},
-        {"role": "user", "content": "Say hi!"},
-    ])
-    print(len(vectors), reply["text"])  # 2 "Hi!" (example)
-
-asyncio.run(main())
-```
-
-## 🔌 Supported Providers
-
-- **OpenAI** (`[openai]` extra): Uses the official `openai` Python SDK. Configure with `base_url`, `api_key`, and `models.chat`/`models.embeddings`.
-- **Azure OpenAI** (`[openai]` extra): Requires `api_version`. Auto‑detected when the host is `*.openai.azure.com` or `*.cognitiveservices.azure.com`. Optional `provider_options.azure_endpoint` overrides the endpoint.
-- **OpenAI‑compatible** (`[openai]` extra): Any endpoint exposing OpenAI‑style `/v1` APIs. Set `provider: openai_compat` (or rely on `base_url` containing `openai`).
-- **Ollama** (`[ollama]` extra): Works with native `/api` and OpenAI‑compatible `/v1` endpoints. Optional `provider_options.native_endpoint: auto | embed | embeddings` selects native behavior.
-
-## 🔧 Configuration Mapping
-
-`LLMSettings.from_global_config(...)` accepts a parsed dict for `global` and supports:
-
-- **New schema (recommended)**: `global.llm`
-  - `provider`, `base_url`, `api_key`, `api_version` (Azure), `headers`
-  - `models`: `{ embeddings, chat }`
-  - `tokenizer`
-  - `request`: `{ timeout_s, max_retries, backoff_s_min, backoff_s_max }`
-  - `rate_limits`: `{ rpm, tpm, concurrency }`
-  - `embeddings`: `{ vector_size }`
-  - `provider_options`: provider‑specific opts (e.g., `azure_endpoint`, `native_endpoint`)
-
-- **Legacy mapping (deprecated)**: `global.embedding.*` and `file_conversion.markitdown.llm_model`
-  - Maps to provider + models (embeddings/chat), emits a deprecation warning
-  - Prefer migrating to `global.llm` for clarity and future features
-
-## 🧾 Logging
-
-Use the built‑in structured logging with redaction:
+Use built-in structured logging:
 
 ```python
 from qdrant_loader_core.logging import LoggingConfig
 
 LoggingConfig.setup(level="INFO", format="console", file=None)
 logger = LoggingConfig.get_logger(__name__)
-logger.info("LLM ready", provider=settings.provider)
+logger.info("LLM ready")
 ```
 
-### Notes
+## 📝 Notes
 
-- Secrets (keys/tokens) are masked in both stdlib and structlog output
-- Noisy third‑party logs are toned down; Qdrant version checks are filtered
-- For MCP integration, set `MCP_DISABLE_CONSOLE_LOGGING=true` to disable console output
+- Secrets (API keys/tokens) are redacted in logs
+- For MCP integrations, `MCP_DISABLE_CONSOLE_LOGGING=true` is recommended
+- [Environment variable reference](../../docs/users/configuration/environment-variables.md) - Required and optional environment variables for setup, authentication, and runtime behavior.
 
-## 🧰 Error Handling
+## ❗ Error Handling
 
-Catch provider‑normalized exceptions from `qdrant_loader_core.llm.errors`:
+Catch provider-normalized exceptions from `qdrant_loader_core.llm.errors`:
 
-- `TimeoutError` — request timed out
-- `RateLimitedError` — rate limit exceeded
-- `InvalidRequestError` — bad parameters or unsupported operation
-- `AuthError` — authentication/authorization failed
-- `ServerError` — transport/server failures
+- `TimeoutError`
+- `RateLimitedError`
+- `InvalidRequestError`
+- `AuthError`
+- `ServerError`
 
-## 📚 Documentation
+## 📚 Canonical Documentation
 
-- **[Website](https://qdrant-loader.net)** — Project site and guides
-- **[Core package docs](https://qdrant-loader.net/docs/packages/core/README.html)** — Package‑specific page
-- **[Monorepo docs](../../docs/)** — Source documentation in this repository
+- **[Monorepo overview](../../)** - Project structure, packages, and high-level navigation across the repository.
+- **[Developer hub](../../docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
+- **[Architecture hub](../../docs/developers/architecture)** - System design, component interactions, and core technical decisions.
+- **[User configuration reference](../../docs/users/configuration/config-file-reference.md)** - Complete config schema and practical setup examples.
+- **[User error troubleshooting](../../docs/users/troubleshooting/error-messages-reference.md)** - Common error messages, root causes, and recommended fixes.
 
 ## 🤝 Contributing
 
-This package is part of the QDrant Loader monorepo. See the [main contributing guide](../../CONTRIBUTING.md).
-
-## 🆘 Support
-
-- **Issues**: <https://github.com/martin-papy/qdrant-loader/issues>
-- **Discussions**: <https://github.com/martin-papy/qdrant-loader/discussions>
-
-## 📄 License
-
-Licensed under the GNU GPLv3 — see [LICENSE](../../LICENSE).
+See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

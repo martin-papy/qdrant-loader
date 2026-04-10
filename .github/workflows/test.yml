@@ -19,42 +19,22 @@ jobs:
     name: Test Core Package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
         with:
           python-version: '3.12'
-
-      - name: Restore pip dependency cache
-        uses: actions/cache/restore@v4
-        id: pip-cache-core
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install core with extras used in tests
-          pip install -e packages/qdrant-loader-core[openai,ollama]
-          # Install repo dev deps for pytest, coverage, etc.
-          pip install -e .[dev]
-
-      - name: Save pip dependency cache
-        uses: actions/cache/save@v4
-        if: steps.pip-cache-core.outputs.cache-hit != 'true' && github.ref_name == 'main'
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-core-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'pyproject.toml') }}
+        run: uv sync --all-packages --all-extras
 
       - name: Run core tests and generate coverage reports
         run: |
           cd packages/qdrant-loader-core
-          python -m pytest tests/ --cov=src -v
+          uv run python -m pytest tests/ --cov=src -v
 
       - name: Generate coverage reports
         if: |
@@ -62,14 +42,14 @@ jobs:
           (github.event_name == 'push' && github.ref_name == 'main')
         run: |
           cd packages/qdrant-loader-core
-          coverage xml -o ../../coverage-core.xml
-          coverage html -d ../../htmlcov-core
+          uv run coverage xml -o ../../coverage-core.xml
+          uv run coverage html -d ../../htmlcov-core
 
       - name: Upload core coverage artifact
         if: |
           (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
           (github.event_name == 'push' && github.ref_name == 'main')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-core-${{ github.run_id }}
           path: |
@@ -81,13 +61,14 @@ jobs:
     name: Test QDrant Loader
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
         with:
           python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
       - name: Install system dependencies
         run: |
@@ -96,29 +77,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Restore pip dependency cache
-        uses: actions/cache/restore@v4
-        id: pip-cache-loader
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-
-
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install monorepo packages locally in dependency order to avoid PyPI resolution
-          pip install -e packages/qdrant-loader-core[openai]
-          pip install -e .[dev]
-          pip install -e packages/qdrant-loader
-
-      - name: Save pip dependency cache
-        uses: actions/cache/save@v4
-        if: steps.pip-cache-loader.outputs.cache-hit != 'true' && github.ref_name == 'main'
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-loader-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'pyproject.toml') }}
+        run: uv sync --all-packages --all-extras
 
       # Skip secret injection for fork PRs, Dependabot, and non-protected branches —
       # secrets are only needed when integration tests run (develop/main).
@@ -253,7 +213,7 @@ jobs:
       - name: Run loader unit tests
         run: |
           cd packages/qdrant-loader
-          python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
+          uv run python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
 
       - name: Run loader integration tests
         if: |
@@ -266,7 +226,7 @@ jobs:
           (github.ref_name == 'develop' || github.ref_name == 'main'))
         run: |
           cd packages/qdrant-loader
-          python -m pytest tests/integration --cov=src --cov-append --cov-report= -v
+          uv run python -m pytest tests/integration --cov=src --cov-append --cov-report= -v
 
       - name: Generate coverage reports
         if: |
@@ -274,14 +234,14 @@ jobs:
           (github.event_name == 'push' && github.ref_name == 'main')
         run: |
           cd packages/qdrant-loader
-          coverage xml -o ../../coverage-loader.xml
-          coverage html -d ../../htmlcov-loader
+          uv run coverage xml -o ../../coverage-loader.xml
+          uv run coverage html -d ../../htmlcov-loader
 
       - name: Upload loader coverage artifact
         if: |
           (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
           (github.event_name == 'push' && github.ref_name == 'main')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-loader-${{ github.run_id }}
           path: |
@@ -293,38 +253,17 @@ jobs:
     name: Test MCP Server
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
         with:
           python-version: '3.12'
-
-      - name: Restore pip dependency cache
-        uses: actions/cache/restore@v4
-        id: pip-cache-mcp
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install monorepo packages locally in dependency order to avoid PyPI resolution
-          pip install -e packages/qdrant-loader-core
-          pip install -e .[dev]
-          pip install -e packages/qdrant-loader
-          pip install -e packages/qdrant-loader-mcp-server
-
-      - name: Save pip dependency cache
-        uses: actions/cache/save@v4
-        if: steps.pip-cache-mcp.outputs.cache-hit != 'true' && github.ref_name == 'main'
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-mcp-${{ hashFiles('packages/qdrant-loader-core/pyproject.toml', 'packages/qdrant-loader/pyproject.toml', 'packages/qdrant-loader-mcp-server/pyproject.toml', 'pyproject.toml') }}
+        run: uv sync --all-packages --all-extras
 
       # Skip secret injection for fork PRs, Dependabot, and non-protected branches —
       # secrets are only needed when integration tests run (develop/main).
@@ -372,7 +311,7 @@ jobs:
       - name: Run MCP server unit tests
         run: |
           cd packages/qdrant-loader-mcp-server
-          python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
+          uv run python -m pytest tests/unit -n 2 --cov=src --cov-report= -v
 
       - name: Run MCP server integration tests
         if: |
@@ -385,7 +324,7 @@ jobs:
           (github.ref_name == 'develop' || github.ref_name == 'main'))
         run: |
           cd packages/qdrant-loader-mcp-server
-          python -m pytest tests/integration --cov=src --cov-append --cov-report= --cov-report=term-missing -v
+          uv run python -m pytest tests/integration --cov=src --cov-append --cov-report= --cov-report=term-missing -v
 
       - name: Generate coverage reports
         if: |
@@ -393,14 +332,14 @@ jobs:
           (github.event_name == 'push' && github.ref_name == 'main')
         run: |
           cd packages/qdrant-loader-mcp-server
-          coverage xml -o ../../coverage-mcp.xml
-          coverage html -d ../../htmlcov-mcp
+          uv run coverage xml -o ../../coverage-mcp.xml
+          uv run coverage html -d ../../htmlcov-mcp
 
       - name: Upload MCP server coverage artifact
         if: |
           (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
           (github.event_name == 'push' && github.ref_name == 'main')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-mcp-${{ github.run_id }}
           path: |
@@ -412,13 +351,14 @@ jobs:
     name: Test Website Build System
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
         with:
           python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
       - name: Install system dependencies for website testing
         run: |
@@ -426,38 +366,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcairo2-dev libgirepository1.0-dev
 
-      - name: Restore pip dependency cache
-        uses: actions/cache/restore@v4
-        id: pip-cache-website
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-
-
-      - name: Install website test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Install dev dependencies from root pyproject.toml which includes requests, responses, and other test dependencies
-          pip install -e .[dev]
-          # Install optional docs dependencies for comprehensive testing
-          pip install -e .[docs] || echo "Optional docs dependencies not available"
-
-      - name: Save pip dependency cache
-        uses: actions/cache/save@v4
-        if: steps.pip-cache-website.outputs.cache-hit != 'true' && github.ref_name == 'main'
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-website-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
+        run: uv sync --all-packages --all-extras
 
       - name: Run website tests with coverage
         run: |
           # Add website directory to Python path and run tests
           export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
-          python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website --cov-report=term-missing -v
+          uv run python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website --cov-report=term-missing -v
 
       - name: Upload website test coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-website-${{ github.run_id }}
@@ -502,7 +421,7 @@ jobs:
           echo "Website Tests: ${{ needs.test-website.result }}" >> test-results/summary.txt
 
       - name: Upload test status artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-status-${{ github.run_id }}
           path: test-results/

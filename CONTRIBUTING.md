@@ -17,8 +17,18 @@ Thank you for your interest in contributing to QDrant Loader! This guide will he
 
 - **Python 3.12+** (latest stable version recommended)
 - **Git** for version control
-- **Virtual environment** (venv, conda, or similar)
+- **[uv](https://docs.astral.sh/uv/)** — fast Python package manager (replaces pip + venv)
 - **QDrant instance** (local or cloud) for testing
+
+Install uv if you don't have it:
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 ### Development Setup
 
@@ -30,29 +40,21 @@ Thank you for your interest in contributing to QDrant Loader! This guide will he
    cd qdrant-loader
    ```
 
-2. **Create Virtual Environment**
+2. **Install Dependencies**
 
    ```bash
-   # Create and activate virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # Install all workspace packages with development dependencies
+   # uv automatically creates and manages the virtual environment
+   uv sync --all-packages --all-extras
    ```
 
-3. **Install in Development Mode**
-
-   ```bash
-   # Install both packages with development dependencies
-   pip install -e packages/qdrant-loader[dev]
-   pip install -e packages/qdrant-loader-mcp-server[dev]
-   ```
-
-4. **Verify Installation**
+3. **Verify Installation**
 
    ```bash
    # Test that everything is working
-   qdrant-loader --help
-   mcp-qdrant-loader --help
-   pytest --version
+   uv run qdrant-loader --help
+   uv run mcp-qdrant-loader --help
+   uv run pytest --version
    ```
 
 ### Project Structure
@@ -60,7 +62,12 @@ Thank you for your interest in contributing to QDrant Loader! This guide will he
 ```text
 qdrant-loader/
 ├── packages/
-│   ├── qdrant-loader/           # Core data ingestion package
+│   ├── qdrant-loader-core/      # Shared core library
+│   │   ├── src/qdrant_loader_core/
+│   │   ├── tests/
+│   │   ├── pyproject.toml
+│   │   └── README.md
+│   ├── qdrant-loader/           # Data ingestion package
 │   │   ├── src/qdrant_loader/   # Source code
 │   │   ├── tests/               # Package tests
 │   │   ├── pyproject.toml       # Package configuration
@@ -73,7 +80,8 @@ qdrant-loader/
 ├── docs/                        # Documentation
 ├── website/                     # Documentation website generator
 ├── .github/workflows/           # CI/CD pipelines
-├── pyproject.toml              # Workspace configuration
+├── pyproject.toml              # uv workspace configuration
+├── uv.lock                     # Deterministic lockfile (committed to git)
 ├── README.md                   # Main project README
 └── CONTRIBUTING.md             # This file
 ```
@@ -101,20 +109,19 @@ git checkout -b fix/issue-description
 
 ```bash
 # Run all tests
-pytest
+make test
 
 # Run tests for specific package
-pytest packages/qdrant-loader/tests/
-pytest packages/qdrant-loader-mcp-server/tests/
+make test-loader
+make test-mcp
+make test-core
 
 # Run with coverage
-pytest --cov=packages --cov-report=html
+make test-coverage
 
 # Run linting and formatting
-black packages/
-isort packages/
-ruff check packages/
-mypy packages/
+make lint
+make format
 ```
 
 ### 4. Commit Your Changes
@@ -142,7 +149,7 @@ git push origin feature/your-feature-name
 
 ## 📝 Coding Standards
 
-> **📖 For comprehensive guidelines** including Pythonic patterns, AI/RAG best practices, and PR review checklists, see the [Best Practices Guide](./docs/developers/contributing/).
+> **📖 For comprehensive guidelines** including Pythonic patterns, AI/RAG best practices, and PR review checklists, see the [Best Practices Guide](./docs/developers/contributing/README.md).
 
 ### Code Style
 
@@ -156,129 +163,58 @@ We use the following tools to maintain code quality:
 ### Formatting Commands
 
 ```bash
-# Format code
-black packages/
+# Format code (black + isort + ruff fix)
+make format
 
-# Sort imports
-isort packages/
+# Lint only
+make lint
 
-# Lint code
-ruff check packages/
-
-# Type checking
-mypy packages/
-
-# Fix auto-fixable issues
-ruff check --fix packages/
+# Or run tools directly via uv
+uv run black .
+uv run isort .
+uv run ruff check --fix .
 ```
 
 ### Code Guidelines
 
-#### General Principles
+Detailed implementation standards are maintained in one place:
 
-- **Write clear, readable code** with descriptive variable and function names
-- **Add type hints** for all function parameters and return values
-- **Include docstrings** for all public functions, classes, and modules
-- **Keep functions focused** and single-purpose
-- **Handle errors gracefully** with appropriate exception handling
+- **[Best Practices Guide](./docs/developers/contributing/README.md)** for Pythonic patterns, DI, architecture constraints, AI/RAG quality gates, and PR review checklist
 
-#### Docstring Format
+Minimum expectations for all contributions:
 
-Use Google-style docstrings:
-
-```python
-def process_document(content: str, metadata: Dict[str, Any]) -> ProcessedDocument:
-    """Process a document with the given content and metadata.
-
-    Args:
-        content: The raw document content to process.
-        metadata: Additional metadata about the document.
-
-    Returns:
-        A ProcessedDocument instance with chunked content and enriched metadata.
-
-    Raises:
-        ProcessingError: If the document cannot be processed.
-    """
-    # Implementation here
-```
-
-#### Type Hints
-
-```python
-from typing import Dict, List, Optional, Union
-from pathlib import Path
-
-def load_config(config_path: Path) -> Dict[str, Any]:
-    """Load configuration from a file."""
-    pass
-
-def process_files(files: List[Path], max_size: Optional[int] = None) -> List[str]:
-    """Process a list of files."""
-    pass
-```
+- Keep code readable and typed
+- Add/maintain docstrings for public interfaces
+- Prefer explicit dependencies over implicit behavior
+- Handle errors with actionable messages and structured logs
 
 ## 🧪 Testing Guidelines
 
-### Test Structure
+Testing standards and strategy are documented here:
 
-- **Unit tests**: Test individual functions and classes in isolation
-- **Integration tests**: Test component interactions
-- **End-to-end tests**: Test complete workflows
-
-### Writing Tests
-
-```python
-import pytest
-from unittest.mock import Mock, patch
-from qdrant_loader.processors import DocumentProcessor
-
-class TestDocumentProcessor:
-    """Test cases for DocumentProcessor."""
-
-    def test_process_simple_document(self):
-        """Test processing a simple text document."""
-        processor = DocumentProcessor()
-        content = "This is a test document."
-
-        result = processor.process(content)
-
-        assert result.chunks
-        assert len(result.chunks) == 1
-        assert result.chunks[0].content == content
-
-    @patch('qdrant_loader.processors.external_service')
-    def test_process_with_external_service(self, mock_service):
-        """Test processing with mocked external service."""
-        mock_service.return_value = "processed content"
-        processor = DocumentProcessor()
-
-        result = processor.process("input")
-
-        mock_service.assert_called_once_with("input")
-        assert result.content == "processed content"
-```
+- **[Developer Testing Guide](./docs/developers/testing/README.md)** for test design, scope, fixtures, and integration patterns
+- **[Best Practices Guide](./docs/developers/contributing/README.md)** for AI/RAG-specific evaluation and review gates
 
 ### Test Commands
 
 ```bash
 # Run all tests
-pytest
+make test
 
 # Run with verbose output
-pytest -v
+uv run pytest -v
 
 # Run specific test file
-pytest packages/qdrant-loader/tests/test_processors.py
+uv run pytest packages/qdrant-loader/tests/test_processors.py
 
 # Run tests matching a pattern
-pytest -k "test_document"
+uv run pytest -k "test_document"
 
 # Run with coverage
-pytest --cov=packages --cov-report=html
+make test-coverage
 
 # Run only fast tests (skip slow integration tests)
-pytest -m "not slow"
+uv run pytest -m "not slow"
 ```
 
 ## 📚 Documentation Guidelines
@@ -324,12 +260,14 @@ qdrant-loader --workspace . init
 
 ```bash
 # Build the documentation website
-cd website
-python build.py --output ../dist
+make docs
+
+# Or run directly
+uv run python website/build.py --output site --templates website/templates --base-url "http://127.0.0.1:3000/site/"
 
 # Serve locally for testing
-cd ../dist
-python -m http.server 8000
+cd site
+uv run python -m http.server 8000
 ```
 
 ## 🚀 Pull Request Process
@@ -467,10 +405,10 @@ We use **unified versioning** - both packages always have the same version numbe
 
 ```bash
 # Check release readiness
-python release.py --dry-run
+uv run python release.py --dry-run
 
 # Create a new release
-python release.py
+uv run python release.py
 ```
 
 ## 🤝 Community Guidelines

@@ -212,3 +212,20 @@ ignore = [
     "B011",
     "B017",
 ]
+
+[tool.uv]
+environments = [
+    "python_version == '3.12'",
+]
+
+[tool.uv.workspace]
+members = [
+    "packages/qdrant-loader",
+    "packages/qdrant-loader-mcp-server",
+    "packages/qdrant-loader-core",
+]
+
+[tool.uv.sources]
+qdrant-loader-core = { workspace = true }
+qdrant-loader = { workspace = true }
+qdrant-loader-mcp-server = { workspace = true }

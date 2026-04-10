@@ -1,378 +1,1778 @@
+<style>
+    /* Heror section */
+    .hero-section {
+        position: relative;
+        overflow: hidden;
+        background: var(--text-color-primary-text-black);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-section img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .hero-section::before {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 56rem;
+        margin-bottom: 136px;
+        margin-top: 156px;
+    }
+
+    .hero-content h1 {
+        font-family: var(--font-family);
+        font-weight: 700;
+        font-size: 80px;
+        line-height: 120%;
+        letter-spacing: -0.02em;
+        color: var(--text-color-white);
+    }
+
+    .hero-content p {
+        color: var(--text-color-white);
+        font-size: 20px;
+        margin-bottom: 1rem;
+    }
+
+    .hero-description {
+        max-width: 44rem;
+        color: var(--text-color-white);
+    }
+
+    .hero-features {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem 5rem;
+        margin: 2rem 0;
+        max-width: 38rem;
+        /* font-size: 0.95rem; */
+        font-size: 20px;
+        color: var(--primary-color);
+    }
+
+    .hero-feature {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: var(--text-color-white);
+        font-size: clamp(1rem, 2vw, 1.25rem);
+        font-weight: 500;
+    }
+
+    .hero-feature-icon {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        display: inline-block;
+    }
+
+    .hero-cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px;
+        margin-top: 120px;
+    }
+
+    .hero-btn {
+        border-radius: 32px;
+        padding: 16px 32px;
+        min-width: 140px;
+        font-weight: 400;
+        font-size: 1.125rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        text-decoration: none;
+        box-sizing: border-box;
+        white-space: nowrap;
+    }
+
+    .hero-btn-icon {
+        width: 24px;
+        height: 24px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .hero-btn-light {
+        background: white;
+        color: #1a1a1a;
+    }
+    @media (max-width: 768px) {
+        .section-getting-started > .d-flex > img {
+            width: min(100%, 360px);
+            height: auto;
+            max-width: 100%;
+        }
+    }
+
+    .hero-btn-outline {
+        border: 1px solid #4eddfd;
+        background: #4eddfd;
+        color: #0b2028;
+    }
+
+    .hero-btn {
+        transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+    }
+
+    .hero-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.10);
+    }
+
+    .hero-btn:active {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+    }
+
+    .hero-btn-light:hover {
+        filter: brightness(0.98) saturate(1.04);
+        background: linear-gradient(180deg, #ffffff 0%, #e6fbff 100%);
+        color: #04202a;
+        box-shadow: 0 10px 24px rgba(2, 34, 40, 0.06);
+    }
+
+    .hero-btn-outline:hover {
+        filter: brightness(0.94) saturate(1.08);
+        background: linear-gradient(180deg, #38e6f4 0%, #0fb8cc 100%);
+        color: #001617;
+        box-shadow: 0 12px 30px rgba(14, 200, 220, 0.12);
+        border-color: rgba(11, 184, 204, 0.9);
+    }
+
+    .hero-btn:focus-visible {
+        box-shadow: 0 0 0 4px rgba(78,221,253,0.14);
+    }
+
+    @media (max-width: 560px) {
+        .hero-section {
+            display: flex;
+            align-items: start;
+            justify-content: start;
+        }
+
+        .hero-content {
+            margin-bottom: 60px;
+            margin-top: 60px;
+        }
+
+        .hero-cta {
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .hero-btn {
+            width: 100%;
+            min-width: 0;
+            justify-content: center;        
+        }
+
+        .hero-section {
+            padding-top: 30px;
+            padding-bottom: 30px;
+        }
+    }
+
+    /* Enhanced mobile adjustments for small phones */
+    @media (max-width: 480px) {
+        .hero-content {
+            max-width: 100%;
+            padding: 0 1rem;
+            text-align: start;
+            padding-bottom: 80;
+            padding-top: 80;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(2.25rem, 8vw, 3.5rem);
+            line-height: 1.05;
+            margin: 0 0 0.6rem;
+        }
+
+        .hero-description {
+            font-size: 0.95rem;
+            max-width: 100%;
+            margin: 0 auto 1rem;
+        }
+
+        .hero-features {
+            grid-template-columns: 1fr;
+            gap: 0.6rem 1rem;
+            margin: 1rem auto;
+            max-width: 100%;
+        }
+
+        .hero-feature {
+            font-size: 0.98rem;
+            gap: 0.5rem;
+            justify-content: flex-start;
+        }
+
+        .hero-feature-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .hero-cta {
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 60px;
+        }
+
+        .hero-btn {
+            padding: 14px 18px;
+            font-size: 1rem;
+            border-radius: 28px;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+    }
+
+    /* Further mobile refinements for very small screens */
+    @media (max-width: 420px) {
+        .hero-section {
+            min-height: auto;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(1.9rem, 9vw, 2.8rem);
+            letter-spacing: -0.01em;
+        }
+
+        .hero-content p,
+        .hero-description {
+            font-size: 0.95rem;
+        }
+
+        .hero-features {
+            gap: 0.5rem 0.75rem;
+        }
+
+        .hero-feature-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .getting-started-top {
+            gap: 1rem;
+        }
+
+        .getting-started-title {
+            font-size: 1.5rem;
+        }
+
+        .getting-started-description {
+            font-size: 0.95rem;
+        }
+
+        .tools-grid {
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
+        }
+
+        .tool-card p {
+            width: auto;
+            height: auto;
+            font-size: 0.95rem;
+        }
+
+        .tool-card h3 {
+            white-space: normal;
+            font-size: 1.25rem;
+        }
+
+        .section-getting-started > .d-flex > img,
+        .getting-started-hero-image,
+        .section-getting-started .image {
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+        }
+
+        .install-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .install-card {
+            padding: 1.25rem;
+            border-radius: 1rem;
+        }
+
+        .install-card h3 {
+            font-size: 1.4rem;
+        }
+
+        .community-grid {
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
+        }
+
+        .community-card-light {
+            border: 2px solid rgba(78, 221, 253, 0.5);
+            border-radius: 32px;
+            padding: 60px 20px;
+            width: 310px;
+            height: 641px;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+
+        .community-card-dark {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 32px;
+            padding: 80px 20px 60px 20px;
+            width: 310px;
+            height: 820px;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+
+        .card-light-content {
+            width: 270px;
+        }
+
+        .section-features,
+        .section-getting-started,
+        .section-install,
+        .section-community {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    }
+
+    .section-getting-started {
+        padding: 120px 215px;
+    }
+
+    .getting-started-content {
+        margin-bottom: 24px;
+    }
+    
+    .section-getting-started .image {
+        width: 370px;
+        height: 280px;
+    }
+    
+    .getting-started-title {
+        font-family: var(--font-family);
+        font-weight: 700;
+        font-size: 48px;
+        letter-spacing: -0.03em;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .getting-started-description {
+        font-family: var(--font-family);
+        font-weight: 400;
+        font-size: 20px;
+        line-height: 150%;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .getting-started-top {
+        display: grid;
+        grid-template-columns: minmax(340px, 1fr) 340px;
+        gap: 2.5rem;
+        align-items: center;
+        margin-bottom: 3.4rem;
+    }
+
+    .getting-started-top h2 {
+        font-size: clamp(2.6rem, 4vw, 3rem);
+        line-height: 1.1;
+        font-weight: 700;
+        color: #222222;
+        margin-bottom: 1.1rem;
+    }
+
+    .getting-started-top p {
+        color: #3f3f3f;
+        max-width: 360px;
+        margin-bottom: 1.5rem;
+        font-size: 1.25rem;
+    }
+
+    /* Getting Started Section */
+    .getting-started-grid {
+        margin-top: 3rem;
+    }
+
+    .getting-started-card {
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .getting-started-card:hover {
+        border: 1px solid !important;
+        border-color: #22d3ee !important;
+        background: rgba(34, 211, 238, 0.04) !important;
+        box-shadow: 0 4px 20px rgba(34, 211, 238, 0.12);
+    }
+
+    .getting-started-card-body h3{
+        font-family: var(--font-family);
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 150%;
+        color: var(--text-color-primary-text-black);
+
+    }
+
+    .getting-started-card-body p {
+       font-family: var(--second-family);
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 150%;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .tool-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        background: #1f1f1f;
+        color: #ffffff;
+        border-radius: 999px;
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        font-size: 0.87rem;
+        font-weight: 500;
+        transition: opacity 0.2s ease;
+    }
+
+    .tool-cta:hover {
+        opacity: 0.85;
+        color: #ffffff;
+    }
+
+    .tool-cta svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .getting-started-hero-image {
+        width: min(100%, 360px);
+        border-radius: 1.25rem;
+        object-fit: cover;
+        object-position: center;
+        min-height: 200px;
+        justify-self: start;
+    }
+
+    .section-getting-started > .d-flex > img {
+        width: 370px;
+        height: 280px;
+        object-fit: cover;
+        max-width: none;
+        border-radius: 1.25rem;
+        display: block;
+    }
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: 2.4rem 2.2rem;
+    }
+
+    .tool-card {
+        text-decoration: none;
+        color: inherit;
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        column-gap: 0.75rem;
+        row-gap: 0.28rem;
+        align-items: start;
+    }
+
+    .tool-card-header {
+        display: contents;
+    }
+
+    .tool-card-icon {
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+        grid-column: 1;
+        grid-row: 1;
+        margin-top: 0.1rem;
+    }
+
+    .tool-card h3 {
+        margin: 0;
+        font-size: 1.65rem;
+        line-height: 1.2;
+        color: #1f1f1f;
+        font-weight: 700;
+        white-space: nowrap;
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .tool-card p {
+        margin: 0;
+        color: #505050;
+        line-height: 1.45;
+        font-size: 0.94rem;
+        width: 232px;
+        height: 118px;
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .tool-link {
+        margin-top: 0.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #212121;
+        font-size: 0.9rem;
+        text-decoration: none;
+        font-weight: 500;
+        grid-column: 2;
+        grid-row: 3;
+    }
+
+    .tool-link-icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .image-box {
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #d9e7f4;
+        height: 100%;
+        min-height: 18rem;
+    }
+
+    .image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .section-features {
+        border-bottom: 1px solid #e3dfe1;
+    }
+
+    .features-container {
+        max-width: 58rem;
+        margin: 0 auto;
+        text-align: center;
+        padding-bottom: 120px;
+    }
+
+    .features-container .divider {
+        max-width: 70rem;
+        height: 1px;
+        margin: 0 auto 3.2rem;
+        background: #bdb7ba;
+    }
+
+    .key-feature-content {
+        margin-bottom: 3.2rem;
+    }
+
+    .key-feature-content h2 {
+        font-size: clamp(2.6rem, 4vw, 3rem);
+        line-height: 1.15;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0 0 1.05rem;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .key-feature-content p {
+        font-family: var(--font-family);
+        font-weight: 400;
+        font-size: 20px;
+        line-height: 150%;
+        text-align: center;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .section-features .image-box {
+        margin: 0 auto 2.7rem;
+        border-radius: 1.35rem;
+        overflow: hidden;
+        border: 1px solid #6d8ba6;
+        max-width: 31.5rem;
+        min-height: 0;
+        height: auto;
+    }
+
+    .section-features .image-box img {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: cover;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4.25rem 2.8rem;
+        padding-top: 3rem;
+    }
+
+    .feature-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .feature-icon {
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 1.25rem;
+        display: block;
+    }
+
+    .feature-item h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 0.8rem;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .feature-item p {
+        font-size: 1rem;
+        color: var(--text-color-primary-text-black);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+        .section-getting-started {
+            padding: 2rem;
+        }
+        .section-features h2 {
+            font-size: 2.1rem;
+        }
+
+        .features-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 3.4rem 2.2rem;
+        }
+    }
+
+    /* Make community cards flexible on small tablets/phones */
+    @media (max-width: 640px) {
+        .community-card-light,
+        .community-card-dark {
+            width: 100% !important;
+            max-width: 420px !important;
+            height: auto !important;
+            min-height: 420px !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+            box-sizing: border-box !important;
+            border-radius: 32px !important;
+            margin: 0 auto !important;
+        }
+
+        .community-card-light {
+            padding-top: 60px !important;
+            padding-bottom: 60px !important;
+        }
+
+        .community-card-dark {
+            padding-top: 60px !important;
+            padding-bottom: 60px !important;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .section-getting-started {
+            padding: 60px 4px;
+        }
+
+        .section-features {
+            padding: 3.35rem 1rem;
+        }
+
+        .section-features h2 {
+            font-size: 1.85rem;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+            gap: 2.8rem;
+        }
+
+        /* Make Getting Started a single column and center content on phones */
+        .getting-started-top {
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+            text-align: center;
+        }
+
+        .section-getting-started > .d-flex > img,
+        .getting-started-hero-image {
+            width: min(100%, 450px);
+            height: auto;
+            margin: 0 auto;
+            justify-self: center;
+        }
+
+        .getting-started-title {
+            font-size: 1.75rem;
+        }
+
+        .getting-started-description {
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 100%;
+        }
+    }
+
+    .section-install {
+        position: relative;
+        overflow: hidden;
+        padding: 7.5rem 1.5rem;
+        min-height: 36.4rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .section-install .install-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 1;
+        z-index: 0;
+    }
+
+    .install-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(186, 239, 249, 0.14);
+        z-index: 1;
+    }
+
+    .install-container {
+        position: relative;
+        z-index: 2;
+        max-width: 65.5rem;
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+
+        display: flex;
+        flex-direction: column;
+        gap: 5rem; 
+        align-items: center;
+    }
+
+    .install-container h2 {
+        font-size: clamp(2.6rem, 4vw, 3rem);
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 1rem;
+        color: var(--text-color-primary-text-black);
+    }
+
+    .install-container > p {
+        font-size: 1.25rem;
+        line-height: 1.5;
+        color: var(--text-color-primary-text-black);
+        margin-bottom: 3.3rem;
+    }
+
+    .install-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2.8rem;
+        margin: 0 auto 2.95rem;
+    }
+
+    .install-card {
+        border-radius: 1.2rem;
+        background: rgba(255, 255, 255, 0.34);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 1.7rem 1.35rem 1.65rem;
+        padding: 2.5rem 2.5rem 5rem;
+        box-shadow: 0 10px 24px rgba(22, 63, 84, 0.09);
+        backdrop-filter: blur(2px);
+    }
+
+    .install-card-icon {
+        width: 2.6rem;
+        height: 2.6rem;
+        display: block;
+        margin: 0 auto 0.85rem;
+        opacity: 0.95;
+    }
+
+    .install-card-icon path {
+        fill: var(--text-color-primary-text-black);
+    }
+
+    .install-card h3 {
+        font-weight: 700;
+        font-size: 2.25rem;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        color: var(--text-color-primary-text-black);
+        margin-bottom: 0.5rem;
+    }
+
+    .install-card p {
+        font-size: 1.2rem;
+        line-height: 1.5;
+        color: var(--text-color-primary-text-black);
+        margin-bottom: 1.35rem;
+    }
+
+    .install-card pre {
+        background: #181818;
+        color: #f6fbff;
+        padding: 1rem 0.9rem;
+        border-radius: 0.55rem;
+        margin: 0 0 1.3rem;
+        font-size: 1rem;
+        line-height: 1.35;
+        text-align: left;
+        overflow: hidden;
+    }
+
+    .install-card a,
+    .install-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: 0.87rem;
+        line-height: 1;
+        font-weight: 500;
+        text-decoration: none;
+        color: #f8f8f8;
+        background: #191919;
+        transition: transform 0.2s ease;
+    }
+    
+    .install-cta {
+        padding: 1.25rem 2rem;
+    }
+
+    .install-card a {
+        margin-top: 20px;
+        padding: 0.83rem 1.5rem;
+    }
+
+    .install-card a:hover,
+    .install-cta:hover {
+        transform: translateY(-1px);
+    }
+
+    .install-card a svg,
+    .install-cta svg {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex: 0 0 auto;
+    }
+
+    .install-card a svg path,
+    .install-cta svg path {
+        fill: #ffffff;
+    }
+
+    .install-cta {
+        font-size: 1.2rem;
+        padding: 0.94rem 1.25rem;
+        margin-top: 0.2rem;
+    }
+
+
+    @media (max-width: 640px) {
+        .section-install {
+            padding: 4.4rem 1rem 3.4rem;
+            min-height: 0;
+        }
+
+        .install-container h2 {
+            font-size: 2.05rem;
+        }
+
+        .install-container > p {
+            margin-bottom: 2rem;
+        }
+
+        .install-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .install-card {
+            padding: 1.45rem 1rem;
+        }
+
+        .install-card h3 {
+            font-size: 1.7rem;
+        }
+    }
+
+    .section-community {
+        position: relative;
+        overflow: hidden;
+        padding: 10rem 1.25rem 24.5rem;
+        color: white;
+    }
+
+    .section-community .community-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 1;
+        z-index: 0;
+    }
+
+    .community-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .community-container {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .community-container h2 {
+        font-size: clamp(2.6rem, 4vw, 3rem);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin-bottom: 1.35rem;
+    }
+
+    .community-subtitle {
+        margin: 0;
+        font-size: 1rem;
+        font-size: clamp(0.8rem, 4vw, 1.125rem);
+        font-weight: 700;
+        color: var(--text-color-white);
+    }
+
+    .community-description {
+        max-width: 43.5rem;
+        margin: 1.2rem auto 4.8rem;
+        color: var(--text-color-white);
+        font-size: clamp(0.8rem, 4vw, 1rem);
+        line-height: 150%;
+        font-weight: 400;
+    }
+
+    .community-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 500px);
+        gap: 80px;
+        width: 100%;
+        max-width: none;
+        margin: 0 auto;
+        align-items: stretch;
+        justify-content: center;
+    }
+
+    .community-grid {
+        display: grid;
+        grid-template-columns: 545px 545px;
+        gap: 80px;
+        width: 100%;
+        max-width: none;
+        margin: 0 auto;
+        align-items: stretch;
+        justify-content: center;
+    }
+    .community-card-light {
+        background: linear-gradient(180deg, rgba(201, 226, 236, 0.95), rgba(109, 205, 236, 0.9));
+        color: #11263a;
+        border: 2px solid rgba(78, 221, 253, 0.5);
+        border-radius: 40px;
+        padding: 80px 32px;
+        width: 545px;
+        height: 641px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-light-content {
+        padding: 0px 0px 40px;
+        width: 359px;
+        height: 373px;
+    }
+
+    .community-card-dark {
+        text-align: left;
+        background: linear-gradient(180deg, rgba(25, 30, 39, 0.78), rgba(60, 61, 64, 0.58));
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 40px;
+        padding: 80px 40px;
+        width: 545px;
+        height: 640px;
+        box-sizing: border-box;
+        backdrop-filter: blur(7px);
+        align-items: flex-start;
+    }
+
+    /* Strong mobile overrides for community cards (placed after defaults) */
+    @media (max-width: 420px) {
+        .community-card-light,
+        .community-card-dark {
+            margin: 0 auto;
+        }
+
+        .community-card-light {
+            border: 2px solid rgba(78, 221, 253, 0.5) !important;
+            border-radius: 32px !important;
+            padding: 60px 20px !important;
+            width: 310px !important;
+            height: 641px !important;
+            box-sizing: border-box !important;
+        }
+
+        .community-card-dark {
+            border: 2px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 32px !important;
+            padding: 80px 20px 60px 20px !important;
+            width: 100% !important;
+            max-width: 420px !important;
+            height: auto !important;
+            min-height: 480px !important;
+            box-sizing: border-box !important;
+        }
+
+        .card-light-content {
+            width: 270px !important;
+        }
+    }
+
+    .card-dark-items {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+    }
+
+    .community-heart-icon {
+        width: 7rem;
+        height: 7rem;
+        margin: -0.15rem auto 1.15rem;
+        display: block;
+    }
+
+    .community-card-light h3 {
+        font-size: clamp(1rem, 4vw, 1.5rem);
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        margin-bottom: 1.35rem;
+    }
+
+    .community-card-copy {
+        font-family: var(--font-family);
+        font-weight: 700;
+        font-size: 16px;
+        line-height: 150%;
+        text-align: center;
+        color: var(--text-color-primary-text-black);
+        opacity: 0.7;
+    }
+
+    .community-card-tags {
+        font-family: var(--second-family);
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 150%;
+        text-align: center;
+        color: var(--text-color-primary-text-black);
+        margin: 0.38rem 0 0;
+    }
+
+    .community-start-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #16181d;
+        color: white;
+        border-radius: 999px;
+        padding: 1.25rem 2rem;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .community-start-btn svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .community-start-btn svg path {
+        fill: #ffffff;
+    }
+
+    .community-connect-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        margin-bottom: 1.7rem;
+    }
+
+    .community-connect-icon {
+        width: 3rem;
+        height: 3rem;
+        flex: 0 0 auto;
+        margin-top: 0.05rem;
+    }
+
+    .community-connect-title {
+        margin: 0;
+        font-size: 1.5rem;
+        line-height: 1.2;
+        font-weight: 600;
+        color: #f3f7fb;
+    }
+
+    .community-connect-text {
+        margin: 0.45rem 0 0;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: rgba(220, 233, 242, 0.7);
+    }
+
+    .community-link-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.85rem;
+        text-decoration: none;
+        border: 1px solid rgba(64, 221, 255, 0.62);
+        border-radius: 0.8rem;
+        background: linear-gradient(180deg, rgba(16, 23, 35, 0.62), rgba(54, 59, 68, 0.46));
+        padding: 1rem 1.05rem;
+        color: inherit;
+    }
+
+    .community-link-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-align: left;
+    }
+
+    .community-link-icon {
+        width: 1.55rem;
+        height: 1.55rem;
+        flex: 0 0 auto;
+    }
+
+    .community-link-title {
+        display: block;
+        font-family: var(--second-family);
+        margin: 0;
+        font-size: 20px;
+        line-height: 150%;
+        color: var(--text-color-white);
+        font-weight: 700;
+    }
+
+    .community-link-desc {
+        display: block;
+        font-size: 16px;
+        line-height: 150%;
+        color: var(--text-color-white);
+        opacity: 0.7;
+        font-family: var(--second-family);
+    }
+
+    .community-link-arrow {
+        width: 1rem;
+        height: 1rem;
+        flex: 0 0 auto;
+    }
+
+    .community-link-arrow path {
+        fill: rgba(255, 255, 255, 0.85);
+    }
+
+    @media (max-width: 900px) {
+        .community-container h2 {
+            font-size: 2.45rem;
+        }
+
+        .community-grid {
+            grid-template-columns: 1fr;
+            max-width: 26rem;
+            gap: 1.7rem;
+        }
+
+        .community-card-light h3 {
+            font-size: 1.8rem;
+        }
+
+        .install-container h2 {
+            font-size: 2.35rem;
+        }
+
+        .install-grid {
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
+        }
+
+        .install-card h3 {
+            font-size: 1.95rem;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .section-community {
+            padding: 4.7rem 1rem 7.2rem;
+        }
+
+        .community-container h2 {
+            font-size: 2rem;
+        }
+
+        .community-description {
+            margin-bottom: 3rem;
+        }
+
+        .community-card {
+            padding: 1.7rem 1.1rem;
+            border-radius: 1.1rem;
+        }
+
+        .community-heart-icon {
+            width: 5.6rem;
+            height: 5.6rem;
+        }
+
+        .community-card-light h3 {
+            font-size: 1.45rem;
+        }
+
+        .community-start-btn {
+            font-size: 0.88rem;
+        }
+
+        .community-connect-title {
+            font-size: 1.25rem;
+        }
+
+        .tool-cta{
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-features {
+            grid-template-columns: 1fr;
+        }
+
+        .getting-started-top {
+            grid-template-columns: 1fr;
+            margin-bottom: 2.3rem;
+        }
+
+        .getting-started-top h2 {
+            font-size: 2.15rem;
+        }
+
+        .getting-started-hero-image {
+            max-width: 380px;
+            justify-self: start;
+        }
+
+        .tools-grid {
+            grid-template-columns: 1fr;
+            gap: 1.75rem;
+        }
+
+        .tool-card h3 {
+            font-size: 1.35rem;
+        }
+    }
+
+
+</style>
+<div class="container-custom">
 <!-- Hero Section -->
 <section class="hero-section">
-    <div class="container">
-        <div class="row justify-content-center text-center">
-            <div class="col-lg-8">
-                <h1 class="hero-title d-flex align-items-center justify-content-center">
-                    <img src="{{ base_url }}assets/icons/qdrant-loader-icon.svg" alt="QDrant Loader" height="160"
-                        class="me-4">
-                    QDrant Loader
-                </h1>
-                <p class="hero-subtitle">
-                    Enterprise-ready vector database toolkit for building searchable knowledge bases from multiple data
-                    sources
-                </p>
-                <div class="mb-4">
-                    <span class="badge-custom">
-                        <i class="bi bi-arrow-repeat me-1"></i>Multi-Project Support
-                    </span>
-                    <span class="badge-custom">
-                        <i class="bi bi-plug me-1"></i>MCP Server
-                    </span>
-                    <span class="badge-custom">
-                        <i class="bi bi-file-earmark-text me-1"></i>File Conversion
-                    </span>
-                    <span class="badge-custom">
-                        <i class="bi bi-search me-1"></i>Semantic Search
-                    </span>
-                    <span class="badge-custom">
-                        <i class="bi bi-building me-1"></i>Enterprise Ready
-                    </span>
+    <img src="{{ base_url }}assets/logos/qdrant-loader-home-background.png" alt="Qdrant Loader visual">
+    <div class="container hero-content">
+        <h1>Qdrant Loader</h1>
+        <p class="hero-description">Enterprise-ready vector database toolkit for building searchable knowledge bases from multiple data sources</p>
+
+        <div class="hero-features">
+            <p class="hero-feature">
+                <svg class="hero-feature-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M12.5 7.5C12.5 7.99445 12.3534 8.4778 12.0787 8.88893C11.804 9.30005 11.4135 9.62048 10.9567 9.8097C10.4999 9.99892 9.99723 10.0484 9.51228 9.95196C9.02732 9.8555 8.58187 9.6174 8.23223 9.26777C7.8826 8.91814 7.6445 8.47268 7.54804 7.98773C7.45157 7.50277 7.50108 7.00011 7.6903 6.54329C7.87952 6.08648 8.19995 5.69603 8.61108 5.42133C9.0222 5.14662 9.50555 5 10 5C10.663 5 11.2989 5.26339 11.7678 5.73223C12.2366 6.20108 12.5 6.83696 12.5 7.5ZM20 5C19.5055 5 19.0222 5.14662 18.6111 5.42133C18.2 5.69603 17.8795 6.08648 17.6903 6.54329C17.5011 7.00011 17.4516 7.50277 17.548 7.98773C17.6445 8.47268 17.8826 8.91814 18.2322 9.26777C18.5819 9.6174 19.0273 9.8555 19.5123 9.95196C19.9972 10.0484 20.4999 9.99892 20.9567 9.8097C21.4135 9.62048 21.804 9.30005 22.0787 8.88893C22.3534 8.4778 22.5 7.99445 22.5 7.5C22.5 6.83696 22.2366 6.20108 21.7678 5.73223C21.2989 5.26339 20.663 5 20 5ZM30 10C30.4945 10 30.9778 9.85338 31.3889 9.57868C31.8001 9.30397 32.1205 8.91353 32.3097 8.45671C32.4989 7.99989 32.5484 7.49723 32.452 7.01228C32.3555 6.52732 32.1174 6.08187 31.7678 5.73223C31.4181 5.3826 30.9727 5.1445 30.4877 5.04804C30.0028 4.95157 29.5001 5.00108 29.0433 5.1903C28.5865 5.37952 28.196 5.69995 27.9213 6.11108C27.6466 6.5222 27.5 7.00555 27.5 7.5C27.5 8.16304 27.7634 8.79893 28.2322 9.26777C28.7011 9.73661 29.337 10 30 10ZM10 13.75C9.50555 13.75 9.0222 13.8966 8.61108 14.1713C8.19995 14.446 7.87952 14.8365 7.6903 15.2933C7.50108 15.7501 7.45157 16.2528 7.54804 16.7377C7.6445 17.2227 7.8826 17.6681 8.23223 18.0178C8.58187 18.3674 9.02732 18.6055 9.51228 18.702C9.99723 18.7984 10.4999 18.7489 10.9567 18.5597C11.4135 18.3705 11.804 18.05 12.0787 17.6389C12.3534 17.2278 12.5 16.7445 12.5 16.25C12.5 15.587 12.2366 14.9511 11.7678 14.4822C11.2989 14.0134 10.663 13.75 10 13.75ZM20 13.75C19.5055 13.75 19.0222 13.8966 18.6111 14.1713C18.2 14.446 17.8795 14.8365 17.6903 15.2933C17.5011 15.7501 17.4516 16.2528 17.548 16.7377C17.6445 17.2227 17.8826 17.6681 18.2322 18.0178C18.5819 18.3674 19.0273 18.6055 19.5123 18.702C19.9972 18.7984 20.4999 18.7489 20.9567 18.5597C21.4135 18.3705 21.804 18.05 22.0787 17.6389C22.3534 17.2278 22.5 16.7445 22.5 16.25C22.5 15.587 22.2366 14.9511 21.7678 14.4822C21.2989 14.0134 20.663 13.75 20 13.75ZM30 13.75C29.5055 13.75 29.0222 13.8966 28.6111 14.1713C28.2 14.446 27.8795 14.8365 27.6903 15.2933C27.5011 15.7501 27.4516 16.2528 27.548 16.7377C27.6445 17.2227 27.8826 17.6681 28.2322 18.0178C28.5819 18.3674 29.0273 18.6055 29.5123 18.702C29.9972 18.7984 30.4999 18.7489 30.9567 18.5597C31.4135 18.3705 31.804 18.05 32.0787 17.6389C32.3534 17.2278 32.5 16.7445 32.5 16.25C32.5 15.587 32.2366 14.9511 31.7678 14.4822C31.2989 14.0134 30.663 13.75 30 13.75ZM10 22.5C9.50555 22.5 9.0222 22.6466 8.61108 22.9213C8.19995 23.196 7.87952 23.5865 7.6903 24.0433C7.50108 24.5001 7.45157 25.0028 7.54804 25.4877C7.6445 25.9727 7.8826 26.4181 8.23223 26.7678C8.58187 27.1174 9.02732 27.3555 9.51228 27.452C9.99723 27.5484 10.4999 27.4989 10.9567 27.3097C11.4135 27.1205 11.804 26.8001 12.0787 26.3889C12.3534 25.9778 12.5 25.4945 12.5 25C12.5 24.337 12.2366 23.7011 11.7678 23.2322C11.2989 22.7634 10.663 22.5 10 22.5ZM20 22.5C19.5055 22.5 19.0222 22.6466 18.6111 22.9213C18.2 23.196 17.8795 23.5865 17.6903 24.0433C17.5011 24.5001 17.4516 25.0028 17.548 25.4877C17.6445 25.9727 17.8826 26.4181 18.2322 26.7678C18.5819 27.1174 19.0273 27.3555 19.5123 27.452C19.9972 27.5484 20.4999 27.4989 20.9567 27.3097C21.4135 27.1205 21.804 26.8001 22.0787 26.3889C22.3534 25.9778 22.5 25.4945 22.5 25C22.5 24.337 22.2366 23.7011 21.7678 23.2322C21.2989 22.7634 20.663 22.5 20 22.5ZM20 31.25C19.5055 31.25 19.0222 31.3966 18.6111 31.6713C18.2 31.946 17.8795 32.3365 17.6903 32.7933C17.5011 33.2501 17.4516 33.7528 17.548 34.2377C17.6445 34.7227 17.8826 35.1681 18.2322 35.5178C18.5819 35.8674 19.0273 36.1055 19.5123 36.202C19.9972 36.2984 20.4999 36.2489 20.9567 36.0597C21.4135 35.8705 21.804 35.5501 22.0787 35.1389C22.3534 34.7278 22.5 34.2445 22.5 33.75C22.5 33.087 22.2366 32.4511 21.7678 31.9822C21.2989 31.5134 20.663 31.25 20 31.25ZM30 22.5C29.5055 22.5 29.0222 22.6466 28.6111 22.9213C28.2 23.196 27.8795 23.5865 27.6903 24.0433C27.5011 24.5001 27.4516 25.0028 27.548 25.4877C27.6445 25.9727 27.8826 26.4181 28.2322 26.7678C28.5819 27.1174 29.0273 27.3555 29.5123 27.452C29.9972 27.5484 30.4999 27.4989 30.9567 27.3097C31.4135 27.1205 31.804 26.8001 32.0787 26.3889C32.3534 25.9778 32.5 25.4945 32.5 25C32.5 24.337 32.2366 23.7011 31.7678 23.2322C31.2989 22.7634 30.663 22.5 30 22.5Z" fill="#4EDDFD"/>
+                </svg>
+                Multi-Project Support
+            </p>
+            <p class="hero-feature">
+                <svg class="hero-feature-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M35.8842 34.1155L28.0608 26.2936C30.3284 23.5713 31.4591 20.0795 31.2177 16.5448C30.9764 13.01 29.3816 9.70433 26.7651 7.31545C24.1486 4.92657 20.7118 3.63839 17.1697 3.71889C13.6276 3.79939 10.2529 5.24237 7.74765 7.74765C5.24237 10.2529 3.79939 13.6276 3.71889 17.1697C3.63839 20.7118 4.92657 24.1486 7.31545 26.7651C9.70433 29.3816 13.01 30.9764 16.5448 31.2177C20.0795 31.4591 23.5713 30.3284 26.2936 28.0608L34.1155 35.8842C34.2316 36.0004 34.3695 36.0925 34.5212 36.1554C34.673 36.2182 34.8356 36.2506 34.9999 36.2506C35.1641 36.2506 35.3267 36.2182 35.4785 36.1554C35.6302 36.0925 35.7681 36.0004 35.8842 35.8842C36.0004 35.7681 36.0925 35.6302 36.1554 35.4785C36.2182 35.3267 36.2506 35.1641 36.2506 34.9999C36.2506 34.8356 36.2182 34.673 36.1554 34.5212C36.0925 34.3695 36.0004 34.2316 35.8842 34.1155ZM6.24987 17.4999C6.24987 15.2748 6.90967 13.0998 8.14584 11.2497C9.382 9.39965 11.139 7.95771 13.1947 7.10622C15.2503 6.25474 17.5123 6.03195 19.6946 6.46603C21.8769 6.90012 23.8815 7.97158 25.4548 9.54492C27.0282 11.1183 28.0996 13.1228 28.5337 15.3051C28.9678 17.4874 28.745 19.7494 27.8935 21.8051C27.042 23.8607 25.6001 25.6177 23.75 26.8539C21.9 28.0901 19.7249 28.7499 17.4999 28.7499C14.5172 28.7466 11.6576 27.5602 9.54857 25.4512C7.4395 23.3421 6.25318 20.4825 6.24987 17.4999Z" fill="#4EDDFD"/>
+                </svg>
+                Semantic Search
+            </p>
+            <p class="hero-feature">
+                <svg class="hero-feature-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M13.75 15C13.75 14.6685 13.8817 14.3505 14.1161 14.1161C14.3505 13.8817 14.6685 13.75 15 13.75H25C25.3315 13.75 25.6495 13.8817 25.8839 14.1161C26.1183 14.3505 26.25 14.6685 26.25 15C26.25 15.3315 26.1183 15.6495 25.8839 15.8839C25.6495 16.1183 25.3315 16.25 25 16.25H15C14.6685 16.25 14.3505 16.1183 14.1161 15.8839C13.8817 15.6495 13.75 15.3315 13.75 15ZM15 21.25H25C25.3315 21.25 25.6495 21.1183 25.8839 20.8839C26.1183 20.6495 26.25 20.3315 26.25 20C26.25 19.6685 26.1183 19.3505 25.8839 19.1161C25.6495 18.8817 25.3315 18.75 25 18.75H15C14.6685 18.75 14.3505 18.8817 14.1161 19.1161C13.8817 19.3505 13.75 19.6685 13.75 20C13.75 20.3315 13.8817 20.6495 14.1161 20.8839C14.3505 21.1183 14.6685 21.25 15 21.25ZM20 23.75H15C14.6685 23.75 14.3505 23.8817 14.1161 24.1161C13.8817 24.3505 13.75 24.6685 13.75 25C13.75 25.3315 13.8817 25.6495 14.1161 25.8839C14.3505 26.1183 14.6685 26.25 15 26.25H20C20.3315 26.25 20.6495 26.1183 20.8839 25.8839C21.1183 25.6495 21.25 25.3315 21.25 25C21.25 24.6685 21.1183 24.3505 20.8839 24.1161C20.6495 23.8817 20.3315 23.75 20 23.75ZM35 7.5V24.4828C35.001 24.8112 34.9368 25.1366 34.811 25.44C34.6852 25.7434 34.5003 26.0187 34.2672 26.25L26.25 34.2672C26.0187 34.5003 25.7434 34.6852 25.44 34.811C25.1366 34.9368 24.8112 35.001 24.4828 35H7.5C6.83696 35 6.20107 34.7366 5.73223 34.2678C5.26339 33.7989 5 33.163 5 32.5V7.5C5 6.83696 5.26339 6.20107 5.73223 5.73223C6.20107 5.26339 6.83696 5 7.5 5H32.5C33.163 5 33.7989 5.26339 34.2678 5.73223C34.7366 6.20107 35 6.83696 35 7.5ZM7.5 32.5H23.75V25C23.75 24.6685 23.8817 24.3505 24.1161 24.1161C24.3505 23.8817 24.6685 23.75 25 23.75H32.5V7.5H7.5V32.5ZM26.25 26.25V30.7344L30.7328 26.25H26.25Z" fill="#4EDDFD"/>
+                </svg>
+                File Conversion
+            </p>
+            <p class="hero-feature">
+                <svg class="hero-feature-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M32.5 5H7.5C6.83696 5 6.20107 5.26339 5.73223 5.73223C5.26339 6.20107 5 6.83696 5 7.5V32.5C5 33.163 5.26339 33.7989 5.73223 34.2678C6.20107 34.7366 6.83696 35 7.5 35H32.5C33.163 35 33.7989 34.7366 34.2678 34.2678C34.7366 33.7989 35 33.163 35 32.5V7.5C35 6.83696 34.7366 6.20107 34.2678 5.73223C33.7989 5.26339 33.163 5 32.5 5ZM13.75 25C13.9972 25 14.2389 25.0733 14.4445 25.2107C14.65 25.348 14.8102 25.5432 14.9048 25.7716C14.9995 26.0001 15.0242 26.2514 14.976 26.4939C14.9278 26.7363 14.8087 26.9591 14.6339 27.1339C14.4591 27.3087 14.2363 27.4278 13.9939 27.476C13.7514 27.5242 13.5001 27.4995 13.2716 27.4048C13.0432 27.3102 12.848 27.15 12.7107 26.9445C12.5733 26.7389 12.5 26.4972 12.5 26.25C12.5 25.9185 12.6317 25.6005 12.8661 25.3661C13.1005 25.1317 13.4185 25 13.75 25ZM7.5 7.5H12.5V22.7156C11.666 23.0105 10.9631 23.5907 10.5155 24.3537C10.0679 25.1167 9.90442 26.0134 10.054 26.8853C10.2036 27.7572 10.6566 28.5481 11.3329 29.1183C12.0093 29.6884 12.8654 30.0012 13.75 30.0012C14.6346 30.0012 15.4907 29.6884 16.1671 29.1183C16.8434 28.5481 17.2964 27.7572 17.446 26.8853C17.5956 26.0134 17.4321 25.1167 16.9845 24.3537C16.5369 23.5907 15.834 23.0105 15 22.7156V18.0172L22.5 25.5172V32.5H7.5V7.5ZM32.5 32.5H25V25C25.0001 24.8358 24.9679 24.6732 24.9052 24.5214C24.8424 24.3697 24.7504 24.2318 24.6344 24.1156L15 14.4828V7.5H20V11.25C19.9999 11.4142 20.0321 11.5768 20.0948 11.7286C20.1576 11.8803 20.2496 12.0182 20.3656 12.1344L22.8656 14.6344C22.6235 15.1385 22.4985 15.6908 22.5 16.25C22.5 16.9917 22.7199 17.7167 23.132 18.3334C23.544 18.9501 24.1297 19.4307 24.8149 19.7145C25.5002 19.9984 26.2542 20.0726 26.9816 19.9279C27.709 19.7833 28.3772 19.4261 28.9017 18.9017C29.4261 18.3772 29.7833 17.709 29.9279 16.9816C30.0726 16.2542 29.9984 15.5002 29.7145 14.8149C29.4307 14.1297 28.9501 13.544 28.3334 13.132C27.7167 12.7199 26.9917 12.5 26.25 12.5C25.6907 12.499 25.1383 12.6245 24.6344 12.8672L22.5 10.7328V7.5H32.5V32.5ZM26.25 15C26.4972 15 26.7389 15.0733 26.9445 15.2107C27.15 15.348 27.3102 15.5432 27.4048 15.7716C27.4995 16.0001 27.5242 16.2514 27.476 16.4939C27.4278 16.7363 27.3087 16.9591 27.1339 17.1339C26.9591 17.3087 26.7363 17.4278 26.4939 17.476C26.2514 17.5242 26.0001 17.4995 25.7716 17.4048C25.5432 17.3102 25.348 17.15 25.2107 16.9445C25.0733 16.7389 25 16.4972 25 16.25C25 15.9185 25.1317 15.6005 25.3661 15.3661C25.6005 15.1317 25.9185 15 26.25 15Z" fill="#4EDDFD"/>
+                </svg>
+                MCP Server
+            </p>
+            <p class="hero-feature">
+                <svg class="hero-feature-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M32.5 21.25H7.5C6.83696 21.25 6.20107 21.5134 5.73223 21.9822C5.26339 22.4511 5 23.087 5 23.75V31.25C5 31.913 5.26339 32.5489 5.73223 33.0178C6.20107 33.4866 6.83696 33.75 7.5 33.75H32.5C33.163 33.75 33.7989 33.4866 34.2678 33.0178C34.7366 32.5489 35 31.913 35 31.25V23.75C35 23.087 34.7366 22.4511 34.2678 21.9822C33.7989 21.5134 33.163 21.25 32.5 21.25ZM32.5 31.25H7.5V23.75H32.5V31.25ZM32.5 6.25H7.5C6.83696 6.25 6.20107 6.51339 5.73223 6.98223C5.26339 7.45107 5 8.08696 5 8.75V16.25C5 16.913 5.26339 17.5489 5.73223 18.0178C6.20107 18.4866 6.83696 18.75 7.5 18.75H32.5C33.163 18.75 33.7989 18.4866 34.2678 18.0178C34.7366 17.5489 35 16.913 35 16.25V8.75C35 8.08696 34.7366 7.45107 34.2678 6.98223C33.7989 6.51339 33.163 6.25 32.5 6.25ZM32.5 16.25H7.5V8.75H32.5V16.25ZM30 12.5C30 12.8708 29.89 13.2334 29.684 13.5417C29.478 13.85 29.1851 14.0904 28.8425 14.2323C28.4999 14.3742 28.1229 14.4113 27.7592 14.339C27.3955 14.2666 27.0614 14.088 26.7992 13.8258C26.537 13.5636 26.3584 13.2295 26.286 12.8658C26.2137 12.5021 26.2508 12.1251 26.3927 11.7825C26.5346 11.4399 26.775 11.147 27.0833 10.941C27.3916 10.735 27.7542 10.625 28.125 10.625C28.6223 10.625 29.0992 10.8225 29.4508 11.1742C29.8025 11.5258 30 12.0027 30 12.5ZM30 27.5C30 27.8708 29.89 28.2334 29.684 28.5417C29.478 28.85 29.1851 29.0904 28.8425 29.2323C28.4999 29.3742 28.1229 29.4113 27.7592 29.339C27.3955 29.2666 27.0614 29.088 26.7992 28.8258C26.537 28.5636 26.3584 28.2295 26.286 27.8658C26.2137 27.5021 26.2508 27.1251 26.3927 26.7825C26.5346 26.4399 26.775 26.147 27.0833 25.941C27.3916 25.735 27.7542 25.625 28.125 25.625C28.6223 25.625 29.0992 25.8225 29.4508 26.1742C29.8025 26.5258 30 27.0027 30 27.5Z" fill="#4EDDFD"/>
+                </svg>
+                Enterprise Ready
+            </p>
+        </div>
+
+        <div class="hero-cta">
+            <a href="docs/" class="hero-btn hero-btn-light">
+                <svg class="hero-btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M21.75 4.5H15C14.4178 4.5 13.8437 4.63554 13.3229 4.8959C12.8022 5.15625 12.3493 5.53426 12 6C11.6507 5.53426 11.1978 5.15625 10.6771 4.8959C10.1563 4.63554 9.58217 4.5 9 4.5H2.25C2.05109 4.5 1.86032 4.57902 1.71967 4.71967C1.57902 4.86032 1.5 5.05109 1.5 5.25V18.75C1.5 18.9489 1.57902 19.1397 1.71967 19.2803C1.86032 19.421 2.05109 19.5 2.25 19.5H9C9.59674 19.5 10.169 19.7371 10.591 20.159C11.0129 20.581 11.25 21.1533 11.25 21.75C11.25 21.9489 11.329 22.1397 11.4697 22.2803C11.6103 22.421 11.8011 22.5 12 22.5C12.1989 22.5 12.3897 22.421 12.5303 22.2803C12.671 22.1397 12.75 21.9489 12.75 21.75C12.75 21.1533 12.9871 20.581 13.409 20.159C13.831 19.7371 14.4033 19.5 15 19.5H21.75C21.9489 19.5 22.1397 19.421 22.2803 19.2803C22.421 19.1397 22.5 18.9489 22.5 18.75V5.25C22.5 5.05109 22.421 4.86032 22.2803 4.71967C22.1397 4.57902 21.9489 4.5 21.75 4.5ZM9 18H3V6H9C9.59674 6 10.169 6.23705 10.591 6.65901C11.0129 7.08097 11.25 7.65326 11.25 8.25V18.75C10.6015 18.262 9.8116 17.9987 9 18ZM21 18H15C14.1884 17.9987 13.3985 18.262 12.75 18.75V8.25C12.75 7.65326 12.9871 7.08097 13.409 6.65901C13.831 6.23705 14.4033 6 15 6H21V18Z" fill="#343330"/>
+                </svg>
+                Get Started
+            </a>
+            <a href="https://github.com/martin-papy/qdrant-loader" target="_blank" rel="noreferrer" class="hero-btn hero-btn-outline">
+                <svg class="hero-btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M19.5291 7.09501C19.7583 6.35551 19.8318 5.57653 19.745 4.80719C19.6582 4.03785 19.413 3.29484 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0967 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.2407 8.81793 19.9924 7.90381 19.5291 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6517 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.511 8.26475 18.7388 8.99779 18.75 9.75001V10.5Z" fill="#343330"/>
+                </svg>
+                View on GitHub
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Getting Started Section -->
+<section class="section-getting-started">
+    <div class="d-flex justify-content-between align-items-start gap-4 flex-column flex-md-row ">
+        <div class="getting-started-content d-flex flex-column gap-3 align-items-start">
+            <h2 class="getting-started-title">Getting started</h2>
+            <p class="getting-started-description">
+                Comprehensive documentation for Qdrant Loader <br> and MCP Server.
+            </p>
+            <a href="docs/" class="tool-cta">
+                Explore Now
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M20.7806 12.5306L14.0306 19.2806C13.8899 19.4213 13.699 19.5003 13.5 19.5003C13.301 19.5003 13.1101 19.4213 12.9694 19.2806C12.8286 19.1398 12.7496 18.949 12.7496 18.7499C12.7496 18.5509 12.8286 18.36 12.9694 18.2193L18.4397 12.7499H3.75C3.55109 12.7499 3.36032 12.6709 3.21967 12.5303C3.07902 12.3896 3 12.1988 3 11.9999C3 11.801 3.07902 11.6103 3.21967 11.4696C3.36032 11.3289 3.55109 11.2499 3.75 11.2499H18.4397L12.9694 5.78055C12.8286 5.63982 12.7496 5.44895 12.7496 5.24993C12.7496 5.05091 12.8286 4.86003 12.9694 4.7193C13.1101 4.57857 13.301 4.49951 13.5 4.49951C13.699 4.49951 13.8899 4.57857 14.0306 4.7193L20.7806 11.4693C20.8504 11.539 20.9057 11.6217 20.9434 11.7127C20.9812 11.8038 21.0006 11.9014 21.0006 11.9999C21.0006 12.0985 20.9812 12.1961 20.9434 12.2871C20.9057 12.3782 20.8504 12.4609 20.7806 12.5306Z" fill="white"/>
+                </svg>
+            </a>
+        </div>
+        <img src="{{ base_url }}assets/icons/R.png" alt="Getting started illustration">
+    </div>
+
+    <div class="getting-started-grid row g-4 g-md-5 mt-0" id="overview">
+        <!-- Card 1 -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="docs/packages/core/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
+                <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M24 14.9998C22.22 14.9998 20.4799 15.5276 18.9999 16.5166C17.5198 17.5055 16.3663 18.9111 15.6851 20.5556C15.0039 22.2002 14.8257 24.0098 15.1729 25.7556C15.5202 27.5014 16.3774 29.1051 17.636 30.3638C18.8947 31.6224 20.4984 32.4796 22.2442 32.8269C23.99 33.1741 25.7996 32.9959 27.4442 32.3147C29.0887 31.6335 30.4943 30.48 31.4832 28.9999C32.4722 27.5199 33 25.7798 33 23.9998C32.997 21.6138 32.0479 19.3263 30.3607 17.6391C28.6735 15.9519 26.386 15.0028 24 14.9998ZM24 29.9998C22.8133 29.9998 21.6533 29.6479 20.6666 28.9886C19.6799 28.3293 18.9108 27.3922 18.4567 26.2959C18.0026 25.1995 17.8838 23.9931 18.1153 22.8292C18.3468 21.6654 18.9182 20.5963 19.7574 19.7571C20.5965 18.918 21.6656 18.3466 22.8295 18.1151C23.9933 17.8836 25.1997 18.0024 26.2961 18.4565C27.3925 18.9106 28.3295 19.6797 28.9888 20.6664C29.6481 21.6531 30 22.8131 30 23.9998C30 25.5911 29.3679 27.1172 28.2426 28.2424C27.1174 29.3676 25.5913 29.9998 24 29.9998ZM41.94 12.4029L25.44 3.37479C24.9991 3.13119 24.5037 3.00342 24 3.00342C23.4963 3.00342 23.0009 3.13119 22.56 3.37479L6.06 12.4067C5.58879 12.6645 5.19544 13.0441 4.92103 13.5058C4.64663 13.9676 4.50122 14.4945 4.5 15.0317V32.9642C4.50122 33.5013 4.64663 34.0282 4.92103 34.49C5.19544 34.9517 5.58879 35.3313 6.06 35.5892L22.56 44.621C23.0009 44.8646 23.4963 44.9924 24 44.9924C24.5037 44.9924 24.9991 44.8646 25.44 44.621L41.94 35.5892C42.4112 35.3313 42.8046 34.9517 43.079 34.49C43.3534 34.0282 43.4988 33.5013 43.5 32.9642V15.0335C43.4998 14.4955 43.3549 13.9673 43.0804 13.5045C42.8059 13.0417 42.412 12.6612 41.94 12.4029ZM24 41.9998L7.5 32.966V15.0335L24 5.99979L40.5 15.0317V32.9642L24 41.9998Z" fill="#4EDDFD"/>
+                </svg>
+                <div class="getting-started-card-body">
+                    <h3 class="h6 fw-bold text-dark mb-1">Qdrant Loader Core</h3>
+                    <p class="small fs-semibold text-muted mb-2">Comprehensive data ingestion toolkit supporting Git, Confluence, JIRA, and local files with intelligent file conversion.</p>
+                    <p class="mt-4 view-doc-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                        <span>View Documentation</span>
+                    </p>
                 </div>
-                <div class="d-flex justify-content-center gap-3 flex-wrap">
-                    <a href="docs/" class="btn btn-light btn-lg">
-                        <i class="bi bi-book me-2"></i>Get Started
-                    </a>
-                    <a href="https://github.com/martin-papy/qdrant-loader" class="btn btn-outline-light btn-lg"
-                        target="_blank">
-                        <i class="bi bi-github me-2"></i>View on GitHub
-                    </a>
+            </a>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="docs/packages/mcp-server/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
+                <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M39 6H9C8.20435 6 7.44129 6.31607 6.87868 6.87868C6.31607 7.44129 6 8.20435 6 9V39C6 39.7956 6.31607 40.5587 6.87868 41.1213C7.44129 41.6839 8.20435 42 9 42H39C39.7956 42 40.5587 41.6839 41.1213 41.1213C41.6839 40.5587 42 39.7956 42 39V9C42 8.20435 41.6839 7.44129 41.1213 6.87868C40.5587 6.31607 39.7956 6 39 6ZM16.5 30C16.7967 30 17.0867 30.088 17.3334 30.2528C17.58 30.4176 17.7723 30.6519 17.8858 30.926C17.9994 31.2001 18.0291 31.5017 17.9712 31.7926C17.9133 32.0836 17.7704 32.3509 17.5607 32.5607C17.3509 32.7704 17.0836 32.9133 16.7926 32.9712C16.5017 33.0291 16.2001 32.9994 15.926 32.8858C15.6519 32.7723 15.4176 32.58 15.2528 32.3334C15.088 32.0867 15 31.7967 15 31.5C15 31.1022 15.158 30.7206 15.4393 30.4393C15.7206 30.158 16.1022 30 16.5 30ZM9 9H15V27.2588C13.9992 27.6126 13.1557 28.3089 12.6186 29.2245C12.0814 30.1401 11.8853 31.2161 12.0648 32.2623C12.2443 33.3086 12.7879 34.2577 13.5995 34.9419C14.4111 35.6261 15.4385 36.0014 16.5 36.0014C17.5615 36.0014 18.5889 35.6261 19.4005 34.9419C20.2121 34.2577 20.7557 33.3086 20.9352 32.2623C21.1147 31.2161 20.9186 30.1401 20.3814 29.2245C19.8443 28.3089 19.0008 27.6126 18 27.2588V21.6206L27 30.6206V39H9V9ZM39 39H30V30C30.0002 29.803 29.9615 29.6078 29.8862 29.4257C29.8109 29.2436 29.7005 29.0782 29.5613 28.9387L18 17.3794V9H24V13.5C23.9998 13.697 24.0385 13.8922 24.1138 14.0743C24.1891 14.2564 24.2995 14.4218 24.4387 14.5613L27.4387 17.5613C27.1482 18.1662 26.9982 18.8289 27 19.5C27 20.39 27.2639 21.26 27.7584 22.0001C28.2529 22.7401 28.9557 23.3169 29.7779 23.6575C30.6002 23.9981 31.505 24.0872 32.3779 23.9135C33.2508 23.7399 34.0526 23.3113 34.682 22.682C35.3113 22.0526 35.7399 21.2508 35.9135 20.3779C36.0872 19.505 35.9981 18.6002 35.6575 17.7779C35.3169 16.9557 34.7401 16.2529 34.0001 15.7584C33.26 15.2639 32.39 15 31.5 15C30.8288 14.9988 30.166 15.1495 29.5613 15.4406L27 12.8794V9H39V39ZM31.5 18C31.7967 18 32.0867 18.088 32.3334 18.2528C32.58 18.4176 32.7723 18.6519 32.8858 18.926C32.9994 19.2001 33.0291 19.5017 32.9712 19.7926C32.9133 20.0836 32.7704 20.3509 32.5607 20.5607C32.3509 20.7704 32.0836 20.9133 31.7926 20.9712C31.5017 21.0291 31.2001 20.9994 30.926 20.8858C30.6519 20.7723 30.4176 20.58 30.2528 20.3334C30.088 20.0867 30 19.7967 30 19.5C30 19.1022 30.158 18.7206 30.4393 18.4393C30.7206 18.158 31.1022 18 31.5 18Z" fill="#4EDDFD"/>
+                </svg>
+                <div class="getting-started-card-body">
+                    <h3 class="h6 fw-bold text-dark mb-1">MCP Server</h3>
+                    <p class="small fs-semibold text-muted mb-2">Model Context Protocol server providing RAG capabilities
+                        for Cursor IDE and other Al development tools.</p>
+                    <p class="mt-4 mb-0 view-doc-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                        <span>View Documentation</span>
+                    </p>
                 </div>
+            </a>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="docs/users/configuration/config-file-reference.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
+                <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M43.2956 32.2499C43.4937 32.5937 43.5476 33.002 43.4453 33.3854C43.343 33.7687 43.093 34.096 42.75 34.2955L24.75 44.7955C24.5206 44.9292 24.2599 44.9997 23.9944 44.9997C23.7289 44.9997 23.4681 44.9292 23.2388 44.7955L5.23875 34.2955C4.90068 34.0923 4.65622 33.7642 4.55831 33.3821C4.4604 33 4.51692 32.5948 4.71563 32.2541C4.91433 31.9134 5.23923 31.6646 5.61999 31.5617C6.00075 31.4588 6.40672 31.51 6.75 31.7042L24 41.7636L41.25 31.7042C41.5938 31.5061 42.0021 31.4523 42.3855 31.5546C42.7689 31.6568 43.0962 31.9068 43.2956 32.2499ZM41.25 22.7042L24 32.7636L6.75 22.7042C6.40846 22.5342 6.01495 22.5007 5.64957 22.6105C5.28419 22.7204 4.97441 22.9653 4.78326 23.2955C4.59212 23.6257 4.53399 24.0163 4.6207 24.3879C4.70741 24.7594 4.93244 25.084 5.25 25.2955L23.25 35.7955C23.4794 35.9292 23.7401 35.9997 24.0056 35.9997C24.2711 35.9997 24.5319 35.9292 24.7612 35.7955L42.7612 25.2955C42.9341 25.1977 43.0859 25.0665 43.2076 24.9096C43.3294 24.7526 43.4188 24.5731 43.4707 24.3813C43.5225 24.1896 43.5357 23.9894 43.5096 23.7925C43.4834 23.5956 43.4184 23.4058 43.3183 23.2343C43.2183 23.0627 43.0851 22.9127 42.9266 22.793C42.7681 22.6732 42.5874 22.5862 42.395 22.5369C42.2025 22.4876 42.0022 22.477 41.8057 22.5057C41.6091 22.5344 41.4203 22.6019 41.25 22.7042ZM4.5 14.9999C4.5006 14.7371 4.57019 14.4792 4.70181 14.2518C4.83344 14.0244 5.02247 13.8356 5.25 13.7042L23.25 3.20423C23.4794 3.07047 23.7401 3 24.0056 3C24.2711 3 24.5319 3.07047 24.7612 3.20423L42.7612 13.7042C42.9877 13.8363 43.1755 14.0255 43.3061 14.2528C43.4367 14.4801 43.5054 14.7377 43.5054 14.9999C43.5054 15.262 43.4367 15.5196 43.3061 15.7469C43.1755 15.9742 42.9877 16.1634 42.7612 16.2955L24.7612 26.7955C24.5319 26.9292 24.2711 26.9997 24.0056 26.9997C23.7401 26.9997 23.4794 26.9292 23.25 26.7955L5.25 16.2955C5.02247 16.1641 4.83344 15.9753 4.70181 15.7479C4.57019 15.5205 4.5006 15.2626 4.5 14.9999ZM8.9775 14.9999L24 23.7636L39.0225 14.9999L24 6.2361L8.9775 14.9999Z" fill="#4EDDFD"/>
+                </svg>
+                <div class="getting-started-card-body">
+                    <h3 class="h6 fw-bold text-dark mb-1">Multi-Project Support</h3>
+                    <p class="small fs-semibold text-muted mb-2">Manage multiple projects with a single configuration, one
+                        Qdrant server, and unified search capabilities.</p>
+                    <p class="mt-4 mb-0 view-doc-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                        <span>View Documentation</span>
+                    </p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="docs/users/detailed-guides/file-conversion/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
+                <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M16.5 18C16.5 17.6022 16.658 17.2206 16.9393 16.9393C17.2206 16.658 17.6022 16.5 18 16.5H30C30.3978 16.5 30.7794 16.658 31.0607 16.9393C31.342 17.2206 31.5 17.6022 31.5 18C31.5 18.3978 31.342 18.7794 31.0607 19.0607C30.7794 19.342 30.3978 19.5 30 19.5H18C17.6022 19.5 17.2206 19.342 16.9393 19.0607C16.658 18.7794 16.5 18.3978 16.5 18ZM18 25.5H30C30.3978 25.5 30.7794 25.342 31.0607 25.0607C31.342 24.7794 31.5 24.3978 31.5 24C31.5 23.6022 31.342 23.2206 31.0607 22.9393C30.7794 22.658 30.3978 22.5 30 22.5H18C17.6022 22.5 17.2206 22.658 16.9393 22.9393C16.658 23.2206 16.5 23.6022 16.5 24C16.5 24.3978 16.658 24.7794 16.9393 25.0607C17.2206 25.342 17.6022 25.5 18 25.5ZM24 28.5H18C17.6022 28.5 17.2206 28.658 16.9393 28.9393C16.658 29.2206 16.5 29.6022 16.5 30C16.5 30.3978 16.658 30.7794 16.9393 31.0607C17.2206 31.342 17.6022 31.5 18 31.5H24C24.3978 31.5 24.7794 31.342 25.0607 31.0607C25.342 30.7794 25.5 30.3978 25.5 30C25.5 29.6022 25.342 29.2206 25.0607 28.9393C24.7794 28.658 24.3978 28.5 24 28.5ZM42 9V29.3794C42.0013 29.7735 41.9242 30.1639 41.7732 30.528C41.6222 30.892 41.4004 31.2224 41.1206 31.5L31.5 41.1206C31.2224 41.4004 30.892 41.6222 30.528 41.7732C30.1639 41.9242 29.7735 42.0013 29.3794 42H9C8.20435 42 7.44129 41.6839 6.87868 41.1213C6.31607 40.5587 6 39.7956 6 39V9C6 8.20435 6.31607 7.44129 6.87868 6.87868C7.44129 6.31607 8.20435 6 9 6H39C39.7956 6 40.5587 6.31607 41.1213 6.87868C41.6839 7.44129 42 8.20435 42 9ZM9 39H28.5V30C28.5 29.6022 28.658 29.2206 28.9393 28.9393C29.2206 28.658 29.6022 28.5 30 28.5H39V9H9V39ZM31.5 31.5V36.8812L36.8794 31.5H31.5Z" fill="#4EDDFD"/>
+                </svg>
+                <div class="getting-started-card-body">
+                    <h3 class="h6 fw-bold text-dark mb-1">File Conversion</h3>
+                    <p class="small fs-semibold text-muted mb-2">Automatic conversion of 20+ file formats including PDF,
+                        Office documents, images, and audio files.</p>
+                    <p class="mt-4 mb-0 view-doc-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                        <span>View Documentation</span>
+                    </p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="coverage/" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
+                <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M40.5 7.5H13.5C12.7044 7.5 11.9413 7.81607 11.3787 8.37868C10.8161 8.94129 10.5 9.70435 10.5 10.5V13.5H7.5C6.70435 13.5 5.94129 13.8161 5.37868 14.3787C4.81607 14.9413 4.5 15.7044 4.5 16.5V37.5C4.5 38.2956 4.81607 39.0587 5.37868 39.6213C5.94129 40.1839 6.70435 40.5 7.5 40.5H34.5C35.2956 40.5 36.0587 40.1839 36.6213 39.6213C37.1839 39.0587 37.5 38.2956 37.5 37.5V34.5H40.5C41.2956 34.5 42.0587 34.1839 42.6213 33.6213C43.1839 33.0587 43.5 32.2956 43.5 31.5V10.5C43.5 9.70435 43.1839 8.94129 42.6213 8.37868C42.0587 7.81607 41.2956 7.5 40.5 7.5ZM34.5 16.5V19.5H7.5V16.5H34.5ZM34.5 37.5H7.5V22.5H34.5V37.5ZM40.5 31.5H37.5V16.5C37.5 15.7044 37.1839 14.9413 36.6213 14.3787C36.0587 13.8161 35.2956 13.5 34.5 13.5H13.5V10.5H40.5V31.5Z" fill="#4EDDFD"/>
+                </svg>
+                <div class="getting-started-card-body">
+                    <h3 class="h6 fw-bold text-dark mb-1">Test Coverage</h3>
+                    <p class="small fs-semibold text-muted mb-2">Excellent coverage (84%). Comprehensive test coverage
+                        reports for all packages with detailed analysis.</p>
+                    <p class="mt-4 mb-0 view-doc-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                        <span>View Documentation</span>
+                    </p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a  href="docs/getting-started/quick-start.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
+                <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M42.6223 5.37751C42.2451 5.00051 41.7742 4.73089 41.2581 4.59642C40.742 4.46196 40.1993 4.46751 39.6861 4.61251H39.658L3.66922 15.5325C3.08496 15.7009 2.56566 16.0428 2.18013 16.513C1.7946 16.9832 1.56105 17.5595 1.51042 18.1654C1.45979 18.7713 1.59448 19.3783 1.89663 19.906C2.19878 20.4336 2.65413 20.857 3.20235 21.12L19.1248 28.875L26.8686 44.7881C27.1095 45.3021 27.4924 45.7364 27.9721 46.0398C28.4519 46.3431 29.0085 46.5028 29.5761 46.5C29.6623 46.5 29.7486 46.4963 29.8348 46.4888C30.4403 46.4397 31.0163 46.2067 31.4855 45.821C31.9547 45.4352 32.2947 44.9152 32.4598 44.3306L43.3723 8.34189C43.3723 8.33251 43.3723 8.32314 43.3723 8.31376C43.5192 7.80182 43.5272 7.26 43.3954 6.74397C43.2636 6.22794 42.9967 5.7563 42.6223 5.37751ZM29.593 43.4719L29.5836 43.4981V43.485L22.0723 28.0538L31.0723 19.0538C31.3418 18.7702 31.4898 18.3925 31.4848 18.0014C31.4797 17.6103 31.3221 17.2365 31.0455 16.9599C30.7689 16.6833 30.3952 16.5257 30.0041 16.5207C29.6129 16.5157 29.2353 16.6637 28.9517 16.9331L19.9517 25.9331L4.51485 18.4219H4.50172H4.52797L40.4998 7.50001L29.593 43.4719Z" fill="#4EDDFD"/>
+                </svg>
+                <div class="getting-started-card-body">
+                    <h3 class="h6 fw-bold text-dark mb-1">Quick Start</h3>
+                    <p class="small fs-semibold text-muted mb-2">Get started with Qdrant Loader in minutes with our
+                        comprehensive installation and setup guide.</p>
+                    <p class="mt-4 mb-0 view-doc-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                        <span>View Documentation</span>
+                    </p>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- Key Features Section -->
+<section class="section-features">
+    <div class="features-container">
+        <div class="divider"></div>
+        <div class="key-feature-content">
+            <h2>Key Features</h2>
+            <p>Startup Framework contains components and complex blocks which can easily be integrated into almost any design. All of the components are made in the same style, and can easily be integrated into projects, allowing you to create hundreds of solutions.</p>
+        </div>
+        <div class="image-box">
+            <img src="{{ base_url }}assets/icons/key-feature-background.png" alt="Feature showcase artwork">
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-item">
+                <svg class="feature-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M45.0001 16.5432C44.9248 19.1544 43.8511 21.6373 42.0001 23.4807L35.4845 30C34.5355 30.9542 33.4067 31.7106 32.1634 32.2256C30.9201 32.7406 29.587 33.0038 28.2413 33H28.232C26.8633 32.9991 25.5087 32.7238 24.2482 32.1905C22.9876 31.6573 21.8468 30.8768 20.893 29.8952C19.9392 28.9136 19.1917 27.7508 18.6949 26.4755C18.198 25.2001 17.9618 23.8382 18.0001 22.47C18.0113 22.0722 18.18 21.6951 18.4693 21.4217C18.7585 21.1483 19.1445 21.001 19.5423 21.0122C19.9401 21.0234 20.3172 21.1922 20.5906 21.4814C20.864 21.7706 21.0113 22.1566 21.0001 22.5544C20.9728 23.5218 21.1396 24.4848 21.4908 25.3866C21.842 26.2884 22.3704 27.1106 23.0448 27.8047C23.7191 28.4988 24.5258 29.0507 25.417 29.4278C26.3083 29.8048 27.2661 29.9994 28.2338 30C29.1852 30.0025 30.1275 29.8163 31.0064 29.4523C31.8854 29.0883 32.6834 28.5537 33.3545 27.8794L39.8701 21.3638C41.2144 20.0026 41.9655 18.1648 41.9596 16.2516C41.9536 14.3385 41.1909 12.5054 39.8381 11.1526C38.4853 9.79982 36.6523 9.03718 34.7391 9.03119C32.826 9.0252 30.9882 9.77636 29.627 11.1207L27.5645 13.1832C27.2809 13.4526 26.9032 13.6006 26.5121 13.5956C26.121 13.5906 25.7473 13.433 25.4706 13.1564C25.194 12.8798 25.0364 12.506 25.0314 12.1149C25.0264 11.7238 25.1744 11.3461 25.4438 11.0625L27.5063 9.00004C28.4579 8.04816 29.5877 7.29306 30.8311 6.77789C32.0745 6.26272 33.4073 5.99756 34.7532 5.99756C36.0992 5.99756 37.4319 6.26272 38.6753 6.77789C39.9188 7.29306 41.0485 8.04816 42.0001 9.00004C42.9857 9.98808 43.7599 11.1664 44.2757 12.4631C44.7914 13.7599 45.0379 15.1481 45.0001 16.5432ZM20.4376 34.8113L18.3751 36.8738C17.7024 37.551 16.9018 38.0877 16.0198 38.4527C15.1378 38.8177 14.1921 39.0038 13.2376 39C11.8057 38.9989 10.4062 38.5733 9.21602 37.7771C8.02586 36.9809 7.09839 35.8498 6.55081 34.5267C6.00323 33.2036 5.86011 31.7479 6.13954 30.3435C6.41896 28.9391 7.10839 27.649 8.12072 26.6363L14.6251 20.1207C15.6496 19.0908 16.96 18.3927 18.3863 18.1172C19.8126 17.8417 21.2888 18.0014 22.6231 18.5755C23.9575 19.1497 25.0884 20.1118 25.8689 21.337C26.6495 22.5621 27.0436 23.9937 27.0001 25.4457C26.9889 25.8435 27.1362 26.2295 27.4096 26.5187C27.683 26.8079 28.0601 26.9767 28.4579 26.9879C28.8557 26.999 29.2417 26.8517 29.5309 26.5783C29.8201 26.305 29.9889 25.9279 30.0001 25.53C30.0361 24.1372 29.7888 22.7515 29.2731 21.4571C28.7574 20.1627 27.9841 18.9865 27.0001 18C25.0786 16.0793 22.4729 15.0004 19.756 15.0004C17.0392 15.0004 14.4335 16.0793 12.512 18L6.00009 24.5157C4.56803 25.9472 3.59244 27.771 3.19661 29.7568C2.80079 31.7426 3.0025 33.8011 3.77625 35.6723C4.55 37.5435 5.86107 39.1433 7.54376 40.2696C9.22646 41.3958 11.2053 41.998 13.2301 42C14.5761 42.0039 15.9095 41.7408 17.1531 41.2258C18.3967 40.7109 19.5258 39.9543 20.4751 39L22.5376 36.9375C22.7803 36.6516 22.9072 36.2851 22.893 35.9103C22.8789 35.5355 22.7249 35.1796 22.4613 34.9127C22.1978 34.6458 21.8438 34.4874 21.4692 34.4686C21.0946 34.4499 20.7265 34.5721 20.4376 34.8113Z" fill="#4EDDFD"/>
+                </svg>
+                <h3>Multiple Data Sources</h3>
+                <p>Git, Confluence, JIRA, Local Files, Public Docs</p>
+            </div>
+
+            <div class="feature-item">
+                <svg class="feature-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M42 28.5C42 28.8978 41.842 29.2794 41.5607 29.5607C41.2794 29.842 40.8978 30 40.5 30H36V33H39C39.3978 33 39.7794 33.158 40.0607 33.4393C40.342 33.7206 40.5 34.1022 40.5 34.5C40.5 34.8978 40.342 35.2794 40.0607 35.5607C39.7794 35.842 39.3978 36 39 36H36V39C36 39.3978 35.842 39.7794 35.5607 40.0607C35.2794 40.342 34.8978 40.5 34.5 40.5C34.1022 40.5 33.7206 40.342 33.4393 40.0607C33.158 39.7794 33 39.3978 33 39V28.5C33 28.1022 33.158 27.7206 33.4393 27.4393C33.7206 27.158 34.1022 27 34.5 27H40.5C40.8978 27 41.2794 27.158 41.5607 27.4393C41.842 27.7206 42 28.1022 42 28.5ZM17.25 32.25C17.25 33.6424 16.6969 34.9777 15.7123 35.9623C14.7277 36.9469 13.3924 37.5 12 37.5H10.5V39C10.5 39.3978 10.342 39.7794 10.0607 40.0607C9.77936 40.342 9.39782 40.5 9 40.5C8.60218 40.5 8.22064 40.342 7.93934 40.0607C7.65804 39.7794 7.5 39.3978 7.5 39V28.5C7.5 28.1022 7.65804 27.7206 7.93934 27.4393C8.22064 27.158 8.60218 27 9 27H12C13.3924 27 14.7277 27.5531 15.7123 28.5377C16.6969 29.5223 17.25 30.8576 17.25 32.25ZM14.25 32.25C14.25 31.6533 14.0129 31.081 13.591 30.659C13.169 30.2371 12.5967 30 12 30H10.5V34.5H12C12.5967 34.5 13.169 34.2629 13.591 33.841C14.0129 33.419 14.25 32.8467 14.25 32.25ZM30.75 33.75C30.75 35.5402 30.0388 37.2571 28.773 38.523C27.5071 39.7888 25.7902 40.5 24 40.5H21C20.6022 40.5 20.2206 40.342 19.9393 40.0607C19.658 39.7794 19.5 39.3978 19.5 39V28.5C19.5 28.1022 19.658 27.7206 19.9393 27.4393C20.2206 27.158 20.6022 27 21 27H24C25.7902 27 27.5071 27.7112 28.773 28.977C30.0388 30.2429 30.75 31.9598 30.75 33.75ZM27.75 33.75C27.75 32.7554 27.3549 31.8016 26.6517 31.0983C25.9484 30.3951 24.9946 30 24 30H22.5V37.5H24C24.9946 37.5 25.9484 37.1049 26.6517 36.4017C27.3549 35.6984 27.75 34.7446 27.75 33.75ZM7.5 21V7.5C7.5 6.70435 7.81607 5.94129 8.37868 5.37868C8.94129 4.81607 9.70435 4.5 10.5 4.5H28.5C28.697 4.49985 28.8922 4.53851 29.0743 4.6138C29.2564 4.68908 29.4218 4.7995 29.5613 4.93875L40.0613 15.4388C40.2005 15.5782 40.3109 15.7436 40.3862 15.9257C40.4615 16.1078 40.5002 16.303 40.5 16.5V21C40.5 21.3978 40.342 21.7794 40.0607 22.0607C39.7794 22.342 39.3978 22.5 39 22.5C38.6022 22.5 38.2206 22.342 37.9393 22.0607C37.658 21.7794 37.5 21.3978 37.5 21V18H28.5C28.1022 18 27.7206 17.842 27.4393 17.5607C27.158 17.2794 27 16.8978 27 16.5V7.5H10.5V21C10.5 21.3978 10.342 21.7794 10.0607 22.0607C9.77936 22.342 9.39782 22.5 9 22.5C8.60218 22.5 8.22064 22.342 7.93934 22.0607C7.65804 21.7794 7.5 21.3978 7.5 21ZM30 15H35.3794L30 9.62063V15Z" fill="#4EDDFD"/>
+                </svg>
+                <h3>File Conversion</h3>
+                <p>PDF, Office, Images, Audio, Archives</p>
+            </div>
+
+            <div class="feature-item">
+                <svg class="feature-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M43.2956 32.2499C43.4937 32.5937 43.5476 33.002 43.4453 33.3854C43.343 33.7687 43.093 34.096 42.75 34.2955L24.75 44.7955C24.5206 44.9292 24.2599 44.9997 23.9944 44.9997C23.7289 44.9997 23.4681 44.9292 23.2388 44.7955L5.23875 34.2955C4.90068 34.0923 4.65622 33.7642 4.55831 33.3821C4.4604 33 4.51692 32.5948 4.71563 32.2541C4.91433 31.9134 5.23923 31.6646 5.61999 31.5617C6.00075 31.4588 6.40672 31.51 6.75 31.7042L24 41.7636L41.25 31.7042C41.5938 31.5061 42.0021 31.4523 42.3855 31.5546C42.7689 31.6568 43.0962 31.9068 43.2956 32.2499ZM41.25 22.7042L24 32.7636L6.75 22.7042C6.40846 22.5342 6.01495 22.5007 5.64957 22.6105C5.28419 22.7204 4.97441 22.9653 4.78326 23.2955C4.59212 23.6257 4.53399 24.0163 4.6207 24.3879C4.70741 24.7594 4.93244 25.084 5.25 25.2955L23.25 35.7955C23.4794 35.9292 23.7401 35.9997 24.0056 35.9997C24.2711 35.9997 24.5319 35.9292 24.7612 35.7955L42.7612 25.2955C42.9341 25.1977 43.0859 25.0665 43.2076 24.9096C43.3294 24.7526 43.4188 24.5731 43.4707 24.3813C43.5225 24.1896 43.5357 23.9894 43.5096 23.7925C43.4834 23.5956 43.4184 23.4058 43.3183 23.2343C43.2183 23.0627 43.0851 22.9127 42.9266 22.793C42.7681 22.6732 42.5874 22.5862 42.395 22.5369C42.2025 22.4876 42.0022 22.477 41.8057 22.5057C41.6091 22.5344 41.4203 22.6019 41.25 22.7042ZM4.5 14.9999C4.5006 14.7371 4.57019 14.4792 4.70181 14.2518C4.83344 14.0244 5.02247 13.8356 5.25 13.7042L23.25 3.20423C23.4794 3.07047 23.7401 3 24.0056 3C24.2711 3 24.5319 3.07047 24.7612 3.20423L42.7612 13.7042C42.9877 13.8363 43.1755 14.0255 43.3061 14.2528C43.4367 14.4801 43.5054 14.7377 43.5054 14.9999C43.5054 15.262 43.4367 15.5196 43.3061 15.7469C43.1755 15.9742 42.9877 16.1634 42.7612 16.2955L24.7612 26.7955C24.5319 26.9292 24.2711 26.9997 24.0056 26.9997C23.7401 26.9997 23.4794 26.9292 23.25 26.7955L5.25 16.2955C5.02247 16.1641 4.83344 15.9753 4.70181 15.7479C4.57019 15.5205 4.5006 15.2626 4.5 14.9999ZM8.9775 14.9999L24 23.7636L39.0225 14.9999L24 6.2361L8.9775 14.9999Z" fill="#4EDDFD"/>
+                </svg>
+                <h3>Multi-Project</h3>
+                <p>Git, Confluence, JIRA, Local Files, Public Docs</p>
+            </div>
+
+            <div class="feature-item">
+                <svg class="feature-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M43.0612 40.9387L33.6731 31.5524C36.3941 28.2856 37.751 24.0955 37.4614 19.8538C37.1718 15.6121 35.258 11.6453 32.1182 8.77864C28.9784 5.91198 24.8543 4.36617 20.6038 4.46277C16.3533 4.55937 12.3036 6.29094 9.29728 9.29728C6.29094 12.3036 4.55937 16.3533 4.46277 20.6038C4.36617 24.8543 5.91198 28.9784 8.77864 32.1182C11.6453 35.258 15.6121 37.1718 19.8538 37.4614C24.0955 37.751 28.2856 36.3941 31.5524 33.6731L40.9387 43.0612C41.0781 43.2006 41.2435 43.3111 41.4256 43.3865C41.6077 43.462 41.8029 43.5008 41.9999 43.5008C42.197 43.5008 42.3922 43.462 42.5743 43.3865C42.7564 43.3111 42.9218 43.2006 43.0612 43.0612C43.2006 42.9218 43.3111 42.7564 43.3865 42.5743C43.462 42.3922 43.5008 42.197 43.5008 41.9999C43.5008 41.8029 43.462 41.6077 43.3865 41.4256C43.3111 41.2435 43.2006 41.0781 43.0612 40.9387ZM7.49994 20.9999C7.49994 18.3299 8.2917 15.7198 9.7751 13.4997C11.2585 11.2797 13.3669 9.54935 15.8337 8.52757C18.3005 7.50578 21.0149 7.23844 23.6337 7.75934C26.2524 8.28024 28.6579 9.56599 30.5459 11.454C32.4339 13.342 33.7196 15.7475 34.2405 18.3662C34.7614 20.985 34.4941 23.6994 33.4723 26.1662C32.4505 28.633 30.7202 30.7414 28.5001 32.2248C26.2801 33.7082 23.67 34.4999 20.9999 34.4999C17.4207 34.496 13.9893 33.0724 11.4584 30.5415C8.9275 28.0106 7.50391 24.5791 7.49994 20.9999Z" fill="#4EDDFD"/>
+                </svg>
+                <h3>Semantic Search</h3>
+                <p>AI-powered document retrieval</p>
+            </div>
+
+            <div class="feature-item">
+                <svg class="feature-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M42 10.5H33V3C33 2.60218 32.842 2.22064 32.5607 1.93934C32.2794 1.65804 31.8978 1.5 31.5 1.5C31.1022 1.5 30.7206 1.65804 30.4393 1.93934C30.158 2.22064 30 2.60218 30 3V10.5H18V3C18 2.60218 17.842 2.22064 17.5607 1.93934C17.2794 1.65804 16.8978 1.5 16.5 1.5C16.1022 1.5 15.7206 1.65804 15.4393 1.93934C15.158 2.22064 15 2.60218 15 3V10.5H6.10312C4.9275 10.5 4.5 11.3962 4.5 12C4.5 12.3978 4.65804 12.7794 4.93934 13.0607C5.22064 13.342 5.60218 13.5 6 13.5H9V30C9 31.9891 9.79018 33.8968 11.1967 35.3033C12.6032 36.7098 14.5109 37.5 16.5 37.5H22.5V45C22.5 45.3978 22.658 45.7794 22.9393 46.0607C23.2206 46.342 23.6022 46.5 24 46.5C24.3978 46.5 24.7794 46.342 25.0607 46.0607C25.342 45.7794 25.5 45.3978 25.5 45V37.5H31.5C33.4891 37.5 35.3968 36.7098 36.8033 35.3033C38.2098 33.8968 39 31.9891 39 30V13.5H42C42.3978 13.5 42.7794 13.342 43.0607 13.0607C43.342 12.7794 43.5 12.3978 43.5 12C43.5 11.6022 43.342 11.2206 43.0607 10.9393C42.7794 10.658 42.3978 10.5 42 10.5ZM31.5 34.5H16.5C15.3065 34.5 14.1619 34.0259 13.318 33.182C12.4741 32.3381 12 31.1935 12 30V13.5H36V30C36 31.1935 35.5259 32.3381 34.682 33.182C33.8381 34.0259 32.6935 34.5 31.5 34.5ZM28.2338 23.145C28.3718 23.3444 28.4594 23.5743 28.4891 23.8149C28.5188 24.0556 28.4898 24.2999 28.4044 24.5269L26.1544 30.5269C26.0146 30.8998 25.7325 31.202 25.3699 31.3669C25.0074 31.5318 24.5942 31.546 24.2212 31.4062C23.8483 31.2665 23.5461 30.9843 23.3812 30.6218C23.2163 30.2593 23.2021 29.8461 23.3419 29.4731L24.8419 25.5H21C20.7576 25.5 20.5188 25.4412 20.3041 25.3288C20.0894 25.2163 19.9051 25.0535 19.7671 24.8543C19.629 24.6551 19.5413 24.4253 19.5115 24.1848C19.4816 23.9443 19.5105 23.7001 19.5956 23.4731L21.8456 17.4731C21.9854 17.1002 22.2675 16.798 22.6301 16.6331C22.9926 16.4682 23.4058 16.454 23.7787 16.5938C24.1517 16.7335 24.4539 17.0157 24.6188 17.3782C24.7837 17.7407 24.7979 18.1539 24.6581 18.5269L23.1581 22.5H27C27.2425 22.4998 27.4814 22.5584 27.6962 22.6707C27.9111 22.783 28.0955 22.9458 28.2338 23.145Z" fill="#4EDDFD" />
+                </svg>
+                <h3>MCP Integration</h3>
+                <p>Cursor IDE and AI tools</p>
+            </div>
+
+            <div class="feature-item">
+                <svg class="feature-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M39 25.5H9C8.20435 25.5 7.44129 25.8161 6.87868 26.3787C6.31607 26.9413 6 27.7044 6 28.5V37.5C6 38.2956 6.31607 39.0587 6.87868 39.6213C7.44129 40.1839 8.20435 40.5 9 40.5H39C39.7956 40.5 40.5587 40.1839 41.1213 39.6213C41.6839 39.0587 42 38.2956 42 37.5V28.5C42 27.7044 41.6839 26.9413 41.1213 26.3787C40.5587 25.8161 39.7956 25.5 39 25.5ZM39 37.5H9V28.5H39V37.5ZM39 7.5H9C8.20435 7.5 7.44129 7.81607 6.87868 8.37868C6.31607 8.94129 6 9.70435 6 10.5V19.5C6 20.2956 6.31607 21.0587 6.87868 21.6213C7.44129 22.1839 8.20435 22.5 9 22.5H39C39.7956 22.5 40.5587 22.1839 41.1213 21.6213C41.6839 21.0587 42 20.2956 42 19.5V10.5C42 9.70435 41.6839 8.94129 41.1213 8.37868C40.5587 7.81607 39.7956 7.5 39 7.5ZM39 19.5H9V10.5H39V19.5ZM36 15C36 15.445 35.868 15.88 35.6208 16.25C35.3736 16.62 35.0222 16.9084 34.611 17.0787C34.1999 17.249 33.7475 17.2936 33.311 17.2068C32.8746 17.12 32.4737 16.9057 32.159 16.591C31.8443 16.2763 31.63 15.8754 31.5432 15.439C31.4564 15.0025 31.501 14.5501 31.6713 14.139C31.8416 13.7278 32.13 13.3764 32.5 13.1292C32.87 12.882 33.305 12.75 33.75 12.75C34.3467 12.75 34.919 12.9871 35.341 13.409C35.7629 13.831 36 14.4033 36 15ZM36 33C36 33.445 35.868 33.88 35.6208 34.25C35.3736 34.62 35.0222 34.9084 34.611 35.0787C34.1999 35.249 33.7475 35.2936 33.311 35.2068C32.8746 35.12 32.4737 34.9057 32.159 34.591C31.8443 34.2763 31.63 33.8754 31.5432 33.439C31.4564 33.0025 31.501 32.5501 31.6713 32.139C31.8416 31.7278 32.13 31.3764 32.5 31.1292C32.87 30.882 33.305 30.75 33.75 30.75C34.3467 30.75 34.919 30.9871 35.341 31.409C35.7629 31.831 36 32.4033 36 33Z" fill="#4EDDFD"/>
+                </svg>
+                <h3>Enterprise Ready</h3>
+                <p>Scalable, secure, monitored</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Overview Section -->
-<section id="overview" class="py-5">
-    <div class="container">
-        <div class="row g-4">
-            <!-- QDrant Loader Core -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 card-hover border-0 shadow">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="bi bi-arrow-repeat text-primary me-2" style="font-size: 1.5rem;"></i>
-                            <h5 class="card-title mb-0">QDrant Loader Core</h5>
-                        </div>
-                        <p class="card-text">
-                            Comprehensive data ingestion toolkit supporting Git, Confluence, JIRA, and local files with
-                            intelligent file conversion.
-                        </p>
-                        <a href="docs/packages/core/README.html" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right me-1"></i>View Documentation
-                        </a>
-                    </div>
-                </div>
+<!-- Quick Installation Section -->
+<section class="section-install">
+    <img class="install-bg" src="{{ base_url }}assets/icons/install-background.png" alt="">
+    <div class="install-overlay"></div>
+
+    <div class="install-container">
+       <div>
+            <h2>Quick Installation</h2>
+            <p>Get started in seconds with Pip</p>
+       </div>
+
+        <div class="install-grid">
+            <div class="install-card">
+                <svg class="install-card-icon" width="39" height="42" viewBox="0 0 39 42" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M19.5 11.9964C17.72 11.9964 15.9799 12.5242 14.4999 13.5131C13.0198 14.5021 11.8663 15.9077 11.1851 17.5522C10.5039 19.1968 10.3257 21.0064 10.6729 22.7522C11.0202 24.498 11.8774 26.1017 13.136 27.3603C14.3947 28.619 15.9984 29.4762 17.7442 29.8234C19.49 30.1707 21.2996 29.9925 22.9442 29.3113C24.5887 28.6301 25.9943 27.4765 26.9832 25.9965C27.9722 24.5165 28.5 22.7764 28.5 20.9964C28.497 18.6103 27.5479 16.3229 25.8607 14.6357C24.1735 12.9485 21.886 11.9993 19.5 11.9964ZM19.5 26.9964C18.3133 26.9964 17.1533 26.6445 16.1666 25.9852C15.1799 25.3259 14.4108 24.3888 13.9567 23.2925C13.5026 22.1961 13.3838 20.9897 13.6153 19.8258C13.8468 18.6619 14.4182 17.5928 15.2574 16.7537C16.0965 15.9146 17.1656 15.3432 18.3295 15.1117C19.4933 14.8801 20.6997 14.999 21.7961 15.4531C22.8925 15.9072 23.8295 16.6763 24.4888 17.663C25.1481 18.6496 25.5 19.8097 25.5 20.9964C25.5 22.5877 24.8679 24.1138 23.7426 25.239C22.6174 26.3642 21.0913 26.9964 19.5 26.9964ZM37.44 9.3995L20.94 0.371372C20.4991 0.127776 20.0037 0 19.5 0C18.9963 0 18.5009 0.127776 18.06 0.371372L1.56 9.40325C1.08879 9.66107 0.695444 10.0407 0.421035 10.5024C0.146625 10.9642 0.00121923 11.4911 0 12.0282V29.9607C0.00121923 30.4979 0.146625 31.0248 0.421035 31.4866C0.695444 31.9483 1.08879 32.3279 1.56 32.5857L18.06 41.6176C18.5009 41.8612 18.9963 41.989 19.5 41.989C20.0037 41.989 20.4991 41.8612 20.94 41.6176L37.44 32.5857C37.9112 32.3279 38.3046 31.9483 38.579 31.4866C38.8534 31.0248 38.9988 30.4979 39 29.9607V12.0301C38.9998 11.492 38.8549 10.9639 38.5804 10.5011C38.3059 10.0383 37.912 9.65778 37.44 9.3995ZM19.5 38.9964L3 29.9626V12.0301L19.5 2.99637L36 12.0282V29.9607L19.5 38.9964Z" />
+                </svg>
+                <h3>Core library</h3>
+                <p>Lifetime license. Build unlimited sites at no additional cost!</p>
+                <pre>pip install qdrant-loader-core</pre>
+                <a href="https://pypi.org/project/qdrant-loader-core/" target="_blank" rel="noopener noreferrer">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 6.24995C9.25832 6.24995 8.5333 6.46989 7.91661 6.88194C7.29993 7.294 6.81928 7.87967 6.53545 8.56489C6.25162 9.25011 6.17736 10.0041 6.32206 10.7315C6.46675 11.459 6.8239 12.1272 7.34835 12.6516C7.8728 13.1761 8.54098 13.5332 9.26841 13.6779C9.99584 13.8226 10.7498 13.7483 11.4351 13.4645C12.1203 13.1807 12.706 12.7 13.118 12.0833C13.5301 11.4667 13.75 10.7416 13.75 9.99995C13.7488 9.00577 13.3533 8.05266 12.6503 7.34967C11.9473 6.64668 10.9942 6.25119 10 6.24995ZM10 12.5C9.50555 12.5 9.0222 12.3533 8.61107 12.0786C8.19995 11.8039 7.87952 11.4135 7.6903 10.9567C7.50108 10.4998 7.45157 9.99718 7.54804 9.51223C7.6445 9.02728 7.8826 8.58182 8.23223 8.23219C8.58186 7.88255 9.02732 7.64445 9.51227 7.54799C9.99723 7.45153 10.4999 7.50104 10.9567 7.69025C11.4135 7.87947 11.804 8.1999 12.0787 8.61103C12.3534 9.02215 12.5 9.5055 12.5 9.99995C12.5 10.663 12.2366 11.2989 11.7678 11.7677C11.2989 12.2366 10.663 12.5 10 12.5ZM17.475 5.16792L10.6 1.4062C10.4163 1.3047 10.2099 1.25146 10 1.25146C9.79013 1.25146 9.58369 1.3047 9.4 1.4062L2.525 5.16948C2.32866 5.27691 2.16477 5.43508 2.05043 5.62747C1.93609 5.81987 1.87551 6.03943 1.875 6.26323V13.7351C1.87551 13.9589 1.93609 14.1785 2.05043 14.3709C2.16477 14.5633 2.32866 14.7214 2.525 14.8289L9.4 18.5921C9.58369 18.6936 9.79013 18.7469 10 18.7469C10.2099 18.7469 10.4163 18.6936 10.6 18.5921L17.475 14.8289C17.6713 14.7214 17.8352 14.5633 17.9496 14.3709C18.0639 14.1785 18.1245 13.9589 18.125 13.7351V6.26402C18.1249 6.03981 18.0645 5.81976 17.9502 5.62692C17.8358 5.43407 17.6717 5.27554 17.475 5.16792ZM10 17.5L3.125 13.7359V6.26402L10 2.49995L16.875 6.26323V13.7351L10 17.5Z" fill="white" />
+                    </svg>
+                    View on PyPI
+                </a>
             </div>
 
-            <!-- MCP Server -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 card-hover border-0 shadow">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="bi bi-plug text-primary me-2" style="font-size: 1.5rem;"></i>
-                            <h5 class="card-title mb-0">MCP Server</h5>
-                        </div>
-                        <p class="card-text">
-                            Model Context Protocol server providing RAG capabilities for Cursor IDE and other AI
-                            development tools.
-                        </p>
-                        <a href="docs/packages/mcp-server/README.html" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right me-1"></i>View Documentation
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Multi-Project Support -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 card-hover border-0 shadow">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="bi bi-diagram-3 text-primary me-2" style="font-size: 1.5rem;"></i>
-                            <h5 class="card-title mb-0">Multi-Project Support</h5>
-                        </div>
-                        <p class="card-text">
-                            Manage multiple projects with a single configuration, one QDrant server, and unified search
-                            capabilities.
-                        </p>
-                        <a href="docs/users/configuration/config-file-reference.html" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right me-1"></i>View Configuration
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- File Conversion -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 card-hover border-0 shadow">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="bi bi-file-earmark-text text-primary me-2" style="font-size: 1.5rem;"></i>
-                            <h5 class="card-title mb-0">File Conversion</h5>
-                        </div>
-                        <p class="card-text">
-                            Automatic conversion of 20+ file formats including PDF, Office documents, images, and audio
-                            files.
-                        </p>
-                        <a href="docs/users/detailed-guides/file-conversion/README.html"
-                            class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right me-1"></i>View Guide
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Test Coverage -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 card-hover border-0 shadow">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="bi bi-graph-up text-primary me-2" style="font-size: 1.5rem;"></i>
-                            <h5 class="card-title mb-0">Test Coverage</h5>
-                        </div>
-                        <p class="card-text" id="coverage-summary">
-                            Comprehensive test coverage reports for both packages with detailed analysis.
-                        </p>
-                        <a href="coverage/" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right me-1"></i>View Coverage Reports
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Start -->
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 card-hover border-0 shadow">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <i class="bi bi-play-circle text-primary me-2" style="font-size: 1.5rem;"></i>
-                            <h5 class="card-title mb-0">Quick Start</h5>
-                        </div>
-                        <p class="card-text">
-                            Get started with QDrant Loader in minutes with our comprehensive installation and setup
-                            guide.
-                        </p>
-                        <a href="docs/getting-started/quick-start.html" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right me-1"></i>Get Started
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Features Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="row">
-            <div class="col-12 text-center mb-5">
-                <h2 class="display-5 fw-bold text-primary">
-                    <i class="bi bi-stars me-3"></i>Key Features
-                </h2>
-                <p class="lead text-muted">Everything you need for enterprise-grade vector database management</p>
+            <div class="install-card">
+                <svg class="install-card-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M39 6H9C8.20435 6 7.44129 6.31607 6.87868 6.87868C6.31607 7.44129 6 8.20435 6 9V39C6 39.7956 6.31607 40.5587 6.87868 41.1213C7.44129 41.6839 8.20435 42 9 42H39C39.7956 42 40.5587 41.6839 41.1213 41.1213C41.6839 40.5587 42 39.7956 42 39V9C42 8.20435 41.6839 7.44129 41.1213 6.87868C40.5587 6.31607 39.7956 6 39 6ZM16.5 30C16.7967 30 17.0867 30.088 17.3334 30.2528C17.58 30.4176 17.7723 30.6519 17.8858 30.926C17.9994 31.2001 18.0291 31.5017 17.9712 31.7926C17.9133 32.0836 17.7704 32.3509 17.5607 32.5607C17.3509 32.7704 17.0836 32.9133 16.7926 32.9712C16.5017 33.0291 16.2001 32.9994 15.926 32.8858C15.6519 32.7723 15.4176 32.58 15.2528 32.3334C15.088 32.0867 15 31.7967 15 31.5C15 31.1022 15.158 30.7206 15.4393 30.4393C15.7206 30.158 16.1022 30 16.5 30ZM9 9H15V27.2588C13.9992 27.6126 13.1557 28.3089 12.6186 29.2245C12.0814 30.1401 11.8853 31.2161 12.0648 32.2623C12.2443 33.3086 12.7879 34.2577 13.5995 34.9419C14.4111 35.6261 15.4385 36.0014 16.5 36.0014C17.5615 36.0014 18.5889 35.6261 19.4005 34.9419C20.2121 34.2577 20.7557 33.3086 20.9352 32.2623C21.1147 31.2161 20.9186 30.1401 20.3814 29.2245C19.8443 28.3089 19.0008 27.6126 18 27.2588V21.6206L27 30.6206V39H9V9ZM39 39H30V30C30.0002 29.803 29.9615 29.6078 29.8862 29.4257C29.8109 29.2436 29.7005 29.0782 29.5613 28.9387L18 17.3794V9H24V13.5C23.9998 13.697 24.0385 13.8922 24.1138 14.0743C24.1891 14.2564 24.2995 14.4218 24.4387 14.5613L27.4387 17.5613C27.1482 18.1662 26.9982 18.8289 27 19.5C27 20.39 27.2639 21.26 27.7584 22.0001C28.2529 22.7401 28.9557 23.3169 29.7779 23.6575C30.6002 23.9981 31.505 24.0872 32.3779 23.9135C33.2508 23.7399 34.0526 23.3113 34.682 22.682C35.3113 22.0526 35.7399 21.2508 35.9135 20.3779C36.0872 19.505 35.9981 18.6002 35.6575 17.7779C35.3169 16.9557 34.7401 16.2529 34.0001 15.7584C33.26 15.2639 32.39 15 31.5 15C30.8288 14.9988 30.166 15.1495 29.5613 15.4406L27 12.8794V9H39V39ZM31.5 18C31.7967 18 32.0867 18.088 32.3334 18.2528C32.58 18.4176 32.7723 18.6519 32.8858 18.926C32.9994 19.2001 33.0291 19.5017 32.9712 19.7926C32.9133 20.0836 32.7704 20.3509 32.5607 20.5607C32.3509 20.7704 32.0836 20.9133 31.7926 20.9712C31.5017 21.0291 31.2001 20.9994 30.926 20.8858C30.6519 20.7723 30.4176 20.58 30.2528 20.3334C30.088 20.0867 30 19.7967 30 19.5C30 19.1022 30.158 18.7206 30.4393 18.4393C30.7206 18.158 31.1022 18 31.5 18Z" />
+                </svg>
+                <h3>MCP Server</h3>
+                <p>Lifetime license. Build unlimited sites at no additional cost!</p>
+                <pre>pip install qdrant-loader-mcp-server</pre>
+                <a href="https://pypi.org/project/qdrant-loader-mcp-server/" target="_blank" rel="noopener noreferrer">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 6.24995C9.25832 6.24995 8.5333 6.46989 7.91661 6.88194C7.29993 7.294 6.81928 7.87967 6.53545 8.56489C6.25162 9.25011 6.17736 10.0041 6.32206 10.7315C6.46675 11.459 6.8239 12.1272 7.34835 12.6516C7.8728 13.1761 8.54098 13.5332 9.26841 13.6779C9.99584 13.8226 10.7498 13.7483 11.4351 13.4645C12.1203 13.1807 12.706 12.7 13.118 12.0833C13.5301 11.4667 13.75 10.7416 13.75 9.99995C13.7488 9.00577 13.3533 8.05266 12.6503 7.34967C11.9473 6.64668 10.9942 6.25119 10 6.24995ZM10 12.5C9.50555 12.5 9.0222 12.3533 8.61107 12.0786C8.19995 11.8039 7.87952 11.4135 7.6903 10.9567C7.50108 10.4998 7.45157 9.99718 7.54804 9.51223C7.6445 9.02728 7.8826 8.58182 8.23223 8.23219C8.58186 7.88255 9.02732 7.64445 9.51227 7.54799C9.99723 7.45153 10.4999 7.50104 10.9567 7.69025C11.4135 7.87947 11.804 8.1999 12.0787 8.61103C12.3534 9.02215 12.5 9.5055 12.5 9.99995C12.5 10.663 12.2366 11.2989 11.7678 11.7677C11.2989 12.2366 10.663 12.5 10 12.5ZM17.475 5.16792L10.6 1.4062C10.4163 1.3047 10.2099 1.25146 10 1.25146C9.79013 1.25146 9.58369 1.3047 9.4 1.4062L2.525 5.16948C2.32866 5.27691 2.16477 5.43508 2.05043 5.62747C1.93609 5.81987 1.87551 6.03943 1.875 6.26323V13.7351C1.87551 13.9589 1.93609 14.1785 2.05043 14.3709C2.16477 14.5633 2.32866 14.7214 2.525 14.8289L9.4 18.5921C9.58369 18.6936 9.79013 18.7469 10 18.7469C10.2099 18.7469 10.4163 18.6936 10.6 18.5921L17.475 14.8289C17.6713 14.7214 17.8352 14.5633 17.9496 14.3709C18.0639 14.1785 18.1245 13.9589 18.125 13.7351V6.26402C18.1249 6.03981 18.0645 5.81976 17.9502 5.62692C17.8358 5.43407 17.6717 5.27554 17.475 5.16792ZM10 17.5L3.125 13.7359V6.26402L10 2.49995L16.875 6.26323V13.7351L10 17.5Z" fill="white" />
+                    </svg>
+                    View on PyPI
+                </a>
             </div>
         </div>
 
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6 text-center">
-                <div class="feature-icon">
-                    <i class="bi bi-link-45deg"></i>
-                </div>
-                <h4 class="fw-bold">Multiple Data Sources</h4>
-                <p class="text-muted">Git, Confluence, JIRA, Local Files, Public Docs</p>
-            </div>
-
-            <div class="col-lg-4 col-md-6 text-center">
-                <div class="feature-icon">
-                    <i class="bi bi-arrow-repeat"></i>
-                </div>
-                <h4 class="fw-bold">File Conversion</h4>
-                <p class="text-muted">PDF, Office, Images, Audio, Archives</p>
-            </div>
-
-            <div class="col-lg-4 col-md-6 text-center">
-                <div class="feature-icon">
-                    <i class="bi bi-diagram-3"></i>
-                </div>
-                <h4 class="fw-bold">Multi-Project</h4>
-                <p class="text-muted">Single config, multiple projects</p>
-            </div>
-
-            <div class="col-lg-4 col-md-6 text-center">
-                <div class="feature-icon">
-                    <i class="bi bi-search"></i>
-                </div>
-                <h4 class="fw-bold">Semantic Search</h4>
-                <p class="text-muted">AI-powered document retrieval</p>
-            </div>
-
-            <div class="col-lg-4 col-md-6 text-center">
-                <div class="feature-icon">
-                    <i class="bi bi-plug"></i>
-                </div>
-                <h4 class="fw-bold">MCP Integration</h4>
-                <p class="text-muted">Cursor IDE and AI tools</p>
-            </div>
-
-            <div class="col-lg-4 col-md-6 text-center">
-                <div class="feature-icon">
-                    <i class="bi bi-building"></i>
-                </div>
-                <h4 class="fw-bold">Enterprise Ready</h4>
-                <p class="text-muted">Scalable, secure, monitored</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Installation Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="text-center mb-5">
-                    <h2 class="display-6 fw-bold text-primary">
-                        <i class="bi bi-download me-3"></i>Quick Installation
-                    </h2>
-                    <p class="lead text-muted">Get started in seconds with pip</p>
-                </div>
-
-                <div class="card border-0 shadow">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h5 class="text-primary mb-3">
-                                    <i class="bi bi-cpu me-2"></i>Core Library
-                                </h5>
-                                <pre class="bg-dark text-light p-3 rounded"><code>pip install qdrant-loader-core</code></pre>
-                                <div class="text-center mt-2">
-                                    <a href="https://pypi.org/project/qdrant-loader-core/"
-                                        class="btn btn-sm btn-outline-info" target="_blank">
-                                        <i class="bi bi-box me-1"></i>View on PyPI
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h5 class="text-primary mb-3">
-                                    <i class="bi bi-plug me-2"></i>MCP Server
-                                </h5>
-                                <pre
-                                    class="bg-dark text-light p-3 rounded"><code>pip install qdrant-loader-mcp-server</code></pre>
-                                <div class="text-center mt-2">
-                                    <a href="https://pypi.org/project/qdrant-loader-mcp-server/"
-                                        class="btn btn-sm btn-outline-info" target="_blank">
-                                        <i class="bi bi-plug me-1"></i>View on PyPI
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-center mt-4">
-                            <a href="docs/" class="btn btn-primary btn-lg">
-                                <i class="bi bi-book me-2"></i>View Full Documentation
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <a href="docs/" class="install-cta">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M8.25 9C8.25 8.80109 8.32902 8.61032 8.46967 8.46967C8.61032 8.32902 8.80109 8.25 9 8.25H15C15.1989 8.25 15.3897 8.32902 15.5303 8.46967C15.671 8.61032 15.75 8.80109 15.75 9C15.75 9.19891 15.671 9.38968 15.5303 9.53033C15.3897 9.67098 15.1989 9.75 15 9.75H9C8.80109 9.75 8.61032 9.67098 8.46967 9.53033C8.32902 9.38968 8.25 9.19891 8.25 9ZM9 12.75H15C15.1989 12.75 15.3897 12.671 15.5303 12.5303C15.671 12.3897 15.75 12.1989 15.75 12C15.75 11.8011 15.671 11.6103 15.5303 11.4697C15.3897 11.329 15.1989 11.25 15 11.25H9C8.80109 11.25 8.61032 11.329 8.46967 11.4697C8.32902 11.6103 8.25 11.8011 8.25 12C8.25 12.1989 8.32902 12.3897 8.46967 12.5303C8.61032 12.671 8.80109 12.75 9 12.75ZM12 14.25H9C8.80109 14.25 8.61032 14.329 8.46967 14.4697C8.32902 14.6103 8.25 14.8011 8.25 15C8.25 15.1989 8.32902 15.3897 8.46967 15.5303C8.61032 15.671 8.80109 15.75 9 15.75H12C12.1989 15.75 12.3897 15.671 12.5303 15.5303C12.671 15.3897 12.75 15.1989 12.75 15C12.75 14.8011 12.671 14.6103 12.5303 14.4697C12.3897 14.329 12.1989 14.25 12 14.25ZM21 4.5V14.6897C21.0006 14.8867 20.9621 15.082 20.8866 15.264C20.8111 15.446 20.7002 15.6112 20.5603 15.75L15.75 20.5603C15.6112 20.7002 15.446 20.8111 15.264 20.8866C15.082 20.9621 14.8867 21.0006 14.6897 21H4.5C4.10218 21 3.72064 20.842 3.43934 20.5607C3.15804 20.2794 3 19.8978 3 19.5V4.5C3 4.10218 3.15804 3.72064 3.43934 3.43934C3.72064 3.15804 4.10218 3 4.5 3H19.5C19.8978 3 20.2794 3.15804 20.5607 3.43934C20.842 3.72064 21 4.10218 21 4.5ZM4.5 19.5H14.25V15C14.25 14.8011 14.329 14.6103 14.4697 14.4697C14.6103 14.329 14.8011 14.25 15 14.25H19.5V4.5H4.5V19.5ZM15.75 15.75V18.4406L18.4397 15.75H15.75Z" />
+            </svg>
+            View Full Documentation
+        </a>
     </div>
 </section>
 
 <!-- Community Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="text-center mb-5">
-                    <h2 class="display-6 fw-bold text-primary">
-                        <i class="bi bi-people me-3"></i>Join the Community
-                    </h2>
-                    <p class="lead text-muted">Help us build the future of vector database tooling</p>
+<section class="section-community">
+    <img class="community-bg" src="{{ base_url }}assets/icons/community-background.png" alt="">
+    <div class="community-overlay"></div>
+
+    <div class="community-container">
+        <h2>Join The Community</h2>
+        <p class="community-subtitle">Help us build the future of vector database tooling</p>
+        <p class="community-description">Join our community of developers! Whether you're fixing bugs, adding features, or improving documentation, every contribution makes a difference.</p>
+
+        <div class="community-grid">
+            <div class="community-card community-card-light">
+                <div class="card-light-content">
+                    <svg class="community-heart-icon" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path opacity="0.2" d="M108.75 47.8125C108.75 78.75 60 105 60 105C60 105 11.25 78.75 11.25 47.8125C11.25 41.0992 13.9168 34.6609 18.6639 29.9139C23.4109 25.1668 29.8492 22.5 36.5625 22.5C47.1516 22.5 56.2219 28.2703 60 37.5C63.7781 28.2703 72.8484 22.5 83.4375 22.5C90.1508 22.5 96.5891 25.1668 101.336 29.9139C106.083 34.6609 108.75 41.0992 108.75 47.8125Z" fill="white" />
+                        <path d="M83.4375 18.75C73.7578 18.75 65.2828 22.9125 60 29.9484C54.7172 22.9125 46.2422 18.75 36.5625 18.75C28.8573 18.7587 21.4702 21.8234 16.0218 27.2718C10.5734 32.7202 7.50868 40.1073 7.5 47.8125C7.5 80.625 56.1516 107.184 58.2234 108.281C58.7695 108.575 59.3799 108.729 60 108.729C60.6201 108.729 61.2305 108.575 61.7766 108.281C63.8484 107.184 112.5 80.625 112.5 47.8125C112.491 40.1073 109.427 32.7202 103.978 27.2718C98.5298 21.8234 91.1427 18.7587 83.4375 18.75ZM60 100.687C51.4406 95.7 15 72.9797 15 47.8125C15.0074 42.0961 17.2816 36.6159 21.3237 32.5737C25.3659 28.5316 30.8461 26.2574 36.5625 26.25C45.6797 26.25 53.3344 31.1062 56.5312 38.9062C56.8138 39.594 57.2944 40.1823 57.912 40.5963C58.5297 41.0103 59.2564 41.2314 60 41.2314C60.7436 41.2314 61.4703 41.0103 62.088 40.5963C62.7056 40.1823 63.1862 39.594 63.4687 38.9062C66.6656 31.0922 74.3203 26.25 83.4375 26.25C89.1539 26.2574 94.6341 28.5316 98.6763 32.5737C102.718 36.6159 104.993 42.0961 105 47.8125C105 72.9422 68.55 95.6953 60 100.687Z" fill="#FF8F84" />
+                    </svg>
+                    <h3>Contribute to Qdrant Loader</h3>
+                    <p class="community-card-copy">Join our community of developers! Whether you're fixing bugs, adding features, or improving documentation, every contribution makes a difference.</p>
+                    <p class="community-card-tags text-muted">Code , Documentation, Bug Reports, Ideas</p>
                 </div>
+                <a href="https://github.com/martin-papy/qdrant-loader" target="_blank" rel="noopener noreferrer" class="community-start-btn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M21 4.5V19.5C21 19.8978 20.842 20.2794 20.5606 20.5607C20.2793 20.842 19.8978 21 19.5 21H12.75C12.5511 21 12.3603 20.921 12.2197 20.7803C12.079 20.6397 12 20.4489 12 20.25C12 20.0511 12.079 19.8603 12.2197 19.7197C12.3603 19.579 12.5511 19.5 12.75 19.5H19.5V4.5H4.49999V13.5C4.49999 13.6989 4.42097 13.8897 4.28032 14.0303C4.13967 14.171 3.9489 14.25 3.74999 14.25C3.55108 14.25 3.36031 14.171 3.21966 14.0303C3.07901 13.8897 2.99999 13.6989 2.99999 13.5V4.5C2.99999 4.10218 3.15802 3.72064 3.43933 3.43934C3.72063 3.15804 4.10216 3 4.49999 3H19.5C19.8978 3 20.2793 3.15804 20.5606 3.43934C20.842 3.72064 21 4.10218 21 4.5ZM11.7806 14.4694C11.711 14.3996 11.6282 14.3443 11.5372 14.3066C11.4461 14.2688 11.3486 14.2494 11.25 14.2494C11.1514 14.2494 11.0538 14.2688 10.9628 14.3066C10.8717 14.3443 10.789 14.3996 10.7194 14.4694L5.99999 19.1897L4.28061 17.4694C4.21093 17.3997 4.12821 17.3444 4.03716 17.3067C3.94612 17.269 3.84854 17.2496 3.74999 17.2496C3.65144 17.2496 3.55386 17.269 3.46282 17.3067C3.37177 17.3444 3.28905 17.3997 3.21936 17.4694C3.14968 17.5391 3.09441 17.6218 3.05669 17.7128C3.01898 17.8039 2.99957 17.9015 2.99957 18C2.99957 18.0985 3.01898 18.1961 3.05669 18.2872C3.09441 18.3782 3.14968 18.4609 3.21936 18.5306L5.46936 20.7806C5.53902 20.8504 5.62174 20.9057 5.71278 20.9434C5.80383 20.9812 5.90143 21.0006 5.99999 21.0006C6.09855 21.0006 6.19615 20.9812 6.28719 20.9434C6.37824 20.9057 6.46096 20.8504 6.53062 20.7806L11.7806 15.5306C11.8503 15.461 11.9057 15.3783 11.9434 15.2872C11.9812 15.1962 12.0006 15.0986 12.0006 15C12.0006 14.9014 11.9812 14.8038 11.9434 14.7128C11.9057 14.6217 11.8503 14.539 11.7806 14.4694Z" />
+                    </svg>
+                    Start Contributing
+                </a>
+            </div>
 
-                <div class="row g-4">
-                    <!-- Contributing CTA -->
-                    <div class="col-lg-6">
-                        <div class="card h-100 border-0 shadow-lg bg-primary text-white">
-                            <div class="card-body text-center p-5">
-                                <div class="mb-4">
-                                    <i class="bi bi-heart-fill" style="font-size: 3rem;"></i>
-                                </div>
-                                <h3 class="fw-bold mb-3">Contribute to QDrant Loader</h3>
-                                <p class="mb-4">
-                                    Join our community of developers! Whether you're fixing bugs, adding
-                                    features,
-                                    or improving documentation, every contribution makes a difference.
-                                </p>
-                                <div class="mb-4">
-                                    <span class="badge bg-light text-dark me-2 mb-2">
-                                        <i class="bi bi-code-slash me-1"></i>Code
-                                    </span>
-                                    <span class="badge bg-light text-dark me-2 mb-2">
-                                        <i class="bi bi-file-text me-1"></i>Documentation
-                                    </span>
-                                    <span class="badge bg-light text-dark me-2 mb-2">
-                                        <i class="bi bi-bug me-1"></i>Bug Reports
-                                    </span>
-                                    <span class="badge bg-light text-dark me-2 mb-2">
-                                        <i class="bi bi-lightbulb me-1"></i>Ideas
-                                    </span>
-                                </div>
-                                <a href="docs/CONTRIBUTING.html" class="btn btn-light btn-lg">
-                                    <i class="bi bi-arrow-right me-2"></i>Start Contributing
-                                </a>
-                            </div>
-                        </div>
+            <div class="community-card community-card-dark">
+                <div class="community-connect-header">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M41.2819 18.7501L38.0362 13.1251C37.3401 11.9197 36.1937 11.04 34.8492 10.6796C33.5046 10.3192 32.072 10.5076 30.8662 11.2032C30.1939 11.5917 29.6172 12.1261 29.1787 12.767L25.9125 7.1251C25.4515 6.32777 24.7888 5.66574 23.9911 5.20548C23.1933 4.74522 22.2885 4.50293 21.3675 4.50293C20.4465 4.50293 19.5417 4.74522 18.7439 5.20548C17.9461 5.66574 17.2835 6.32777 16.8225 7.1251C15.8638 6.37019 14.672 5.97283 13.452 6.00132C12.2321 6.02982 11.0602 6.48238 10.1377 7.28123C9.21528 8.08008 8.59992 9.17531 8.39742 10.3787C8.19492 11.582 8.41793 12.8183 9.02812 13.8751L9.32624 14.3926C8.55046 14.4528 7.79814 14.6867 7.12499 15.077C5.91936 15.7734 5.03977 16.9203 4.6797 18.2653C4.31963 19.6103 4.50859 21.0432 5.20499 22.2489L12.705 35.2463C13.784 37.1262 15.225 38.7734 16.9445 40.0929C18.6641 41.4124 20.6281 42.378 22.7231 42.9338C24.1249 43.3083 25.5697 43.4974 27.0206 43.4963C29.9146 43.4914 32.7564 42.7254 35.2608 41.2752C37.7651 39.825 39.8441 37.7417 41.2889 35.2342C42.7338 32.7267 43.4937 29.8833 43.4925 26.9893C43.4912 24.0953 42.7289 21.2526 41.2819 18.7464V18.7501ZM40.0331 30.4951C39.3416 33.0736 37.9011 35.3891 35.8938 37.149C33.8865 38.909 31.4024 40.0342 28.7557 40.3826C26.1089 40.731 23.4183 40.2868 21.0239 39.1063C18.6295 37.9257 16.6389 36.0618 15.3037 33.7501L7.80374 20.7526C7.51824 20.2367 7.44666 19.6293 7.6044 19.0612C7.76214 18.4931 8.1366 18.0096 8.6472 17.7147C9.15781 17.4198 9.76376 17.3372 10.3347 17.4845C10.9056 17.6319 11.3959 17.9975 11.7 18.5026L15.3056 24.7501C15.4012 24.9261 15.5311 25.0812 15.6876 25.2063C15.8441 25.3313 16.024 25.4237 16.2168 25.478C16.4096 25.5324 16.6113 25.5476 16.8101 25.5227C17.0089 25.4978 17.2006 25.4334 17.3741 25.3332C17.5475 25.233 17.6991 25.0991 17.82 24.9394C17.9409 24.7796 18.0285 24.5973 18.0778 24.4031C18.127 24.209 18.1369 24.0069 18.1068 23.8089C18.0767 23.6109 18.0072 23.4209 17.9025 23.2501L11.625 12.3751C11.4708 12.119 11.3692 11.8348 11.3261 11.5389C11.283 11.2431 11.2993 10.9417 11.374 10.6523C11.4487 10.3628 11.5803 10.0912 11.7612 9.85318C11.9421 9.61518 12.1685 9.41561 12.4274 9.26612C12.6863 9.11663 12.9723 9.02022 13.2689 8.98253C13.5654 8.94483 13.8665 8.96661 14.1545 9.04658C14.4426 9.12655 14.7118 9.26311 14.9464 9.44829C15.1811 9.63347 15.3765 9.86355 15.5212 10.1251L21.375 20.2501C21.4706 20.4261 21.6005 20.5812 21.757 20.7063C21.9135 20.8313 22.0934 20.9237 22.2862 20.978C22.479 21.0324 22.6807 21.0476 22.8795 21.0227C23.0782 20.9978 23.27 20.9334 23.4434 20.8332C23.6169 20.733 23.7685 20.5991 23.8894 20.4394C24.0102 20.2796 24.0979 20.0973 24.1471 19.9031C24.1964 19.709 24.2063 19.5069 24.1762 19.3089C24.146 19.1109 24.0766 18.9209 23.9719 18.7501L19.4194 10.8751C19.2652 10.619 19.1636 10.3348 19.1205 10.039C19.0774 9.74315 19.0937 9.44172 19.1684 9.15228C19.2431 8.86283 19.3747 8.59118 19.5556 8.35318C19.7364 8.11518 19.9629 7.91561 20.2218 7.76612C20.4806 7.61663 20.7667 7.52022 21.0632 7.48253C21.3598 7.44483 21.6609 7.46661 21.9489 7.54658C22.2369 7.62655 22.5061 7.76311 22.7408 7.94829C22.9755 8.13347 23.1709 8.36355 23.3156 8.6251L29.5819 19.4814C28.1223 20.9635 27.2212 22.9054 27.0318 24.977C26.8425 27.0485 27.3765 29.1216 28.5431 30.8439C28.7669 31.1731 29.1123 31.3999 29.5033 31.4744C29.8943 31.549 30.2989 31.4651 30.6281 31.2413C30.9573 31.0176 31.1841 30.6722 31.2587 30.2812C31.3332 29.8902 31.2494 29.4856 31.0256 29.1564C30.1641 27.8806 29.826 26.3225 30.0811 24.8043C30.3362 23.2862 31.1651 21.9242 32.3962 21.0001C32.6897 20.7801 32.8924 20.4602 32.966 20.1009C33.0396 19.7416 32.979 19.3678 32.7956 19.0501L31.5431 16.8751C31.3838 16.619 31.2777 16.3334 31.2309 16.0354C31.1842 15.7375 31.1979 15.4331 31.2711 15.1405C31.3443 14.8479 31.4757 14.5731 31.6572 14.3322C31.8388 14.0914 32.067 13.8895 32.3282 13.7386C32.5893 13.5877 32.8782 13.4909 33.1775 13.4539C33.4769 13.4168 33.7806 13.4404 34.0707 13.5231C34.3607 13.6058 34.6312 13.7459 34.866 13.9353C35.1008 14.1246 35.2952 14.3592 35.4375 14.6251L38.6831 20.2501C39.5736 21.7833 40.1515 23.4778 40.3832 25.2356C40.6149 26.9934 40.4959 28.7798 40.0331 30.4914V30.4951ZM34.5469 5.94573C34.6478 5.56161 34.8969 5.2332 35.2396 5.0325C35.5823 4.83179 35.9906 4.77519 36.375 4.8751C37.8076 5.25266 39.1509 5.91121 40.3267 6.81249C41.5026 7.71377 42.4875 8.8398 43.2244 10.1251L43.2862 10.232C43.391 10.4027 43.4604 10.5927 43.4905 10.7908C43.5206 10.9888 43.5108 11.1908 43.4615 11.385C43.4123 11.5792 43.3246 11.7615 43.2038 11.9212C43.0829 12.081 42.9313 12.2149 42.7578 12.3151C42.5844 12.4153 42.3926 12.4797 42.1939 12.5046C41.9951 12.5294 41.7934 12.5143 41.6006 12.4599C41.4078 12.4056 41.2278 12.3132 41.0713 12.1881C40.9148 12.0631 40.785 11.908 40.6894 11.732L40.6275 11.6251C40.0867 10.6832 39.3639 9.85821 38.5012 9.19831C37.6385 8.53841 36.6532 8.05674 35.6025 7.78135C35.2195 7.67729 34.8933 7.42567 34.6955 7.08161C34.4976 6.73756 34.4442 6.32911 34.5469 5.94573ZM15.1669 44.4376C14.9206 44.7497 14.5605 44.9513 14.1657 44.9981C13.7708 45.0449 13.3736 44.933 13.0612 44.687C10.8177 42.9149 8.93386 40.73 7.51124 38.2501C7.41275 38.0795 7.34883 37.8911 7.32314 37.6958C7.29744 37.5004 7.31048 37.3019 7.36149 37.1116C7.4125 36.9213 7.5005 36.7429 7.62046 36.5866C7.74041 36.4304 7.88998 36.2992 8.06062 36.2007C8.23125 36.1022 8.41962 36.0383 8.61496 36.0126C8.8103 35.9869 9.00878 36 9.19908 36.051C9.38939 36.102 9.56778 36.19 9.72407 36.3099C9.88036 36.4299 10.0115 36.5795 10.11 36.7501C11.343 38.8968 12.9748 40.7882 14.9175 42.3226C15.0734 42.4446 15.2036 42.5963 15.3006 42.7689C15.3976 42.9415 15.4595 43.1315 15.4827 43.3282C15.5058 43.5248 15.4899 43.724 15.4357 43.9145C15.3815 44.1049 15.2901 44.2827 15.1669 44.4376Z" fill="white" />
+                    </svg>
+                    <div>
+                        <h3 class="community-connect-title">Connect with Us</h3>
+                        <p class="community-connect-text">Connect with us to make things better</p>
                     </div>
+                </div>
+                <div class="card-dark-items">
+                    <a href="https://github.com/martin-papy/qdrant-loader" target="_blank" rel="noopener noreferrer" class="community-link-item">
+                        <span class="community-link-left">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M39.0581 14.19C39.5166 12.711 39.6637 11.1531 39.4901 9.61437C39.3165 8.07569 38.8259 6.58968 38.0494 5.25002C37.9177 5.02195 37.7283 4.83256 37.5002 4.7009C37.2721 4.56925 37.0134 4.49997 36.75 4.50002C35.0028 4.49637 33.2791 4.90139 31.7164 5.68275C30.1537 6.4641 28.7954 7.60011 27.75 9.00002H23.25C22.2046 7.60011 20.8463 6.4641 19.2836 5.68275C17.7209 4.90139 15.9971 4.49637 14.25 4.50002C13.9866 4.49997 13.7279 4.56925 13.4998 4.7009C13.2717 4.83256 13.0823 5.02195 12.9506 5.25002C12.1741 6.58968 11.6835 8.07569 11.5099 9.61437C11.3363 11.1531 11.4834 12.711 11.9419 14.19C11.0151 15.8076 10.5187 17.6359 10.5 19.5V21C10.5032 23.538 11.4245 25.9892 13.0939 27.9009C14.7633 29.8126 17.068 31.0557 19.5825 31.4007C18.5561 32.714 17.999 34.3332 18 36V37.5H13.5C12.3065 37.5 11.1619 37.0259 10.318 36.182C9.47411 35.3381 9 34.1935 9 33C9 32.0151 8.80601 31.0398 8.4291 30.1299C8.05219 29.22 7.49974 28.3932 6.8033 27.6967C6.10686 27.0003 5.28007 26.4478 4.37013 26.0709C3.46018 25.694 2.48491 25.5 1.5 25.5C1.10218 25.5 0.720644 25.6581 0.43934 25.9394C0.158035 26.2207 0 26.6022 0 27C0 27.3978 0.158035 27.7794 0.43934 28.0607C0.720644 28.342 1.10218 28.5 1.5 28.5C2.69347 28.5 3.83807 28.9741 4.68198 29.818C5.52589 30.662 6 31.8066 6 33C6 34.9891 6.79018 36.8968 8.1967 38.3033C9.60322 39.7099 11.5109 40.5 13.5 40.5H18V43.5C18 43.8979 18.158 44.2794 18.4393 44.5607C18.7206 44.842 19.1022 45 19.5 45C19.8978 45 20.2794 44.842 20.5607 44.5607C20.842 44.2794 21 43.8979 21 43.5V36C21 34.8066 21.4741 33.662 22.318 32.818C23.1619 31.9741 24.3065 31.5 25.5 31.5C26.6935 31.5 27.8381 31.9741 28.682 32.818C29.5259 33.662 30 34.8066 30 36V43.5C30 43.8979 30.158 44.2794 30.4393 44.5607C30.7206 44.842 31.1022 45 31.5 45C31.8978 45 32.2794 44.842 32.5607 44.5607C32.842 44.2794 33 43.8979 33 43.5V36C33.001 34.3332 32.4439 32.714 31.4175 31.4007C33.932 31.0557 36.2367 29.8126 37.9061 27.9009C39.5755 25.9892 40.4968 23.538 40.5 21V19.5C40.4813 17.6359 39.9849 15.8076 39.0581 14.19ZM37.5 21C37.5 22.9891 36.7098 24.8968 35.3033 26.3033C33.8968 27.7098 31.9891 28.5 30 28.5H21C19.0109 28.5 17.1032 27.7098 15.6967 26.3033C14.2902 24.8968 13.5 22.9891 13.5 21V19.5C13.5184 18.0001 13.9675 16.537 14.7938 15.285C14.9478 15.082 15.0475 14.8431 15.0836 14.5908C15.1197 14.3385 15.0909 14.0812 15 13.8431C14.6093 12.8355 14.4213 11.7607 14.4467 10.6803C14.4721 9.59984 14.7105 8.53504 15.1481 7.5469C16.3757 7.67896 17.5578 8.08562 18.6069 8.73672C19.6559 9.38783 20.545 10.2667 21.2081 11.3081C21.3433 11.5195 21.5292 11.6935 21.749 11.8144C21.9688 11.9353 22.2154 11.9991 22.4662 12H28.5319C28.7837 12 29.0314 11.9367 29.2523 11.8157C29.4731 11.6948 29.66 11.5203 29.7956 11.3081C30.4587 10.2666 31.3477 9.38766 32.3968 8.73655C33.4458 8.08543 34.628 7.67883 35.8556 7.5469C36.2927 8.53529 36.5304 9.60021 36.5552 10.6806C36.58 11.7611 36.3913 12.8358 36 13.8431C35.9093 14.0789 35.879 14.3336 35.9118 14.5841C35.9445 14.8346 36.0393 15.073 36.1875 15.2775C37.022 16.5295 37.4777 17.9956 37.5 19.5V21Z" fill="#4EDDFD" />
+                            </svg>
+                            <span>
+                                <span class="community-link-title">GitHub Repository</span>
+                                <span class="community-link-desc">Source code, issues, and discussions</span>
+                            </span>
+                        </span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.3172 10.442L11.6922 16.067C11.5749 16.1843 11.4159 16.2502 11.25 16.2502C11.0841 16.2502 10.9251 16.1843 10.8078 16.067C10.6905 15.9498 10.6247 15.7907 10.6247 15.6249C10.6247 15.459 10.6905 15.2999 10.8078 15.1827L15.3664 10.6249H3.125C2.95924 10.6249 2.80027 10.559 2.68306 10.4418C2.56585 10.3246 2.5 10.1656 2.5 9.99986C2.5 9.8341 2.56585 9.67513 2.68306 9.55792C2.80027 9.44071 2.95924 9.37486 3.125 9.37486H15.3664L10.8078 4.81705C10.6905 4.69977 10.6247 4.54071 10.6247 4.37486C10.6247 4.20901 10.6905 4.04995 10.8078 3.93267C10.9251 3.8154 11.0841 3.74951 11.25 3.74951C11.4159 3.74951 11.5749 3.8154 11.6922 3.93267L17.3172 9.55767C17.3753 9.61572 17.4214 9.68465 17.4529 9.76052C17.4843 9.8364 17.5005 9.91772 17.5005 9.99986C17.5005 10.082 17.4843 10.1633 17.4529 10.2392C17.4214 10.3151 17.3753 10.384 17.3172 10.442Z" fill="white" />
+                        </svg>
+                    </a>
 
-                    <!-- Community Links -->
-                    <div class="col-lg-6">
-                        <div class="card h-100 border-0 shadow">
-                            <div class="card-body p-5">
-                                <h4 class="fw-bold text-primary mb-4">
-                                    <i class="bi bi-chat-dots me-2"></i>Connect With Us
-                                </h4>
+                    <a href="https://github.com/martin-papy/qdrant-loader/issues" target="_blank" rel="noopener noreferrer" class="community-link-item">
+                        <span class="community-link-left">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M27 17.25C27 16.805 27.132 16.37 27.3792 16C27.6264 15.6299 27.9778 15.3416 28.389 15.1713C28.8001 15.001 29.2525 14.9564 29.689 15.0432C30.1254 15.13 30.5263 15.3443 30.841 15.659C31.1557 15.9737 31.37 16.3746 31.4568 16.811C31.5436 17.2475 31.499 17.6999 31.3287 18.111C31.1584 18.5222 30.87 18.8736 30.5 19.1208C30.13 19.368 29.695 19.5 29.25 19.5C28.6533 19.5 28.081 19.2629 27.659 18.841C27.2371 18.419 27 17.8467 27 17.25ZM18.75 15C18.305 15 17.87 15.132 17.5 15.3792C17.13 15.6264 16.8416 15.9778 16.6713 16.389C16.501 16.8001 16.4564 17.2525 16.5432 17.6889C16.63 18.1254 16.8443 18.5263 17.159 18.841C17.4737 19.1557 17.8746 19.3699 18.311 19.4568C18.7475 19.5436 19.1999 19.499 19.611 19.3287C20.0222 19.1584 20.3736 18.87 20.6208 18.5C20.868 18.13 21 17.695 21 17.25C21 16.6533 20.7629 16.081 20.341 15.659C19.919 15.237 19.3467 15 18.75 15ZM40.5 27C40.5041 28.456 40.315 29.9062 39.9375 31.3125L44.1075 33.135C44.4181 33.2765 44.6712 33.5197 44.825 33.8244C44.9787 34.1292 45.0239 34.4773 44.9531 34.8112C44.8823 35.1451 44.6997 35.4449 44.4355 35.661C44.1713 35.8772 43.8413 35.9967 43.5 36C43.2934 36.0005 43.089 35.9577 42.9 35.8744L38.8838 34.125C37.5401 36.9329 35.4296 39.3035 32.7959 40.9629C30.1622 42.6224 27.1129 43.5029 24 43.5029C20.8871 43.5029 17.8378 42.6224 15.2041 40.9629C12.5704 39.3035 10.4599 36.9329 9.11625 34.125L5.1 35.8744C4.91096 35.9577 4.70658 36.0005 4.5 36C4.15555 35.9998 3.82167 35.881 3.55445 35.6637C3.28723 35.4464 3.10294 35.1437 3.03256 34.8065C2.96218 34.4693 3.00998 34.1182 3.16794 33.8121C3.32591 33.506 3.5844 33.2636 3.9 33.1256L8.0625 31.3125C7.68502 29.9062 7.49587 28.456 7.5 27V25.5H3C2.60218 25.5 2.22064 25.342 1.93934 25.0607C1.65804 24.7793 1.5 24.3978 1.5 24C1.5 23.6022 1.65804 23.2206 1.93934 22.9393C2.22064 22.658 2.60218 22.5 3 22.5H7.5V21C7.49587 19.5439 7.68502 18.0938 8.0625 16.6875L3.9 14.8744C3.7152 14.7985 3.54742 14.6865 3.4065 14.5449C3.26559 14.4033 3.15437 14.235 3.07938 14.0498C3.0044 13.8647 2.96715 13.6664 2.96983 13.4666C2.97251 13.2669 3.01506 13.0697 3.09499 12.8866C3.17491 12.7035 3.2906 12.5383 3.43527 12.4005C3.57993 12.2627 3.75066 12.1553 3.93742 12.0844C4.12419 12.0135 4.32323 11.9806 4.52287 11.9877C4.72251 11.9948 4.91873 12.0417 5.1 12.1256L9.11625 13.875C10.4599 11.0671 12.5704 8.69647 15.2041 7.03705C17.8378 5.37763 20.8871 4.49707 24 4.49707C27.1129 4.49707 30.1622 5.37763 32.7959 7.03705C35.4296 8.69647 37.5401 11.0671 38.8838 13.875L42.9 12.12C43.2627 11.9711 43.6693 11.9701 44.0328 12.1173C44.3962 12.2645 44.6875 12.5481 44.8444 12.9075C45.0013 13.2668 45.0112 13.6733 44.8721 14.0399C44.7329 14.4065 44.4558 14.704 44.1 14.8687L39.9375 16.6969C40.315 18.1031 40.5041 19.5533 40.5 21.0094V22.5094H45C45.3978 22.5094 45.7794 22.6674 46.0607 22.9487C46.342 23.23 46.5 23.6115 46.5 24.0094C46.5 24.4072 46.342 24.7887 46.0607 25.07C45.7794 25.3513 45.3978 25.5094 45 25.5094H40.5V27ZM10.5 22.5H37.5V21C37.5 17.4196 36.0777 13.9858 33.5459 11.4541C31.0142 8.92231 27.5804 7.49999 24 7.49999C20.4196 7.49999 16.9858 8.92231 14.4541 11.4541C11.9223 13.9858 10.5 17.4196 10.5 21V22.5ZM22.5 40.4137V25.5H10.5V27C10.5039 30.3193 11.7293 33.5211 13.9424 35.9949C16.1555 38.4688 19.2016 40.0417 22.5 40.4137ZM37.5 27V25.5H25.5V40.4137C28.7984 40.0417 31.8445 38.4688 34.0576 35.9949C36.2707 33.5211 37.4961 30.3193 37.5 27Z" fill="#4EDDFD" />
+                            </svg>
+                            <span>
+                                <span class="community-link-title">Report Issues</span>
+                                <span class="community-link-desc">Bug reports and feature requests</span>
+                            </span>
+                        </span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.3172 10.442L11.6922 16.067C11.5749 16.1843 11.4159 16.2502 11.25 16.2502C11.0841 16.2502 10.9251 16.1843 10.8078 16.067C10.6905 15.9498 10.6247 15.7907 10.6247 15.6249C10.6247 15.459 10.6905 15.2999 10.8078 15.1827L15.3664 10.6249H3.125C2.95924 10.6249 2.80027 10.559 2.68306 10.4418C2.56585 10.3246 2.5 10.1656 2.5 9.99986C2.5 9.8341 2.56585 9.67513 2.68306 9.55792C2.80027 9.44071 2.95924 9.37486 3.125 9.37486H15.3664L10.8078 4.81705C10.6905 4.69977 10.6247 4.54071 10.6247 4.37486C10.6247 4.20901 10.6905 4.04995 10.8078 3.93267C10.9251 3.8154 11.0841 3.74951 11.25 3.74951C11.4159 3.74951 11.5749 3.8154 11.6922 3.93267L17.3172 9.55767C17.3753 9.61572 17.4214 9.68465 17.4529 9.76052C17.4843 9.8364 17.5005 9.91772 17.5005 9.99986C17.5005 10.082 17.4843 10.1633 17.4529 10.2392C17.4214 10.3151 17.3753 10.384 17.3172 10.442Z" fill="white" />
+                        </svg>
+                    </a>
 
-                                <div class="d-grid gap-3">
-                                    <a href="https://github.com/martin-papy/qdrant-loader"
-                                        class="btn btn-outline-dark btn-lg text-start" target="_blank">
-                                        <i class="bi bi-github me-3"></i>
-                                        <div class="d-inline-block">
-                                            <div class="fw-bold">GitHub Repository</div>
-                                            <small class="text-muted">Source code, issues, and discussions</small>
-                                        </div>
-                                    </a>
-
-                                    <a href="https://github.com/martin-papy/qdrant-loader/issues"
-                                        class="btn btn-outline-warning btn-lg text-start" target="_blank">
-                                        <i class="bi bi-bug me-3"></i>
-                                        <div class="d-inline-block">
-                                            <div class="fw-bold">Report Issues</div>
-                                            <small class="text-muted">Bug reports and feature requests</small>
-                                        </div>
-                                    </a>
-
-                                    <a href="https://github.com/martin-papy/qdrant-loader/discussions"
-                                        class="btn btn-outline-info btn-lg text-start" target="_blank">
-                                        <i class="bi bi-chat-square-text me-3"></i>
-                                        <div class="d-inline-block">
-                                            <div class="fw-bold">Discussions</div>
-                                            <small class="text-muted">Community Q&A and ideas</small>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <a href="https://github.com/martin-papy/qdrant-loader/discussions" target="_blank" rel="noopener noreferrer" class="community-link-item">
+                        <span class="community-link-left">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M40.5 15H34.5V9C34.5 8.20435 34.1839 7.44129 33.6213 6.87868C33.0587 6.31607 32.2956 6 31.5 6H7.5C6.70435 6 5.94129 6.31607 5.37868 6.87868C4.81607 7.44129 4.5 8.20435 4.5 9V33C4.50088 33.2822 4.58135 33.5584 4.73217 33.797C4.88298 34.0355 5.09802 34.2266 5.35259 34.3484C5.60715 34.4702 5.89091 34.5177 6.17127 34.4855C6.45163 34.4533 6.71721 34.3426 6.9375 34.1663L13.5 28.875V34.5C13.5 35.2956 13.8161 36.0587 14.3787 36.6213C14.9413 37.1839 15.7044 37.5 16.5 37.5H34.0481L41.0625 43.1663C41.3279 43.3809 41.6586 43.4987 42 43.5C42.3978 43.5 42.7794 43.342 43.0607 43.0607C43.342 42.7794 43.5 42.3978 43.5 42V18C43.5 17.2044 43.1839 16.4413 42.6213 15.8787C42.0587 15.3161 41.2956 15 40.5 15ZM12.4781 25.8337L7.5 29.8594V9H31.5V25.5H13.4213C13.0779 25.5 12.745 25.6179 12.4781 25.8337ZM40.5 38.8594L35.5219 34.8337C35.2565 34.6191 34.9257 34.5013 34.5844 34.5H16.5V28.5H31.5C32.2956 28.5 33.0587 28.1839 33.6213 27.6213C34.1839 27.0587 34.5 26.2956 34.5 25.5V18H40.5V38.8594Z" fill="#4EDDFD" />
+                            </svg>
+                            <span>
+                                <span class="community-link-title">Discussions</span>
+                                <span class="community-link-desc">Community Q&amp;A and ideas</span>
+                            </span>
+                        </span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.3172 10.442L11.6922 16.067C11.5749 16.1843 11.4159 16.2502 11.25 16.2502C11.0841 16.2502 10.9251 16.1843 10.8078 16.067C10.6905 15.9498 10.6247 15.7907 10.6247 15.6249C10.6247 15.459 10.6905 15.2999 10.8078 15.1827L15.3664 10.6249H3.125C2.95924 10.6249 2.80027 10.559 2.68306 10.4418C2.56585 10.3246 2.5 10.1656 2.5 9.99986C2.5 9.8341 2.56585 9.67513 2.68306 9.55792C2.80027 9.44071 2.95924 9.37486 3.125 9.37486H15.3664L10.8078 4.81705C10.6905 4.69977 10.6247 4.54071 10.6247 4.37486C10.6247 4.20901 10.6905 4.04995 10.8078 3.93267C10.9251 3.8154 11.0841 3.74951 11.25 3.74951C11.4159 3.74951 11.5749 3.8154 11.6922 3.93267L17.3172 9.55767C17.3753 9.61572 17.4214 9.68465 17.4529 9.76052C17.4843 9.8364 17.5005 9.91772 17.5005 9.99986C17.5005 10.082 17.4843 10.1633 17.4529 10.2392C17.4214 10.3151 17.3753 10.384 17.3172 10.442Z" fill="white" />
+                        </svg>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </section>
-
+</div>
 <script>
     // Load coverage data from multiple packages and calculate overall status
     async function loadCoverageStatus() {

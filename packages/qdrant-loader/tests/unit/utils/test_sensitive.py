@@ -1,0 +1,121 @@
+"""Tests for sensitive-data redaction utilities."""
+
+from qdrant_loader.utils.sensitive import (
+    redact_sensitive_data,
+    sanitize_exception_message,
+)
+
+
+def test_redact_sensitive_data_masks_key_value_patterns() -> None:
+    raw = "JIRA_TOKEN=ATATT-super-secret-value OPENAI_API_KEY=sk-proj-very-secret"
+    redacted = redact_sensitive_data(raw)
+
+    assert "ATATT-super-secret-value" not in redacted
+    assert "sk-proj-very-secret" not in redacted
+    assert "JIRA_TOKEN=**" in redacted
+    assert "OPENAI_API_KEY=**" in redacted
+
+
+def test_redact_sensitive_data_masks_pydantic_input_value() -> None:
+    raw = (
+        "Validation error ... input_value={'token': 'ABCD123', 'x': 1}, input_type=dict"
+    )
+    redacted = redact_sensitive_data(raw)
+
+    assert "ABCD123" not in redacted
+    assert "input_value=**" in redacted
+
+
+def test_redact_sensitive_data_masks_deeply_nested_input_value() -> None:
+    raw = (
+        "Validation error ... input_value={'outer': {'inner': [{'token': 'ATATT-secret'}, "
+        "{'client_secret': 'top-secret'}]}, 'ok': 1}, input_type=dict"
+    )
+    redacted = redact_sensitive_data(raw)
+
+    assert "ATATT-secret" not in redacted
+    assert "top-secret" not in redacted
+    assert "input_value=**" in redacted
+    assert "input_type=dict" in redacted
+
+
+def test_redact_sensitive_data_masks_quoted_input_value_with_commas() -> None:
+    raw = 'Validation error ... input_value="token=abc,secret=def", input_type=str'
+    redacted = redact_sensitive_data(raw)
+
+    assert "token=abc" not in redacted
+    assert "secret=def" not in redacted
+    assert "input_value=**" in redacted
+    assert "input_type=str" in redacted
+
+
+def test_sanitize_exception_message_masks_openai_key() -> None:
+    error = ValueError("OPENAI_API_KEY=sk-proj-abcdef123456")
+    safe = sanitize_exception_message(error)
+
+    assert "sk-proj-abcdef123456" not in safe
+    assert "OPENAI_API_KEY=**" in safe
+
+
+def test_sanitize_exception_message_masks_jira_config_repr() -> None:
+    error = ValueError(
+        "JiraProjectConfig(source='jira', token='ATATT-very-secret-token', email='user@example.com')"
+    )
+    safe = sanitize_exception_message(error)
+
+    assert "ATATT-very-secret-token" not in safe
+    assert "token=**" in safe
+
+
+def test_redact_sensitive_data_masks_bearer_authorization() -> None:
+    raw = "Authorization: Bearer sk-supersecrettoken"
+    redacted = redact_sensitive_data(raw)
+
+    assert "sk-supersecrettoken" not in redacted
+    assert "Authorization:**" in redacted
+
+
+def test_redact_sensitive_data_masks_non_bearer_authorization_colon() -> None:
+    raw = "Authorization: Basic dXNlcjpwYXNz"
+    redacted = redact_sensitive_data(raw)
+
+    assert "dXNlcjpwYXNz" not in redacted
+    assert "Authorization:**" in redacted
+
+
+def test_redact_sensitive_data_masks_non_bearer_authorization_equals() -> None:
+    raw = "authorization=plain-secret-value"
+    redacted = redact_sensitive_data(raw)
+
+    assert "plain-secret-value" not in redacted
+    assert "authorization=**" in redacted
+
+
+def test_redact_sensitive_data_masks_quoted_authorization_with_space() -> None:
+    raw = 'Authorization: "Basic user:pass with space"'
+    redacted = redact_sensitive_data(raw)
+
+    assert "user:pass with space" not in redacted
+    assert "Authorization:**" in redacted
+
+
+def test_redact_sensitive_data_masks_single_quoted_authorization() -> None:
+    raw = "authorization: 'token my secret value'"
+    redacted = redact_sensitive_data(raw)
+
+    assert "my secret value" not in redacted
+    assert "authorization:**" in redacted
+
+
+def test_sanitize_exception_message_falls_back_to_exception_type_on_empty() -> None:
+    safe = sanitize_exception_message(Exception())
+
+    assert safe == "Exception"
+
+
+def test_sanitize_exception_message_falls_back_to_placeholder_for_empty_string() -> (
+    None
+):
+    safe = sanitize_exception_message("")
+
+    assert safe == "<redacted>"

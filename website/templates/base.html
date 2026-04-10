@@ -99,47 +99,81 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
+            --font-family: "Geist", sans-serif;
+            --second-family: "Noto Sans", sans-serif;
+            --third-family: "Source Code Pro", sans-serif;
+            --primary-color: #4EDDFD;
+            --secondary-color: #1C1C1C;
             --success-color: #48bb78;
             --danger-color: #f56565;
             --warning-color: #ed8936;
             --info-color: #4299e1;
+            --text-color-placeholder-text: #8D8D8D;
+            --cbtw-neutral-cbtw-black: #1c1c1c;
+            --text-color-primary-text-black: var(--cbtw-neutral-cbtw-black);
+            --text-color-white: #ffffff;
         }
 
         html {
             scroll-behavior: smooth;
             scroll-padding-top: 6rem; /* Account for sticky header height */
+            /* font-size: 62.5%; */
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: var(--font-family);
             line-height: 1.6;
+        }
+
+        .header-top  {
+            padding: 32px 88px;
+        }
+
+        .container-custom {
+            width: 100%;
+            max-width: 1913px;
+            margin: 0 auto;
+            padding: 0 clamp(1rem, 4vw, 3rem);
+        }
+
+        a.nav-link-custom {
+            font-family: var(--font-family);
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-color-primary-text-black);
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        a.nav-link-custom:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-link-custom:hover .nav-icon path {
+            fill: var(--primary-color);
+        }
+
+        .view-doc-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--secondary-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .view-doc-link:hover {
+            color: var(--primary-color);
+            transform: translateX(4px);
         }
 
         .gradient-bg {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        }
-
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 4rem 0;
-        }
-
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
         }
 
         .badge-custom {
@@ -168,7 +202,7 @@
 
         .status-indicator {
             display: inline-block;
-            width: 10px;
+            width: auto;
             height: 10px;
             border-radius: 50%;
             margin-right: 0.5rem;
@@ -192,11 +226,6 @@
             margin-bottom: 1rem;
         }
 
-        .footer {
-            background-color: #2d3748;
-            color: white;
-            margin-top: 4rem;
-        }
 
         .btn-primary {
             background-color: var(--primary-color);
@@ -209,7 +238,7 @@
         }
 
         .text-primary {
-            color: var(--primary-color) !important;
+            color: var(--secondary-color) !important;
         }
 
         @media (max-width: 768px) {
@@ -228,33 +257,46 @@
 
         /* Documentation-specific styles */
         .toc {
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
+            background-color: #ECFCFF;
             padding: 1.5rem;
             border: 1px solid #e9ecef;
+            overflow-y: auto;
+
         }
 
         .toc h3 {
-            margin-top: 0 !important;
+            margin-top: 0;
             font-size: 1.1rem;
-            border-bottom: 2px solid var(--primary-color);
+            border-bottom: 2px solid var(--text-color-placeholder-text);
             padding-bottom: 0.5rem;
         }
 
         .toc .list-group-item {
             border: none;
-            padding: 0.25rem 0;
+            padding: 0.5rem 1rem;
             background: transparent;
         }
 
         .toc .list-group-item a {
-            color: #495057;
-            font-size: 0.9rem;
+            display: block;
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            text-decoration: none;
             transition: color 0.2s ease;
         }
 
         .toc .list-group-item a:hover {
             color: var(--primary-color);
+        }
+
+        .toc .list-group-item.active {
+            background: #4EDDFD;
+            border-radius: 16px;
+        }
+
+        .toc .list-group-item.active a {
+            color: var(--secondary-color);
+            font-weight: 500; 
         }
 
         /* Hierarchical TOC styling */
@@ -275,7 +317,7 @@
 
         .toc li a {
             color: #495057;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             text-decoration: none;
             display: block;
             padding: 0.125rem 0;
@@ -289,17 +331,17 @@
         /* Different font weights for different heading levels */
         .toc > ul > li > a {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.875rem; 
         }
 
         .toc ul ul li a {
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
 
         .toc ul ul ul li a {
             font-weight: 400;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             opacity: 0.9;
         }
 
@@ -307,7 +349,7 @@
         .code-block-wrapper {
             background-color: #1e1e1e;
             border-radius: 6px;
-            padding: 16px;
+            padding: 32px;
             margin: 16px 0;
             border: 1px solid #333333;
         }
@@ -322,7 +364,7 @@
             overflow-x: auto;
             font-size: 13px !important;
             line-height: 1.4 !important;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+            font-family: var(--third-family) !important;
             font-weight: 400 !important;
             text-rendering: optimizeLegibility !important;
         }
@@ -331,10 +373,11 @@
             background: none !important;
             border: none !important;
             padding: 0 !important;
-            font-size: 13px !important;
+            font-size: 16px !important;
             color: #d4d4d4 !important;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+            font-family: var(--third-family) !important;
             font-weight: 400 !important;
+            line-height: 22px;
             text-rendering: optimizeLegibility !important;
         }
 
@@ -411,7 +454,7 @@
             padding: 0.125rem 0.25rem !important;
             border-radius: 0.25rem !important;
             font-size: 0.875em !important;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-family: var(--third-family);
         }
 
         /* Fallback for any remaining code elements */
@@ -421,7 +464,7 @@
             padding: 0.125rem 0.25rem;
             border-radius: 0.25rem;
             font-size: 0.875em;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-family: var(--third-family);
         }
 
         /* Improve list styling in content */
@@ -437,6 +480,7 @@
             background-color: #f8f9fa;
             margin-bottom: 0.25rem;
             border-radius: 0.25rem;
+            padding: 10px;
         }
 
         /* Simple numbered list styling */
@@ -478,26 +522,180 @@
 
         /* Regular ordered lists */
         .col-lg-9 ol:not(.list-group-numbered) {
-            padding-left: 30px;
+            padding-left: 0;
             margin-bottom: 20px;
         }
 
         .col-lg-9 ol:not(.list-group-numbered) li {
             margin-bottom: 8px;
-            line-height: 1.6;
+            line-height: 2.6;
         }
+
+        /* Footer section */
+        .footer-section {
+            padding: 7.5rem 5.5rem 2.5rem;
+        }
+
+        .doc-section-title {
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .doc-description {
+            max-width: 600px;
+            padding-left: 92px;
+            margin-top: 12px;
+            font-size: 18px;
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        .project-supporter {
+            color: var(--secondary-color);
+            padding-top: 80px;
+            padding-bottom: 56px;
+        }
+
+        .support-text {
+            font-family: var(--second-family);
+            font-weight: 400;
+            font-size: 20px;
+            line-height: 150%;
+            margin: 0;
+        }
+
+        .support-title {
+            font-family: var(--font-family);
+            font-weight: 700;
+            font-size: 48px;
+            line-height: 125%;
+            letter-spacing: -0.03em;
+            color: var(--text-color-primary-text-black);
+            margin: 0;
+        }
+
+        .support-link {
+            font-size: 16px;
+            gap: 0.5rem; 
+            text-decoration: none;
+            color: var(--cbtw-neutral-cbtw-black);
+        }
+
+        .support-link .indicator {
+            width: 0.9375rem; 
+            height: 0.9375rem;
+        }
+
+        .footer-copy {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .footer-analytics {
+            font-size: 0.875rem;
+            font-weight: 400;
+            opacity: 0.75;
+            margin-bottom: 0;
+        }
+
+        .footer-analytics a {
+            text-decoration: none;
+        }
+
+        .social-links .social-link {
+            font-size: 1.25rem; 
+            color: var(--text-color-placeholder-text);
+            transition: color 0.2s;
+        }
+
+        #build-info {
+            font-size: 1rem;
+            font-weight: 400;
+            white-space: nowrap;
+            color: var(--text-color-placeholder-text);
+        }
+
+        #build-info::after {
+            content: ""; 
+            display: inline-block;
+            width: 2px;      
+            height: 24px;          
+            background-color: var(--text-color-placeholder-text);
+            margin-left: 0.5rem; 
+            vertical-align: middle; 
+        }
+
+        .footer-content {
+            margin-top: 32px;
+            color: var(--cbtw-neutral-cbtw-black);
+        }
+
+        @media (max-width: 767.98px) {
+            .footer-section {
+                padding: 20px;
+            }
+
+            .doc-link {
+                margin-top: 40px;
+            }
+        }       
 
         /* Responsive improvements */
         @media (max-width: 991.98px) {
             .toc {
                 margin-bottom: 2rem;
             }
+
+            .footer-logo {
+                padding-top: 20px;
+                margin-left: 12px;
+            }
+
+            .doc-description {
+                padding-left: 15px;
+                margin-top: 32px;
+                margin-bottom: 0;
+            }
+
+            #build-info::after {
+                content: ""; 
+                display:none;
+            }
+
+            .support-title {
+                font-size: 36px;
+            }
+
+            .doc-links {
+                padding: 40px 20px;
+            }
+
+            .project-supporter {
+                color: #000;
+                padding-top: 20px;
+                padding-bottom: 56px;
+            }
+        }
+
+        .container-content {
+            padding: 3.25rem  5rem;
+        }
+
+
+        @media (max-width: 560px) {
+            .container-content {
+                padding: 3.25rem  2rem;
+            }
         }
 
         /* Ensure proper spacing for documentation content */
         .col-lg-9 h1, .col-lg-9 h2, .col-lg-9 h3, .col-lg-9 h4, .col-lg-9 h5, .col-lg-9 h6 {
-            margin-top: 2rem;
-            margin-bottom: 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .col-lg-9 h1:first-child {
@@ -505,7 +703,12 @@
         }
 
         .col-lg-9 p {
-            margin-bottom: 1rem;
+            margin-bottom: 5px;
+            text-align: justify;
+        }
+
+        .col-lg-9 a {
+            margin: 0;
             text-align: justify;
         }
 
@@ -514,8 +717,10 @@
         .col-lg-9 img[alt*="License"], 
         .col-lg-9 img[alt*="Coverage"],
         .col-lg-9 img[alt*="CodeRabbit"] {
-            margin: 0.125rem;
-            display: inline-block;
+            margin: 2px 4px;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 6px;
         }
     </style>
 
@@ -568,61 +773,74 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
-        <div class="container">
-            <a class="navbar-brand text-primary d-flex align-items-center" href="{{ base_url }}">
-                <img src="{{ base_url }}assets/logos/qdrant-loader-logo-horizontal.svg" alt="QDrant Loader" height="60"
-                    class="me-2">
-            </a>
+    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
+            <div class="container d-flex align-items-center justify-content-between">
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+                <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
+                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60">
+                </a>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ base_url }}#overview">
-                            <i class="bi bi-house me-1"></i>Overview
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ base_url }}docs/">
-                            <i class="bi bi-book me-1"></i>Documentation
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ base_url }}coverage/">
-                            <i class="bi bi-graph-up me-1"></i>Coverage
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/martin-papy/qdrant-loader" target="_blank">
-                            <i class="bi bi-github me-1"></i>GitHub
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="pypiDropdown" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-box me-1"></i>PyPI
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
-                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/" target="_blank">
-                                    <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader
-                                </a></li>
-                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-mcp-server/"
-                                    target="_blank">
-                                    <i class="bi bi-plug me-2"></i>MCP Server
-                                </a></li>
-                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-core/" target="_blank">
-                                    <i class="bi bi-cpu me-2"></i>Core Library
-                                </a></li>
-                        </ul>
-                    </li>
-                </ul>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M38.5 22C38.5 22.3647 38.3551 22.7144 38.0973 22.9723C37.8394 23.2301 37.4897 23.375 37.125 23.375H6.875C6.51033 23.375 6.16059 23.2301 5.90273 22.9723C5.64487 22.7144 5.5 22.3647 5.5 22C5.5 21.6353 5.64487 21.2856 5.90273 21.0277C6.16059 20.7699 6.51033 20.625 6.875 20.625H37.125C37.4897 20.625 37.8394 20.7699 38.0973 21.0277C38.3551 21.2856 38.5 21.6353 38.5 22ZM6.875 12.375H37.125C37.4897 12.375 37.8394 12.2301 38.0973 11.9723C38.3551 11.7144 38.5 11.3647 38.5 11C38.5 10.6353 38.3551 10.2856 38.0973 10.0277C37.8394 9.76987 37.4897 9.625 37.125 9.625H6.875C6.51033 9.625 6.16059 9.76987 5.90273 10.0277C5.64487 10.2856 5.5 10.6353 5.5 11C5.5 11.3647 5.64487 11.7144 5.90273 11.9723C6.16059 12.2301 6.51033 12.375 6.875 12.375ZM37.125 31.625H6.875C6.51033 31.625 6.16059 31.7699 5.90273 32.0277C5.64487 32.2856 5.5 32.6353 5.5 33C5.5 33.3647 5.64487 33.7144 5.90273 33.9723C6.16059 34.2301 6.51033 34.375 6.875 34.375H37.125C37.4897 34.375 37.8394 34.2301 38.0973 33.9723C38.3551 33.7144 38.5 33.3647 38.5 33C38.5 32.6353 38.3551 32.2856 38.0973 32.0277C37.8394 31.7699 37.4897 31.625 37.125 31.625Z" fill="black" />
+                    </svg>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto align-items-lg-center align-items-start flex-column flex-lg-row gap-2 gap-lg-4">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom " href="{{ base_url }}#overview">Overview</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" href="{{ base_url }}docs/">Documentation</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" href="{{ base_url }}coverage/">Coverage</a>
+                        </li>
+                        <li class="nav-item">
+                             <a class="nav-link nav-link-custom d-flex align-items-center gap-1"
+                                href="https://github.com/martin-papy/qdrant-loader" target="_blank">
+                                <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19.5291 7.095C19.7583 6.3555 19.8318 5.57652 19.745 4.80718C19.6582 4.03784 19.413 3.29483 19.0247 2.625C18.9588 2.51096 18.8641 2.41627 18.7501 2.35044C18.636 2.28461 18.5067 2.24997 18.375 2.25C17.5014 2.24817 16.6395 2.45069 15.8582 2.84136C15.0768 3.23204 14.3977 3.80004 13.875 4.5H11.625C11.1023 3.80004 10.4232 3.23204 9.64182 2.84136C8.86047 2.45069 7.99857 2.24817 7.125 2.25C6.99332 2.24997 6.86395 2.28461 6.7499 2.35044C6.63586 2.41627 6.54115 2.51096 6.47531 2.625C6.08704 3.29483 5.84177 4.03784 5.75497 4.80718C5.66816 5.57652 5.74169 6.3555 5.97094 7.095C5.50756 7.9038 5.25934 8.81791 5.25 9.75V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.5129 5.15901 18.091C4.73705 17.669 4.5 17.0967 4.5 16.5C4.5 16.0075 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75C20.2407 8.81791 19.9924 7.9038 19.5291 7.095ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6516 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75C6.7592 9.00002 6.98373 8.26849 7.39688 7.6425C7.47389 7.54099 7.52377 7.42153 7.54182 7.29539C7.55986 7.16925 7.54547 7.0406 7.5 6.92156C7.30465 6.41775 7.21063 5.88034 7.22334 5.34012C7.23605 4.79991 7.35523 4.26751 7.57406 3.77344C8.18786 3.83947 8.77892 4.0428 9.30344 4.36835C9.82796 4.6939 10.2725 5.13333 10.6041 5.65406C10.6716 5.75972 10.7646 5.84675 10.8745 5.90719C10.9844 5.96762 11.1077 5.99953 11.2331 6H14.2659C14.3918 6.00001 14.5157 5.96832 14.6261 5.90786C14.7366 5.84741 14.83 5.76012 14.8978 5.65406C15.2293 5.13328 15.6738 4.69382 16.1984 4.36826C16.7229 4.0427 17.314 3.8394 17.9278 3.77344C18.1463 4.26763 18.2652 4.80009 18.2776 5.34031C18.29 5.88052 18.1956 6.41787 18 6.92156C17.9547 7.03946 17.9395 7.16681 17.9559 7.29205C17.9722 7.4173 18.0196 7.53647 18.0938 7.63875C18.511 8.26474 18.7388 8.99778 18.75 9.75V10.5Z" fill="#343330" />
+                                </svg>
+                                GitHub
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link nav-link-custom dropdown-toggle d-flex align-items-center gap-1" href="#"
+                                id="pypiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20.25 5.25H16.5V4.5C16.5 3.90326 16.2629 3.33097 15.841 2.90901C15.419 2.48705 14.8467 2.25 14.25 2.25H9.75C9.15326 2.25 8.58097 2.48705 8.15901 2.90901C7.73705 3.33097 7.5 3.90326 7.5 4.5V5.25H3.75C3.35218 5.25 2.97064 5.40804 2.68934 5.68934C2.40804 5.97064 2.25 6.35218 2.25 6.75V18.75C2.25 19.1478 2.40804 19.5294 2.68934 19.8107C2.97064 20.092 3.35218 20.25 3.75 20.25H20.25C20.6478 20.25 21.0294 20.092 21.3107 19.8107C21.592 19.5294 21.75 19.1478 21.75 18.75V6.75C21.75 6.35218 21.592 5.97064 21.3107 5.68934C21.0294 5.40804 20.6478 5.25 20.25 5.25ZM9 4.5C9 4.30109 9.07902 4.11032 9.21967 3.96967C9.36032 3.82902 9.55109 3.75 9.75 3.75H14.25C14.4489 3.75 14.6397 3.82902 14.7803 3.96967C14.921 4.11032 15 4.30109 15 4.5V5.25H9V4.5ZM20.25 6.75V10.6509C17.7185 12.0289 14.8822 12.7505 12 12.75C9.11794 12.7505 6.28165 12.0292 3.75 10.6519V6.75H20.25ZM20.25 18.75H3.75V12.3412C6.31868 13.5977 9.1405 14.2506 12 14.25C14.8596 14.2501 17.6813 13.5969 20.25 12.3403V18.75ZM9.75 10.5C9.75 10.3011 9.82902 10.1103 9.96967 9.96967C10.1103 9.82902 10.3011 9.75 10.5 9.75H13.5C13.6989 9.75 13.8897 9.82902 14.0303 9.96967C14.171 10.1103 14.25 10.3011 14.25 10.5C14.25 10.6989 14.171 10.8897 14.0303 11.0303C13.8897 11.171 13.6989 11.25 13.5 11.25H10.5C10.3011 11.25 10.1103 11.171 9.96967 11.0303C9.82902 10.8897 9.75 10.6989 9.75 10.5Z" fill="#343330" />
+                                </svg>
+                                PyPI
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/"
+                                        target="_blank">
+                                        <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-mcp-server/"
+                                        target="_blank">
+                                        <i class="bi bi-plug me-2"></i>MCP Server
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-core/"
+                                        target="_blank">
+                                        <i class="bi bi-cpu me-2"></i>Core Library
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+  
 
     <!-- Main Content -->
     <main>
@@ -630,78 +848,199 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="text-white mb-3">QDrant Loader</h5>
-                    <p class="text-light">Enterprise-ready vector database toolkit for building searchable knowledge
-                        bases from multiple data sources.</p>
+    <footer class="footer-section">
+        <div class="row">
+            <div class="col-12 col-lg-6 px-0">
+                <div class="footer-logo">
+                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="logo">
                 </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-6">
-                            <h6 class="text-white mb-3">Quick Links</h6>
-                            <ul class="list-unstyled">
-                                <li><a href="{{ base_url }}docs/"
-                                        class="text-light text-decoration-none">Documentation</a></li>
-                                <li><a href="{{ base_url }}coverage/" class="text-light text-decoration-none">Test
-                                        Coverage</a></li>
+                <p class="doc-description">
+                    Enterprise-ready vector database toolkit for building searchable knowledge bases
+                    from multiple data sources.
+                </p>
+            </div>
+
+            <div class="doc-links col-lg-6">
+                <div class="row">
+                    <div class="col-12 col-md-6">
+                        <div class="doc-section">
+                            <p class="doc-section-title fw-bold mb-4 d-flex align-items-center">
+                                Quick Links
+                            </p>
+                            <ul class="list-unstyled m-0 d-flex flex-column gap-4">
+
                                 <li>
-                                    <a id="feedback-link" href="#" target="_blank" class="text-light text-decoration-none">
-                                        <i class="bi bi-chat-dots me-1"></i>Was this helpful? Give feedback
+                                    <a href="{{ base_url }}docs/"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Documentation</span>
                                     </a>
                                 </li>
-                                <li><a href="{{ base_url }}privacy-policy.html" class="text-light text-decoration-none">
-                                        <i class="bi bi-shield-lock me-1"></i>Privacy Policy</a>
-                                </li>
+
                                 <li>
-                                    <a class="bi bi-gear me-1 clickio-cmp-settings-text clickio-cmp-settings-display text-light text-decoration-none"
-                                        style="display:none;" href="#">
-                                        Your Privacy Choices
+                                    <a href="{{ base_url }}coverage/"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Test Coverage </span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a id="feedback-link" href="https://github.com/martin-papy/qdrant-loader/issues/new?assignees=martin-papy&labels=docs-feedback&title=%5BDocs%20Feedback%5D%20Documentation%20-%20QDrant%20Loader&body=Page%3A%20https%3A%2F%2Fqdrant-loader.net%2Fdocs%2F%0ADocs%20commit%3A%20f1e5516%0A%0AFeedback%3A%0A"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+
+                                        <span>Was this helpful? Give feedback</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ base_url }}privacy-policy.html"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Privacy Policy</span>
+                                    </a>
+                                </li>
+
                             </ul>
-                        </div>
-                        <div class="col-6">
-                            <h6 class="text-white mb-3">Packages & Code</h6>
-                            <ul class="list-unstyled">
-                                <li><a href="https://github.com/martin-papy/qdrant-loader"
-                                        class="text-light text-decoration-none">GitHub Repository</a></li>
-                                <li><a href="https://pypi.org/project/qdrant-loader/"
-                                        class="text-light text-decoration-none">QDrant Loader PyPI</a></li>
-                                <li><a href="https://pypi.org/project/qdrant-loader-mcp-server/"
-                                        class="text-light text-decoration-none">MCP Server PyPI</a></li>
-                                <li><a href="https://pypi.org/project/qdrant-loader-core/"
-                                        class="text-light text-decoration-none">Core Library PyPI</a></li>
-                            </ul>
+
                         </div>
                     </div>
+
+                    <div class="col-12 col-md-6 doc-link">
+                        <div class="doc-section">
+                            <p class="doc-section-title fw-bold mb-4 d-flex align-items-center">
+                                Packages & Code
+                            </p>
+                            <ul class="list-unstyled m-0 d-flex flex-column gap-4">
+
+                                <li>
+                                    <a href="https://github.com/martin-papy/qdrant-loader"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>GitHub Repository</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="https://pypi.org/project/qdrant-loader/"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+
+
+                                        <span>Qdrant Loader PyPI</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="https://pypi.org/project/qdrant-loader-mcp-server/" 
+                                        class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+
+                                        <span>MCP Server PyPI</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="https://pypi.org/project/qdrant-loader-core/"
+                                        class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                        <span>Core Library PyPI</span>
+                                    </a>
+                                </li>
+
+                            </ul>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            <hr class="my-4 border-light">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <p class="mb-0 text-light">&copy; 2025 QDrant Loader. Built with ❤️ for the AI development
-                        community.</p>
-                    <p class="mb-0 text-light small opacity-75">
-                        <i class="bi bi-info-circle me-1"></i>
-                        This site uses Google Analytics to improve user experience.
-                        <a href="{{ base_url }}privacy-policy.html" class="text-light">Learn more</a>
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="d-flex justify-content-md-end align-items-center mb-2">
-                        <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="text-light me-3"
-                            title="Connect with Martin Papy on LinkedIn">
-                            <i class="bi bi-linkedin"></i>
-                        </a>
-                        <a href="https://github.com/martin-papy" target="_blank" class="text-light"
-                            title="Follow Martin Papy on GitHub">
-                            <i class="bi bi-github"></i>
-                        </a>
-                    </div>
-                    <p class="mb-0 text-light small text-nowrap" id="build-info">Loading build information...</p>
+        </div>
+        
+        <div class="project-supporter d-flex flex-column gap-4 text-start text-lg-center">
+            <p class="support-text">This project is proudly supported and powered by <b>CBTW</b></p> 
+            <h1 class="support-title text-uppercase">COLLABORATION BETTERS THE WORLD</h1> 
+            <a href="https://cbtw.tech/" class="support-link d-flex align-items-center justify-content-lg-center gap-2 text-decoration-none text-dark" target="_blank">
+                <div class="indicator rounded-circle bg-warning"></div>
+                <span>www.cbtw.tech</span> 
+            </a>
+        </div>
+        <hr class="m-0" />
+        <div class="footer-content d-flex flex-column flex-lg-row justify-content-lg-between align-items-start align-items-lg-center text-start">
+            <div class="footer-copy-container">
+                <p class="footer-copy mb-0">&copy; 2026 QDrant Loader. Built with ❤️ for the AI development community.</p>
+                <p class="footer-analytics">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This site uses Google Analytics to improve user experience. 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="24" viewBox="0 0 36 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h24"/>
+                        <path d="m22 5 7 7-7 7"/>
+                    </svg>
+                    <a href="{{ base_url }}privacy-policy.html" class="text-primary">Learn more</a>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="social-links d-flex justify-content-md-end align-items-center mb-2 gap-2">
+                    <p class="mb-0 ml-2 text-black small text-nowrap" id="build-info">Loading build information...</p>
+                    <a href="https://github.com/martin-papy" target="_blank" class="social-link "
+                        title="Follow Martin Papy on GitHub">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path opacity="0.2" d="M19.5 9.75V10.5C19.5 11.6935 19.0259 12.8381 18.182 13.682C17.3381 14.5259 16.1935 15 15 15H12.75C13.5456 15 14.3087 15.3161 14.8713 15.8787C15.4339 16.4413 15.75 17.2044 15.75 18V21.75H9.75V18C9.75 17.2044 10.0661 16.4413 10.6287 15.8787C11.1913 15.3161 11.9544 15 12.75 15H10.5C9.30653 15 8.16193 14.5259 7.31802 13.682C6.47411 12.8381 6 11.6935 6 10.5V9.75C6.00713 8.83677 6.28476 7.94614 6.79781 7.19062C6.53575 6.51206 6.42912 5.78338 6.48574 5.05817C6.54236 4.33297 6.7608 3.62967 7.125 3C7.94376 2.99981 8.74937 3.20583 9.46752 3.59907C10.1857 3.9923 10.7932 4.56008 11.2341 5.25H14.2659C14.7068 4.56008 15.3143 3.9923 16.0325 3.59907C16.7506 3.20583 17.5562 2.99981 18.375 3C18.7392 3.62967 18.9576 4.33297 19.0143 5.05817C19.0709 5.78338 18.9642 6.51206 18.7022 7.19062C19.2152 7.94614 19.4929 8.83677 19.5 9.75Z" fill="#343330" />
+                            <path d="M19.5281 7.09501C19.7577 6.35561 19.8315 5.57662 19.7449 4.80725C19.6582 4.03787 19.413 3.29482 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0968 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.241 8.81776 19.9924 7.90349 19.5281 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6516 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.5108 8.26485 18.7386 8.99783 18.75 9.75001V10.5Z" fill="#343330" />
+                        </svg>
+                    </a>
+                    <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="social-link me-3"
+                        title="Connect with Martin Papy on LinkedIn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path opacity="0.2" d="M21 3.75V20.25C21 20.4489 20.921 20.6397 20.7803 20.7803C20.6397 20.921 20.4489 21 20.25 21H3.75C3.55109 21 3.36032 20.921 3.21967 20.7803C3.07902 20.6397 3 20.4489 3 20.25V3.75C3 3.55109 3.07902 3.36032 3.21967 3.21967C3.36032 3.07902 3.55109 3 3.75 3H20.25C20.4489 3 20.6397 3.07902 20.7803 3.21967C20.921 3.36032 21 3.55109 21 3.75Z" fill="#343330" />
+                            <path d="M20.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V20.25C2.25 20.6478 2.40804 21.0294 2.68934 21.3107C2.97064 21.592 3.35218 21.75 3.75 21.75H20.25C20.6478 21.75 21.0294 21.592 21.3107 21.3107C21.592 21.0294 21.75 20.6478 21.75 20.25V3.75C21.75 3.35218 21.592 2.97064 21.3107 2.68934C21.0294 2.40804 20.6478 2.25 20.25 2.25ZM20.25 20.25H3.75V3.75H20.25V20.25ZM9 10.5V16.5C9 16.6989 8.92098 16.8897 8.78033 17.0303C8.63968 17.171 8.44891 17.25 8.25 17.25C8.05109 17.25 7.86032 17.171 7.71967 17.0303C7.57902 16.8897 7.5 16.6989 7.5 16.5V10.5C7.5 10.3011 7.57902 10.1103 7.71967 9.96967C7.86032 9.82902 8.05109 9.75 8.25 9.75C8.44891 9.75 8.63968 9.82902 8.78033 9.96967C8.92098 10.1103 9 10.3011 9 10.5ZM17.25 13.125V16.5C17.25 16.6989 17.171 16.8897 17.0303 17.0303C16.8897 17.171 16.6989 17.25 16.5 17.25C16.3011 17.25 16.1103 17.171 15.9697 17.0303C15.829 16.8897 15.75 16.6989 15.75 16.5V13.125C15.75 12.6277 15.5525 12.1508 15.2008 11.7992C14.8492 11.4475 14.3723 11.25 13.875 11.25C13.3777 11.25 12.9008 11.4475 12.5492 11.7992C12.1975 12.1508 12 12.6277 12 13.125V16.5C12 16.6989 11.921 16.8897 11.7803 17.0303C11.6397 17.171 11.4489 17.25 11.25 17.25C11.0511 17.25 10.8603 17.171 10.7197 17.0303C10.579 16.8897 10.5 16.6989 10.5 16.5V10.5C10.5009 10.3163 10.5693 10.1393 10.692 10.0026C10.8148 9.86596 10.9834 9.7791 11.166 9.75852C11.3485 9.73794 11.5323 9.78508 11.6824 9.891C11.8325 9.99691 11.9385 10.1542 11.9803 10.3331C12.4877 9.98894 13.0792 9.78947 13.6914 9.75611C14.3036 9.72276 14.9133 9.85679 15.455 10.1438C15.9968 10.4308 16.4501 10.86 16.7664 11.3852C17.0826 11.9105 17.2498 12.5119 17.25 13.125ZM9.375 7.875C9.375 8.0975 9.30902 8.31501 9.1854 8.50002C9.06179 8.68502 8.88609 8.82922 8.68052 8.91436C8.47495 8.99951 8.24875 9.02179 8.03052 8.97838C7.81229 8.93498 7.61184 8.82783 7.4545 8.6705C7.29717 8.51316 7.19002 8.31271 7.14662 8.09448C7.10321 7.87625 7.12549 7.65005 7.21064 7.44448C7.29578 7.23891 7.43998 7.06321 7.62498 6.9396C7.80999 6.81598 8.0275 6.75 8.25 6.75C8.54837 6.75 8.83452 6.86853 9.0455 7.0795C9.25647 7.29048 9.375 7.57663 9.375 7.875Z" fill="#343330" />
+                        </svg>
+                    </a>
                 </div>
             </div>
         </div>
@@ -709,7 +1048,34 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
+    <script>
+        const items = document.querySelectorAll('.toc .list-group-item');
+
+        function setActiveMenu() {
+            const hash = window.location.hash;
+
+            items.forEach(item => item.classList.remove('active'));
+
+            if (hash) {
+                const link = document.querySelector(`.toc a[href="${hash}"]`);
+                if (link) {
+                    link.parentElement.classList.add('active');
+                }
+            }
+        }
+
+        setActiveMenu();
+
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                items.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        window.addEventListener('hashchange', setActiveMenu);
+    </script>
     <!-- Simple syntax highlighting -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {

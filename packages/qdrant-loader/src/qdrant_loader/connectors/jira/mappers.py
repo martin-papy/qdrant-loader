@@ -9,6 +9,7 @@ from .models import JiraAttachment, JiraComment, JiraIssue, JiraUser
 def parse_user(
     raw_user: dict[str, Any] | None, required: bool = False
 ) -> JiraUser | None:
+    """Parse a raw user from the Jira response into a JiraUser object."""
     if not raw_user:
         if required:
             raise ValueError("User data is required but not provided")
@@ -32,6 +33,7 @@ def parse_user(
 
 
 def parse_attachment(raw_attachment: dict[str, Any]) -> JiraAttachment:
+    """Parse a raw attachment from the Jira response into a JiraAttachment object."""
     required_keys = [
         "id",
         "filename",
@@ -72,12 +74,22 @@ def parse_attachment(raw_attachment: dict[str, Any]) -> JiraAttachment:
 
 
 def parse_comment(raw_comment: dict[str, Any]) -> JiraComment:
+    """Parse a raw comment from the Jira response into a JiraComment object."""
     author = parse_user(raw_comment["author"], required=True)
     if author is None:
         raise ValueError("Missing author in Jira comment")
+
+    body = raw_comment.get("body")
+    if body is None:
+        body = ""
+    elif not isinstance(body, str):
+        if not isinstance(body, dict):
+            raise ValueError(f"Unexpected body type in Jira comment: {type(body)}")
+        body = adf_to_oneline_fulltext(body)
+
     return JiraComment(
         id=raw_comment["id"],
-        body=raw_comment["body"],
+        body=body,
         created=datetime.fromisoformat(raw_comment["created"].replace("Z", "+00:00")),
         updated=(
             datetime.fromisoformat(raw_comment["updated"].replace("Z", "+00:00"))
@@ -89,6 +101,7 @@ def parse_comment(raw_comment: dict[str, Any]) -> JiraComment:
 
 
 def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
+    """Parse a raw issue from the Jira response into a JiraIssue object."""
     # Gather identifiers early for clearer error messages
     issue_id = raw_issue.get("id")
     issue_key = raw_issue.get("key")
@@ -215,11 +228,19 @@ def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
             f"Jira issue missing required top-level identifier(s): id={issue_id!r}, key={issue_key!r}"
         )
 
+    description = fields.get("description", "")
+    if description is not None and not isinstance(description, str):
+        if not isinstance(description, dict):
+            raise ValueError(
+                f"Unexpected description type for Jira issue {issue_identifier}: {type(description)}"
+            )
+        description = adf_to_oneline_fulltext(description)
+
     return JiraIssue(
         id=issue_id,
         key=issue_key,
         summary=str(fields.get("summary")),
-        description=fields.get("description"),
+        description=description,
         issue_type=fields.get("issuetype", {}).get("name"),
         status=fields.get("status", {}).get("name"),
         priority=priority_name,
@@ -243,3 +264,28 @@ def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
         subtasks=subtasks_keys,
         linked_issues=[key for key in linked_outward if key],
     )
+
+
+def adf_to_oneline_fulltext(node: dict) -> str:
+    """Convert Jira ADF structure to a single-line plain text string."""
+
+    def extract_text(obj: Any) -> list[str]:
+        texts: list[str] = []
+
+        if isinstance(obj, dict):
+            if "text" in obj and isinstance(obj["text"], str):
+                texts.append(obj["text"])
+
+            for key, value in obj.items():
+                if key != "text":
+                    texts.extend(extract_text(value))
+
+        elif isinstance(obj, list):
+            for item in obj:
+                texts.extend(extract_text(item))
+
+        return texts
+
+    text_list = extract_text(node)
+
+    return " ".join(" ".join(text_list).split())

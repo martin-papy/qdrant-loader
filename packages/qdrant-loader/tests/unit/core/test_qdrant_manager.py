@@ -398,7 +398,7 @@ class TestQdrantManager:
 
             mock_qdrant_client.create_collection.assert_called_once_with(
                 collection_name="test_collection",
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+                vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
             )
 
     def test_create_collection_error(

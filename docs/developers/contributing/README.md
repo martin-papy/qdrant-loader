@@ -1,8 +1,8 @@
-# Best Practices for qdrant-loader
+# Developer Engineering Best Practices & PR Review Checklist
 
-> **Author:** nguyen.vu@cbtw.tech
-
-This guide outlines Pythonic patterns and AI engineering best practices for the qdrant-loader project.
+This guide defines technical engineering standards for qdrant-loader.
+Use this document for coding patterns, architecture decisions, testing standards, and review gates.
+For contribution workflow (setup, branching, PR process, issue templates), use the root `CONTRIBUTING.md`.
 
 ## 1. Pythonic Code Standards
 
@@ -83,3 +83,52 @@ For reviewer to recheck everytime a PR comes up:
 - [ ] Are PR's new logs structured and redact-protected?
 
 ---
+
+## 6. Development Workflow
+
+### 6.1. Branching
+
+- Use focused branches per scope (example: `chore/restructure-and-deduplicate-docs`)
+- Keep one branch for one concern (docs cleanup, bugfix, connector feature, etc.)
+
+### 6.2. Local Validation Before PR
+
+Run quality gates before opening a PR:
+
+```bash
+make format
+make lint
+make test
+```
+
+If you change only one package, run its package tests directly to keep feedback fast.
+
+### 6.3. PR Scope Rules
+
+- Keep PRs reviewable; avoid mixing refactor + feature + docs in one PR
+- Include migration notes when changing configuration contracts
+- If behavior changes, update user docs in the same PR
+
+## 7. Documentation Contribution Rules
+
+### 7.1. Single Source of Truth
+
+- Avoid duplicating setup snippets across multiple pages
+- Keep canonical setup flow in `docs/getting-started/quick-start.md`
+- Keep LLM provider specifics in `docs/users/configuration/llm-provider-guide.md`
+- Keep variable definitions in `docs/users/configuration/environment-variables.md`
+
+### 7.2. Link-First Strategy
+
+- When content already exists, link to it instead of copying blocks
+- Prefer short hub pages that route to detailed references
+
+## 8. Review Criteria
+
+Use this review gate for each PR:
+
+- Correctness: no behavioral regressions, config compatibility preserved
+- Reliability: retries/timeouts/error handling are explicit
+- Observability: logs are structured, secrets are masked
+- Testability: new logic has unit tests; changed flows have integration coverage
+- Documentation: user-facing changes are documented in canonical pages

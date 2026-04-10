@@ -171,6 +171,8 @@ class IngestionMonitor:
         document_sizes: list[int] | None = None,
         chunk_sizes: list[int] | None = None,
         source: str | None = None,
+        total_chunks: int | None = None,
+        total_size_bytes: int | None = None,
     ) -> None:
         """End tracking a batch.
 
@@ -182,6 +184,8 @@ class IngestionMonitor:
             document_sizes: List of document sizes in bytes
             chunk_sizes: List of chunk sizes in bytes
             source: Source identifier for the batch
+            total_chunks: Explicit total chunk count for this batch
+            total_size_bytes: Explicit total document size for this batch
         """
         if batch_id not in self.batch_metrics:
             logger.warning(f"Attempted to end untracked batch {batch_id}")
@@ -195,22 +199,37 @@ class IngestionMonitor:
         metrics.errors = errors or []
         metrics.is_completed = True
 
-        # Calculate total chunks from document metadata
-        total_chunks = 0
-        for doc_id, doc_metrics in self.ingestion_metrics.items():
-            if doc_id.startswith("doc_") and doc_metrics.metadata.get("num_chunks"):
-                total_chunks += doc_metrics.metadata["num_chunks"]
+        # Calculate total chunks: explicit value → batch-scoped chunk_sizes → fallback to metadata
+        if total_chunks is not None:
+            effective_total_chunks = total_chunks
+        elif chunk_sizes is not None:
+            # chunk_sizes contains individual chunk sizes in bytes; count chunks by length.
+            effective_total_chunks = len(chunk_sizes)
+        else:
+            # Fallback: sum only doc_* entries in self.ingestion_metrics
+            computed_total_chunks = 0
+            for doc_id, doc_metrics in self.ingestion_metrics.items():
+                if doc_id.startswith("doc_") and doc_metrics.metadata.get("num_chunks"):
+                    computed_total_chunks += doc_metrics.metadata["num_chunks"]
+            effective_total_chunks = computed_total_chunks
 
-        # Calculate total size from document metadata
-        total_size = 0
-        for doc_id, doc_metrics in self.ingestion_metrics.items():
-            if doc_id.startswith("doc_") and doc_metrics.metadata.get("size"):
-                total_size += doc_metrics.metadata["size"]
+        # Calculate total size: explicit value → batch-scoped document_sizes → fallback to metadata
+        if total_size_bytes is not None:
+            effective_total_size = total_size_bytes
+        elif document_sizes is not None:
+            effective_total_size = sum(document_sizes)
+        else:
+            # Fallback: sum only doc_* entries in self.ingestion_metrics
+            computed_total_size = 0
+            for doc_id, doc_metrics in self.ingestion_metrics.items():
+                if doc_id.startswith("doc_") and doc_metrics.metadata.get("size"):
+                    computed_total_size += doc_metrics.metadata["size"]
+            effective_total_size = computed_total_size
 
         # Update processing stats
         self.processing_stats.update_rates(
             num_documents=metrics.batch_size,
-            num_chunks=total_chunks,
+            num_chunks=effective_total_chunks,
             processing_time=metrics.duration,
         )
 
@@ -226,8 +245,8 @@ class IngestionMonitor:
         if metrics.summary:
             metrics.summary.update_batch_stats(
                 num_documents=metrics.batch_size,
-                num_chunks=total_chunks,
-                total_size=total_size,
+                num_chunks=effective_total_chunks,
+                total_size=effective_total_size,
                 processing_time=metrics.duration,
                 success_count=success_count,
                 error_count=error_count,

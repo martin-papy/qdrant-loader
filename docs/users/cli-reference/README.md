@@ -1,5 +1,7 @@
 # Command Line Interface (CLI) Reference
 
+📝
+
 QDrant Loader provides a comprehensive command-line interface for managing data ingestion, configuration, and project management. This section covers all available commands, options, and usage patterns.
 
 ## 🎯 CLI Overview
@@ -112,7 +114,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-## 🔧 Global Options
+## 🔧Global Options
 
 ### Workspace and Configuration
 
@@ -321,7 +323,7 @@ else
 fi
 ```
 
-## 📊 Output Formats
+## 🧪 Output Formats
 
 ### Standard Output
 

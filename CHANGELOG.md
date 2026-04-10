@@ -5,7 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-04-09
+
+### Added
+
+#### Qdrant-loader
+
+- Contextual embeddings for enriched chunk context during ingestion [#221]
+
+### Fixed
+
+#### Qdrant-loader
+
+- Jira Cloud connection failure due to deprecated search API endpoints [#215]
+- Duplicate chunks for Python files by rewriting AST parser [#217]
+- Duplicate document IDs causing missing chunks in metric tracking [#222]
+- Ingestion metrics: aligned size metrics and aggregated project results [#222]
+- JQL injection and query breaking when configuration values include special characters [#223]
+- Jira connector validation for environment configuration and connection errors [#224]
+- Optional `issue_types` and `include_statuses` configuration for Jira connector [#223]
+- Error message sanitization to prevent accidental exposure of sensitive data [#230]
+- Contextual embedding content formatting [#228]
+- YAML syntax error and broken markdown in configuration documentation [#231]
+
+#### Qdrant-loader-core
+
+- Sensitive data redaction in logging processors [#230]
+
+#### Qdrant-loader-mcp-server
+
+- Embedding logic and configuration for local (Ollama) model support [#229]
+- `vector_search_service` to use correct `embedding_model` parameter [#229]
+- Retry logic and failure context reporting in search pipeline [#229]
+
+### Changed
+
+#### Qdrant-loader
+
+- Aligned configuration templates with Ollama-first and OpenAI unified setup [#231]
+- Migrated pip/venv to uv for monorepo package management [#220]
+- Updated deprecated GitHub Actions from Node.js 20 to Node.js 24 [#227]
+- Updated website UI to v1 [#219]
 
 ## [0.9.0] - 2026-03-26
 
@@ -569,6 +609,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change detection for incremental updates [#21]
 - Signal handling for graceful shutdown [#21]
 
+[1.0.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.9.0...qdrant-loader-v1.0.0
 [0.9.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.1...qdrant-loader-v0.9.0
 [0.8.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.0...qdrant-loader-v0.8.1
 [0.8.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.6...qdrant-loader-v0.8.0

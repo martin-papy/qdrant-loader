@@ -9,11 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import os
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx
-import yaml
 
 if TYPE_CHECKING:
     from qdrant_client import AsyncQdrantClient
@@ -174,20 +172,34 @@ class SearchEngine:
                         vector_size = int(env_size)
                 except Exception:
                     vector_size = None
-                # 2) From MCP_CONFIG file if present
+                # 2) From resolved config object
+                if vector_size is None and openai_config.vector_size is not None:
+                    vector_size = openai_config.vector_size
+                # 3) From MCP_CONFIG file if present (fallback if config object missing vector_size)
                 if vector_size is None:
                     try:
+                        from pathlib import Path
+
                         cfg_path = os.getenv("MCP_CONFIG")
                         if cfg_path and Path(cfg_path).exists():
+                            import yaml
+
                             with open(cfg_path, encoding="utf-8") as f:
                                 data = yaml.safe_load(f) or {}
                             llm = data.get("global", {}).get("llm") or {}
                             emb = llm.get("embeddings") or {}
-                            if isinstance(emb.get("vector_size"), int):
-                                vector_size = int(emb["vector_size"])
+                            raw_size = emb.get("vector_size")
+                            if raw_size is not None:
+                                if not isinstance(raw_size, int) or raw_size <= 0:
+                                    raise ValueError(
+                                        f"global.llm.embeddings.vector_size must be a positive integer, got: {raw_size!r}"
+                                    )
+                                vector_size = raw_size
+                    except ValueError:
+                        raise
                     except Exception:
                         vector_size = None
-                # 3) Deprecated fallback
+                # 4) Deprecated fallback
                 if vector_size is None:
                     vector_size = 1536
                     try:
@@ -212,6 +224,7 @@ class SearchEngine:
                     openai_client=self.openai_client,
                     collection_name=config.collection_name,
                     search_config=search_config,
+                    embedding_model=openai_config.model,
                 )
 
             # Initialize operation modules
@@ -222,6 +235,8 @@ class SearchEngine:
             self._strategy_selector = StrategySelector(self)
 
             self.logger.info("Successfully connected to Qdrant", url=config.url)
+        except ValueError:
+            raise
         except Exception as e:
             self.logger.error(
                 "Failed to connect to Qdrant server",
@@ -232,7 +247,7 @@ class SearchEngine:
             raise RuntimeError(
                 f"Failed to connect to Qdrant server at {config.url}. "
                 "Please ensure Qdrant is running and accessible."
-            ) from None  # Suppress the original exception
+            ) from e
 
     async def cleanup(self) -> None:
         """Cleanup resources."""

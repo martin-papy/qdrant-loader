@@ -8,6 +8,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from qdrant_loader.utils.sensitive import sanitize_exception_message
+
 _stderr_console = Console(stderr=True)
 
 
@@ -59,7 +61,7 @@ def print_config_error(error: Exception) -> None:
             _stderr_console.print(
                 Panel(
                     f"[bold red]{msg}[/bold red]\n\n"
-                    f"[yellow]{str(error)}[/yellow]\n\n"
+                    f"[yellow]{sanitize_exception_message(error)}[/yellow]\n\n"
                     "[green]Suggestion:[/green] Check YAML syntax. Common issues:\n"
                     "  - Incorrect indentation (use spaces, not tabs)\n"
                     "  - Missing colons after keys\n"
@@ -76,7 +78,7 @@ def print_config_error(error: Exception) -> None:
         _stderr_console.print(
             Panel(
                 "[bold red]Configuration file not found[/bold red]\n\n"
-                f"[yellow]{str(error)}[/yellow]\n\n"
+                f"[yellow]{sanitize_exception_message(error)}[/yellow]\n\n"
                 "[green]Suggestions:[/green]\n"
                 "  - Run 'qdrant-loader setup' to generate configuration files\n"
                 "  - Create config.yaml manually\n"
@@ -88,11 +90,14 @@ def print_config_error(error: Exception) -> None:
         return
 
     if isinstance(error, ValueError):
+        safe_message = sanitize_exception_message(error)
+        raw_message = str(error)
+
         _stderr_console.print(
             Panel(
                 "[bold red]Configuration error[/bold red]\n\n"
-                f"[yellow]{str(error)}[/yellow]\n\n"
-                f"[green]Suggestion:[/green] {_suggest_fix('', str(error))}",
+                f"[yellow]{safe_message}[/yellow]\n\n"
+                f"[green]Suggestion:[/green] {_suggest_fix('', raw_message)}",
                 title="Validation Error",
                 style="red",
             )
@@ -103,7 +108,7 @@ def print_config_error(error: Exception) -> None:
     _stderr_console.print(
         Panel(
             "[bold red]Configuration error[/bold red]\n\n"
-            f"[yellow]{type(error).__name__}: {str(error)}[/yellow]",
+            f"[yellow]{type(error).__name__}: {sanitize_exception_message(error)}[/yellow]",
             title="Error",
             style="red",
         )

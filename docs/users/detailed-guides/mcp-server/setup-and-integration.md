@@ -88,8 +88,7 @@ pip install qdrant-loader qdrant-loader-mcp-server
 # Option 3: Install from source
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-pip install -e packages/qdrant-loader
-pip install -e packages/qdrant-loader-mcp-server
+uv sync --all-packages --all-extras
 ```
 
 ### Verify Installation
@@ -781,7 +780,7 @@ mcp-qdrant-loader
    - Watch memory consumption
    - Monitor QDrant performance
 
-## 📊 Best Practices
+## 🧪 Best Practices
 
 ### Effective Prompting
 
@@ -840,7 +839,7 @@ mcp-qdrant-loader
 }
 ```
 
-## 📊 Available Search Tools Summary
+## 🧪 Available Search Tools Summary
 
 The MCP server provides these search capabilities:
 
@@ -864,7 +863,7 @@ The MCP server provides these search capabilities:
 2. **expand_cluster** - Detailed cluster analysis
 3. **expand_chunk_context** - Local neighboring chunk expansion
 
-## 📋 Integration Checklist
+## 📝 Integration Checklist
 
 ### Pre-Setup
 

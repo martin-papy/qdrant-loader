@@ -6,7 +6,7 @@ This guide covers the powerful AI-driven search capabilities available through t
 
 The QDrant Loader MCP Server provides **intelligent search capabilities** powered by advanced AI technologies including semantic understanding, document relationship analysis, and cross-document intelligence. These features work together to provide contextually relevant results and comprehensive knowledge discovery.
 
-### 🎉 Available Intelligence Features
+### Available Intelligence Features
 
 Our search system provides sophisticated capabilities for knowledge exploration and analysis:
 
@@ -21,7 +21,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 2. **Hierarchy Search** - Structure-aware search with document relationships
 3. **Attachment Search** - Specialized search for files and documents
 
-### 🔥 Cross-Document Intelligence Features
+### Cross-Document Intelligence Features
 
 1. **Document Relationship Analysis** - Comprehensive relationship analysis **(Available)**
 2. **Document Similarity Detection** - Find similar and related documents **(Available)**
@@ -29,7 +29,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 4. **Complementary Content Discovery** - Find related and supporting content **(Available)**
 5. **Document Clustering** - Group documents by similarity and relationships **(Available)**
 
-### 📄 Document Expansion Tools
+### Document Expansion Tools
 
 1. **Expand Document** - Get detailed document information and context **(Available)**
 2. **Expand Cluster** - Explore document clusters with detailed analysis **(Available)**
@@ -455,7 +455,7 @@ Document Clusters Created:
 - Good coverage across implementation lifecycle
 ```
 
-## 📄 Document Expansion Tools Reference
+## 📚 Document Expansion Tools Reference
 
 ### Expand Document (`expand_document`)
 
@@ -551,7 +551,7 @@ Expand surrounding chunks around a specific chunk so AI tools can reason with ne
   "arguments": {
     "document_id": "string", // Required: document identifier
     "chunk_index": 3, // Required: zero-based chunk index
-    "window": 2, // Optional: number of chunks before/after (default: 2)
+    "window": 2 // Optional: number of chunks before/after (default: 2)
   }
 }
 ```
@@ -696,7 +696,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 - ✅ **Content Intelligence**: Comprehensive file and attachment analysis
 - ✅ **Scalability**: Handles large document collections effectively
 
-## 📋 Search Capabilities Checklist
+## 📝 Search Capabilities Checklist
 
 ### Understanding Available Tools
 

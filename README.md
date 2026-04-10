@@ -7,9 +7,11 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Changelog v0.9.0](./CHANGELOG.md)** - Latest improvements and bug fixes
+📝 **[Changelog v1.0.0](./CHANGELOG.md)** - Latest improvements and bug fixes
 
+<div align="left">
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
+</div>
 
 ## 🎯 What is QDrant Loader?
 
@@ -17,10 +19,10 @@ QDrant Loader is a data ingestion and retrieval system that collects content fro
 
 **Perfect for:**
 
-- 🤖 **AI-powered development** with Cursor, Windsurf, and other MCP-compatible tools
-- 📚 **Knowledge base creation** from technical documentation
-- 🔍 **Intelligent code assistance** with contextual information
-- 🏢 **Enterprise content integration** from multiple data sources
+- 🤖 AI-powered development with Cursor, Windsurf, and other MCP-compatible tools
+- 📚 Knowledge base creation from technical documentation
+- 🔍 Intelligent code assistance with contextual information
+- 🏢 Enterprise content integration from multiple data sources
 
 ## 📦 Packages
 
@@ -197,13 +199,13 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 
 ## 📚 Documentation
 
-### 🚀 Getting Started
+### Getting Started
 
 - **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
 - **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
 - **Core Concepts** - Covered inline in Getting Started
 
-### 👥 User Guides
+### User Guides
 
 - **[Configuration](./docs/users/configuration/)** - Complete configuration reference
 - **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA setup
@@ -211,7 +213,6 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
 ## ⚠️ Migration Guide (v0.7.1+)
-
 ### LLM Configuration Migration Required
 
 - **New unified configuration**: `global.llm.*` replaces legacy `global.embedding.*` and `file_conversion.markitdown.*`
@@ -221,10 +222,10 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 
 ### Migration Resources
 
-- [Configuration File Reference](./docs/users/configuration/config-file-reference.md) - Complete new schema
-- [Environment Variables](./docs/users/configuration/environment-variables.md) - Updated variable names
+- **[Configuration File Reference](./docs/users/configuration/config-file-reference.md)** - Complete new schema
+- **[Environment Variables](./docs/users/configuration/environment-variables.md)** - Updated variable names
 
-### 🛠️ Developer Resources
+### Developer Resources
 
 - **[Architecture](./docs/developers/architecture/)** - System design overview
 - **[Testing](./docs/developers/testing/)** - Testing guide and best practices
@@ -244,14 +245,13 @@ We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
 # Clone and setup
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-python -m venv venv
-source venv/bin/activate
 
-# Install packages in development mode
-pip install -e ".[dev]"
-pip install -e "packages/qdrant-loader-core[dev,openai,ollama]"
-pip install -e "packages/qdrant-loader[dev]"
-pip install -e "packages/qdrant-loader-mcp-server[dev]"
+# Sync workspace environment (recommended)
+uv sync --all-packages --all-extras
+
+# Add a new dependency during development
+uv add fastapi
+uv sync
 ```
 
 ## 📄 License

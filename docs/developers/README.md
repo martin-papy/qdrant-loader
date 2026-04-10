@@ -1,4 +1,4 @@
-# Developer Documentation
+# 📝 Developer Documentation
 
 Welcome to the QDrant Loader developer documentation! This guide provides everything you need to understand, extend, test, and deploy QDrant Loader. Whether you're contributing to the core project or building custom extensions, you'll find detailed technical information and practical examples here.
 
@@ -60,17 +60,9 @@ QDrant Loader follows a modular architecture designed for multi-project document
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate # On Windows: venv\Scripts\activate
-
-# Install development dependencies
-cd packages/qdrant-loader
-pip install -e ".[dev]"
-
-# Install MCP server package
-cd ../qdrant-loader-mcp-server
-pip install -e ".[dev]"
+# Install all workspace packages with development dependencies
+# uv automatically creates and manages the virtual environment
+uv sync --all-packages --all-extras
 
 # Start QDrant for development
 docker run -p 6333:6333 qdrant/qdrant:latest
@@ -83,15 +75,16 @@ docker run -p 6333:6333 qdrant/qdrant:latest
 make test
 
 # Run specific package tests
-cd packages/qdrant-loader
-pytest
+make test-loader
+make test-mcp
+make test-core
 
 # Run with coverage
-pytest --cov=qdrant_loader --cov-report=html
+make test-coverage
 
-# Run MCP server tests
-cd packages/qdrant-loader-mcp-server
-pytest
+# Or run pytest directly via uv
+uv run pytest packages/qdrant-loader/tests/
+uv run pytest packages/qdrant-loader-mcp-server/tests/ --cov=src --cov-report=html
 ```
 
 ### 3. Code Quality Checks
@@ -101,12 +94,10 @@ pytest
 make lint
 make format
 
-# Or manually
-cd packages/qdrant-loader
-black src/
-isort src/
-flake8 src/
-mypy src/
+# Or run tools directly via uv
+uv run ruff check --fix .
+uv run black .
+uv run isort .
 ```
 
 ## 📚 Core Concepts for Developers
@@ -203,10 +194,10 @@ Available connectors:
    # Make changes
    # Run tests
    make test
-   
+
    # Check code quality
    make lint
-   
+
    # Commit changes
    git commit -m "feat: add new feature"
    ```
@@ -262,7 +253,7 @@ Available connectors:
 
 ## 📖 Detailed Guides
 
-### [Architecture Guide](./architecture.md)
+### [Architecture Guide](./architecture/)
 
 Deep dive into system design, component interactions, and architectural decisions. Essential reading for understanding how QDrant Loader works internally.
 
@@ -274,7 +265,7 @@ Deep dive into system design, component interactions, and architectural decision
 - State management and change detection
 - MCP server integration
 
-### [Extending Guide](./extending.md)
+### [Extending Guide](./extending/)
 
 Comprehensive guide for building custom functionality and connectors. Learn how to extend QDrant Loader for your specific needs.
 
@@ -286,7 +277,7 @@ Comprehensive guide for building custom functionality and connectors. Learn how 
 - Testing custom components
 - Packaging and distribution
 
-### [Testing Guide](./testing.md)
+### [Testing Guide](./testing/)
 
 Testing strategies, frameworks, and best practices for ensuring code quality and reliability.
 
@@ -298,7 +289,7 @@ Testing strategies, frameworks, and best practices for ensuring code quality and
 - Mock and fixture usage
 - CI/CD integration
 
-### [Deployment Guide](./deployment.md)
+### [Deployment Guide](./deployment/)
 
 Production deployment strategies, containerization, and operational best practices.
 
@@ -414,7 +405,7 @@ await pipeline.run()
 # - search_attachments
 ```
 
-## 📋 Development Checklist
+## 📝 Development Checklist
 
 ### Before Submitting Code
 
@@ -467,8 +458,8 @@ await pipeline.run()
 
 **Ready to start developing?** Choose your path:
 
-- **New to QDrant Loader?** Start with the [Architecture Guide](./architecture.md)
-- **Creating connectors?** Follow the [Extending Guide](./extending.md)
-- **Setting up CI/CD?** Use the [Deployment Guide](./deployment.md)
+- **New to QDrant Loader?** Start with the [Architecture Guide](./architecture/)
+- **Creating connectors?** Follow the [Extending Guide](./extending/)
+- **Setting up CI/CD?** Use the [Deployment Guide](./deployment/)
 
 **Need help?** Join our community discussions or open an issue on GitHub!

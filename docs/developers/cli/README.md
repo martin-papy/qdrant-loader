@@ -191,14 +191,36 @@ MCP_DISABLE_CONSOLE_LOGGING=true # Recommended for Cursor
 #### Cursor IDE Integration
 
 ```json
-{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": ["--log-level", "INFO"], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your_openai_key", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } }
+{
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "mcp-qdrant-loader",
+      "args": ["--log-level", "INFO"],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "OPENAI_API_KEY": "your_openai_key",
+        "MCP_DISABLE_CONSOLE_LOGGING": "true"
+      }
+    }
+  }
 }
 ```
 
 #### Claude Desktop Integration
 
 ```json
-{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your_openai_key", "QDRANT_COLLECTION_NAME": "documents" } } }
+{
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "mcp-qdrant-loader",
+      "args": [],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "OPENAI_API_KEY": "your_openai_key",
+        "QDRANT_COLLECTION_NAME": "documents"
+      }
+    }
+  }
 }
 ```
 
@@ -249,14 +271,14 @@ JIRA_EMAIL=your-email@company.com
 
 ## Exit Codes
 
-| Code | Meaning | Description |
-|------|---------|-------------|
-| 0 | Success | Command completed successfully |
-| 1 | General Error | Unspecified error occurred |
-| 2 | Configuration Error | Invalid configuration or missing required settings |
-| 3 | Connection Error | Failed to connect to QDrant or data sources |
-| 4 | Authentication Error | Invalid credentials for data sources |
-| 5 | Processing Error | Error during data processing or ingestion |
+| Code | Meaning              | Description                                        |
+| ---- | -------------------- | -------------------------------------------------- |
+| 0    | Success              | Command completed successfully                     |
+| 1    | General Error        | Unspecified error occurred                         |
+| 2    | Configuration Error  | Invalid configuration or missing required settings |
+| 3    | Connection Error     | Failed to connect to QDrant or data sources        |
+| 4    | Authentication Error | Invalid credentials for data sources               |
+| 5    | Processing Error     | Error during data processing or ingestion          |
 
 ## 🔧 Development Patterns
 
@@ -447,4 +469,5 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 - **[Testing Guide](../testing/)** - Testing CLI functionality
 
 ---
+
 **Ready to develop with the CLI?** Start with the basic commands above or check out the [Architecture Overview](../architecture/) for detailed system design information.

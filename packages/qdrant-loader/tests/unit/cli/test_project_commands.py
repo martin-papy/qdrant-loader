@@ -397,6 +397,7 @@ class TestProjectStatusCommand:
 
             assert result.exit_code != 0
             assert "Project 'nonexistent' not found" in result.output
+            assert "Failed to get project status" not in result.output
 
     def test_project_status_json_format(self):
         """Test project status with JSON format."""
@@ -516,6 +517,7 @@ class TestProjectValidateCommand:
 
             assert result.exit_code != 0
             assert "Project validation failed" in result.output
+            assert "Failed to validate projects" not in result.output
 
     def test_project_validate_error_handling(self):
         """Test project validation error handling."""

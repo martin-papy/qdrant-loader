@@ -135,12 +135,12 @@ qdrant-loader init --workspace /opt/qdrant-loader
 
 ### Operating System Support
 
-| OS | Support Level | Notes |
-|---|---|---|
+| OS                | Support Level      | Notes                      |
+| ----------------- | ------------------ | -------------------------- |
 | **Ubuntu 20.04+** | ✅ Fully Supported | Recommended for production |
-| **CentOS 8+** | ✅ Fully Supported | Enterprise environments |
-| **macOS 12+** | ✅ Fully Supported | Development and testing |
-| **Windows 10+** | ✅ Fully Supported | Development environments |
+| **CentOS 8+**     | ✅ Fully Supported | Enterprise environments    |
+| **macOS 12+**     | ✅ Fully Supported | Development and testing    |
+| **Windows 10+**   | ✅ Fully Supported | Development environments   |
 
 ### Dependencies
 
@@ -162,7 +162,7 @@ brew install python@3.12 git curl
 # Core dependencies are automatically installed
 pip install qdrant-loader qdrant-loader-mcp-server
 # Optional development dependencies
-pip install qdrant-loader[dev] qdrant-loader-mcp-server[dev]
+uv sync --all-packages --all-extras
 ```
 
 ### QDrant Database Setup
@@ -460,7 +460,7 @@ openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -
 # Add to QDrant configuration
 ```
 
-## 🚀 Scaling Strategies
+##  Scaling Strategies
 
 ### Horizontal Scaling
 
@@ -544,6 +544,7 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 - **[Deployment Guides](https://github.com/martin-papy/qdrant-loader/wiki/Deployment)** - Community deployment guides
 
 ---
+
 **Ready to deploy?** Start with [Environment Setup](#️-environment-setup) for detailed setup instructions or jump to [Monitoring and Observability](#-monitoring-and-observability) for production monitoring. Don't forget to check [Performance Optimization](#performance-optimization) for optimization tips.
 
 ### Performance Optimization
