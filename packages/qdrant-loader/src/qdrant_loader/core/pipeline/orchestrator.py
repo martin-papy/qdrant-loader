@@ -234,12 +234,23 @@ class PipelineOrchestrator:
                 failed_projects.append(project_id)
                 continue
             except Exception as e:
+                safe_error = sanitize_exception_message(e)
+                sanitized_traceback = sanitize_exception_message(traceback.format_exc())
+                aggregated_result.error_count += 1
+                aggregated_result.errors.append(
+                    "project_id="
+                    f"{project_id}; "
+                    "error_type="
+                    f"{type(e).__name__}; "
+                    "message="
+                    f"{safe_error}; "
+                    "traceback="
+                    f"{sanitized_traceback}"
+                )
                 logger.error(
-                    f"Failed to process project {project_id}: {sanitize_exception_message(e)}",
+                    f"Failed to process project {project_id}: {safe_error}",
                     error_type=type(e).__name__,
-                    sanitized_traceback=sanitize_exception_message(
-                        traceback.format_exc()
-                    ),
+                    sanitized_traceback=sanitized_traceback,
                 )
                 failed_projects.append(project_id)
                 # Continue processing other projects

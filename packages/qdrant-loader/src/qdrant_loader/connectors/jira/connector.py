@@ -302,7 +302,10 @@ class BaseJiraConnector(BaseConnector):
 
     async def __aexit__(self, exc_type, exc_val, _exc_tb):
         """Async context manager exit."""
-        self._initialized = False
+        try:
+            self.session.close()
+        finally:
+            self._initialized = False
 
     @abstractmethod
     def _get_api_url(self, endpoint: str) -> str:

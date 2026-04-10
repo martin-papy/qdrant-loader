@@ -687,11 +687,7 @@ class TestPipelineOrchestrator:
     async def test_process_all_projects_continues_on_connector_configuration_error(
         self,
     ):
-        """ConnectorConfigurationError should be logged and tracked, not crash the pipeline.
-
-        Other projects must continue processing. The error is recorded in
-        aggregated_result so callers can report it.
-        """
+        """ConnectorConfigurationError should be logged/tracked and not stop other projects."""
         from qdrant_loader.connectors.base import ConnectorConfigurationError
 
         project_manager = Mock()
@@ -705,31 +701,76 @@ class TestPipelineOrchestrator:
                 raise ConnectorConfigurationError(
                     "Authentication failed for Jira (HTTP 401)"
                 )
-            return []
+
+            orchestrator.last_pipeline_result = Mock(
+                success_count=1,
+                error_count=0,
+                successfully_processed_documents={"doc2"},
+                failed_document_ids=set(),
+                errors=[],
+            )
+            return [Mock(spec=Document, id="doc2")]
 
         with patch.object(
             orchestrator, "process_documents", side_effect=mock_process_documents
         ):
             with patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_log:
-                # Should NOT raise — continues to p2
-                result = await orchestrator._process_all_projects()
+                documents = await orchestrator._process_all_projects()
 
-                # p1 failed but p2 still processed
-                assert isinstance(result, list)
+        assert len(documents) == 1
+        assert documents[0].id == "doc2"
 
-                # Config error tracked in aggregated result errors list
-                assert any(
-                    "Configuration error" in e and "p1" in e
-                    for e in orchestrator.last_pipeline_result.errors
-                )
+        assert orchestrator.last_pipeline_result is not None
+        assert any(
+            "Configuration error" in e and "p1" in e
+            for e in orchestrator.last_pipeline_result.errors
+        )
 
-                # Logger called with error for p1
-                mock_log.error.assert_called()
-                error_call = mock_log.error.call_args_list[0]
-                assert "p1" in str(error_call)
+        mock_log.error.assert_called()
+        mock_log.warning.assert_called_once()
 
-                # Summary warning logged (at least 1 failed project)
-                warning_calls = [
-                    str(c) for c in mock_log.warning.call_args_list
-                ]
-                assert any("failed" in w for w in warning_calls)
+    @pytest.mark.asyncio
+    async def test_process_all_projects_records_project_exception_in_aggregate_result(
+        self,
+    ):
+        """Per-project exceptions should be reflected in aggregate error metrics."""
+        project_manager = Mock()
+        project_manager.list_project_ids.return_value = ["p1", "p2"]
+        orchestrator = PipelineOrchestrator(
+            self.settings, self.components, project_manager=project_manager
+        )
+
+        result_p1 = Mock(
+            success_count=2,
+            error_count=0,
+            successfully_processed_documents={"doc1"},
+            failed_document_ids=set(),
+            errors=[],
+        )
+
+        async def mock_process_documents(**kwargs):
+            project_id = kwargs["project_id"]
+            if project_id == "p1":
+                orchestrator.last_pipeline_result = result_p1
+                return [Mock(spec=Document, id="doc1")]
+
+            raise RuntimeError("project-level failure")
+
+        with patch.object(
+            orchestrator, "process_documents", side_effect=mock_process_documents
+        ):
+            documents = await orchestrator._process_all_projects()
+
+        assert len(documents) == 1
+        assert documents[0].id == "doc1"
+
+        assert orchestrator.last_pipeline_result is not None
+        assert orchestrator.last_pipeline_result.success_count == 2
+        assert orchestrator.last_pipeline_result.error_count == 1
+        assert len(orchestrator.last_pipeline_result.errors) == 1
+
+        error_entry = orchestrator.last_pipeline_result.errors[0]
+        assert "project_id=p2" in error_entry
+        assert "error_type=RuntimeError" in error_entry
+        assert "message=project-level failure" in error_entry
+        assert "traceback=" in error_entry
