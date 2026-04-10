@@ -113,6 +113,9 @@ jobs:
         with:
           name: test-status-${{ github.event.workflow_run.id }}
           path: test-results/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
           digest-mismatch: warn
         continue-on-error: true
 
@@ -135,6 +138,9 @@ jobs:
           pattern: coverage-*-${{ github.event.workflow_run.id }}
           path: coverage-artifacts/
           merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
           digest-mismatch: warn
         continue-on-error: true
 
