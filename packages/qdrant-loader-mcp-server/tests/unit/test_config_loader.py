@@ -183,9 +183,7 @@ class TestLoadConfigValueErrorFallback:
         monkeypatch.delenv("MISSING_VAR", raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "sk-fallback")
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            "global:\n  qdrant:\n    url: ${MISSING_VAR}\n"
-        )
+        config_file.write_text("global:\n  qdrant:\n    url: ${MISSING_VAR}\n")
         monkeypatch.setenv("MCP_CONFIG", str(config_file))
         cfg, effective, used_file = load_config(None)
         # Should NOT raise — falls back to env-only mode

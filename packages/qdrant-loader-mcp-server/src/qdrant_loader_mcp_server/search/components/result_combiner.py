@@ -89,9 +89,8 @@ class ResultCombiner:
             if text in combined_dict:
                 combined_dict[text]["keyword_score"] = result["score"]
                 # Backfill contextual_content if vector entry was empty
-                if (
-                    not combined_dict[text].get("contextual_content")
-                    and result.get("contextual_content")
+                if not combined_dict[text].get("contextual_content") and result.get(
+                    "contextual_content"
                 ):
                     combined_dict[text]["contextual_content"] = result[
                         "contextual_content"

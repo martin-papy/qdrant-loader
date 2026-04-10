@@ -236,6 +236,18 @@ class TestJiraConnector:
         async with connector:
             assert connector._initialized is True
 
+    @pytest.mark.asyncio
+    async def test_context_exit_closes_session(self, jira_cloud_config):
+        """Connector context exit should close the owned requests session."""
+        connector = JiraCloudConnector(jira_cloud_config)
+
+        with patch.object(connector.session, "close") as mock_close:
+            async with connector:
+                assert connector._initialized is True
+
+            mock_close.assert_called_once()
+            assert connector._initialized is False
+
     def test_missing_cloud_credentials(self):
         """Test initialization with missing Cloud credentials."""
         # Clear environment variables to ensure they don't interfere
