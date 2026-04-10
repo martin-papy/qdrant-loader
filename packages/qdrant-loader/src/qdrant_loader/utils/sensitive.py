@@ -5,10 +5,12 @@ from __future__ import annotations
 import re
 
 _SENSITIVE_FIELD_RE = re.compile(
-    r"(?i)(?P<quote>['\"]?)(?P<key>[a-z0-9_\-]*(?:token|api[_-]?key|password|secret|access[_-]?key|private[_-]?key)[a-z0-9_\-]*)(?P=quote)\s*(?P<sep>[:=])\s*(?P<value>'[^']*'|\"[^\"]*\"|[^,\s}\]]+)"
+    r"(?i)(?P<quote>['\"]?)(?P<key>[a-z0-9_\-]*(?:token|api[_-]?key|password|secret|access[_-]?key|private[_-]?key|authorization)[a-z0-9_\-]*)(?P=quote)\s*(?P<sep>[:=])\s*(?P<value>'[^']*'|\"[^\"]*\"|[^,\s}\]]+)"
 )
 _INPUT_VALUE_PREFIX_RE = re.compile(r"input_value\s*=\s*", re.IGNORECASE)
-_BEARER_RE = re.compile(r"(?i)(authorization\s*[:=]\s*bearer\s+)([^\s,]+)")
+_AUTHORIZATION_RE = re.compile(
+    r'(?i)(authorization\s*[:=]\s*)(?:(?:bearer|basic|token)\s+)?(?:"[^"]*"|\'[^\']*\'|[^\s,]+)'
+)
 _OPENAI_KEY_RE = re.compile(r"\bsk-[a-zA-Z0-9\-_]{12,}\b")
 
 
@@ -110,12 +112,20 @@ def redact_sensitive_data(text: str, mask: str = "**") -> str:
         return f"{quote}{key}{quote}{sep}{mask}"
 
     redacted = _mask_input_value_segments(text, mask)
+    redacted = _AUTHORIZATION_RE.sub(rf"\1{mask}", redacted)
     redacted = _SENSITIVE_FIELD_RE.sub(_replace_field, redacted)
-    redacted = _BEARER_RE.sub(rf"\1{mask}", redacted)
     redacted = _OPENAI_KEY_RE.sub(mask, redacted)
     return redacted
 
 
 def sanitize_exception_message(error: Exception | str, mask: str = "**") -> str:
     """Convert an exception or message string to a safe, redacted message."""
-    return redact_sensitive_data(str(error), mask=mask)
+    redacted = redact_sensitive_data(str(error), mask=mask)
+
+    if redacted and redacted.strip():
+        return redacted
+
+    if isinstance(error, Exception):
+        return error.__class__.__name__
+
+    return "<redacted>"

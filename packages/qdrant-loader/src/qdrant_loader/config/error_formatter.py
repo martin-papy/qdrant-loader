@@ -90,11 +90,14 @@ def print_config_error(error: Exception) -> None:
         return
 
     if isinstance(error, ValueError):
+        safe_message = sanitize_exception_message(error)
+        raw_message = str(error)
+
         _stderr_console.print(
             Panel(
                 "[bold red]Configuration error[/bold red]\n\n"
-                f"[yellow]{sanitize_exception_message(error)}[/yellow]\n\n"
-                f"[green]Suggestion:[/green] {_suggest_fix('', sanitize_exception_message(error))}",
+                f"[yellow]{safe_message}[/yellow]\n\n"
+                f"[green]Suggestion:[/green] {_suggest_fix('', raw_message)}",
                 title="Validation Error",
                 style="red",
             )

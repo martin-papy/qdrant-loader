@@ -456,6 +456,8 @@ def config(
 
         output = _run_show_config(workspace, config, env, log_level)
         echo(output)
+    except ClickException:
+        raise
     except Exception as e:
         from qdrant_loader.utils.logging import LoggingConfig
 
