@@ -626,10 +626,12 @@ class TestUpsertWorker:
             )
 
         # Count unique IDs only: 2 processed attempts, 1 unique stored point ID
+        # Second batch (doc2) has duplicate chunk ID with first batch (doc1) → doc2 is affected
         assert result.success_count == 1
-        assert result.error_count == 0
+        assert result.error_count == 1  # doc2 affected by cross-batch duplicate
         assert len(result.errors) == 1
         assert "duplicate chunk IDs" in result.errors[0]
+        assert "affecting 1 document(s)" in result.errors[0]
         mock_logger.warning.assert_called()
 
     @pytest.mark.asyncio
@@ -670,8 +672,58 @@ class TestUpsertWorker:
                 embedded_chunks_iterator()
             )
 
-        assert result.success_count == 1
-        assert result.error_count == 0
+        assert result.success_count == 0
+        assert (
+            result.error_count == 2
+        )  # Both doc1 and doc2 affected by same-batch duplicates
         assert len(result.errors) == 1
         assert "same-batch duplicate occurrences" in result.errors[0]
+        assert "affecting 2 document(s)" in result.errors[0]
+        mock_logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_removes_global_success_on_late_duplicate(
+        self,
+    ):
+        """A document previously marked successful should be removed after a later duplicate."""
+        mock_chunk1 = Mock()
+        mock_chunk1.id = "same-chunk-id"
+        mock_chunk1.content = "Version 1"
+        mock_chunk1.source = "test_source"
+        mock_chunk1.source_type = "test"
+        mock_chunk1.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        mock_chunk1.metadata = {"parent_document": Mock(id="doc1")}
+
+        mock_chunk2 = Mock()
+        mock_chunk2.id = "same-chunk-id"
+        mock_chunk2.content = "Version 2"
+        mock_chunk2.source = "test_source"
+        mock_chunk2.source_type = "test"
+        mock_chunk2.created_at = datetime(2023, 1, 1, 12, 5, 0)
+        mock_chunk2.metadata = {"parent_document": Mock(id="doc1")}
+
+        async def embedded_chunks_iterator():
+            yield (mock_chunk1, [0.1, 0.2, 0.3])
+            yield (mock_chunk2, [0.4, 0.5, 0.6])
+
+        # Force cross-batch duplicate handling.
+        self.upsert_worker.batch_size = 1
+
+        with (
+            patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+            ),
+            patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.logger"
+            ) as mock_logger,
+        ):
+            result = await self.upsert_worker.process_embedded_chunks(
+                embedded_chunks_iterator()
+            )
+
+        assert result.success_count == 1
+        assert result.error_count == 1
+        assert result.successfully_processed_documents == set()
+        assert len(result.errors) == 1
+        assert "duplicate chunk IDs" in result.errors[0]
         mock_logger.warning.assert_called()
