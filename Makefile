@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-loader test-mcp test-core test-coverage lint format clean build publish-loader publish-mcp docs quality quality-all
+.PHONY: help install install-dev test test-loader test-mcp test-core test-coverage lint format clean clean-python clean-build build build-loader build-mcp publish-loader publish-mcp docs quality quality-all setup-dev check profile-pyspy profile-cprofile metrics
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
