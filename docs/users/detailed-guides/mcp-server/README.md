@@ -1,15 +1,15 @@
-# <img src="/assets/icons/library/note-icon.svg" width="32" alt="MCP icon"> MCP Server Guide
+# 📝 MCP Server Guide
 
 This page is the MCP hub. Detailed instructions are split into dedicated pages to avoid duplicate setup content.
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> What MCP gives you
+## 🚀 What MCP gives you
 
 - Semantic search in your ingested knowledge base
 - Hierarchy-aware retrieval for structured docs
 - Attachment-focused search
 - Integration with Cursor, Windsurf, Claude Desktop, and other MCP clients
 
-## <img src="/assets/icons/library/setting-icon.svg" width="32" alt="Client config"> Client configuration links
+## ⚙️ Client configuration links
 
 - Cursor, Windsurf, Claude Desktop setup: [Setup & Integration Guide](./setup-and-integration.md)
 - Search tool capabilities and parameters: [Search Capabilities & Examples](./search-capabilities.md)
@@ -17,7 +17,7 @@ This page is the MCP hub. Detailed instructions are split into dedicated pages t
 - Hierarchy-specific search details: [Hierarchy Search Guide](./hierarchy-search.md)
 - Install and platform notes: [Installation Guide](../../../getting-started/installation.md)
 
-## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Prerequisites
+## 🎯 Prerequisites
 
 - Ingestion completed at least once with `qdrant-loader ingest`
 - QDrant reachable from your MCP runtime
@@ -28,7 +28,7 @@ Configuration references:
 - **[LLM Provider Guide](../../configuration/llm-provider-guide.md)** - Provider-specific setup for embeddings/chat compatibility with MCP.
 - **[Environment Variables Reference](../../configuration/environment-variables.md)** - Required runtime variables for authentication, logging, and server behavior.
 
-## <img src="../../../assets/icons/library/thunder-icon.svg" width="32" alt="Thunder icon"> Quick run
+## ⚡ Quick run
 
 ```bash
 mcp-qdrant-loader
@@ -36,7 +36,7 @@ mcp-qdrant-loader
 
 For production transport and worker tuning, use [Setup & Integration Guide](./setup-and-integration.md).
 
-## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Search strategy"> Multi-Tool Search Strategies
+## 🔍 Multi-Tool Search Strategies
 
 ### Complete feature investigation
 
@@ -59,7 +59,7 @@ For production transport and worker tuning, use [Setup & Integration Guide](./se
 3. Use **Relationship Analysis** for dependency understanding.
 4. Use **Clustering** to organize related materials.
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Performance"> Performance Optimization
+## 🚀 Performance Optimization
 
 ### Search efficiency
 
@@ -73,7 +73,7 @@ For production transport and worker tuning, use [Setup & Integration Guide](./se
 - Prefer natural language for semantic retrieval.
 - Combine tools to improve coverage and precision.
 
-## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Validation icon"> Quick validation
+## 🔍 Quick validation
 
 In Cursor/Claude/Windsurf, ask a simple query like:
 
@@ -81,7 +81,7 @@ In Cursor/Claude/Windsurf, ask a simple query like:
 
 If the tool returns results from your indexed content, MCP integration is working.
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Checklist"> Integration Checklist
+## 🧪 Integration Checklist
 
 ### Setup requirements
 
@@ -113,7 +113,7 @@ If the tool returns results from your indexed content, MCP integration is workin
 - [ ] Security considerations reviewed
 - [ ] Troubleshooting procedures documented
 
-## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting icon"> Troubleshooting paths
+## 🔧 Troubleshooting paths
 
 - MCP setup/runtime issues: [Setup & Integration Guide](./setup-and-integration.md)
 - Search behavior and tool semantics: [Search Capabilities & Examples](./search-capabilities.md)

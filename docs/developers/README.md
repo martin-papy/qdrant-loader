@@ -1,10 +1,8 @@
-# Developer Documentation
-
-<img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Dev docs icon">
+# 📝 Developer Documentation
 
 Welcome to the QDrant Loader developer documentation! This guide provides everything you need to understand, extend, test, and deploy QDrant Loader. Whether you're contributing to the core project or building custom extensions, you'll find detailed technical information and practical examples here.
 
-## <img src="../../../assets/icons/library/target-icon.svg" width="32" alt="Quick Navigation"> Quick Navigation
+## 🎯 Quick Navigation
 
 ### Core Development
 
@@ -53,7 +51,7 @@ QDrant Loader follows a modular architecture designed for multi-project document
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## <img src="../../../assets/icons/library/rocket-icon.svg" width="32" alt="Getting Started"> Getting Started for Developers
+## 🚀 Getting Started for Developers
 
 ### 1. Development Environment Setup
 
@@ -102,7 +100,7 @@ uv run black .
 uv run isort .
 ```
 
-## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Core Concepts"> Core Concepts for Developers
+## 📚 Core Concepts for Developers
 
 ### Data Flow Architecture
 
@@ -172,7 +170,7 @@ Available connectors:
 - `JiraConnector` - Jira projects
 - `PublicDocsConnector` - Public documentation sites
 
-## <img src="../../../assets/icons/library/wrench-icon.svg" width="32" alt="Development Workflows"> Development Workflows
+## 🔧 Development Workflows
 
 ### Contributing to Core
 
@@ -407,7 +405,7 @@ await pipeline.run()
 # - search_attachments
 ```
 
-## <img src="../../../assets/icons/library/note-icon.svg" width="32" alt="Development Checklist"> Development Checklist
+## 📝 Development Checklist
 
 ### Before Submitting Code
 
@@ -432,7 +430,7 @@ await pipeline.run()
 - [ ] Fix verified in multiple environments
 - [ ] Documentation updated (if needed)
 
-## <img src="../../../assets/icons/library/hand-sake-icon.svg" width="32" alt="Community and Support"> Community and Support
+## 🤝 Community and Support
 
 ### Getting Help
 

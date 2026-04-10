@@ -2,7 +2,7 @@
 
 This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, and quality assurance practices.
 
-## <img src="/assets/icons/library/testing-icon.svg" width="32" alt="Testing Overview"> Testing Overview
+## 🧪 Testing Overview
 
 QDrant Loader follows a comprehensive testing strategy to ensure reliability, performance, and maintainability:
 
@@ -20,7 +20,7 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 - **Integration Testing** - Testing component interactions and end-to-end workflows
 - **Quality Assurance** - Code quality, review processes, and standards
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
+## 🚀 Quick Start
 
 ### Test Environment Setup
 
@@ -58,7 +58,7 @@ uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py
 uv run pytest packages/qdrant-loader/tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initialization_default_settings
 ```
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Framework"> Testing Framework
+## 🧪 Testing Framework
 
 ### Core Testing Tools
 
@@ -89,7 +89,7 @@ tests/
 └── test_website_build.py
 ```
 
-## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Test Fixtures and Utilities"> Test Fixtures and Utilities
+## 🔧 Test Fixtures and Utilities
 
 ### Common Fixtures
 
@@ -211,7 +211,7 @@ def create_mock_settings():
     return settings
 ```
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Testing Partterns"> Unit Testing Patterns
+## 🧪 Unit Testing Patterns
 
 ### Testing Core Components
 
@@ -378,7 +378,7 @@ def test_document_id_consistency():
     assert doc1.id == doc2.id
 ```
 
-## <img src="/assets/icons/library/linked-icon.svg" width="32" alt="Integration Testing"> Integration Testing
+## 🔗 Integration Testing
 
 ### Full Pipeline Testing
 
@@ -434,7 +434,7 @@ async def test_cli_integration(tmp_path):
     assert result.exit_code == 0
 ```
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Performance Testing"> Performance Testing
+## 🧪 Performance Testing
 
 ### Benchmarking
 
@@ -467,7 +467,7 @@ async def test_ingestion_performance(test_settings):
         await pipeline.cleanup()
 ```
 
-## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Quality Assurance"> Quality Assurance
+## 🔍 Quality Assurance
 
 ### Code Quality Checks
 
@@ -536,7 +536,7 @@ jobs:
           file: ./coverage.xml
 ```
 
-## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Testing Best"> Testing Best Practices
+## 📚 Testing Best Practices
 
 ### Guidelines
 
@@ -586,7 +586,7 @@ def test_with_mock(mock_function):
     assert result == "expected_result"
 ```
 
-## <img src="/assets/icons/library/sos-icon.svg" width="32" alt="Getting Help"> Getting Help
+## 🆘 Getting Help
 
 ### Testing Support
 

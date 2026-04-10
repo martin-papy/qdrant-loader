@@ -2,7 +2,7 @@
 
 This guide covers the powerful AI-driven search capabilities available through the QDrant Loader MCP Server, enabling intelligent knowledge discovery and contextual understanding that goes beyond simple keyword matching.
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Overview"> Overview
+## 🚀 Overview
 
 The QDrant Loader MCP Server provides **intelligent search capabilities** powered by advanced AI technologies including semantic understanding, document relationship analysis, and cross-document intelligence. These features work together to provide contextually relevant results and comprehensive knowledge discovery.
 
@@ -34,7 +34,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 1. **Expand Document** - Get detailed document information and context **(Available)**
 2. **Expand Cluster** - Explore document clusters with detailed analysis **(Available)**
 
-## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Enhanced Semantic Search"> Enhanced Semantic Search
+## 🔍 Enhanced Semantic Search
 
 ### Intelligent Query Understanding
 
@@ -112,7 +112,7 @@ Results:
 }
 ```
 
-## <img src="/assets/icons/library/architect-icon.svg" width="32" alt="Enhanced Hierarchy Search"> Enhanced Hierarchy Search
+## 🏗️ Enhanced Hierarchy Search
 
 ### Structure-Aware Document Navigation
 
@@ -182,7 +182,7 @@ Recommendation: Create under Security section for consistency
 }
 ```
 
-## <img src="/assets/icons/library/paperclip-icon.svg" width="32" alt="Enhanced Attachment Search"> Enhanced Attachment Search
+## 📎 Enhanced Attachment Search
 
 ### Intelligent File and Document Search
 
@@ -251,7 +251,7 @@ Content Analysis Results:
 }
 ```
 
-## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Features"> Cross-Document Intelligence Features
+## 🤝 Cross-Document Intelligence Features
 
 ### Document Relationship Analysis
 
@@ -455,7 +455,7 @@ Document Clusters Created:
 - Good coverage across implementation lifecycle
 ```
 
-## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Document Expansion Tools Reference"> Document Expansion Tools Reference
+## 📚 Document Expansion Tools Reference
 
 ### Expand Document (`expand_document`)
 
@@ -551,7 +551,7 @@ Expand surrounding chunks around a specific chunk so AI tools can reason with ne
   "arguments": {
     "document_id": "string", // Required: document identifier
     "chunk_index": 3, // Required: zero-based chunk index
-    "window": 2, // Optional: number of chunks before/after (default: 2)
+    "window": 2 // Optional: number of chunks before/after (default: 2)
   }
 }
 ```
@@ -577,7 +577,7 @@ Chunks Returned:
 - Avoids fetching entire document when only nearby context is needed
 ```
 
-## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Strategies"> Advanced Search Strategies
+## 🎯 Advanced Search Strategies
 
 ### Multi-Tool Workflow Examples
 
@@ -645,7 +645,7 @@ source_types: ["localfile"]  # Only local files
 source_types: ["confluence", "git"]  # Documentation and code
 ```
 
-## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Configuration"> Advanced Configuration
+## 🔧 Advanced Configuration
 
 ### Environment Variables
 
@@ -677,7 +677,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
    - Use specific queries to reduce processing overhead
    - Filter by project or source type for focused analysis
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Performance"> Performance Metrics
+## 🚀 Performance Metrics
 
 ### Real-World Performance Results
 
@@ -696,7 +696,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 - ✅ **Content Intelligence**: Comprehensive file and attachment analysis
 - ✅ **Scalability**: Handles large document collections effectively
 
-## <img src="/assets/icons/library/note-icon.svg" width="32" alt="Checklist Icon"> Search Capabilities Checklist
+## 📝 Search Capabilities Checklist
 
 ### Understanding Available Tools
 

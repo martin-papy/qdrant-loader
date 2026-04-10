@@ -8,7 +8,7 @@ Shared core library for the QDrant Loader ecosystem. It provides a provider‑ag
 
 For provider, configuration, and architecture details, use the documentation links below.
 
-## <img src="/assets/icons/library/target-icon.svg"  width="32" alt="What It Provides"> What It Provides
+## 🎯 What It Provides
 
 - Provider-agnostic LLM facade for OpenAI, Azure OpenAI, OpenAI-compatible endpoints, and Ollama
 - Unified async APIs for embeddings and chat clients
@@ -16,7 +16,7 @@ For provider, configuration, and architecture details, use the documentation lin
 - Structured logging with secret redaction
 - Normalized provider exceptions for predictable handling across backends
 
-## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
+## 📦 Installation
 
 ```bash
 pip install qdrant-loader-core
@@ -29,7 +29,7 @@ pip install "qdrant-loader-core[openai]"
 pip install "qdrant-loader-core[ollama]"
 ```
 
-## <img src="/assets/icons/library/file-icon.svg"  width="32" alt="Logging"> Logging
+## 📄 Logging
 
 Use built-in structured logging:
 
@@ -41,13 +41,13 @@ logger = LoggingConfig.get_logger(__name__)
 logger.info("LLM ready")
 ```
 
-## <img src="/assets/icons/library/note-icon.svg"  width="32" alt="Notes"> Notes
+## 📝 Notes
 
 - Secrets (API keys/tokens) are redacted in logs
 - For MCP integrations, `MCP_DISABLE_CONSOLE_LOGGING=true` is recommended
 - [Environment variable reference](../../docs/users/configuration/environment-variables.md) - Required and optional environment variables for setup, authentication, and runtime behavior.
 
-## <img src="/assets/icons/library/error-icon.svg"  width="32" alt="Error Handling"> Error Handling
+## ❗ Error Handling
 
 Catch provider-normalized exceptions from `qdrant_loader_core.llm.errors`:
 
@@ -57,7 +57,7 @@ Catch provider-normalized exceptions from `qdrant_loader_core.llm.errors`:
 - `AuthError`
 - `ServerError`
 
-## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
+## 📚 Canonical Documentation
 
 - **[Monorepo overview](../../)** - Project structure, packages, and high-level navigation across the repository.
 - **[Developer hub](../../docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
@@ -65,6 +65,6 @@ Catch provider-normalized exceptions from `qdrant_loader_core.llm.errors`:
 - **[User configuration reference](../../docs/users/configuration/config-file-reference.md)** - Complete config schema and practical setup examples.
 - **[User error troubleshooting](../../docs/users/troubleshooting/error-messages-reference.md)** - Common error messages, root causes, and recommended fixes.
 
-## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
+## 🤝 Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

@@ -2,7 +2,7 @@
 
 QDrant Loader supports comprehensive file conversion to extract text content from various file formats using Microsoft's MarkItDown library. This guide covers supported formats, configuration, and best practices.
 
-## <img src="/assets/icons/library/target-icon.svg" width="32" alt="Supported File Formats"> Supported File Formats
+## 🎯 Supported File Formats
 
 QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of file formats:
 
@@ -63,7 +63,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **TAR**   | `.tar`, `.tar.gz`, `.tgz` | TAR archives   | Extract and process contents |
 | **7-Zip** | `.7z`                     | 7-Zip archives | Extract and process contents |
 
-## <img src="/assets/icons/library/setting-icon.svg" width="32" alt="Configuration"> Configuration
+## ⚙️ Configuration
 
 ### Global File Conversion Configuration
 
@@ -137,7 +137,7 @@ Each data source can enable or disable file conversion:
 | ------------------------ | ---- | -------------------------------------- | ------- |
 | `enable_file_conversion` | bool | Enable file conversion for this source | `false` |
 
-## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="How File Conversion Works"> How File Conversion Works
+## 🔧 How File Conversion Works
 
 ### Conversion Process
 
@@ -179,7 +179,7 @@ Each data source can enable or disable file conversion:
    - Preserved formatting where possible
    - Ready for chunking and vector storage
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Usage Examples"> Usage Examples
+## 🚀 Usage Examples
 
 ### Basic Document Processing
 
@@ -289,7 +289,7 @@ projects:
           enable_file_conversion: true
 ```
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Testing and Validation"> Testing and Validation
+## 🧪 Testing and Validation
 
 ### Test File Conversion
 
@@ -317,7 +317,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace . --log-level DEBUG
 ```
 
-## <img src="/assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -449,7 +449,7 @@ print(result.text_content[:500])
 pip list | grep -E "(markitdown|tesseract|whisper)"
 ```
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="Mornitoring and Perfomance"> Monitoring and Performance
+## 📊 Monitoring and Performance
 
 ### Check Processing Status
 
@@ -471,7 +471,7 @@ Monitor these aspects for file conversion:
 - **File size distribution** - Understanding of content characteristics
 - **Timeout frequency** - Files that exceed conversion timeout
 
-## <img src="/assets/icons/library/arrow-reload-icon.svg" width="32" alt="Best Practices"> Best Practices
+## 🔄 Best Practices
 
 ### Performance Optimization
 
@@ -501,7 +501,7 @@ Monitor these aspects for file conversion:
 3. **Clean up temporary files** - Remove intermediate files after processing
 4. **Limit concurrent operations** - Avoid overwhelming the system
 
-## <img src="/assets/icons/library/book-icon.svg" width="32" alt="Related icon"> Related Documentation
+## 📚 Related Documentation
 
 - **[Data Sources](../data-sources/)** - Configuring data sources that use file conversion
 - **[Configuration Reference](../../configuration/)** - Complete configuration options

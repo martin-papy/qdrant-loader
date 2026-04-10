@@ -2,7 +2,7 @@
 
 This comprehensive reference covers all configuration options available in QDrant Loader's YAML configuration files. QDrant Loader uses a **multi-project configuration structure** that allows you to organize multiple data sources into logical projects within a single workspace.
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Overview
+## 🎯 Overview
 
 QDrant Loader supports YAML configuration files for managing settings in a structured, version-controllable format. The configuration follows a **multi-project architecture** where:
 
@@ -45,7 +45,7 @@ projects:
 4. Default values (lowest priority)
 ```
 
-## <img src="../../../../assets/icons/library/folder-icon.svg" width="32" alt="Folder icon"> Basic Configuration File
+## 📁 Basic Configuration File
 
 ### Minimal Configuration
 
@@ -279,7 +279,7 @@ projects:
           enable_file_conversion: true
 ```
 
-## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Detailed Configuration Sections
+## 🔧 Detailed Configuration Sections
 
 ### Global Configuration (`global`)
 
@@ -654,7 +654,7 @@ sources:
         - "a[href$='.pptx']"
 ```
 
-## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration Management
+## 🔧 Configuration Management
 
 ### Using Configuration Files
 
@@ -705,7 +705,7 @@ qdrant-loader config --workspace .
 # supported in the CLI. All project information is shown together.
 ```
 
-## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Note icon"> Environment Variables
+## 📝 Environment Variables
 
 Configuration files support environment variable substitution using `${VARIABLE_NAME}` syntax:
 
@@ -746,7 +746,7 @@ JIRA_TOKEN=your_jira_token
 JIRA_EMAIL=your_email
 ```
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Configuration Examples
+## 🎯 Configuration Examples
 
 ### Single Project Setup
 
@@ -902,14 +902,14 @@ projects:
           enable_file_conversion: true
 ```
 
-## <img src="../../../../assets/icons/library/linked-icon.svg" width="32" alt="Linked icon"> Related Documentation
+## 🔗 Related Documentation
 
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration
 - **[Basic Configuration](../../getting-started/basic-configuration.md)** - Getting started with configuration
 - **[Data Sources](../detailed-guides/data-sources/)** - Source-specific configuration guides
 - **[Workspace Mode](./workspace-mode.md)** - Workspace configuration details
 
-## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Note icon"> Configuration Checklist
+## 📝 Configuration Checklist
 
 - [ ] **Global configuration** completed (qdrant, llm, state_management)
 - [ ] **Environment variables** configured in `.env` file
