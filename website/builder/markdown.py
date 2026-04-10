@@ -757,15 +757,14 @@ class MarkdownProcessor:
                     display_text = m.group(1).strip()
                 else:
                     display_text = heading_id
-            display_text = _html.unescape(display_text)
+                    
+            display_text = _html.escape(_html.unescape(display_text))
 
             # If no icon and this is a leaf heading, use the default SVG
             if not icon_html and not has_child:
                 icon_html = default_svg
 
-            # Add the current heading with icon (if any)
-            toc_html += f'<li><a href="#' + heading_id + f'">{icon_html}{display_text}</a></li>\n'
-
+            toc_html += f'<li class="list-group-item"><a href="#{heading_id}">{icon_html}{display_text}</a></li>\n'
         # Close all remaining open lists
         while open_lists > 0:
             toc_html += "</ul>"

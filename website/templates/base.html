@@ -37,7 +37,7 @@
     <meta property="twitter:url" content="{{ canonical_url }}">
     <meta property="twitter:title" content="{{ page_title }} - QDrant Loader">
     <meta property="twitter:description" content="{{ page_description }}">
-    <meta property="twitter:image" content="/assets/logos/qdrant-loader-social-card.png">
+    <meta property="twitter:image" content="{{ base_url }}assets/logos/qdrant-loader-social-card.png">
     <meta property="twitter:image:alt" content="QDrant Loader - Enterprise Vector Database Toolkit">
     <meta property="twitter:creator" content="@martin_papy">
     <meta property="twitter:site" content="@qdrant_loader">
@@ -45,7 +45,7 @@
     <!-- Additional SEO -->
     <meta name="application-name" content="QDrant Loader">
     <meta name="msapplication-TileColor" content="#667eea">
-    <meta name="msapplication-config" content="/assets/browserconfig.xml">
+    <meta name="msapplication-config" content="{{ base_url }}assets/browserconfig.xml">
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -77,7 +77,7 @@
         "license": "https://www.gnu.org/licenses/gpl-3.0.html",
         "version": "{{ version }}",
         "keywords": ["vector database", "AI", "machine learning", "embeddings", "search", "RAG", "python", "qdrant"],
-        "screenshot": "/assets/logos/qdrant-loader-social-card.png"
+        "screenshot": "{{ base_url }}assets/logos/qdrant-loader-social-card.png"
     }
     </script>
 
@@ -86,13 +86,13 @@
     <link rel="author" href="https://www.linkedin.com/in/martin-papy/">
 
     <!-- Favicons -->
-    <link rel="icon" type="image/x-icon" href="/assets/favicons/favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicons/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicons/favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicons/android-chrome-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicons/android-chrome-512x512.png">
-    <link rel="manifest" href="/assets/site.webmanifest">
+    <link rel="icon" type="image/x-icon" href="{{ base_url }}assets/favicons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ base_url }}assets/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ base_url }}assets/favicons/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ base_url }}assets/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ base_url }}assets/favicons/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ base_url }}assets/favicons/android-chrome-512x512.png">
+    <link rel="manifest" href="{{ base_url }}assets/site.webmanifest">
     <meta name="theme-color" content="#667eea">
 
     <!-- Bootstrap 5 CSS -->
@@ -776,8 +776,8 @@
     <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
             <div class="container d-flex align-items-center justify-content-between">
 
-                <a class="navbar-brand d-flex align-items-center" href="/">
-                    <img src="/assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60">
+                <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
+                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60">
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -790,13 +790,13 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto align-items-lg-center align-items-start flex-column flex-lg-row gap-2 gap-lg-4">
                         <li class="nav-item">
-                            <a class="nav-link nav-link-custom " href="/#overview">Overview</a>
+                            <a class="nav-link nav-link-custom " href="{{ base_url }}#overview">Overview</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-link-custom" href="/docs/">Documentation</a>
+                            <a class="nav-link nav-link-custom" href="{{ base_url }}docs/">Documentation</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-link-custom" href="/coverage/">Coverage</a>
+                            <a class="nav-link nav-link-custom" href="{{ base_url }}coverage/">Coverage</a>
                         </li>
                         <li class="nav-item">
                              <a class="nav-link nav-link-custom d-flex align-items-center gap-1"
@@ -852,7 +852,7 @@
         <div class="row">
             <div class="col-12 col-lg-6 px-0">
                 <div class="footer-logo">
-                    <img src="/assets/logos/qdrant-loader-logo.svg" alt="logo">
+                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="logo">
                 </div>
                 <p class="doc-description">
                     Enterprise-ready vector database toolkit for building searchable knowledge bases
@@ -870,7 +870,7 @@
                             <ul class="list-unstyled m-0 d-flex flex-column gap-4">
 
                                 <li>
-                                    <a href="/docs/"
+                                    <a href="{{ base_url }}docs/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -884,7 +884,7 @@
                                 </li>
 
                                 <li>
-                                    <a href="/coverage/"
+                                    <a href="{{ base_url }}coverage/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -897,7 +897,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="https://github.com/martin-papy/qdrant-loader/issues/new?assignees=martin-papy&labels=docs-feedback&title=%5BDocs%20Feedback%5D%20Documentation%20-%20QDrant%20Loader&body=Page%3A%20https%3A%2F%2Fqdrant-loader.net%2Fdocs%2F%0ADocs%20commit%3A%20f1e5516%0A%0AFeedback%3A%0A"
+                                    <a id="feedback-link" href="https://github.com/martin-papy/qdrant-loader/issues/new?assignees=martin-papy&labels=docs-feedback&title=%5BDocs%20Feedback%5D%20Documentation%20-%20QDrant%20Loader&body=Page%3A%20https%3A%2F%2Fqdrant-loader.net%2Fdocs%2F%0ADocs%20commit%3A%20f1e5516%0A%0AFeedback%3A%0A"
                                         class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -911,7 +911,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="/privacy-policy.html"
+                                    <a href="{{ base_url }}privacy-policy.html"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1021,7 +1021,7 @@
                         <path d="M5 12h24"/>
                         <path d="m22 5 7 7-7 7"/>
                     </svg>
-                    <a href="/privacy-policy.html" class="text-primary">Learn more</a>
+                    <a href="{{ base_url }}privacy-policy.html" class="text-primary">Learn more</a>
                 </p>
             </div>
             <div class="col-md-4 text-md-end">
