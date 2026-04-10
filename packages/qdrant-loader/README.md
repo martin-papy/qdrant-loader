@@ -8,7 +8,7 @@ A powerful data ingestion engine that collects and vectorizes technical content 
 
 For full setup and configuration, start with the documentation links below.
 
-## <img src="/assets/icons/library/target-icon.svg" width="32" alt="What It Does"> What It Does
+## 🚀 What It Does
 
 - Collects content from Git repositories, Confluence, JIRA, public documentation sites, and local files
 - Converts supported file types (via MarkItDown) when enabled per source
@@ -20,7 +20,7 @@ For detailed source setup and conversion behavior, see:
 - **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and public docs.
 - **[File conversion guide](../../docs/users/detailed-guides/file-conversion)** - Supported formats, conversion behavior, and practical tuning options.
 
-## <img src="/assets/icons/library/file-icon.svg" width="32" alt="File icon"> File Conversion Support
+## 📄 File Conversion Support
 
 Automatically converts diverse file formats using Microsoft's MarkItDown:
 
@@ -42,7 +42,7 @@ Automatically converts diverse file formats using Microsoft's MarkItDown:
 - **Metadata preservation**: Original file information is maintained
 - **Performance optimized**: Configurable limits for size, timeouts, and throughput
 
-## <img src="/assets/icons/library/architect-icon.svg" width="32" alt="Data Flow"> Data Flow
+## 🏗️ Data Flow
 
 ```text
 Data Sources → File Conversion → Text Processing → Chunking → Embedding → QDrant Storage
@@ -54,7 +54,7 @@ Public Docs    Documents       Filtering       Context   Providers   Updates
 Local Files    20+ Formats     Cleaning        Tokens    Endpoints   State Tracking
 ```
 
-## <img src="/assets/icons/library/search-icon.svg" width="32" alt="Search Icon"> Advanced Features
+## 🔍 Advanced Features
 
 ### Incremental Updates
 
@@ -83,19 +83,19 @@ Implementation details for tuning and troubleshooting are covered in:
 - **[Common workflows](../../docs/users/workflows/common-workflows.md)** - Proven end-to-end paths for ingestion, maintenance, and operations.
 - **[Troubleshooting guide](../../docs/users/troubleshooting)** - Common failure patterns and step-by-step fixes.
 
-## <img src="/assets/icons/library/package-icon.svg"  width="32" alt="Installation"> Installation
+## 📦 Installation
 
 ```bash
 pip install qdrant-loader
 ```
 
-## <img src="/assets/icons/library/test-tube-icon.svg" width="32" alt="CLI"> CLI
+## 🧪 CLI
 
 ```bash
 qdrant-loader --help
 ```
 
-## <img src="/assets/icons/library/rocket-icon.svg" width="32" alt="Quick Start"> Quick Start
+## ⚡ Quick Start
 
 ```bash
 # Initialize collection and metadata structures
@@ -110,7 +110,7 @@ qdrant-loader project --workspace . status
 
 For full workspace bootstrapping (.env, config.yaml, and source templates), see **[Quick start](../../docs/getting-started/quick-start.md)**.
 
-## <img src="../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Canonical Documentation
+## 📚 Canonical Documentation
 
 - **[Monorepo overview](../../)** - Project structure, packages, and top-level navigation across the repository.
 - **[Quick start](../../docs/getting-started/quick-start.md)** - Fast setup path from install to first successful ingestion.
@@ -118,6 +118,6 @@ For full workspace bootstrapping (.env, config.yaml, and source templates), see 
 - **[Configuration reference](../../docs/users/configuration)** - Configuration model, options, and practical examples.
 - **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and more.
 
-## <img src="/assets/icons/library/hand-sake-icon.svg" width="32" alt="Contributing icon"> Contributing
+## 🤝 Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.

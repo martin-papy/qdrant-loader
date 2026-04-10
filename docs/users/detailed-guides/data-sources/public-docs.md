@@ -2,7 +2,7 @@
 
 Connect QDrant Loader to public documentation websites, API references, and external knowledge sources. This guide covers setup for web scraping and processing publicly available content.
 
-## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Processed"> What Gets Processed
+## 🎯 What Gets Processed
 
 When you configure public documentation processing, QDrant Loader can handle:
 
@@ -13,7 +13,7 @@ When you configure public documentation processing, QDrant Loader can handle:
 - **Static Sites** - Documentation sites built with Jekyll, Hugo, GitBook
 - **Versioned Documentation** - Specific versions of documentation
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Setup"> Setup and Configuration
+## 🔧 Setup and Configuration
 
 QDrant Loader uses a **project-based configuration structure**. Each project can have multiple public documentation sources.
 
@@ -147,7 +147,7 @@ projects:
           enable_file_conversion: false
 ```
 
-## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Options"> Configuration Options
+## 🎯 Configuration Options
 
 ### Validator Requirements
 
@@ -197,7 +197,7 @@ projects:
 |--------|------|-------------|---------|
 | `requests_per_minute` | int | Crawl rate limit (RPM) | `120` |
 
-## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Examples"> Usage Examples
+## 🚀 Usage Examples
 
 ### API Documentation
 
@@ -363,7 +363,7 @@ projects:
           enable_file_conversion: false
 ```
 
-## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing"> Testing and Validation
+## 🧪 Testing and Validation
 
 ### Initialize and Test Configuration
 
@@ -397,7 +397,7 @@ qdrant-loader ingest --workspace . --project my-project
 qdrant-loader ingest --workspace . --project my-project --source-type publicdocs --source example-docs
 ```
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting"> Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -554,7 +554,7 @@ curl -s "https://example.com/docs/page" | head -50
 curl -s "https://example.com" | grep -i javascript
 ```
 
-## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Monitoring"> Monitoring and Processing
+## 📊 Monitoring and Processing
 
 ### Check Processing Status
 
@@ -579,7 +579,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 ```
 
-## <img src="../../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Best Practices"> Best Practices
+## 🔄 Best Practices
 
 ### Site Selection
 
@@ -616,7 +616,7 @@ qdrant-loader config --workspace .
 3. **Version documentation appropriately** - Use meaningful version identifiers
 4. **Regular validation** - Periodically check that processing still works
 
-## <img src="../../../../../assets/icons/library/book-icon.svg" width="32" alt="Documentation"> Related Documentation
+## 📚 Related Documentation
 
 - **[Configuration Reference](../../configuration/)** - Complete configuration options
 - **[File Conversion](../file-conversion/)** - Processing downloaded attachments

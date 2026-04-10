@@ -2,7 +2,7 @@
 
 This guide covers the attachment search capabilities of the QDrant Loader MCP Server, enabling you to find and work with file attachments across your knowledge base with AI assistance.
 
-## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Ovreview Icon"> Overview
+## 🎯 Overview
 
 The attachment search tool specializes in finding file attachments and their associated documents. **Currently, this feature is specifically designed for Confluence sources** and includes:
 
@@ -19,13 +19,13 @@ The attachment search tool specializes in finding file attachments and their ass
 - **File Type Intelligence**: Optimized search for different file formats supported by MarkItDown
 - **Metadata Awareness**: Searches file properties, authors, and creation dates from Confluence
 
-### <img src="../../../../../assets/icons/library/warning-icon.svg" width="32" alt="Important Limitations"> Important Limitations
+### ⚠️ Important Limitations
 
 - **Confluence Only**: Currently limited to Confluence attachments and documents
 - **MarkItDown Dependency**: File conversion capabilities depend on MarkItDown library support
 - **No OCR**: Text extraction from images relies on MarkItDown, not dedicated OCR processing
 
-## <img src="../../../../../assets/icons/library/paperclip-icon.svg" width="32" alt="How Attachment Search Works"> How Attachment Search Works
+## 📎 How Attachment Search Works
 
 ### File Processing Pipeline
 
@@ -63,7 +63,7 @@ Query: "architecture diagrams"
 6. Ranked Results (by relevance and attachment metadata)
 ```
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Search Parameters Icon"> Attachment Search Parameters
+## 🔧 Attachment Search Parameters
 
 ### Available Parameters
 
@@ -125,7 +125,7 @@ Query: "architecture diagrams"
 - **`file_size_max`** (integer): Maximum file size in bytes
 - **`author`** (string): Filter by attachment author
 
-## <img src="../../../../../assets/icons/library/folder-icon.svg" width="32" alt="Supported File Types"> Supported File Types
+## 📁 Supported File Types
 
 The attachment search supports file types that can be processed by MarkItDown for text extraction:
 
@@ -187,7 +187,7 @@ The attachment search supports file types that can be processed by MarkItDown fo
 - **Confluence Metadata**: File metadata comes from Confluence attachment properties
 - **No Custom OCR**: No dedicated OCR processing beyond MarkItDown's built-in capabilities
 
-## <img src="../../../../../assets/icons/library/search-icon.svg" width="32" alt="Search Examples and Use Cases"> Search Examples and Use Cases
+## 🔍 Search Examples and Use Cases
 
 ### 1. Finding Specific File Types in Confluence
 
@@ -294,7 +294,7 @@ Results:
    Content: "Comprehensive system architecture documentation..."
 ```
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Attachment Features Icon"> Advanced Attachment Features
+## 🔧 Advanced Attachment Features
 
 ### 1. MarkItDown-Based Content Extraction
 
@@ -365,7 +365,7 @@ Attachment search integrates with the broader search system:
 - **Parent Context**: Considers both attachment content and parent page context
 - **Filter Support**: Allows filtering by file type, size, author, and parent page
 
-## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Strategies Icon"> Optimization Strategies
+## 🎯 Optimization Strategies
 
 ### 1. Query Optimization
 
@@ -433,7 +433,7 @@ Attachment search integrates with the broader search system:
 }
 ```
 
-## <img src="../../../../../assets/icons/library/palette-icon.svg" width="32" alt="Result Interpretation"> Result Interpretation
+## 🎨 Result Interpretation
 
 ### Understanding Attachment Results
 
@@ -483,7 +483,7 @@ Overall Score: 0.85 (weighted combination)
 - **Orphaned files** (no clear parent context)
 - **Unusual file sizes** (very small or very large)
 
-## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Integration with Other Search Tools"> Integration with Other Search Tools
+## 🔗 Integration with Other Search Tools
 
 ### Combining Search Strategies for Confluence
 
@@ -546,14 +546,14 @@ Query: "deployment documentation structure"
 - Need to search across all source types
 - Looking for regular page content (use semantic or hierarchy search)
 
-## <img src="../../../../../assets/icons/library/linked-icon.svg" width="32" alt="Related Documentation"> Related Documentation
+## 🔗 Related Documentation
 
 - **[MCP Server Overview](./README.md)** - Complete MCP server guide
 - **[Search Capabilities](./search-capabilities.md)** - All search tools overview
 - **[Hierarchy Search](./hierarchy-search.md)** - Document structure navigation
 - **[Setup and Integration](./setup-and-integration.md)** - MCP server setup
 
-## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Checklist Icon"> Attachment Search Checklist
+## 📋 Attachment Search Checklist
 
 - [ ] **Understand Confluence attachments** in your knowledge base
 - [ ] **Use file-type specific queries** for targeted search within Confluence

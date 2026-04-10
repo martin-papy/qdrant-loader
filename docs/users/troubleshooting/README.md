@@ -2,7 +2,7 @@
 
 Welcome to the QDrant Loader troubleshooting guide! This section provides comprehensive solutions for common issues, performance problems, and error messages you might encounter. Whether you're a new user or an experienced developer, these guides will help you quickly identify and resolve problems.
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Quick Problem Identification
+## 🎯 Quick Problem Identification
 
 ### Symptom Checker
 
@@ -36,7 +36,7 @@ grep -r "your error message" docs/users/troubleshooting/
 
 ## Troubleshooting Guides
 
-### <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> [Common Issues](./common-issues.md)
+### 🔧 [Common Issues](./common-issues.md)
 
 **Start here for most problems!** Covers the most frequently encountered issues with step-by-step solutions.
 
@@ -52,7 +52,7 @@ grep -r "your error message" docs/users/troubleshooting/
 
 ---
 
-### <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Performance icon"> [Performance Issues](./performance-issues.md)
+### 🚀 [Performance Issues](./performance-issues.md)
 
 Comprehensive guide for diagnosing and resolving performance problems.
 
@@ -69,7 +69,7 @@ Comprehensive guide for diagnosing and resolving performance problems.
 
 ---
 
-### <img src="../../../../assets/icons/library/plug-icon.svg" width="32" alt="Connect icon"> [Connection Problems](./connection-problems.md)
+### 🔌 [Connection Problems](./connection-problems.md)
 
 Detailed solutions for connectivity and network-related issues.
 
@@ -177,7 +177,7 @@ systemctl status qdrant  # If using systemd
 docker ps | grep qdrant  # If using Docker
 ```
 
-## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Problem icon"> Problem Categories
+## 📊 Problem Categories
 
 ### By Frequency (Most Common First)
 
@@ -359,7 +359,7 @@ watch -n 30 'free -h && df -h'
    - System information
    - Configuration (sanitized)
 
-## <img src="../../../../assets/icons/library/note-icon.svg" width="32" alt="Troubleshooting icon"> Troubleshooting Checklist
+## 📋 Troubleshooting Checklist
 
 ### Pre-Troubleshooting Checklist
 
@@ -378,7 +378,7 @@ watch -n 30 'free -h && df -h'
 - [ ] Update monitoring if needed
 - [ ] Share solution with team if applicable
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Reference icon"> Quick Reference Cards
+## 🎯 Quick Reference Cards
 
 ### Connection Issues Quick Card
 

@@ -2,11 +2,11 @@
 
 This section provides comprehensive deployment documentation for QDrant Loader, covering production deployment strategies, environment setup, monitoring, and performance optimization. All examples are verified against the actual implementation.
 
-## <img src="../../../../assets/icons/library/target-icon.svg" width="32" alt="Target icon"> Deployment Overview
+## 🎯 Deployment Overview
 
 QDrant Loader can be deployed in various environments and configurations to meet different scale and reliability requirements:
 
-### <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Deployment Options
+### 🚀 Deployment Options
 
 QDrant Loader supports the following deployment patterns:
 
@@ -15,7 +15,7 @@ QDrant Loader supports the following deployment patterns:
 - **Workspace-Based Deployment** - Organized multi-project configurations
 - **MCP Server Deployment** - Optional server component for AI assistant integration
 
-### <img src="../../../../assets/icons/library/architect-icon.svg" width="28" alt="Architect icon"> Architecture Patterns
+### 🏗️ Architecture Patterns
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -39,7 +39,7 @@ QDrant Loader supports the following deployment patterns:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## <img src="../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Rocket icon"> Quick Start Deployment
+## 🚀 Quick Start Deployment
 
 ### Single Server Setup
 
@@ -113,7 +113,7 @@ pip install qdrant-loader qdrant-loader-mcp-server
 qdrant-loader init --workspace /opt/qdrant-loader
 ```
 
-## <img src="../../../../assets/icons/library/computer-icon.svg" width="32" alt="Computer icon"> Environment Setup
+## 🖥️ Environment Setup
 
 ### System Requirements
 
@@ -187,7 +187,7 @@ export QDRANT_API_KEY="your-api-key"
 export QDRANT_COLLECTION_NAME="documents"
 ```
 
-## <img src="../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Wrench icon"> Configuration Management
+## 🔧 Configuration Management
 
 ### Environment Variables
 
@@ -264,7 +264,7 @@ projects:
           email: "${CONFLUENCE_EMAIL}"
 ```
 
-## <img src="../../../../assets/icons/library/arrow-reload-icon.svg" width="32" alt="Reload icon"> Service Management
+## 🔄 Service Management
 
 ### Systemd Service
 
@@ -331,7 +331,7 @@ sudo systemctl restart qdrant-loader
 sudo systemctl restart mcp-qdrant-loader
 ```
 
-## <img src="../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Test icon"> Monitoring and Observability
+## 📊 Monitoring and Observability
 
 ### Log Management
 
@@ -423,7 +423,7 @@ CPU_USAGE = Gauge("qdrant_cpu_usage_percent", "CPU usage percent")
 MEMORY_USAGE = Gauge("qdrant_memory_usage_percent", "Memory usage percent")
 ```
 
-## <img src="../../../../assets/icons/library/security-icon.svg" width="32" alt="Security icon"> Security Configuration
+## 🔒 Security Configuration
 
 ### File Permissions
 
@@ -499,7 +499,7 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 # Run ingestion with specific projectqdrant-loader ingest --workspace /opt/qdrant-loader/config --project high-priority
 ```
 
-## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Book icon"> Deployment Documentation
+## 📚 Deployment Documentation
 
 ### Detailed Deployment Guides
 
@@ -530,7 +530,7 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 - [ ] Backup and recovery tested
 - [ ] Documentation updated
 
-## <img src="../../../../assets/icons/library/sos-icon.svg" width="32" alt="SOS icon"> Getting Help
+## 🆘 Getting Help
 
 ### Deployment Support
 

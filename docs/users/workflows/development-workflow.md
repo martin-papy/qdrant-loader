@@ -2,7 +2,7 @@
 
 This comprehensive guide shows how to implement automated documentation workflows for development teams. Whether you're maintaining code documentation, API references, or development guides, this workflow provides step-by-step instructions for creating a seamless, automated documentation system using QDrant Loader's actual capabilities.
 
-## <img src="../../../../../assets/icons/library/target-icon.svg" width="32" alt="Overview Icon"> Overview
+## 🎯 Overview
 
 The development workflow focuses on keeping documentation synchronized with code changes, providing developers with up-to-date information, and integrating documentation into the development process. This workflow is essential for maintaining high-quality, current documentation in fast-moving development environments.
 
@@ -34,7 +34,7 @@ graph TD
     F --> M[Claude Desktop]
 ```
 
-## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Prerequisites"> Prerequisites
+## 📋 Prerequisites
 
 ### Required Tools
 
@@ -61,7 +61,7 @@ project/
 └── README.md                # Project overview
 ```
 
-## <img src="../../../../../assets/icons/library/rocket-icon.svg" width="32" alt="Implementaion Icon"> Step-by-Step Implementation
+## 🚀 Step-by-Step Implementation
 
 ### Step 1: Repository Setup
 
@@ -709,7 +709,7 @@ echo "3. Restart Claude Desktop"
 echo "4. The QDrant Loader tools will be available in Claude Desktop"
 ```
 
-## <img src="../../../../../assets/icons/library/test-tube-icon.svg" width="32" alt="Examples Icon"> Usage Examples
+## 📊 Usage Examples
 
 ### Daily Development Tasks
 
@@ -759,7 +759,7 @@ qdrant-loader ingest --workspace . --project documentation --source-type git --s
 qdrant-loader ingest --workspace . --source-type localfile
 ```
 
-## <img src="../../../../../assets/icons/library/wrench-icon.svg" width="32" alt="Troubleshooting Icon"> Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -816,7 +816,7 @@ qdrant-loader ingest --workspace . --log-level DEBUG
 qdrant-loader config --workspace . --format json
 ```
 
-## <img src="../../../../../assets/icons/library/note-icon.svg" width="32" alt="Best Practices Icon"> Best Practices
+## 📋 Best Practices
 
 ### Configuration Management
 
