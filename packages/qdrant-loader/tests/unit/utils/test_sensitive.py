@@ -67,6 +67,14 @@ def test_sanitize_exception_message_masks_jira_config_repr() -> None:
     assert "token=**" in safe
 
 
+def test_redact_sensitive_data_masks_bearer_authorization() -> None:
+    raw = "Authorization: Bearer sk-supersecrettoken"
+    redacted = redact_sensitive_data(raw)
+
+    assert "sk-supersecrettoken" not in redacted
+    assert "Authorization:**" in redacted
+
+
 def test_redact_sensitive_data_masks_non_bearer_authorization_colon() -> None:
     raw = "Authorization: Basic dXNlcjpwYXNz"
     redacted = redact_sensitive_data(raw)
