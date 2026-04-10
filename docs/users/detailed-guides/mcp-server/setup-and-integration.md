@@ -88,8 +88,7 @@ pip install qdrant-loader qdrant-loader-mcp-server
 # Option 3: Install from source
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-pip install -e packages/qdrant-loader
-pip install -e packages/qdrant-loader-mcp-server
+uv sync --all-packages --all-extras
 ```
 
 ### Verify Installation

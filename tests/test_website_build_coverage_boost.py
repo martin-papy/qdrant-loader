@@ -193,6 +193,23 @@ Regular paragraph text.
         assert 'id="test"' in result
         assert 'class="test"' in result
 
+    def test_render_task_list_checkboxes(self):
+        """Test rendering markdown task markers as checkboxes."""
+        from website.builder.markdown import MarkdownProcessor
+
+        processor = MarkdownProcessor()
+        html = (
+            '<ul><li>[ ] Pending item</li><li class="existing">[x] Done item</li></ul>'
+        )
+
+        result = processor.render_task_list_checkboxes(html)
+
+        assert result.count('type="checkbox"') == 2
+        assert result.count('disabled') == 2
+        assert 'task-list-item' in result
+        assert 'checked' in result
+        assert 'existing task-list-item' in result or 'task-list-item existing' in result
+
     def test_convert_markdown_links_edge_cases(self):
         """Test markdown link conversion edge cases."""
         from website.builder.markdown import MarkdownProcessor

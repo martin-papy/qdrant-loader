@@ -222,8 +222,8 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 
 ### Migration Resources
 
-- [Configuration File Reference](./docs/users/configuration/config-file-reference.md) - Complete new schema
-- [Environment Variables](./docs/users/configuration/environment-variables.md) - Updated variable names
+- **[Configuration File Reference](./docs/users/configuration/config-file-reference.md)** - Complete new schema
+- **[Environment Variables](./docs/users/configuration/environment-variables.md)** - Updated variable names
 
 ### Developer Resources
 
@@ -245,14 +245,13 @@ We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
 # Clone and setup
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-python -m venv venv
-source venv/bin/activate
 
-# Install packages in development mode
-pip install -e ".[dev]"
-pip install -e "packages/qdrant-loader-core[dev,openai,ollama]"
-pip install -e "packages/qdrant-loader[dev]"
-pip install -e "packages/qdrant-loader-mcp-server[dev]"
+# Sync workspace environment (recommended)
+uv sync --all-packages --all-extras
+
+# Add a new dependency during development
+uv add fastapi
+uv sync
 ```
 
 ## <img src="../assets/icons/library/file-icon.svg" width="32" alt="License"/> License

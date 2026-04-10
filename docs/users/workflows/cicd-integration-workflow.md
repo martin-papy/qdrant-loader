@@ -282,12 +282,11 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+          uv sync --all-packages --all-extras
       - name: Build loader package
         run: |
           cd packages/qdrant-loader
-          python -m build
+          uv build
       - name: Publish loader package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -409,8 +408,7 @@ website/templates/
 # Modify for your package structure
 - name: Install dependencies
   run: |
-    python -m pip install --upgrade pip
-    pip install -e packages/your-package[dev]
+    uv sync --all-packages --all-extras
 
 # Add your specific test requirements
 - name: Install system dependencies
@@ -459,7 +457,7 @@ on:
 - name: Build package
   run: |
     cd packages/your-package
-    python -m build
+    uv build
 ```
 
 ### Step 3: Configuration Management
@@ -591,7 +589,7 @@ git tag -l
 
 # Verify package build
 cd packages/qdrant-loader
-python -m build
+uv build
 ```
 
 1. **Secret Configuration Issues**
@@ -672,8 +670,8 @@ gh run watch <run-id>
 
 ## <img src="../../../../assets/icons/library/book-icon.svg" width="32" alt="Additional Resources"> Additional Resources
 
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
-- [GitHub Pages Deployment](https://docs.github.com/en/pages)
-- [QDrant Loader CLI Reference](../cli-reference/README.md)
-- [Configuration Guide](../configuration/README.md)
+- **[GitHub Actions Documentation](https://docs.github.com/en/actions)** - Official workflow syntax, runners, and CI automation references.
+- **[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)** - Secure OIDC-based publishing without long-lived API tokens.
+- **[GitHub Pages Deployment](https://docs.github.com/en/pages)** - Static site deployment and hosting guidance for docs portals.
+- **[QDrant Loader CLI Reference](../cli-reference/)** - Command options and examples used throughout pipeline scripts.
+- **[Configuration Guide](../configuration/)** - Environment and config settings needed for predictable CI/CD runs.

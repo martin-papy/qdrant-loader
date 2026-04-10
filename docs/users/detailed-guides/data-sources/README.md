@@ -206,7 +206,7 @@ projects:
           base_url: "https://github.com/company/docs"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-      
+
       # Confluence spaces
       confluence:
         tech-docs:
@@ -216,7 +216,7 @@ projects:
           space_key: "TECH"
           token: "${CONFLUENCE_TOKEN}"
           email: "${CONFLUENCE_EMAIL}"
-      
+
       # JIRA projects
       jira:
         support:
@@ -226,7 +226,7 @@ projects:
           project_key: "SUP"
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
-      
+
       # Local documentation
       localfile:
         local-docs:
@@ -236,7 +236,7 @@ projects:
           include_paths:
             - "**/*.md"
             - "**/*.pdf"
-      
+
       # Public API docs
       publicdocs:
         api-docs:
@@ -313,7 +313,7 @@ projects:
             - "**/*.md"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-      
+
       # Technical documentation
       confluence:
         dev-docs:
@@ -323,7 +323,7 @@ projects:
           space_key: "DEV"
           token: "${CONFLUENCE_TOKEN}"
           email: "${CONFLUENCE_EMAIL}"
-      
+
       # Development tickets
       jira:
         dev-issues:
@@ -355,7 +355,7 @@ projects:
             - "**/*.rst"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-      
+
       # Knowledge base
       confluence:
         knowledge-base:
@@ -366,7 +366,7 @@ projects:
           token: "${CONFLUENCE_TOKEN}"
           email: "${CONFLUENCE_EMAIL}"
           download_attachments: true
-      
+
       # Legacy documents
       localfile:
         legacy-docs:
@@ -376,7 +376,7 @@ projects:
           include_paths:
             - "**/*.pdf"
             - "**/*.docx"
-      
+
       # External API documentation
       publicdocs:
         external-api:
@@ -407,7 +407,7 @@ projects:
             - "**/*.md"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-      
+
       # Research papers and datasets
       localfile:
         papers:
@@ -424,7 +424,7 @@ projects:
           include_paths:
             - "**/*.csv"
             - "**/*.json"
-      
+
       # Project tracking
       jira:
         research-projects:
@@ -505,12 +505,15 @@ global:
   file_conversion:
     markitdown:
       enable_llm_descriptions: false # Disable for better performance
-  
-  # Processing settings
-  processing:
-    max_concurrent_sources: 3
-    max_concurrent_files: 5
+
+  # Throughput and latency tuning
+  embedding:
     batch_size: 100
+  llm:
+    request:
+      timeout_s: 30
+    rate_limits:
+      concurrency: 3
 
 # Source-specific optimization
 projects:

@@ -63,20 +63,20 @@ from qdrant_loader.core.document import Document
 
 class BaseConnector(ABC):
     """Base class for all connectors."""
-    
+
     def __init__(self, config: SourceConfig):
         self.config = config
         self._initialized = False
-    
+
     async def __aenter__(self):
         """Async context manager entry."""
         self._initialized = True
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         self._initialized = False
-    
+
     @abstractmethod
     async def get_documents(self) -> list[Document]:
         """Get documents from the source."""
@@ -99,21 +99,21 @@ logger = LoggingConfig.get_logger(__name__)
 
 class CustomAPIConnector(BaseConnector):
     """Connector for custom REST API data source."""
-    
+
     def __init__(self, config: SourceConfig):
         super().__init__(config)
         # Access configuration through config.config dict
         self.api_url = config.config["api_url"]
         self.api_key = config.config.get("api_key")
         self.batch_size = config.config.get("batch_size", 100)
-    
+
     async def get_documents(self) -> list[Document]:
         """Fetch documents from the custom API."""
         documents = []
         headers = {}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -123,18 +123,18 @@ class CustomAPIConnector(BaseConnector):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 for item in data.get("documents", []):
                     document = self._convert_to_document(item)
                     if document:
                         documents.append(document)
-                        
+
             except httpx.RequestError as e:
                 logger.error(f"API request failed: {e}")
                 raise
-        
+
         return documents
-    
+
     def _convert_to_document(self, api_item: dict[str, Any]) -> Document:
         """Convert API response item to Document."""
         return Document(
@@ -246,7 +246,7 @@ class CustomAPIConfig(SourceConfig):
     max_retries: int = 3
     include_tags: List[str] = []
     exclude_tags: List[str] = []
-    
+
     @field_validator('batch_size')
     @classmethod
     def validate_batch_size(cls, v):
@@ -305,10 +305,10 @@ converter = FileConverter(config)
 ```python
 class CustomFileProcessor:
     """Custom file processor for specific formats."""
-    
+
     def __init__(self, converter: FileConverter):
         self.converter = converter
-    
+
     async def process_custom_format(self, file_path: str) -> str:
         """Process custom file format."""
         if file_path.endswith('.custom'):
@@ -319,7 +319,7 @@ class CustomFileProcessor:
         else:
             # Fall back to MarkItDown
             return await self.converter.convert_file(file_path)
-    
+
     def _parse_custom_format(self, content: bytes) -> str:
         """Parse custom file format."""
         # Your custom parsing logic here
@@ -348,9 +348,9 @@ async def test_custom_connector_fetch_documents():
             "api_key": "test_key"
         }
     )
-    
+
     connector = CustomAPIConnector(config)
-    
+
     # Mock the API response
     with patch('httpx.AsyncClient.get') as mock_get:
         mock_response = AsyncMock()
@@ -361,9 +361,9 @@ async def test_custom_connector_fetch_documents():
         }
         mock_response.raise_for_status.return_value = None
         mock_get.return_value.__aenter__.return_value = mock_response
-        
+
         documents = await connector.get_documents()
-        
+
         assert len(documents) == 1
         assert documents[0].title == "Test"
         assert documents[0].content == "Test content"
@@ -377,14 +377,14 @@ async def test_custom_connector_integration():
     """Test full integration with QDrant Loader."""
     from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
     from qdrant_loader.config import Settings
-    
+
     # Load test configuration
     settings = Settings.from_yaml("test_config.yaml")
-    
+
     # Create pipeline with custom connector
     pipeline = AsyncIngestionPipeline(settings)
     result = await pipeline.process_documents(project_id="test-project")
-    
+
     assert len(result) > 0
 ```
 
@@ -412,13 +412,13 @@ dependencies = [
 
 ```bash
 # Build package
-python -m build
+uv build
 
 # Install locally for testing
-pip install -e .
+uv sync
 
 # Publish to PyPI
-python -m twine upload dist/*
+uv run python -m twine upload dist/*
 ```
 
 ## 🔍 Advanced Patterns
@@ -453,7 +453,7 @@ class CustomAPIConnector(BaseConnector):
         super().__init__(config)
         self.session = None
         self.semaphore = asyncio.Semaphore(10)  # Limit concurrency
-    
+
     async def __aenter__(self):
         """Initialize HTTP session."""
         await super().__aenter__()
@@ -461,13 +461,13 @@ class CustomAPIConnector(BaseConnector):
             timeout=httpx.Timeout(self.config.config.get("timeout", 30))
         )
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Clean up HTTP session."""
         if self.session:
             await self.session.aclose()
         await super().__aexit__(exc_type, exc_val, exc_tb)
-    
+
     async def get_documents(self) -> list[Document]:
         """Fetch documents with proper async handling."""
         async with self.semaphore:
@@ -482,13 +482,13 @@ class CustomAPIConnector(BaseConnector):
 ```python
 class BaseAPIConnector(BaseConnector):
     """Base class for API-based connectors."""
-    
+
     def __init__(self, config: SourceConfig):
         super().__init__(config)
         self.base_url = str(config.base_url)
         self.api_key = config.config.get("api_key")
         self.session = None
-    
+
     async def __aenter__(self):
         """Initialize HTTP session with common settings."""
         await super().__aenter__()
@@ -500,7 +500,7 @@ class BaseAPIConnector(BaseConnector):
 
 class GitHubConnector(BaseAPIConnector):
     """GitHub-specific implementation."""
-    
+
     async def get_documents(self) -> list[Document]:
         """Fetch from GitHub API."""
         response = await self.session.get(f"{self.base_url}/repos")
@@ -526,7 +526,7 @@ Each connector demonstrates different patterns and can serve as examples for you
 
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Ask development questions
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report bugs or request features
-- **[Contributing Guide](../../CONTRIBUTING.md)** - Contribution guidelines
+- **[Contributing Guide](/docs/CONTRIBUTING.md)** - Contribution guidelines
 
 ### Related Documentation
 

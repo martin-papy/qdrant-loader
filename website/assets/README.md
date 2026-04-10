@@ -59,10 +59,9 @@ Complete favicon collection generated from the static icon:
 ### Color Palette
 
 ```css
---primary-color: #667eea    /* Primary brand blue */
---secondary-color: #764ba2  /* Secondary purple */
---success-color: #48bb78    /* Success green */
---info-color: #4299e1      /* Info blue */
+--primary-color: #667eea /* Primary brand blue */ --secondary-color: #764ba2
+  /* Secondary purple */ --success-color: #48bb78 /* Success green */
+  --info-color: #4299e1 /* Info blue */;
 ```
 
 ### Design Principles
@@ -79,31 +78,68 @@ Complete favicon collection generated from the static icon:
 
 ```html
 <!-- Navigation bar -->
-<img src="assets/logos/qdrant-loader-logo-horizontal.svg" alt="QDrant Loader" height="40">
+<img
+  src="assets/logos/qdrant-loader-logo-horizontal.svg"
+  alt="QDrant Loader"
+  height="40"
+/>
 
 <!-- Hero section -->
-<img src="assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="120">
+<img
+  src="assets/logos/qdrant-loader-logo.svg"
+  alt="QDrant Loader"
+  height="120"
+/>
 
 <!-- App icon -->
-<img src="assets/icons/qdrant-loader-icon.svg" alt="QDrant Loader" width="64" height="64">
+<img
+  src="assets/icons/qdrant-loader-icon.svg"
+  alt="QDrant Loader"
+  width="64"
+  height="64"
+/>
 ```
 
 ### Favicon Implementation
 
 ```html
 <!-- Standard favicons -->
-<link rel="icon" type="image/x-icon" href="assets/favicons/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/favicons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicons/favicon-32x32.png">
+<link rel="icon" type="image/x-icon" href="assets/favicons/favicon.ico" />
+<link
+  rel="icon"
+  type="image/png"
+  sizes="16x16"
+  href="assets/favicons/favicon-16x16.png"
+/>
+<link
+  rel="icon"
+  type="image/png"
+  sizes="32x32"
+  href="assets/favicons/favicon-32x32.png"
+/>
 
 <!-- Mobile icons -->
-<link rel="apple-touch-icon" sizes="180x180" href="assets/favicons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/favicons/android-chrome-192x192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="assets/favicons/android-chrome-512x512.png">
+<link
+  rel="apple-touch-icon"
+  sizes="180x180"
+  href="assets/favicons/apple-touch-icon.png"
+/>
+<link
+  rel="icon"
+  type="image/png"
+  sizes="192x192"
+  href="assets/favicons/android-chrome-192x192.png"
+/>
+<link
+  rel="icon"
+  type="image/png"
+  sizes="512x512"
+  href="assets/favicons/android-chrome-512x512.png"
+/>
 
 <!-- Web manifest -->
-<link rel="manifest" href="assets/site.webmanifest">
-<meta name="theme-color" content="#667eea">
+<link rel="manifest" href="assets/site.webmanifest" />
+<meta name="theme-color" content="#667eea" />
 ```
 
 ## 🔧 **Generation Scripts**
@@ -112,7 +148,8 @@ Complete favicon collection generated from the static icon:
 
 ```bash
 # Install dependencies
-pip install cairosvg pillow
+uv add --dev cairosvg pillow
+uv sync
 
 # Generate all favicon sizes
 python generate_favicons.py

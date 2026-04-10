@@ -149,7 +149,7 @@ git push origin feature/your-feature-name
 
 ## <img src="../assets/icons/library/note-icon.svg" width="32" alt="Coding Standards"> Coding Standards
 
-> **📖 For comprehensive guidelines** including Pythonic patterns, AI/RAG best practices, and PR review checklists, see the [Best Practices Guide](./docs/developers/contributing/).
+> **📖 For comprehensive guidelines** including Pythonic patterns, AI/RAG best practices, and PR review checklists, see the [Best Practices Guide](./docs/developers/contributing/README.md).
 
 ### Code Style
 
@@ -177,90 +177,23 @@ uv run ruff check --fix .
 
 ### Code Guidelines
 
-#### General Principles
+Detailed implementation standards are maintained in one place:
 
-- **Write clear, readable code** with descriptive variable and function names
-- **Add type hints** for all function parameters and return values
-- **Include docstrings** for all public functions, classes, and modules
-- **Keep functions focused** and single-purpose
-- **Handle errors gracefully** with appropriate exception handling
+- **[Best Practices Guide](./docs/developers/contributing/README.md)** for Pythonic patterns, DI, architecture constraints, AI/RAG quality gates, and PR review checklist
 
-#### Docstring Format
+Minimum expectations for all contributions:
 
-Use Google-style docstrings:
-
-```python
-def process_document(content: str, metadata: Dict[str, Any]) -> ProcessedDocument:
-    """Process a document with the given content and metadata.
-
-    Args:
-        content: The raw document content to process.
-        metadata: Additional metadata about the document.
-
-    Returns:
-        A ProcessedDocument instance with chunked content and enriched metadata.
-
-    Raises:
-        ProcessingError: If the document cannot be processed.
-    """
-    # Implementation here
-```
-
-#### Type Hints
-
-```python
-from typing import Dict, List, Optional, Union
-from pathlib import Path
-
-def load_config(config_path: Path) -> Dict[str, Any]:
-    """Load configuration from a file."""
-    pass
-
-def process_files(files: List[Path], max_size: Optional[int] = None) -> List[str]:
-    """Process a list of files."""
-    pass
-```
+- Keep code readable and typed
+- Add/maintain docstrings for public interfaces
+- Prefer explicit dependencies over implicit behavior
+- Handle errors with actionable messages and structured logs
 
 ## <img src="../assets/icons/library/test-tube-icon.svg" width="32" alt="Testing"> Testing Guidelines
 
-### Test Structure
+Testing standards and strategy are documented here:
 
-- **Unit tests**: Test individual functions and classes in isolation
-- **Integration tests**: Test component interactions
-- **End-to-end tests**: Test complete workflows
-
-### Writing Tests
-
-```python
-import pytest
-from unittest.mock import Mock, patch
-from qdrant_loader.processors import DocumentProcessor
-
-class TestDocumentProcessor:
-    """Test cases for DocumentProcessor."""
-
-    def test_process_simple_document(self):
-        """Test processing a simple text document."""
-        processor = DocumentProcessor()
-        content = "This is a test document."
-
-        result = processor.process(content)
-
-        assert result.chunks
-        assert len(result.chunks) == 1
-        assert result.chunks[0].content == content
-
-    @patch('qdrant_loader.processors.external_service')
-    def test_process_with_external_service(self, mock_service):
-        """Test processing with mocked external service."""
-        mock_service.return_value = "processed content"
-        processor = DocumentProcessor()
-
-        result = processor.process("input")
-
-        mock_service.assert_called_once_with("input")
-        assert result.content == "processed content"
-```
+- **[Developer Testing Guide](./docs/developers/testing/README.md)** for test design, scope, fixtures, and integration patterns
+- **[Best Practices Guide](./docs/developers/contributing/README.md)** for AI/RAG-specific evaluation and review gates
 
 ### Test Commands
 
