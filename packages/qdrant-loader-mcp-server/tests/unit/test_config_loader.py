@@ -127,43 +127,43 @@ class TestLegacyEmbeddingMigration:
         config_data = {
             "global": {
                 "embedding": {
-                    "model": "text-embedding-ada-002",
-                    "vector_size": 1536,
-                    "api_key": "sk-legacy",
+                    "model": "argus-ai/pplx-embed-v1-0.6b:fp32",
+                    "vector_size": 1024,
+                    "api_key": "ollama",
                 }
             }
         }
         cfg = build_config_from_dict(config_data)
-        assert cfg.openai.model == "text-embedding-ada-002"
-        assert cfg.openai.api_key == "sk-legacy"
-        assert cfg.openai.vector_size == 1536
+        assert cfg.openai.model == "argus-ai/pplx-embed-v1-0.6b:fp32"
+        assert cfg.openai.api_key == "ollama"
+        assert cfg.openai.vector_size == 1024
 
     def test_legacy_does_not_override_explicit_llm(self, monkeypatch):
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         config_data = {
             "global": {
                 "llm": {
-                    "api_key": "sk-new",
-                    "models": {"embeddings": "text-embedding-3-small"},
+                    "api_key": "ollama",
+                    "models": {"embeddings": "argus-ai/pplx-embed-v1-0.6b:fp32"},
                 },
                 "embedding": {
-                    "model": "text-embedding-ada-002",
-                    "api_key": "sk-legacy",
-                    "vector_size": 512,
+                    "model": "argus-ai/pplx-embed-v1-0.6b:fp32",
+                    "api_key": "ollama",
+                    "vector_size": 1024,
                 },
             }
         }
         cfg = build_config_from_dict(config_data)
         # Existing llm config takes precedence
-        assert cfg.openai.api_key == "sk-new"
-        assert cfg.openai.model == "text-embedding-3-small"
+        assert cfg.openai.api_key == "ollama"
+        assert cfg.openai.model == "argus-ai/pplx-embed-v1-0.6b:fp32"
 
     def test_new_format_vector_size(self):
         config_data = {
             "global": {
                 "llm": {
                     "api_key": "sk-xxx",
-                    "models": {"embeddings": "text-embedding-3-small"},
+                    "models": {"embeddings": "argus-ai/pplx-embed-v1-0.6b:fp32"},
                     "embeddings": {"vector_size": 1536},
                 }
             }
