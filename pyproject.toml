@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-workspace"
-version = "0.9.0"
+version = "1.0.0"
 description = "A comprehensive toolkit for loading data into Qdrant vector database with MCP server support"
 readme = "README.md"
 authors = [
@@ -225,7 +225,11 @@ members = [
     "packages/qdrant-loader-core",
 ]
 
-[tool.uv.sources]
-qdrant-loader-core = { workspace = true }
-qdrant-loader = { workspace = true }
-qdrant-loader-mcp-server = { workspace = true }
+[tool.uv.sources.qdrant-loader-core]
+workspace = true
+
+[tool.uv.sources.qdrant-loader]
+workspace = true
+
+[tool.uv.sources.qdrant-loader-mcp-server]
+workspace = true
