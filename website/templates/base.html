@@ -200,6 +200,11 @@
             font-size: 1.5rem;
         }
 
+        .navbar-shell {
+            padding-left: clamp(1rem, 4vw, 5rem);
+            padding-right: clamp(1rem, 4vw, 5rem);
+        }
+
         .status-indicator {
             display: inline-block;
             width: auto;
@@ -587,6 +592,7 @@
         .support-link .indicator {
             width: 0.9375rem; 
             height: 0.9375rem;
+            background-color: #FFF200;
         }
 
         .footer-copy {
@@ -774,7 +780,7 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
-            <div class="container d-flex align-items-center justify-content-between">
+            <div class="container-fluid navbar-shell d-flex align-items-center justify-content-between">
 
                 <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
                     <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60">
@@ -839,7 +845,7 @@
                     </ul>
                 </div>
             </div>
-        </nav>
+    </nav>
   
 
     <!-- Main Content -->
@@ -1006,7 +1012,7 @@
             <p class="support-text">This project is proudly supported and powered by <b>CBTW</b></p> 
             <h1 class="support-title text-uppercase">COLLABORATION BETTERS THE WORLD</h1> 
             <a href="https://cbtw.tech/" class="support-link d-flex align-items-center justify-content-lg-center gap-2 text-decoration-none text-dark" target="_blank">
-                <div class="indicator rounded-circle bg-warning"></div>
+                <div class="indicator rounded-circle"></div>
                 <span>www.cbtw.tech</span> 
             </a>
         </div>
