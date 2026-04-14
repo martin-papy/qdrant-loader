@@ -142,16 +142,16 @@ Each data source can enable or disable file conversion:
 ### Conversion Process
 
 ```text
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│     File    │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
-│  Detection  │    │  Detection  │    │ Conversion  │    │   Content   │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  MIME Type  │    │  Extension  │    │ Text + OCR  │    │ Structured  │
-│  Detection  │    │   Mapping   │    │  + Audio    │    │Text Output  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│     File     │──▶│    Format    │──▶│  MarkItDown  │──▶│   Markdown   │
+│  Detection   │   │  Detection   │   │ Conversion   │   │   Content    │
+└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+       │                  │                  │                  │
+       ▼                  ▼                  ▼                  ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│  MIME Type   │   │  Extension   │   │ Text + OCR   │   │  Structured  │
+│  Detection   │   │   Mapping    │   │   + Audio    │   │ Text Output  │
+└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
 ```
 
 ### Processing Pipeline

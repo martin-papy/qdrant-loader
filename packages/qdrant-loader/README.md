@@ -10,15 +10,21 @@ For full setup and configuration, start with the documentation links below.
 
 ## 🚀 What It Does
 
-- Collects content from Git repositories, Confluence, JIRA, public documentation sites, and local files
-- Converts supported file types (via MarkItDown) when enabled per source
-- Chunks, embeds, and stores content in QDrant for semantic retrieval
-- Supports incremental ingestion workflows through the CLI
+- **Collects content** from Git repositories, Confluence, JIRA, documentation sites, and local files
+- **Converts files** automatically from 20+ formats including PDF, Office docs, and images
+- **Processes intelligently** with smart chunking, metadata extraction, and change detection
+- **Stores efficiently** in QDrant vector database with optimized embeddings
+- **Updates incrementally** to keep your knowledge base current
 
-For detailed source setup and conversion behavior, see:
+## 🗄️ Supported Data Sources
 
-- **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and public docs.
-- **[File conversion guide](../../docs/users/detailed-guides/file-conversion)** - Supported formats, conversion behavior, and practical tuning options.
+| Source          | Description                         | Key Features                                                   |
+| --------------- | ----------------------------------- | -------------------------------------------------------------- |
+| **Git**         | Code repositories and documentation | Branch selection, file filtering, commit metadata              |
+| **Confluence**  | Cloud & Data Center/Server          | Space filtering, hierarchy preservation, attachment processing |
+| **JIRA**        | Cloud & Data Center/Server          | Project filtering, issue tracking, attachment support          |
+| **Public Docs** | External documentation sites        | CSS selector extraction, version detection                     |
+| **Local Files** | Local directories and files         | Glob patterns, recursive scanning, file type filtering         |
 
 ## 📄 File Conversion Support
 
@@ -34,6 +40,11 @@ Automatically converts diverse file formats using Microsoft's MarkItDown:
 - **E-books**: EPUB format
 - **And more**: 20+ file types supported
 
+For detailed source setup and conversion behavior, see:
+
+- **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and public docs.
+- **[File conversion guide](../../docs/users/detailed-guides/file-conversion)** - Supported formats, conversion behavior, and practical tuning options.
+
 ### Key Features
 
 - **Automatic detection**: Files are converted when `enable_file_conversion: true`
@@ -42,7 +53,18 @@ Automatically converts diverse file formats using Microsoft's MarkItDown:
 - **Metadata preservation**: Original file information is maintained
 - **Performance optimized**: Configurable limits for size, timeouts, and throughput
 
-## 🏗️ Data Flow
+## 🏗️ Architecture
+
+### Core Components
+
+- **Source Connectors**: Pluggable connectors for different data sources
+- **File Processors**: Conversion and processing pipeline for various file types
+- **Chunking Engine**: Intelligent text segmentation with configurable overlap
+- **Embedding Service**: Flexible embedding generation with multiple providers
+- **State Manager**: SQLite-based tracking for incremental updates
+- **QDrant Client**: Optimized vector storage and retrieval
+
+### Data Flow
 
 ```text
 Data Sources → File Conversion → Text Processing → Chunking → Embedding → QDrant Storage
@@ -89,6 +111,20 @@ Implementation details for tuning and troubleshooting are covered in:
 pip install qdrant-loader
 ```
 
+For detailed installation instructions, see:
+
+- **[Installation details](../../docs/getting-started/installation.md)** - Platform-specific install methods and dependency requirements.
+
+## ⚙️ Configuration
+
+For detailed configuration setup, see:
+
+- **[Basic Configuration](../../docs/getting-started/basic-configuration.md)** - Getting started with configuration
+- **[Configuration reference](../../docs/users/configuration)** - Configuration model, options, and practical examples.
+- **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and more.
+- **[Environment Variables](../../docs/users/configuration/environment-variables.md)** - Environment variable reference and naming conventions.
+- **[LLM Provider Guide](../../docs/users/configuration/llm-provider-guide.md)** - Configure provider-specific LLM details
+
 ## 🧪 CLI
 
 ```bash
@@ -110,14 +146,27 @@ qdrant-loader project --workspace . status
 
 For full workspace bootstrapping (.env, config.yaml, and source templates), see **[Quick start](../../docs/getting-started/quick-start.md)**.
 
-## 📚 Canonical Documentation
+## 📚 Documentation
 
+- **[Getting Started](../../docs/getting-started/)** - Quick start and core concepts
 - **[Monorepo overview](../../)** - Project structure, packages, and top-level navigation across the repository.
 - **[Quick start](../../docs/getting-started/quick-start.md)** - Fast setup path from install to first successful ingestion.
-- **[Installation details](../../docs/getting-started/installation.md)** - Platform-specific install methods and dependency requirements.
-- **[Configuration reference](../../docs/users/configuration)** - Configuration model, options, and practical examples.
-- **[Data source guides](../../docs/users/detailed-guides/data-sources)** - Source-specific setup for Git, Confluence, Jira, local files, and more.
+- **[User Guides](../../docs/users/)** - Detailed usage instructions
+- **[Developer hub](../../docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
+
+## 🆘 Support
+
+- **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
 
 ## 🤝 Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.
+
+## 📄 License
+
+This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) file for details.
+
+---
+
+**Ready to get started?** Check out our [Quick Start Guide](./docs/getting-started/quick-start.md) or browse the [complete documentation](./docs/).
