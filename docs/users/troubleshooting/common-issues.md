@@ -581,7 +581,7 @@ qdrant-loader ingest --workspace .
 ### Support Channels
 
 - **GitHub Issues**: [Report bugs and feature requests](https://github.com/martin-papy/qdrant-loader/issues)
-- **Documentation**: [Check latest documentation](/docs/README.md)
+- **Documentation**: [Check latest documentation](../../)
 - **Discussions**: [Community Q&A](https://github.com/martin-papy/qdrant-loader/discussions)
 
 ### Issue Report Template
@@ -633,8 +633,6 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 ```
 
-```text
-
 ## 🔗 Related Documentation
 
 - **[Performance Issues](./performance-issues.md)** - Performance troubleshooting
@@ -648,4 +646,3 @@ qdrant-loader config --workspace .
 **Most common issues resolved!** 🎉
 
 This guide covers the majority of issues users encounter. For specific error messages, check the [Error Messages Reference](./error-messages-reference.md), and for performance-related problems, see the [Performance Issues Guide](./performance-issues.md).
-```
