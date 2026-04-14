@@ -34,7 +34,7 @@ grep -r "your error message" docs/users/troubleshooting/
 # See: Error Messages Reference → [specific error category]
 ```
 
-## Troubleshooting Guides
+## 📚 Troubleshooting Guides
 
 ### 🔧 [Common Issues](./common-issues.md)
 

@@ -2,11 +2,11 @@
 
 This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, and quality assurance practices.
 
-## 🧪 Testing Overview
+## 🎯 Testing Overview
 
 QDrant Loader follows a comprehensive testing strategy to ensure reliability, performance, and maintainability:
 
-### Testing Philosophy
+### 🧪 Testing Philosophy
 
 1. **Test-Driven Development** - Write tests before implementing features
 2. **Comprehensive Coverage** - Aim for 85%+ test coverage
@@ -14,7 +14,7 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 4. **Real-World Testing** - Integration tests with actual services
 5. **Performance Validation** - Regular performance benchmarking
 
-### Testing Categories
+### 📚 Testing Categories
 
 - **Unit Testing** - Testing individual components in isolation
 - **Integration Testing** - Testing component interactions and end-to-end workflows

@@ -1,4 +1,4 @@
-# 📝 Developer Documentation
+# Developer Documentation
 
 Welcome to the QDrant Loader developer documentation! This guide provides everything you need to understand, extend, test, and deploy QDrant Loader. Whether you're contributing to the core project or building custom extensions, you'll find detailed technical information and practical examples here.
 

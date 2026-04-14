@@ -1,13 +1,28 @@
-# 📝 MCP Server Guide
+# MCP Server Guide
 
-This page is the MCP hub. Detailed instructions are split into dedicated pages to avoid duplicate setup content.
+The QDrant Loader MCP (Model Context Protocol) Server enables seamless integration with AI development tools like Cursor IDE, Windsurf, and Claude Desktop. This guide covers everything you need to know about setting up and using our **intelligent search system**.
 
-## 🚀 What MCP gives you
+## 🎯 Overview
+
+The MCP Server acts as a bridge between your AI tools and your QDrant Loader knowledge base, providing **intelligent search capabilities** that go beyond simple keyword matching. Our system includes semantic understanding, hierarchy navigation, attachment analysis, and cross-document intelligence.
+
+**Model Context Protocol (MCP)** is an open standard that allows AI applications to securely connect to external data sources. It enables your AI tools to access and search your knowledge base in real-time.
+
+### What MCP gives you
 
 - Semantic search in your ingested knowledge base
 - Hierarchy-aware retrieval for structured docs
 - Attachment-focused search
 - Integration with Cursor, Windsurf, Claude Desktop, and other MCP clients
+
+### Key Capabilities
+
+- **Enhanced Semantic Search** - AI-powered similarity search with context understanding
+- **Hierarchy-Aware Navigation** - Structure-aware search with document relationships
+- **Intelligent Attachment Search** - File and document search with content analysis
+- **Cross-Document Intelligence** - Relationship analysis, conflict detection, and clustering
+- **Real-Time Integration** - Live access from your AI development environment
+- **Multi-Source Support** - Works with Git, Confluence, JIRA, and local files
 
 ## ⚙️ Client configuration links
 
