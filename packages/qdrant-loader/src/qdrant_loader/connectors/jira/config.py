@@ -4,7 +4,14 @@ import os
 from enum import StrEnum
 from typing import Self
 
-from pydantic import ConfigDict, Field, HttpUrl, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    field_validator,
+    model_validator,
+)
 
 from qdrant_loader.config.source_config import SourceConfig
 
@@ -14,6 +21,47 @@ class JiraDeploymentType(StrEnum):
 
     CLOUD = "cloud"
     DATACENTER = "datacenter"
+
+
+class JiraFieldType(StrEnum):
+    SIMPLE = "simple"
+    OBJECT = "object"  # extract attribute from single object
+    ARRAY = "array"  # plain list
+    ARRAY_OBJECT = "array_object"  # extract attribute from list of objects
+
+
+class JiraExtraField(BaseModel):
+    param_name: str = Field(
+        ...,
+        description="The Jira API parameter name (e.g., 'customfield_11406', 'priority')",
+    )
+    name: str = Field(
+        ...,
+        description="Target attribute name on JiraIssue (e.g., 'sah_project')",
+    )
+    field_type: JiraFieldType = Field(
+        default=JiraFieldType.SIMPLE,
+        description=(
+            "Extraction strategy: "
+            "'simple' = direct value, "
+            "'object' = extract attribute from object (requires attr_name), "
+            "'array' = plain list, "
+            "'array_object' = extract attribute from list of objects (requires attr_name)"
+        ),
+    )
+    attr_name: str | None = Field(
+        default=None,
+        description="Attribute to extract from object(s) (e.g., 'name', 'value')",
+    )
+
+    @model_validator(mode="after")
+    def validate_attr_requirement(self) -> "JiraExtraField":
+        if self.field_type in {JiraFieldType.OBJECT, JiraFieldType.ARRAY_OBJECT}:
+            if not self.attr_name:
+                raise ValueError(
+                    f"'attr_name' is required for field_type='{self.field_type}'"
+                )
+        return self
 
 
 class JiraProjectConfig(SourceConfig):
@@ -68,6 +116,10 @@ class JiraProjectConfig(SourceConfig):
     include_statuses: list[str] = Field(
         default=[],
         description="Optional list of statuses to include (e.g., ['Open', 'In Progress']). If empty, all statuses are included.",
+    )
+    extra_fields: list[JiraExtraField] | None = Field(
+        default=None,
+        description="Optional list of extra Jira fields to retrieve with their extraction type.",
     )
 
     model_config = ConfigDict(validate_default=True, arbitrary_types_allowed=True)
@@ -149,3 +201,19 @@ class JiraProjectConfig(SourceConfig):
         if any(not item.strip() for item in v):
             raise ValueError("List items cannot be empty strings")
         return [item.strip() for item in v]
+
+    @field_validator("extra_fields")
+    @classmethod
+    def validate_extra_fields_unique(
+        cls, v: list[JiraExtraField] | None
+    ) -> list[JiraExtraField] | None:
+        """Validate that extra field param_names and names are unique."""
+        if v is None:
+            return v
+        param_names = [f.param_name for f in v if f.param_name is not None]
+        if len(param_names) != len(set(param_names)):
+            raise ValueError("Extra field 'param_name' values must be unique")
+        names = [f.name for f in v if f.name is not None]
+        if len(names) != len(set(names)):
+            raise ValueError("Extra field 'name' values must be unique")
+        return v
