@@ -30,6 +30,28 @@ class JiraFieldType(StrEnum):
     ARRAY_OBJECT = "array_object"  # extract attribute from list of objects
 
 
+RESERVED_NAMES = {
+    "id",
+    "key",
+    "summary",
+    "description",
+    "issue_type",
+    "status",
+    "priority",
+    "project_key",
+    "created",
+    "updated",
+    "reporter",
+    "assignee",
+    "labels",
+    "attachments",
+    "comments",
+    "parent_key",
+    "subtasks",
+    "linked_issues",
+}
+
+
 class JiraExtraField(BaseModel):
     param_name: str = Field(
         ...,
@@ -61,6 +83,14 @@ class JiraExtraField(BaseModel):
                 raise ValueError(
                     f"'attr_name' is required for field_type='{self.field_type}'"
                 )
+        return self
+
+    @model_validator(mode="after")
+    def validate_reserved_name(self) -> "JiraExtraField":
+        if self.name in RESERVED_NAMES:
+            raise ValueError(
+                f"'name' cannot be one of reserved attributes: {sorted(RESERVED_NAMES)}"
+            )
         return self
 
 
