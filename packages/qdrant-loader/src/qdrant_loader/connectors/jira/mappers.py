@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from .config import JiraExtraField, JiraFieldType
 from .models import JiraAttachment, JiraComment, JiraIssue, JiraUser
 
 
@@ -100,7 +101,34 @@ def parse_comment(raw_comment: dict[str, Any]) -> JiraComment:
     )
 
 
-def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
+def _extract_extra_field_value(
+    container: dict[str, Any],
+    param_name: str,
+    field_type: JiraFieldType,
+    attr_name: str | None,
+) -> Any:
+    """Extract a single extra field value from the issue fields dict."""
+    raw = container.get(param_name)
+
+    if field_type in (JiraFieldType.SIMPLE, JiraFieldType.ARRAY):
+        return raw
+
+    if field_type == JiraFieldType.OBJECT:
+        if not isinstance(raw, dict):
+            return None
+        return raw.get(attr_name)
+
+    if field_type == JiraFieldType.ARRAY_OBJECT:
+        if not isinstance(raw, list):
+            return []
+        return [item.get(attr_name) for item in raw if isinstance(item, dict)]
+
+    return None
+
+
+def parse_issue(
+    raw_issue: dict[str, Any], extra_fields: list[JiraExtraField] | None = None
+) -> JiraIssue:
     """Parse a raw issue from the Jira response into a JiraIssue object."""
     # Gather identifiers early for clearer error messages
     issue_id = raw_issue.get("id")
@@ -227,7 +255,6 @@ def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
         raise ValueError(
             f"Jira issue missing required top-level identifier(s): id={issue_id!r}, key={issue_key!r}"
         )
-
     description = fields.get("description", "")
     if description is not None and not isinstance(description, str):
         if not isinstance(description, dict):
@@ -236,7 +263,7 @@ def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
             )
         description = adf_to_oneline_fulltext(description)
 
-    return JiraIssue(
+    jira_issue = JiraIssue(
         id=issue_id,
         key=issue_key,
         summary=str(fields.get("summary")),
@@ -264,6 +291,16 @@ def parse_issue(raw_issue: dict[str, Any]) -> JiraIssue:
         subtasks=subtasks_keys,
         linked_issues=[key for key in linked_outward if key],
     )
+    if extra_fields:
+        for field in extra_fields:
+            value = _extract_extra_field_value(
+                fields,
+                field.param_name,
+                field.field_type,
+                field.attr_name,
+            )
+            setattr(jira_issue, field.name, value)
+    return jira_issue
 
 
 def adf_to_oneline_fulltext(node: dict) -> str:
