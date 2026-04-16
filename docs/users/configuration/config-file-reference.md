@@ -590,6 +590,15 @@ sources:
       email: "${JIRA_EMAIL}"
       requests_per_minute: 60
       page_size: 100
+      extra_fields:
+        - param_name: customfield_12000
+          name: version
+          field_type: simple
+
+        - param_name: customfield_12001
+          name: affected_versions   # Metadata key under which the extracted value will be stored in Qdrant
+          field_type: array_object  # Use for fields that return a list of JIRA objects, e.g. [<JIRA Version: name='1.0.2', id='3900'>]
+          attr_name: name           # Attribute to extract from each object in the list
       issue_types:
         - "Bug"
         - "Story"
