@@ -25,15 +25,17 @@
     gap: 5rem;
     margin-inline: auto;
     background-color: #E3FAFF;
-    margin: 0 1.5rem;
   }
   .dh-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 5rem;
-    max-width: 60rem;
+    row-gap: 80px;
+    column-gap: 80px;
+    width: 100%;
+    max-width: 1170px;
     margin-inline: auto;
-    padding: 8rem 0;
+    padding: 160px 0;
+    align-items: center;
   }
   @media (min-width: 768px) {
     .dh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -41,47 +43,53 @@
 
   /* card */
   .dh-card {
-    background: #f7f7f8;
-    border-radius: 1.1rem;
-    padding: 40px;
+    background: #FFFFFF;
+    border-radius: 32px;
+    padding: 60px 40px 20px 40px;
     border: 1px solid #ebedf0;
-    box-shadow: 0 10px 28px -16px rgba(15, 23, 42, 0.28);
-    min-height: 20rem;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 545px;
+    min-height: 580px;
   }
   .dh-card-header {
     text-align: center;
     margin-bottom: 1.35rem;
   }
   .dh-card-header .dh-card-icon svg {
-    width: 1.7rem;
-    height: 1.7rem;
     margin: 0 auto;
     display: block;
   }
   .dh-card-header h2 {
-    font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0.68rem 0 0;
-    color: #242628;
+    color: #1C1C1C;
+    font-family: var(--font-family);
+    margin-top: 10px;
   }
 
   /* item list */
   .dh-item-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 20px;
+    padding: 24px;
   }
   .dh-item-list li {
-    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    width: 100%;
+  }
+  .dh-item-separator {
+    height: 1px;
+    background-color: #D5D5D5;
+    width: 100%;
+    margin: -10px 0;
   }
   .dh-item-list a {
     display: flex;
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 0.6rem;
@@ -126,7 +134,19 @@
 
   @media (max-width: 767px) {
     .dh-card {
+      width: 100%;
+      max-width: 100%;
       min-height: 0;
+      padding: 32px 20px 16px 20px;
+      border-radius: 20px;
+    }
+    .dh-grid {
+      padding: 60px 16px;
+      row-gap: 40px;
+    }
+    .dh-item-list {
+      padding: 12px 0;
+      gap: 16px;
     }
   }
 
@@ -135,7 +155,7 @@
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding: 10rem 1.5rem;
+    padding: 10rem 0;
   }
   .dh-quickactions-bg {
     position: absolute;
@@ -144,11 +164,11 @@
     height: 100%;
     object-fit: cover;
     z-index: 0;
-    padding: 0 1.5rem;
   }
   .dh-quickactions-inner {
     position: relative;
-    max-width: 70rem;
+    width: 100%;
+    max-width: 1170px;
     margin-inline: auto;
     text-align: center;
     z-index: 1;
@@ -166,7 +186,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1.1rem;
+    gap: 32px;
   }
   .dh-qa-btn {
     display: inline-flex;
@@ -266,6 +286,7 @@
             <span class="dh-tag dh-tag-blue">Essential</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="packages/core/README.html">
             <span class="dh-item-left">
@@ -277,6 +298,7 @@
             <span class="dh-tag dh-tag-cyan">Core</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="packages/mcp-server/README.html">
             <span class="dh-item-left">
@@ -288,6 +310,7 @@
             <span class="dh-tag dh-tag-cyan">Integration</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="packages/qdrant-loader/README.html">
             <span class="dh-item-left">
@@ -299,6 +322,7 @@
             <span class="dh-tag dh-tag-cyan">CLI</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="CHANGELOG.html">
             <span class="dh-item-left">
@@ -310,6 +334,7 @@
             <span class="dh-tag dh-tag-gray">Updates</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
       </ul>
     </article>
 
@@ -335,6 +360,7 @@
             <span class="dh-tag dh-tag-green">New in v0.4.0</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
       </ul>
     </article>
 
@@ -360,6 +386,7 @@
             <span class="dh-tag dh-tag-cyan">Overview</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/detailed-guides/file-conversion/README.html">
             <span class="dh-item-left">
@@ -371,6 +398,7 @@
             <span class="dh-tag dh-tag-cyan">Guide</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/cli-reference/README.html">
             <span class="dh-item-left">
@@ -382,6 +410,7 @@
             <span class="dh-tag dh-tag-cyan">CLI</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/workflows/common-workflows.html">
             <span class="dh-item-left">
@@ -393,6 +422,7 @@
             <span class="dh-tag dh-tag-cyan">Guides</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
       </ul>
     </article>
 
@@ -418,6 +448,7 @@
             <span class="dh-tag dh-tag-yellow">Enterprise</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/detailed-guides/data-sources/jira.html">
             <span class="dh-item-left">
@@ -429,6 +460,7 @@
             <span class="dh-tag dh-tag-yellow">Enterprise</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/detailed-guides/mcp-server/hierarchy-search.html">
             <span class="dh-item-left">
@@ -440,6 +472,7 @@
             <span class="dh-tag dh-tag-yellow">Advanced</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
       </ul>
     </article>
 
@@ -465,6 +498,7 @@
             <span class="dh-tag dh-tag-black">Examples</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/detailed-guides/mcp-server/hierarchy-search.html">
             <span class="dh-item-left">
@@ -476,6 +510,7 @@
             <span class="dh-tag dh-tag-black">Advanced</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="users/detailed-guides/mcp-server/attachment-search.html">
             <span class="dh-item-left">
@@ -487,6 +522,7 @@
             <span class="dh-tag dh-tag-black">Files</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
       </ul>
     </article>
 
@@ -512,6 +548,7 @@
             <span class="dh-tag dh-tag-black">Community</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="developers/testing/README.html">
             <span class="dh-item-left">
@@ -523,6 +560,7 @@
             <span class="dh-tag dh-tag-black">QA</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="developers/architecture/README.html">
             <span class="dh-item-left">
@@ -534,6 +572,7 @@
             <span class="dh-tag dh-tag-black">Design</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
         <li>
           <a href="developers/deployment/README.html">
             <span class="dh-item-left">
@@ -545,6 +584,7 @@
             <span class="dh-tag dh-tag-black">Guide</span>
           </a>
         </li>
+        <div class="dh-item-separator"></div>
       </ul>
     </article>
 

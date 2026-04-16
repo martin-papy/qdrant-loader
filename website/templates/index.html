@@ -616,6 +616,10 @@
         height:  240px;
     }
 
+    .session-features {
+        padding: 0;
+    }
+
     .section-features .image-box img {
         width: 100%;
         display: block;
@@ -753,7 +757,6 @@
     .section-install {
         position: relative;
         overflow: hidden;
-        padding: 96px 0;
         min-height: 36.4rem;
         display: flex;
         align-items: center;
@@ -784,29 +787,35 @@
         position: relative;
         z-index: 2;
         width: 100%;
-        max-width: 75rem;
-        padding: 0 2rem;
+        max-width: 1170px;
+        padding: 96px 0;
         margin: 0 auto;
         text-align: center;
         display: flex;
-        gap: 2rem;
+        gap: 56px;
         flex-direction: column;
         align-items: center;
     }
-
-    .install-container h2 {
-        font-size: clamp(2.6rem, 4vw, 3rem);
-        font-weight: 700;
-        line-height: 1.1;
-        margin-bottom: 1rem;
-        color: var(--text-color-primary-text-black);
+    .install-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
     }
 
-    .install-container > p {
-        font-size: 1.25rem;
-        line-height: 1.5;
+    .install-content h2 {
+        font-size: 48px;
+        font-weight: 700;
         color: var(--text-color-primary-text-black);
-        margin-bottom: 3.3rem;
+        font-family: var(--font-family);
+    }
+
+    .install-content p {
+        font-size: 16px;
+        color: var(--text-color-primary-text-black);
+        font-family: var(--font-family);
+        font-weight: 400;
+        opacity: 0.7;
     }
 
     .install-grid {
@@ -974,8 +983,8 @@
         position: relative;
         z-index: 2;
         width: 100%;
-        max-width: 75rem;
-        padding: 96px 2rem;
+        max-width: 1170px;
+        padding: 120px 0;
         margin: 0 auto;
         text-align: center;
     }
@@ -1623,7 +1632,7 @@
     <div class="install-overlay"></div>
 
     <div class="install-container">
-       <div>
+       <div class="install-content">
             <h2>Quick Installation</h2>
             <p>Get started in seconds with Pip</p>
        </div>

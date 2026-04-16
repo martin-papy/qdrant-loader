@@ -575,14 +575,18 @@
             align-items: center;
         }
 
+        .view-doc-link svg {
+            stroke-width: 0;
+        }
+
         .footer-section .doc-links {
             display: flex;
+            justify-content: flex-end;
+            padding-right: 120px;
         }
 
         .footer-section .doc-links .row {
-            display: flex;
-            justify-content: flex-start;
-            gap: 142px;
+            gap: 120px;
         }
 
         .footer-section .doc-links .col-md-6 {
@@ -634,13 +638,10 @@
             background-color: #FFF200;
         }
 
-        @media (max-width: 1200px) {
-            .footer-section {
-                padding: 80px 32px 32px;
-            }
-
+        @media (min-width: 1201px) and (max-width: 1600px) {
             .footer-section .doc-links .row {
-                gap: 64px;
+                justify-content: flex-start;
+                gap: 64px !important;
             }
 
             .doc-description {
