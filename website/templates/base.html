@@ -614,7 +614,7 @@
         }
 
         .support-text {
-            font-family: var(--second-family);
+            font-family: var(--font-family);
             font-weight: 400;
             font-size: 20px;
             line-height: 150%;
@@ -642,6 +642,14 @@
             width: 0.9375rem;
             height: 0.9375rem;
             background-color: #FFF200;
+        }
+
+        .support-link span {
+            font-family: var(--font-family);
+            font-weight: 400;
+            font-size: 16px;
+            letter-spacing: 0.13em;
+            color: var(--text-color-primary-text-black);
         }
 
         @media (min-width: 1201px) and (max-width: 1600px) {
@@ -678,11 +686,34 @@
             transition: color 0.2s;
         }
 
+        .social-links .social-link svg path {
+            fill: currentColor;
+        }
+
+        .social-links-icons {
+            display: flex;
+            gap: 20px;
+        }
+
+        .social-links {
+            gap: 20px !important;
+        }
+
         #build-info {
             font-size: 1rem;
             font-weight: 400;
             white-space: nowrap;
             color: var(--text-color-placeholder-text);
+        }
+
+        #build-info a {
+            font-family: var(--second-family);
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 150%;
+            text-align: center;
+            color: var(--text-color-placeholder-text);
+            text-decoration: none;
         }
 
         #build-info::after {
@@ -691,7 +722,7 @@
             width: 2px;      
             height: 24px;          
             background-color: var(--text-color-placeholder-text);
-            margin-left: 0.5rem; 
+            margin-left: 20px;
             vertical-align: middle; 
         }
 
@@ -1064,16 +1095,16 @@
             </div>
             <div class="col-md-4 text-md-end">
                 <div class="social-links d-flex flex-column flex-md-row justify-content-md-end align-items-start align-items-md-center mb-2 gap-2 mt-4 mt-md-0">
-                    <p class="mb-0 ml-2 text-black small text-nowrap" id="build-info">Loading build information...</p>
-                    <div class="d-flex">
-                        <a href="https://github.com/martin-papy" target="_blank" class="social-link "
+                    <p class="mb-0 ml-2 small text-nowrap" id="build-info">Loading build information...</p>
+                    <div class="social-links-icons">
+                        <a href="https://github.com/martin-papy" target="_blank" class="social-link"
                             title="Follow Martin Papy on GitHub">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.2" d="M19.5 9.75V10.5C19.5 11.6935 19.0259 12.8381 18.182 13.682C17.3381 14.5259 16.1935 15 15 15H12.75C13.5456 15 14.3087 15.3161 14.8713 15.8787C15.4339 16.4413 15.75 17.2044 15.75 18V21.75H9.75V18C9.75 17.2044 10.0661 16.4413 10.6287 15.8787C11.1913 15.3161 11.9544 15 12.75 15H10.5C9.30653 15 8.16193 14.5259 7.31802 13.682C6.47411 12.8381 6 11.6935 6 10.5V9.75C6.00713 8.83677 6.28476 7.94614 6.79781 7.19062C6.53575 6.51206 6.42912 5.78338 6.48574 5.05817C6.54236 4.33297 6.7608 3.62967 7.125 3C7.94376 2.99981 8.74937 3.20583 9.46752 3.59907C10.1857 3.9923 10.7932 4.56008 11.2341 5.25H14.2659C14.7068 4.56008 15.3143 3.9923 16.0325 3.59907C16.7506 3.20583 17.5562 2.99981 18.375 3C18.7392 3.62967 18.9576 4.33297 19.0143 5.05817C19.0709 5.78338 18.9642 6.51206 18.7022 7.19062C19.2152 7.94614 19.4929 8.83677 19.5 9.75Z" fill="#343330" />
                                 <path d="M19.5281 7.09501C19.7577 6.35561 19.8315 5.57662 19.7449 4.80725C19.6582 4.03787 19.413 3.29482 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0968 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.241 8.81776 19.9924 7.90349 19.5281 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6516 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.5108 8.26485 18.7386 8.99783 18.75 9.75001V10.5Z" fill="#343330" />
                             </svg>
                         </a>
-                        <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="social-link me-3"
+                        <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="social-link"
                             title="Connect with Martin Papy on LinkedIn">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.2" d="M21 3.75V20.25C21 20.4489 20.921 20.6397 20.7803 20.7803C20.6397 20.921 20.4489 21 20.25 21H3.75C3.55109 21 3.36032 20.921 3.21967 20.7803C3.07902 20.6397 3 20.4489 3 20.25V3.75C3 3.55109 3.07902 3.36032 3.21967 3.21967C3.36032 3.07902 3.55109 3 3.75 3H20.25C20.4489 3 20.6397 3.07902 20.7803 3.21967C20.921 3.36032 21 3.55109 21 3.75Z" fill="#343330" />
@@ -1168,8 +1199,10 @@
             .then(data => {
                 const buildDate = new Date(data.build.timestamp);
                 const formattedDate = `${buildDate.getDate().toString().padStart(2, '0')}-${(buildDate.getMonth() + 1).toString().padStart(2, '0')}-${buildDate.getFullYear()}`;
+                const versionUrl = `https://github.com/martin-papy/qdrant-loader/releases/tag/v${encodeURIComponent(data.version)}`;
+                const commitUrl = `https://github.com/martin-papy/qdrant-loader/commit/${encodeURIComponent(data.commit.full || data.commit.short)}`;
                 document.getElementById('build-info').innerHTML =
-                    `Version ${data.version} • Built ${formattedDate} • Commit ${data.commit.short}`;
+                    `<a href="${versionUrl}" target="_blank" rel="noopener noreferrer">Version ${data.version}</a> • Built ${formattedDate} • Commit <a href="${commitUrl}" target="_blank" rel="noopener noreferrer">${data.commit.short}</a>`;
 
                 // Configure feedback link to open a prefilled GitHub issue
                 try {

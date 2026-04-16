@@ -176,20 +176,23 @@
     z-index: 0;
   }
   .dh-quickactions-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     position: relative;
     width: 100%;
     max-width: 1170px;
     margin-inline: auto;
     text-align: center;
     z-index: 1;
+    gap: 80px;
   }
   .dh-quickactions-inner h3 {
-    color: #fff;
-    margin: 0 0 2.5rem;
+    color: var(--text-color-white);
+    margin: 0;
     font-family: var(--font-family);
     font-weight: 700;
     font-size: 48px;
-    letter-spacing: -0.03em;
     text-align: center;
   }
   .dh-qa-btns {
@@ -246,10 +249,10 @@
     }
     .dh-quickactions-inner {
       padding: 0 2rem;
+      gap: 24px;
     }
     .dh-quickactions-inner h3 {
       font-size: clamp(1.875rem, 8vw, 2.25rem);
-      margin-bottom: 1.35rem;
     }
     .dh-qa-btns {
       gap: 1rem;
