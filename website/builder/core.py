@@ -633,13 +633,13 @@ Sitemap: {site_base}/sitemap.xml
         wrapped_content = f"""
 <section>
     <div class=\"container-fluid\">
-    <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block p-0\">
+    <div class=\"row toc-layout\">
+      <aside class=\"toc-sidebar d-none d-lg-block p-0\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9 container-content\">
+      <div class=\"container-content\">
         {html_content}
       </div>
     </div>
@@ -967,13 +967,13 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                 wrapped_content = f"""
 <section>
    <div class=\"container-fluid\">
-    <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block p-0\">
+    <div class=\"row toc-layout\">
+      <aside class=\"toc-sidebar d-none d-lg-block p-0\">
         <div class=\"position-sticky\" style=\"top: 6rem;\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9 container-content\">
+      <div class=\"container-content\">
         {html_content}
       </div>
     </div>
