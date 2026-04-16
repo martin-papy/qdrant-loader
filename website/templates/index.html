@@ -564,7 +564,7 @@
     .image-box {
         border-radius: 1rem;
         overflow: hidden;
-        border: 1px solid #d9e7f4;
+        border: 1px solid var(--color-border-secondary);
         height: 100%;
         min-height: 18rem;
     }
@@ -575,22 +575,17 @@
         object-fit: cover;
     }
 
-    .section-features {
-        border-bottom: 1px solid #e3dfe1;
-    }
-
     .features-container {
         max-width: 58rem;
         margin: 0 auto;
         text-align: center;
-        padding-bottom: 120px;
+        padding: 120px 0;
     }
 
-    .features-container .divider {
-        max-width: 70rem;
+    .divider {
         height: 1px;
-        margin: 0 auto 3.2rem;
-        background: #bdb7ba;
+        background: var(--color-border-secondary);
+        margin: 0 170px;
     }
 
     .key-feature-content {
@@ -619,7 +614,7 @@
         margin: 0 auto 2.7rem;
         border-radius: 1.35rem;
         overflow: hidden;
-        border: 1px solid #6d8ba6;
+        border: 1px solid var(--color-border-secondary);
         max-width: 31.5rem;
         min-height: 0;
         height: auto;
@@ -754,7 +749,7 @@
     .section-install {
         position: relative;
         overflow: hidden;
-        padding: 7.5rem 1.5rem;
+        padding: 96px 0;
         min-height: 36.4rem;
         display: flex;
         align-items: center;
@@ -784,14 +779,14 @@
     .install-container {
         position: relative;
         z-index: 2;
-        max-width: 65.5rem;
         width: 100%;
+        max-width: 75rem;
+        padding: 0 2rem;
         margin: 0 auto;
         text-align: center;
-
         display: flex;
+        gap: 2rem;
         flex-direction: column;
-        gap: 5rem; 
         align-items: center;
     }
 
@@ -813,7 +808,7 @@
     .install-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 2.8rem;
+        gap: 80px;
         margin: 0 auto 2.95rem;
     }
 
@@ -949,8 +944,6 @@
     .section-community {
         position: relative;
         overflow: hidden;
-        padding: 10rem 1.25rem 24.5rem;
-        color: white;
     }
 
     .section-community .community-bg {
@@ -977,6 +970,8 @@
         position: relative;
         z-index: 2;
         width: 100%;
+        max-width: 75rem;
+        padding: 96px 2rem;
         margin: 0 auto;
         text-align: center;
     }
@@ -987,6 +982,7 @@
         line-height: 1.1;
         letter-spacing: -0.02em;
         margin-bottom: 1.35rem;
+        color: var(--text-color-white);
     }
 
     .community-subtitle {
@@ -1008,21 +1004,9 @@
 
     .community-grid {
         display: grid;
-        grid-template-columns: repeat(2, 500px);
+        grid-template-columns: repeat(2, 1fr);
         gap: 80px;
         width: 100%;
-        max-width: none;
-        margin: 0 auto;
-        align-items: stretch;
-        justify-content: center;
-    }
-
-    .community-grid {
-        display: grid;
-        grid-template-columns: 545px 545px;
-        gap: 80px;
-        width: 100%;
-        max-width: none;
         margin: 0 auto;
         align-items: stretch;
         justify-content: center;
@@ -1033,20 +1017,19 @@
         border: 2px solid rgba(78, 221, 253, 0.5);
         border-radius: 40px;
         padding: 80px 32px;
-        width: 545px;
-        height: 641px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
         text-align: center;
         align-items: center;
         justify-content: center;
+        min-height: 641px;
     }
 
     .card-light-content {
         padding: 0px 0px 40px;
-        width: 359px;
-        height: 373px;
+        max-width: 359px;
+        width: 100%;
     }
 
     .community-card-dark {
@@ -1055,15 +1038,19 @@
         border: 2px solid rgba(255, 255, 255, 0.3);
         border-radius: 40px;
         padding: 80px 40px;
-        width: 545px;
-        height: 640px;
         box-sizing: border-box;
         backdrop-filter: blur(7px);
         align-items: flex-start;
+        min-height: 640px;
     }
 
     /* Strong mobile overrides for community cards (placed after defaults) */
     @media (max-width: 420px) {
+        .community-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
         .community-card-light,
         .community-card-dark {
             margin: 0 auto;
@@ -1073,8 +1060,7 @@
             border: 2px solid rgba(78, 221, 253, 0.5) !important;
             border-radius: 32px !important;
             padding: 60px 20px !important;
-            width: 310px !important;
-            height: 641px !important;
+            min-height: 480px !important;
             box-sizing: border-box !important;
         }
 
@@ -1082,15 +1068,13 @@
             border: 2px solid rgba(255, 255, 255, 0.3) !important;
             border-radius: 32px !important;
             padding: 80px 20px 60px 20px !important;
-            width: 100% !important;
-            max-width: 420px !important;
-            height: auto !important;
             min-height: 480px !important;
             box-sizing: border-box !important;
         }
 
         .card-light-content {
-            width: 270px !important;
+            max-width: 270px !important;
+            width: 100%;
         }
     }
 
@@ -1249,7 +1233,6 @@
 
         .community-grid {
             grid-template-columns: 1fr;
-            max-width: 26rem;
             gap: 1.7rem;
         }
 
@@ -1343,7 +1326,6 @@
 
 
 </style>
-<div class="container-custom">
 <!-- Hero Section -->
 <section class="hero-section">
     <img src="{{ base_url }}assets/logos/qdrant-loader-home-background.png" alt="Qdrant Loader visual">
@@ -1567,10 +1549,11 @@
 
 </section>
 
+<div class="divider"></div>
+
 <!-- Key Features Section -->
 <section class="section-features">
     <div class="features-container">
-        <div class="divider"></div>
         <div class="key-feature-content">
             <h2>Key Features</h2>
             <p>Startup Framework contains components and complex blocks which can easily be integrated into almost any design. All of the components are made in the same style, and can easily be integrated into projects, allowing you to create hundreds of solutions.</p>
@@ -1772,7 +1755,6 @@
         </div>
     </div>
 </section>
-</div>
 <script>
     // Load coverage data from multiple packages and calculate overall status
     async function loadCoverageStatus() {

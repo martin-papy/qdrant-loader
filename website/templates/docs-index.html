@@ -22,11 +22,10 @@
 
   /* cards grid section */
   .dh-grid-section-docs-item {
-    padding: 8rem 0 0;
     gap: 5rem;
-    max-width: 60rem;
     margin-inline: auto;
     background-color: #E3FAFF;
+    margin: 0 1.5rem;
   }
   .dh-grid {
     display: grid;
@@ -34,7 +33,7 @@
     gap: 5rem;
     max-width: 60rem;
     margin-inline: auto;
-    padding-bottom: 8rem;
+    padding: 8rem 0;
   }
   @media (min-width: 768px) {
     .dh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -118,12 +117,12 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .dh-tag-blue   { background: #3b82f6; color: var(--text-color-white) }
-  .dh-tag-cyan   { background: #22d3ee; color: var(--text-color-white); }
-  .dh-tag-green  { background: #15803d; color: var(--text-color-white); }
-  .dh-tag-yellow { background: #fde047; color: var(--text-color-primary-text-black); }
-  .dh-tag-gray   { background: #64748b; color: var(--text-color-white); }
-  .dh-tag-black  { background: #27272a; color: var(--text-color-white); }
+  .dh-tag-blue   { background: #1973F9; color: var(--text-color-white) }
+  .dh-tag-cyan   { background: #28CAEE; color: var(--text-color-white); }
+  .dh-tag-green  { background: #218656; color: var(--text-color-white); }
+  .dh-tag-yellow { background: #FFF200; color: var(--text-color-primary-text-black); }
+  .dh-tag-gray   { background: #6D757C; color: var(--text-color-white); }
+  .dh-tag-black  { background: #22262A; color: var(--text-color-white); }
 
   @media (max-width: 767px) {
     .dh-card {
@@ -136,7 +135,7 @@
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding: 10rem 3rem;
+    padding: 10rem 1.5rem;
   }
   .dh-quickactions-bg {
     position: absolute;
@@ -145,7 +144,7 @@
     height: 100%;
     object-fit: cover;
     z-index: 0;
-    padding: 0 3rem;
+    padding: 0 1.5rem;
   }
   .dh-quickactions-inner {
     position: relative;
