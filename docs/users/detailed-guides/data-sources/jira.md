@@ -105,7 +105,18 @@ projects:
           project_key: "PROJ"
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
-          
+          extra_fields:
+            - param_name: customfield_12000
+              name: version
+              field_type: simple
+
+            - param_name: customfield_12001
+              # name: Metadata key under which the extracted value will be stored in Qdrant
+              name: affected_versions   
+              # field_type: Use for fields that return a list of JIRA objects, e.g. [<JIRA Version: name='1.0.2', id='3900'>]
+              field_type: array_object  
+              # Attribute to extract from each object in the list
+              attr_name: name                     
           # Rate limiting
           requests_per_minute: 60
           page_size: 50
