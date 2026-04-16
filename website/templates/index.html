@@ -310,7 +310,22 @@
         }
 
         .install-card h3 {
-            font-size: 1.4rem;
+            font-family: var(--second-family);
+            font-weight: 700;
+            font-size: 36px;
+            line-height: 122%;
+            letter-spacing: -0.04em;
+            text-align: center;
+            color: var(--text-color-primary-text-black);
+        }
+
+        .install-card p {
+            font-family: var(--font-family);
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 150%;
+            text-align: center;
+            color: var(--text-color-primary-text-black);
         }
 
         .community-grid {
@@ -585,22 +600,21 @@
     }
 
     .key-feature-content h2 {
-        font-size: clamp(2.6rem, 4vw, 3rem);
-        line-height: 1.15;
+        font-family: var(--font-family);
         font-weight: 700;
-        letter-spacing: -0.01em;
-        margin: 0 0 19px;
+        font-size: 48px;
+        letter-spacing: -0.03em;
+        text-align: center;
         color: var(--text-color-primary-text-black);
     }
 
     .key-feature-content p {
         font-family: var(--font-family);
         font-weight: 400;
-        font-size: 18px;
+        font-size: 20px;
         line-height: 150%;
         text-align: center;
         color: var(--text-color-primary-text-black);
-        margin: 0;
     }
 
     .section-features .image-box {
@@ -807,17 +821,21 @@
     }
 
     .install-content h2 {
-        font-size: 48px;
-        font-weight: 700;
-        color: var(--text-color-primary-text-black);
         font-family: var(--font-family);
+        font-weight: 700;
+        font-size: 48px;
+        letter-spacing: -0.03em;
+        text-align: center;
+        color: var(--text-color-primary-text-black);
     }
 
     .install-content p {
-        font-size: 16px;
-        color: var(--text-color-primary-text-black);
-        font-family: var(--font-family);
+        font-family: var(--second-family);
         font-weight: 400;
+        font-size: 18px;
+        line-height: 156%;
+        text-align: center;
+        color: var(--text-color-primary-text-black);
         opacity: 0.7;
     }
 
@@ -968,7 +986,6 @@
         left: 0;
         width: 100%;
         height: 100%;
-        object-fit: cover;
         opacity: 1;
         z-index: 0;
     }
@@ -993,27 +1010,29 @@
     }
 
     .community-container h2 {
-        font-size: clamp(2.6rem, 4vw, 3rem);
-        font-weight: 700;
         line-height: 1.1;
-        letter-spacing: -0.02em;
         margin-bottom: 1.35rem;
         color: var(--text-color-white);
+        font-family: var(--second-family);
+        font-weight: 700;
+        font-size: 48px;
+        letter-spacing: -0.03em;
+        text-align: center;
     }
 
     .community-subtitle {
         margin: 0;
-        font-size: 1rem;
-        font-size: clamp(0.8rem, 4vw, 1.125rem);
+        font-size: 18px;
         font-weight: 700;
         color: var(--text-color-white);
+        font-family: var(--font-family);
     }
 
     .community-description {
         max-width: 43.5rem;
         margin: 1.2rem auto 4.8rem;
         color: var(--text-color-white);
-        font-size: clamp(0.8rem, 4vw, 1rem);
+        font-size: 16px;
         line-height: 150%;
         font-weight: 400;
     }
@@ -1122,7 +1141,6 @@
         line-height: 150%;
         text-align: center;
         color: var(--text-color-primary-text-black);
-        opacity: 0.7;
     }
 
     .community-card-tags {
@@ -1136,17 +1154,18 @@
     }
 
     .community-start-btn {
+        font-family: var(--font-family);
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        background: #16181d;
-        color: white;
+        background: #1C1C1C;
+        color: var(--text-color-white);
         border-radius: 999px;
         padding: 1.25rem 2rem;
         text-decoration: none;
-        font-weight: 500;
-        font-size: 1rem;
-        line-height: 1;
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 24px;
     }
 
     .community-start-btn svg {
@@ -1174,17 +1193,20 @@
 
     .community-connect-title {
         margin: 0;
-        font-size: 1.5rem;
-        line-height: 1.2;
-        font-weight: 600;
-        color: #f3f7fb;
+        font-size: 20px;
+        line-height: 150%;
+        font-weight: 700;
+        color: var(--text-color-white);
+        font-family: var(--second-family);
     }
 
     .community-connect-text {
         margin: 0.45rem 0 0;
-        font-size: 1rem;
-        line-height: 1.6;
-        color: rgba(220, 233, 242, 0.7);
+        font-family: var(--second-family);
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 150%;
+        color: var(--text-color-white);
     }
 
     .community-link-item {
@@ -1230,6 +1252,7 @@
         color: var(--text-color-white);
         opacity: 0.7;
         font-family: var(--second-family);
+        font-weight: 400;
     }
 
     .community-link-arrow {
