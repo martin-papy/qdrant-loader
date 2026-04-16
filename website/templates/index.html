@@ -4,10 +4,18 @@
         position: relative;
         overflow: hidden;
         background: var(--text-color-primary-text-black);
-        min-height: 100vh;
+        height: 100vh;
+        max-height: 900px;
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .container-custom {
+        width: 100%;
+        max-width: 1170px;
+        margin: 0 auto;
+        padding: 0 24px;
     }
 
     .hero-section img {
@@ -31,49 +39,42 @@
     .hero-content {
         position: relative;
         z-index: 2;
-        max-width: 56rem;
-        margin-bottom: 136px;
-        margin-top: 156px;
+        padding: 136px 0;
     }
 
     .hero-content h1 {
         font-family: var(--font-family);
         font-weight: 700;
-        font-size: 80px;
+        font-size: 60px;
         line-height: 120%;
         letter-spacing: -0.02em;
         color: var(--text-color-white);
-    }
-
-    .hero-content p {
-        color: var(--text-color-white);
-        font-size: 20px;
-        margin-bottom: 1rem;
+        margin-bottom: 24px;
     }
 
     .hero-description {
         max-width: 44rem;
         color: var(--text-color-white);
+        margin-bottom: 48px;
+        font-size: 16px;
+        line-height: 24px;
     }
 
     .hero-features {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 2rem 5rem;
-        margin: 2rem 0;
+        gap: 40px 120px;
         max-width: 38rem;
-        /* font-size: 0.95rem; */
-        font-size: 20px;
         color: var(--primary-color);
     }
 
     .hero-feature {
-        margin: 0;
+        margin: 0 !important;
         display: flex;
         align-items: center;
         gap: 0.6rem;
         color: var(--text-color-white);
-        font-size: clamp(1rem, 2vw, 1.25rem);
+        font-size: 16px;
         font-weight: 500;
     }
 
@@ -88,15 +89,13 @@
         display: flex;
         flex-wrap: wrap;
         gap: 32px;
-        margin-top: 120px;
+        margin-top: 96px;
     }
 
     .hero-btn {
         border-radius: 32px;
-        padding: 16px 32px;
-        min-width: 140px;
         font-weight: 400;
-        font-size: 1.125rem;
+        font-size: 16px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -116,19 +115,14 @@
     .hero-btn-light {
         background: white;
         color: #1a1a1a;
-    }
-    @media (max-width: 768px) {
-        .section-getting-started > .d-flex > img {
-            width: min(100%, 360px);
-            height: auto;
-            max-width: 100%;
-        }
+        padding: 16px 52px;
     }
 
     .hero-btn-outline {
         border: 1px solid #4eddfd;
         background: #4eddfd;
         color: #0b2028;
+        padding: 16px 38px;
     }
 
     .hero-btn {
@@ -164,6 +158,12 @@
         box-shadow: 0 0 0 4px rgba(78,221,253,0.14);
     }
 
+    @media (max-width: 1200px) {
+        .hero-content {
+            padding: 80px 40px;
+        }
+    }
+
     @media (max-width: 560px) {
         .hero-section {
             display: flex;
@@ -172,13 +172,12 @@
         }
 
         .hero-content {
-            margin-bottom: 60px;
-            margin-top: 60px;
+            padding: 80px 20px;
         }
 
         .hero-cta {
             gap: 16px;
-            margin-top: 10px;
+            margin-top: 60px;
         }
 
         .hero-btn {
@@ -197,7 +196,6 @@
     @media (max-width: 480px) {
         .hero-content {
             max-width: 100%;
-            padding: 0 1rem;
             text-align: start;
             padding-bottom: 80;
             padding-top: 80;
@@ -206,18 +204,14 @@
         .hero-content h1 {
             font-size: clamp(2.25rem, 8vw, 3.5rem);
             line-height: 1.05;
-            margin: 0 0 0.6rem;
         }
 
         .hero-description {
-            font-size: 0.95rem;
             max-width: 100%;
-            margin: 0 auto 1rem;
         }
 
         .hero-features {
             grid-template-columns: 1fr;
-            gap: 0.6rem 1rem;
             margin: 1rem auto;
             max-width: 100%;
         }
@@ -265,10 +259,6 @@
         .hero-content p,
         .hero-description {
             font-size: 0.95rem;
-        }
-
-        .hero-features {
-            gap: 0.5rem 0.75rem;
         }
 
         .hero-feature-icon {
@@ -365,7 +355,7 @@
     }
 
     .section-getting-started {
-        padding: 120px 215px;
+        padding: 96px 0;
     }
 
     .getting-started-content {
@@ -388,7 +378,7 @@
     .getting-started-description {
         font-family: var(--font-family);
         font-weight: 400;
-        font-size: 20px;
+        font-size: 16px;
         line-height: 150%;
         color: var(--text-color-primary-text-black);
     }
@@ -444,7 +434,7 @@
     }
 
     .getting-started-card-body p {
-       font-family: var(--second-family);
+       font-family: var(--font-family);
         font-weight: 400;
         font-size: 16px;
         line-height: 150%;
@@ -458,10 +448,10 @@
         background: #1f1f1f;
         color: #ffffff;
         border-radius: 999px;
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 2rem;
         text-decoration: none;
-        font-size: 0.87rem;
-        font-weight: 500;
+        font-size: 14px;
+        font-weight: 400;
         transition: opacity 0.2s ease;
     }
 
@@ -561,40 +551,44 @@
         height: 15px;
     }
 
-    .image-box {
-        border-radius: 1rem;
-        overflow: hidden;
-        border: 1px solid #d9e7f4;
-        height: 100%;
-        min-height: 18rem;
-    }
-
-    .image-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
 
     .section-features {
         border-bottom: 1px solid #e3dfe1;
     }
 
     .features-container {
-        max-width: 58rem;
-        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 56px;
         text-align: center;
-        padding-bottom: 120px;
+        margin-top: 72px;
+        padding-bottom: 96px;
     }
 
-    .features-container .divider {
-        max-width: 70rem;
+    .divider {
+        width: 110%;
+        max-width: 1280px;
         height: 1px;
-        margin: 0 auto 3.2rem;
-        background: #bdb7ba;
+        background: #8D8D8D;
+        margin: 32px auto;
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%); 
+    }
+
+    @media (max-width: 1200px) {
+        .divider {
+            width: 100%; 
+            max-width: 1100px;
+        }
+
+        .section-getting-started {
+            padding: 120px 40px;
+        }
     }
 
     .key-feature-content {
-        margin-bottom: 3.2rem;
+        padding: 0 100px;
     }
 
     .key-feature-content h2 {
@@ -602,32 +596,32 @@
         line-height: 1.15;
         font-weight: 700;
         letter-spacing: -0.01em;
-        margin: 0 0 1.05rem;
+        margin: 0 0 19px;
         color: var(--text-color-primary-text-black);
     }
 
     .key-feature-content p {
         font-family: var(--font-family);
         font-weight: 400;
-        font-size: 20px;
+        font-size: 18px;
         line-height: 150%;
         text-align: center;
         color: var(--text-color-primary-text-black);
+        margin: 0;
     }
 
     .section-features .image-box {
-        margin: 0 auto 2.7rem;
+        margin: 0 auto;
         border-radius: 1.35rem;
         overflow: hidden;
         border: 1px solid #6d8ba6;
         max-width: 31.5rem;
         min-height: 0;
-        height: auto;
+        height:  240px;
     }
 
     .section-features .image-box img {
         width: 100%;
-        height: auto;
         display: block;
         object-fit: cover;
     }
@@ -635,8 +629,7 @@
     .features-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 4.25rem 2.8rem;
-        padding-top: 3rem;
+        gap: 4rem 4.5rem;
     }
 
     .feature-item {
@@ -705,15 +698,25 @@
             padding-top: 60px !important;
             padding-bottom: 60px !important;
         }
+
+        .key-feature-content {
+            padding: 0;
+        }
+
+        .section-features .image-box {
+            border-radius: 0 !important;
+            border: none;
+            height: auto;
+        }
     }
 
     @media (max-width: 560px) {
         .section-getting-started {
-            padding: 60px 4px;
+            padding: 60px 20px;
         }
 
         .section-features {
-            padding: 3.35rem 1rem;
+            padding: 3.35rem 1.25rem;
         }
 
         .section-features h2 {
@@ -1343,11 +1346,10 @@
 
 
 </style>
-<div class="container-custom">
 <!-- Hero Section -->
 <section class="hero-section">
     <img src="{{ base_url }}assets/logos/qdrant-loader-home-background.png" alt="Qdrant Loader visual">
-    <div class="container hero-content">
+    <div class="container-custom hero-content">
         <h1>Qdrant Loader</h1>
         <p class="hero-description">Enterprise-ready vector database toolkit for building searchable knowledge bases from multiple data sources</p>
 
@@ -1402,7 +1404,7 @@
 </section>
 
 <!-- Getting Started Section -->
-<section class="section-getting-started">
+<section class="container-custom section-getting-started">
     <div class="d-flex justify-content-between align-items-start gap-4 flex-column flex-md-row ">
         <div class="getting-started-content d-flex flex-column gap-3 align-items-start">
             <h2 class="getting-started-title">Getting started</h2>
@@ -1419,7 +1421,7 @@
         <img src="{{ base_url }}assets/icons/R.png" alt="Getting started illustration">
     </div>
 
-    <div class="getting-started-grid row g-4 g-md-5 mt-0" id="overview">
+    <div class="getting-started-grid row g-4 g-md-5" id="overview">
         <!-- Card 1 -->
         <div class="col-12 col-md-6 col-xl-4">
             <a href="docs/packages/core/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
@@ -1568,15 +1570,15 @@
 </section>
 
 <!-- Key Features Section -->
-<section class="section-features">
+<section class="container-custom section-features">
+    <div class="divider"></div>
     <div class="features-container">
-        <div class="divider"></div>
         <div class="key-feature-content">
             <h2>Key Features</h2>
             <p>Startup Framework contains components and complex blocks which can easily be integrated into almost any design. All of the components are made in the same style, and can easily be integrated into projects, allowing you to create hundreds of solutions.</p>
         </div>
         <div class="image-box">
-            <img src="{{ base_url }}assets/icons/key-feature-background.png" alt="Feature showcase artwork">
+            <img src="{{ base_url }}assets/icons/key-feature-background.jpg" alt="Feature showcase artwork">
         </div>
 
         <div class="features-grid">
@@ -1772,7 +1774,6 @@
         </div>
     </div>
 </section>
-</div>
 <script>
     // Load coverage data from multiple packages and calculate overall status
     async function loadCoverageStatus() {
