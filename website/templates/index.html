@@ -4,8 +4,6 @@
         position: relative;
         overflow: hidden;
         background: var(--text-color-primary-text-black);
-        height: 100vh;
-        max-height: 900px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -172,7 +170,7 @@
         }
 
         .hero-content {
-            padding: 80px 20px;
+            padding: 60px 20px;
         }
 
         .hero-cta {
@@ -229,8 +227,7 @@
 
         .hero-cta {
             flex-direction: column;
-            gap: 12px;
-            padding-top: 60px;
+            gap: 32px;
         }
 
         .hero-btn {
@@ -711,6 +708,12 @@
     }
 
     @media (max-width: 560px) {
+        
+        .features-container {
+            margin-top: 30px;
+            padding-bottom: 30px;
+        }
+
         .section-getting-started {
             padding: 60px 20px;
         }
@@ -748,8 +751,8 @@
         }
 
         .getting-started-description {
-            margin-left: auto;
-            margin-right: auto;
+            /* margin-left: auto;
+            margin-right: auto; */
             max-width: 100%;
         }
     }
@@ -1271,6 +1274,11 @@
         .section-community {
             padding: 4.7rem 1rem 7.2rem;
         }
+        
+        .community-container {
+            padding-left: 0;
+            padding-right: 0;
+        }
 
         .community-container h2 {
             font-size: 2rem;
@@ -1398,7 +1406,7 @@
 
 <!-- Getting Started Section -->
 <section class="container-custom section-getting-started">
-    <div class="d-flex justify-content-between align-items-start gap-4 flex-column flex-md-row ">
+    <div class="d-flex justify-content-between gap-4 flex-column flex-md-row ">
         <div class="getting-started-content d-flex flex-column gap-3 align-items-start">
             <h2 class="getting-started-title">Getting started</h2>
             <p class="getting-started-description">
