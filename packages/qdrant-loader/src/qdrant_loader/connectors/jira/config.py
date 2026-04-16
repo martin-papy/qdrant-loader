@@ -55,10 +55,12 @@ RESERVED_NAMES = {
 class JiraExtraField(BaseModel):
     param_name: str = Field(
         ...,
+        min_length=1,
         description="The Jira API parameter name (e.g., 'customfield_11406', 'priority')",
     )
     name: str = Field(
         ...,
+        min_length=1,
         description="Target attribute name on JiraIssue (e.g., 'sah_project')",
     )
     field_type: JiraFieldType = Field(
@@ -75,6 +77,16 @@ class JiraExtraField(BaseModel):
         default=None,
         description="Attribute to extract from object(s) (e.g., 'name', 'value')",
     )
+
+    @field_validator("param_name", "name", "attr_name", mode="before")
+    @classmethod
+    def normalize_strings(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        s = v.strip()
+        if s == "":
+            raise ValueError("Field value cannot be empty or whitespace")
+        return s
 
     @model_validator(mode="after")
     def validate_attr_requirement(self) -> "JiraExtraField":
