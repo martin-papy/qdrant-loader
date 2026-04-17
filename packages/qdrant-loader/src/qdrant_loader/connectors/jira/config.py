@@ -95,6 +95,10 @@ class JiraExtraField(BaseModel):
                 raise ValueError(
                     f"'attr_name' is required for field_type='{self.field_type}'"
                 )
+        elif self.attr_name is not None:
+            raise ValueError(
+                "'attr_name' is only allowed for field_type='object' or 'array_object'"
+            )
         return self
 
     @model_validator(mode="after")
