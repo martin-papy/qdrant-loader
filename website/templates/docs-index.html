@@ -3,7 +3,7 @@
   .dh-hero {
     max-width: 80rem;
     margin-inline: auto;
-    padding: 3.5rem 1.25rem;
+    padding: 80px 20px;
     text-align: center;
     color: #0f172a;
   }
@@ -11,75 +11,100 @@
     font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin: 0;
+    margin-bottom: 24px;
+    font-family: var(--font-family);
   }
+
   .dh-hero p {
     max-width: 42rem;
-    margin: 1rem auto 0;
+    margin: 0 auto 0;
     color: #475569;
     font-size: 1.25rem;
+    font-family: var(--second-family);
   }
 
   /* cards grid section */
-  .dh-grid-section {
-    background: #eaf1f5;
-    padding: 8rem 1.25rem 0rem;
+  .dh-grid-section-docs-item {
+    gap: 5rem;
+    margin-inline: auto;
+    background-color: #E3FAFF;
   }
+
   .dh-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 5rem;
-    max-width: 60rem;
+    gap: 80px;
+    width: 100%;
+    max-width: 1170px;
     margin-inline: auto;
-    padding-bottom: 8rem;
+    padding: 160px 0;
+    align-items: stretch;
   }
   @media (min-width: 768px) {
-    .dh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dh-grid { 
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+    }
   }
 
   /* card */
   .dh-card {
-    background: #f7f7f8;
-    border-radius: 1.1rem;
-    padding: 40px;
+    background: #FFFFFF;
+    border-radius: 32px;
+    padding: 60px 40px 20px 40px;
     border: 1px solid #ebedf0;
-    box-shadow: 0 10px 28px -16px rgba(15, 23, 42, 0.28);
-    min-height: 20rem;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 545px;
   }
   .dh-card-header {
     text-align: center;
-    margin-bottom: 1.35rem;
+    margin-bottom: 40px;
+  }
+  .dh-card-icon {
+    margin-bottom: 10px;
   }
   .dh-card-header .dh-card-icon svg {
-    width: 1.7rem;
-    height: 1.7rem;
     margin: 0 auto;
     display: block;
   }
   .dh-card-header h2 {
-    font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0.68rem 0 0;
-    color: #242628;
+    color: var(--secondary-color);
+    font-family: var(--second-family);
+    margin: 0;
   }
 
   /* item list */
   .dh-item-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
+    padding: 24px;
+    margin: 0;
   }
   .dh-item-list li {
-    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    width: 100%;
+    padding-bottom: 20px;
+    position: relative;
+  }
+  .dh-item-list li::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #D5D5D5;
+    width: 100%;
   }
   .dh-item-list a {
     display: flex;
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 0.6rem;
@@ -104,68 +129,84 @@
     height: 1.5rem;
     flex-shrink: 0;
   }
-  .dh-qa-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
   /* tag badges */
   .dh-tag {
-    border-radius: 9999px;
-    padding: 0.14rem 0.56rem;
-    font-size: 10px;
+    border-radius: 24px;
+    padding: 6px 16px;
+    height: 25px;
+    font-family: var(--font-family);
     font-weight: 400;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
+    font-size: 10px;
+    color: var(--text-color-white);
     flex-shrink: 0;
+    white-space: nowrap;
   }
-  .dh-tag-blue   { background: #3b82f6; color: var(--text-color-white) }
-  .dh-tag-cyan   { background: #22d3ee; color: var(--text-color-white); }
-  .dh-tag-green  { background: #15803d; color: var(--text-color-white); }
-  .dh-tag-yellow { background: #fde047; color: var(--text-color-primary-text-black); }
-  .dh-tag-gray   { background: #64748b; color: var(--text-color-white); }
-  .dh-tag-black  { background: #27272a; color: var(--text-color-white); }
+  .dh-tag-blue   { background: #1973F9; color: var(--text-color-white) }
+  .dh-tag-cyan   { background: #28CAEE; color: var(--text-color-white); }
+  .dh-tag-green  { background: #218656; color: var(--text-color-white); }
+  .dh-tag-yellow { background: #FFF200; color: var(--text-color-primary-text-black); }
+  .dh-tag-gray   { background: #6D757C; color: var(--text-color-white); }
+  .dh-tag-black  { background: #22262A; color: var(--text-color-white); }
 
   @media (max-width: 767px) {
     .dh-card {
+      width: 100%;
+      max-width: 100%;
       min-height: 0;
+      padding: 32px 20px 16px 20px;
+      border-radius: 20px;
+    }
+    .dh-grid {
+      padding: 60px 16px;
+      row-gap: 40px;
+    }
+    .dh-item-list {
+      padding: 12px 0;
+      gap: 16px;
     }
   }
 
   /* quick actions section */
   .dh-quickactions {
-    box-sizing: border-box;
     position: relative;
     overflow: hidden;
     width: 100%;
-    min-height: 20rem;
-    padding: 3.8rem 1.25rem 4rem;
-    margin-inline: auto;
-    background: #060710;
+    padding: 10rem 0;
   }
-  .dh-quickactions-overlay {
+  .dh-quickactions-bg {
     position: absolute;
     inset: 0;
-    opacity: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
   }
   .dh-quickactions-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     position: relative;
-    max-width: 70rem;
+    width: 100%;
+    max-width: 1170px;
     margin-inline: auto;
-    padding: 0;
     text-align: center;
+    z-index: 1;
+    gap: 80px;
   }
   .dh-quickactions-inner h3 {
-    color: #fff;
-    margin: 0 0 2.5rem;
+    color: var(--text-color-white);
+    margin: 0;
     font-family: var(--font-family);
     font-weight: 700;
     font-size: 48px;
-    letter-spacing: -0.03em;
     text-align: center;
   }
   .dh-qa-btns {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1.1rem;
+    gap: 32px;
   }
   .dh-qa-btn {
     display: inline-flex;
@@ -208,17 +249,26 @@
   @media (max-width: 767px) {
     .dh-quickactions {
       min-height: 0;
-      padding: 2.5rem 1rem 2.75rem;
+      padding: 2.5rem 0 2.75rem;
     }
+
     .dh-quickactions-inner {
-      padding: 0;
+      padding: 0 2rem;
+      gap: 24px;
     }
     .dh-quickactions-inner h3 {
-      margin-bottom: 1.35rem;
+      font-size: clamp(1.875rem, 8vw, 2.25rem);
+    }
+    .dh-qa-btns {
+      gap: 1rem;
     }
     .dh-qa-btn {
       width: 100%;
       justify-content: center;
+      padding: 1rem;
+      font-size: 1rem;
+      line-height: 1.25;
+      white-space: normal;
     }
   }
 </style>
@@ -229,7 +279,7 @@
 </div>
 
 <!-- Documentation Grid -->
-<section class="dh-grid-section">
+<section class="dh-grid-section-docs-item">
   <div class="dh-grid">
 
     <!-- Getting Started -->
@@ -537,41 +587,41 @@
     </article>
 
   </div>
+</section>
 
 <!-- Quick Actions -->
 <section class="dh-quickactions">
-<img src="{{ base_url }}assets/icons/doc-background.png" alt="" class="dh-qa-bg" width="1824" height="530">
-<div class="dh-quickactions-overlay"></div>
-<div class="dh-quickactions-inner">
-  <h3>Quick Actions</h3>
-  <div class="dh-qa-btns">
-    <a href="../coverage/" class="dh-qa-btn dh-qa-btn-secondary">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21.75 4.5H15C14.4178 4.5 13.8437 4.63554 13.3229 4.8959C12.8022 5.15625 12.3493 5.53426 12 6C11.6507 5.53426 11.1978 5.15625 10.6771 4.8959C10.1563 4.63554 9.58217 4.5 9 4.5H2.25C2.05109 4.5 1.86032 4.57902 1.71967 4.71967C1.57902 4.86032 1.5 5.05109 1.5 5.25V18.75C1.5 18.9489 1.57902 19.1397 1.71967 19.2803C1.86032 19.421 2.05109 19.5 2.25 19.5H9C9.59674 19.5 10.169 19.7371 10.591 20.159C11.0129 20.581 11.25 21.1533 11.25 21.75C11.25 21.9489 11.329 22.1397 11.4697 22.2803C11.6103 22.421 11.8011 22.5 12 22.5C12.1989 22.5 12.3897 22.421 12.5303 22.2803C12.671 22.1397 12.75 21.9489 12.75 21.75C12.75 21.1533 12.9871 20.581 13.409 20.159C13.831 19.7371 14.4033 19.5 15 19.5H21.75C21.9489 19.5 22.1397 19.421 22.2803 19.2803C22.421 19.1397 22.5 18.9489 22.5 18.75V5.25C22.5 5.05109 22.421 4.86032 22.2803 4.71967C22.1397 4.57902 21.9489 4.5 21.75 4.5ZM9 18H3V6H9C9.59674 6 10.169 6.23705 10.591 6.65901C11.0129 7.08097 11.25 7.65326 11.25 8.25V18.75C10.6015 18.262 9.8116 17.9987 9 18ZM21 18H15C14.1884 17.9987 13.3985 18.262 12.75 18.75V8.25C12.75 7.65326 12.9871 7.08097 13.409 6.65901C13.831 6.23705 14.4033 6 15 6H21V18Z" fill="#343330" />
-      </svg>
-      View Coverage Reports
-    </a>
-    <a href="https://github.com/martin-papy/qdrant-loader" target="_blank" rel="noreferrer"
-        class="dh-qa-btn dh-qa-btn-primary">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M12 3C7.03125 3 3 7.03125 3 12C3 15.975 5.57812 19.35 9.15937 20.5406C9.60937 20.625 9.76875 20.3438 9.76875 20.1V18.7219C7.28437 19.2563 6.75937 17.6531 6.75937 17.6531C6.35625 16.6313 5.775 16.3594 5.775 16.3594C4.96875 15.8062 5.84062 15.8156 5.84062 15.8156C6.73125 15.8813 7.2 16.7344 7.2 16.7344C8.00625 18.1125 9.30937 17.7188 9.80625 17.4844C9.88125 16.9031 10.125 16.5 10.3969 16.2656C8.41875 16.0406 6.3375 15.2625 6.3375 11.7937C6.3375 10.8094 6.68437 10.0031 7.26562 9.36562C7.17187 9.14062 6.8625 8.24062 7.35 7.02187C7.35 7.02187 8.10937 6.77812 9.75 7.88437C10.4719 7.6875 11.2406 7.59375 12 7.59375C12.7594 7.59375 13.5281 7.69688 14.25 7.88437C15.8906 6.76875 16.65 7.02187 16.65 7.02187C17.1375 8.24062 16.8281 9.14062 16.7344 9.36562C17.3156 10.0031 17.6625 10.8094 17.6625 11.7937C17.6625 15.2719 15.5719 16.0312 13.5938 16.2562C13.9406 16.5562 14.25 17.1375 14.25 18.0281V20.1C14.25 20.3438 14.4094 20.6344 14.8594 20.5406C18.4219 19.35 21 15.975 21 12C21 7.03125 16.9688 3 12 3Z" fill="currentColor"/>
-      </svg>
-      GitHub Repository
-    </a>
-    <a href="https://pypi.org/project/qdrant-loader/" target="_blank" rel="noreferrer"
-        class="dh-qa-btn dh-qa-btn-secondary">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 7.49989C11.11 7.49989 10.24 7.76382 9.49993 8.25828C8.75991 8.75275 8.18314 9.45555 7.84254 10.2778C7.50195 11.1001 7.41283 12.0049 7.58647 12.8778C7.7601 13.7507 8.18868 14.5525 8.81802 15.1819C9.44736 15.8112 10.2492 16.2398 11.1221 16.4134C11.995 16.5871 12.8998 16.4979 13.7221 16.1574C14.5443 15.8168 15.2471 15.24 15.7416 14.5C16.2361 13.7599 16.5 12.8899 16.5 11.9999C16.4985 10.8069 16.0239 9.66315 15.1803 8.81956C14.3367 7.97597 13.193 7.50138 12 7.49989ZM12 14.9999C11.4067 14.9999 10.8266 14.8239 10.3333 14.4943C9.83994 14.1647 9.45542 13.6961 9.22836 13.1479C9.0013 12.5998 8.94189 11.9966 9.05764 11.4146C9.1734 10.8327 9.45912 10.2981 9.87868 9.87857C10.2982 9.45902 10.8328 9.17329 11.4147 9.05754C11.9967 8.94178 12.5999 9.00119 13.148 9.22826C13.6962 9.45532 14.1648 9.83984 14.4944 10.3332C14.8241 10.8265 15 11.4066 15 11.9999C15 12.7955 14.6839 13.5586 14.1213 14.1212C13.5587 14.6838 12.7956 14.9999 12 14.9999ZM20.97 6.20146L12.72 1.68739C12.4996 1.5656 12.2518 1.50171 12 1.50171C11.7482 1.50171 11.5004 1.5656 11.28 1.68739L3.03 6.20333C2.7944 6.33224 2.59772 6.52204 2.46052 6.75292C2.32331 6.98379 2.25061 7.24727 2.25 7.51583V16.4821C2.25061 16.7506 2.32331 17.0141 2.46052 17.245C2.59772 17.4759 2.7944 17.6657 3.03 17.7946L11.28 22.3105C11.5004 22.4323 11.7482 22.4962 12 22.4962C12.2518 22.4962 12.4996 22.4323 12.72 22.3105L20.97 17.7946C21.2056 17.6657 21.4023 17.4759 21.5395 17.245C21.6767 17.0141 21.7494 16.7506 21.75 16.4821V7.51677C21.7499 7.24773 21.6774 6.98367 21.5402 6.75225C21.403 6.52084 21.206 6.3306 20.97 6.20146ZM12 20.9999L3.75 16.483V7.51677L12 2.99989L20.25 7.51583V16.4821L12 20.9999Z" fill="#343330" />
-      </svg>
-      QDrant Loader PyPI
-    </a>
-    <a href="https://pypi.org/project/qdrant-loader-mcp-server/" target="_blank" rel="noreferrer"
-        class="dh-qa-btn dh-qa-btn-secondary">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M4.5 5.25H19.5C19.8978 5.25 20.2794 5.40804 20.5607 5.68934C20.842 5.97064 21 6.35218 21 6.75V17.25C21 17.6478 20.842 18.0294 20.5607 18.3107C20.2794 18.592 19.8978 18.75 19.5 18.75H4.5C4.10218 18.75 3.72064 18.592 3.43934 18.3107C3.15804 18.0294 3 17.6478 3 17.25V6.75C3 6.35218 3.15804 5.97064 3.43934 5.68934C3.72064 5.40804 4.10218 5.25 4.5 5.25ZM7.5 9L10.5 12L7.5 15M12.75 15H16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-        MCP Server PyPI
+  <img src="{{ base_url }}assets/icons/doc-background.png" alt="" class="dh-quickactions-bg">
+  <div class="dh-quickactions-inner">
+    <h3>Quick Actions</h3>
+    <div class="dh-qa-btns">
+      <a href="../coverage/" class="dh-qa-btn dh-qa-btn-secondary">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21.75 4.5H15C14.4178 4.5 13.8437 4.63554 13.3229 4.8959C12.8022 5.15625 12.3493 5.53426 12 6C11.6507 5.53426 11.1978 5.15625 10.6771 4.8959C10.1563 4.63554 9.58217 4.5 9 4.5H2.25C2.05109 4.5 1.86032 4.57902 1.71967 4.71967C1.57902 4.86032 1.5 5.05109 1.5 5.25V18.75C1.5 18.9489 1.57902 19.1397 1.71967 19.2803C1.86032 19.421 2.05109 19.5 2.25 19.5H9C9.59674 19.5 10.169 19.7371 10.591 20.159C11.0129 20.581 11.25 21.1533 11.25 21.75C11.25 21.9489 11.329 22.1397 11.4697 22.2803C11.6103 22.421 11.8011 22.5 12 22.5C12.1989 22.5 12.3897 22.421 12.5303 22.2803C12.671 22.1397 12.75 21.9489 12.75 21.75C12.75 21.1533 12.9871 20.581 13.409 20.159C13.831 19.7371 14.4033 19.5 15 19.5H21.75C21.9489 19.5 22.1397 19.421 22.2803 19.2803C22.421 19.1397 22.5 18.9489 22.5 18.75V5.25C22.5 5.05109 22.421 4.86032 22.2803 4.71967C22.1397 4.57902 21.9489 4.5 21.75 4.5ZM9 18H3V6H9C9.59674 6 10.169 6.23705 10.591 6.65901C11.0129 7.08097 11.25 7.65326 11.25 8.25V18.75C10.6015 18.262 9.8116 17.9987 9 18ZM21 18H15C14.1884 17.9987 13.3985 18.262 12.75 18.75V8.25C12.75 7.65326 12.9871 7.08097 13.409 6.65901C13.831 6.23705 14.4033 6 15 6H21V18Z" fill="#343330" />
+        </svg>
+        View Coverage Reports
       </a>
+      <a href="https://github.com/martin-papy/qdrant-loader" target="_blank" rel="noreferrer"
+          class="dh-qa-btn dh-qa-btn-primary">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19.5291 7.09501C19.7583 6.35551 19.8318 5.57653 19.745 4.80719C19.6582 4.03785 19.413 3.29484 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0967 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.2407 8.81793 19.9924 7.90381 19.5291 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6517 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.511 8.26475 18.7388 8.99779 18.75 9.75001V10.5Z" fill="#343330" />
+        </svg>
+        GitHub Repository
+      </a>
+      <a href="https://pypi.org/project/qdrant-loader/" target="_blank" rel="noreferrer"
+          class="dh-qa-btn dh-qa-btn-secondary">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 7.49989C11.11 7.49989 10.24 7.76382 9.49993 8.25828C8.75991 8.75275 8.18314 9.45555 7.84254 10.2778C7.50195 11.1001 7.41283 12.0049 7.58647 12.8778C7.7601 13.7507 8.18868 14.5525 8.81802 15.1819C9.44736 15.8112 10.2492 16.2398 11.1221 16.4134C11.995 16.5871 12.8998 16.4979 13.7221 16.1574C14.5443 15.8168 15.2471 15.24 15.7416 14.5C16.2361 13.7599 16.5 12.8899 16.5 11.9999C16.4985 10.8069 16.0239 9.66315 15.1803 8.81956C14.3367 7.97597 13.193 7.50138 12 7.49989ZM12 14.9999C11.4067 14.9999 10.8266 14.8239 10.3333 14.4943C9.83994 14.1647 9.45542 13.6961 9.22836 13.1479C9.0013 12.5998 8.94189 11.9966 9.05764 11.4146C9.1734 10.8327 9.45912 10.2981 9.87868 9.87857C10.2982 9.45902 10.8328 9.17329 11.4147 9.05754C11.9967 8.94178 12.5999 9.00119 13.148 9.22826C13.6962 9.45532 14.1648 9.83984 14.4944 10.3332C14.8241 10.8265 15 11.4066 15 11.9999C15 12.7955 14.6839 13.5586 14.1213 14.1212C13.5587 14.6838 12.7956 14.9999 12 14.9999ZM20.97 6.20146L12.72 1.68739C12.4996 1.5656 12.2518 1.50171 12 1.50171C11.7482 1.50171 11.5004 1.5656 11.28 1.68739L3.03 6.20333C2.7944 6.33224 2.59772 6.52204 2.46052 6.75292C2.32331 6.98379 2.25061 7.24727 2.25 7.51583V16.4821C2.25061 16.7506 2.32331 17.0141 2.46052 17.245C2.59772 17.4759 2.7944 17.6657 3.03 17.7946L11.28 22.3105C11.5004 22.4323 11.7482 22.4962 12 22.4962C12.2518 22.4962 12.4996 22.4323 12.72 22.3105L20.97 17.7946C21.2056 17.6657 21.4023 17.4759 21.5395 17.245C21.6767 17.0141 21.7494 16.7506 21.75 16.4821V7.51677C21.7499 7.24773 21.6774 6.98367 21.5402 6.75225C21.403 6.52084 21.206 6.3306 20.97 6.20146ZM12 20.9999L3.75 16.483V7.51677L12 2.99989L20.25 7.51583V16.4821L12 20.9999Z" fill="#343330" />
+        </svg>
+        QDrant Loader PyPI
+      </a>
+      <a href="https://pypi.org/project/qdrant-loader-mcp-server/" target="_blank" rel="noreferrer"
+          class="dh-qa-btn dh-qa-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4.5 5.25H19.5C19.8978 5.25 20.2794 5.40804 20.5607 5.68934C20.842 5.97064 21 6.35218 21 6.75V17.25C21 17.6478 20.842 18.0294 20.5607 18.3107C20.2794 18.592 19.8978 18.75 19.5 18.75H4.5C4.10218 18.75 3.72064 18.592 3.43934 18.3107C3.15804 18.0294 3 17.6478 3 17.25V6.75C3 6.35218 3.15804 5.97064 3.43934 5.68934C3.72064 5.40804 4.10218 5.25 4.5 5.25ZM7.5 9L10.5 12L7.5 15M12.75 15H16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+          MCP Server PyPI
+        </a>
     </div>
   </div>
 </section>

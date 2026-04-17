@@ -760,8 +760,9 @@ class MarkdownProcessor:
                     
             display_text = _html.escape(_html.unescape(display_text))
 
-            # If no icon and this is a leaf heading, use the default SVG
-            if not icon_html and not has_child:
+            # If no icon and this is a level-3 leaf heading (and not already a numbered item), use the default SVG
+            starts_with_number = bool(re.match(r'^\d+\.', display_text))
+            if not icon_html and not has_child and level == 3 and not starts_with_number:
                 icon_html = default_svg
 
             toc_html += f'<li class="list-group-item"><a href="#{heading_id}">{icon_html}{display_text}</a></li>\n'
