@@ -753,6 +753,7 @@
 
             .footer-section .doc-links {
                 display: block;
+                padding: 40px 20px;
             }
         }       
 
@@ -781,7 +782,7 @@
                 font-size: 36px;
             }
 
-            .doc-links {
+            .footer-section .doc-links {
                 padding: 40px 20px;
             }
 
@@ -813,30 +814,30 @@
         }
 
         /* Ensure proper spacing for documentation content */
-        .col-lg-9 h1, .col-lg-9 h2, .col-lg-9 h3, .col-lg-9 h4, .col-lg-9 h5, .col-lg-9 h6 {
+        .container-content h1, .container-content h2, .container-content h3, .container-content h4, .container-content h5, .container-content h6 {
             margin-top: 1.5rem;
             margin-bottom: 0.5rem;
         }
 
-        .col-lg-9 h1:first-child {
+        .container-content h1:first-child {
             margin-top: 0;
         }
 
-        .col-lg-9 p {
+        .container-content p {
             margin-bottom: 5px;
             text-align: justify;
         }
 
-        .col-lg-9 a {
+        .container-content a {
             margin: 0;
             text-align: justify;
         }
 
         /* Badge styling improvements */
-        .col-lg-9 img[alt*="PyPI"], 
-        .col-lg-9 img[alt*="License"], 
-        .col-lg-9 img[alt*="Coverage"],
-        .col-lg-9 img[alt*="CodeRabbit"] {
+        .container-content img[alt*="PyPI"], 
+        .container-content img[alt*="License"], 
+        .container-content img[alt*="Coverage"],
+        .container-content img[alt*="CodeRabbit"] {
             margin: 2px 4px;
             display: inline-flex;
             align-items: center;
@@ -972,7 +973,7 @@
         <div class="row">
             <div class="col-12 col-lg-6 px-0">
                 <div class="footer-logo">
-                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="logo"></a>
+                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader"></a>
                 </div>
                 <p class="doc-description">
                     Enterprise-ready vector database toolkit for building searchable knowledge bases
