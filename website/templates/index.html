@@ -312,21 +312,13 @@
         .install-card h3 {
             font-family: var(--second-family);
             font-weight: 700;
-            font-size: 36px;
+            font-size: 30px;
             line-height: 122%;
             letter-spacing: -0.04em;
             text-align: center;
             color: var(--text-color-primary-text-black);
         }
 
-        .install-card p {
-            font-family: var(--font-family);
-            font-weight: 400;
-            font-size: 16px;
-            line-height: 150%;
-            text-align: center;
-            color: var(--text-color-primary-text-black);
-        }
 
         .community-grid {
             grid-template-columns: 1fr;
@@ -353,9 +345,6 @@
             margin: 0 auto;
         }
 
-        .card-light-content {
-            width: 270px;
-        }
 
         .section-features,
         .section-getting-started,
@@ -420,7 +409,11 @@
 
     /* Getting Started Section */
     .getting-started-grid {
-        margin-top: 3rem;
+        margin-top: 80px;
+    }
+
+    .getting-started-grid .getting-started-item {
+        margin-top: 0;
     }
 
     .getting-started-card {
@@ -453,6 +446,10 @@
         color: var(--text-color-primary-text-black);
     }
 
+    .getting-started-card-body .view-doc-link {
+        font-family: var(--second-family);
+    }
+
     .tool-cta {
         display: inline-flex;
         align-items: center;
@@ -465,6 +462,7 @@
         font-size: 14px;
         font-weight: 400;
         transition: opacity 0.2s ease;
+        font-family: var(--second-family);
     }
 
     .tool-cta:hover {
@@ -611,7 +609,7 @@
     .key-feature-content p {
         font-family: var(--font-family);
         font-weight: 400;
-        font-size: 20px;
+        font-size: 18px;
         line-height: 150%;
         text-align: center;
         color: var(--text-color-primary-text-black);
@@ -673,8 +671,10 @@
 
     @media (max-width: 900px) {
         .section-getting-started {
-            padding: 2rem;
+            padding: 60px 2rem;
+            
         }
+
         .section-features h2 {
             font-size: 2.1rem;
         }
@@ -832,18 +832,18 @@
     .install-content p {
         font-family: var(--second-family);
         font-weight: 400;
-        font-size: 18px;
+        font-size: 16px;
         line-height: 156%;
         text-align: center;
         color: var(--text-color-primary-text-black);
         opacity: 0.7;
+        margin: 0;
     }
 
     .install-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 80px;
-        margin: 0 auto 2.95rem;
     }
 
     .install-card {
@@ -854,13 +854,15 @@
         padding: 2.5rem 2.5rem 5rem;
         box-shadow: 0 10px 24px rgba(22, 63, 84, 0.09);
         backdrop-filter: blur(2px);
+        font-family: var(--second-family);
+        font-size: 14px;
     }
 
     .install-card-icon {
         width: 2.6rem;
         height: 2.6rem;
         display: block;
-        margin: 0 auto 0.85rem;
+        margin: 0 auto 10px;
         opacity: 0.95;
     }
 
@@ -870,26 +872,28 @@
 
     .install-card h3 {
         font-weight: 700;
-        font-size: 2.25rem;
+        font-size: 30px;
         line-height: 1.05;
         letter-spacing: -0.02em;
         color: var(--text-color-primary-text-black);
-        margin-bottom: 0.5rem;
+        margin-bottom: 10px;
     }
 
     .install-card p {
-        font-size: 1.2rem;
+        font-weight: 400;
+        font-size: 1rem;
         line-height: 1.5;
+        text-align: center;
         color: var(--text-color-primary-text-black);
-        margin-bottom: 1.35rem;
+        margin-bottom: 40px;
     }
 
     .install-card pre {
         background: #181818;
         color: #f6fbff;
-        padding: 1rem 0.9rem;
+        padding: 1.5rem;
         border-radius: 0.55rem;
-        margin: 0 0 1.3rem;
+        margin: 0;
         font-size: 1rem;
         line-height: 1.35;
         text-align: left;
@@ -903,7 +907,7 @@
         gap: 0.4rem;
         border: 1px solid transparent;
         border-radius: 999px;
-        font-size: 0.87rem;
+        font-size: 16px;
         line-height: 1;
         font-weight: 500;
         text-decoration: none;
@@ -913,12 +917,15 @@
     }
     
     .install-cta {
-        padding: 1.25rem 2rem;
+        font-size: 16px;
+        padding: 16px 44px;
+        font-family: var(--font-family);
     }
 
     .install-card a {
-        margin-top: 20px;
-        padding: 0.83rem 1.5rem;
+        margin-top: 40px;
+        padding:13px 32px;
+        font-family: var(--second-family);
     }
 
     .install-card a:hover,
@@ -938,11 +945,6 @@
         fill: #ffffff;
     }
 
-    .install-cta {
-        font-size: 1.2rem;
-        padding: 0.94rem 1.25rem;
-        margin-top: 0.2rem;
-    }
 
 
     @media (max-width: 640px) {
@@ -963,7 +965,6 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
-            margin-bottom: 2rem;
         }
 
         .install-card {
@@ -1011,7 +1012,7 @@
 
     .community-container h2 {
         line-height: 1.1;
-        margin-bottom: 1.35rem;
+        margin-bottom: 24px;
         color: var(--text-color-white);
         font-family: var(--second-family);
         font-weight: 700;
@@ -1030,9 +1031,9 @@
 
     .community-description {
         max-width: 43.5rem;
-        margin: 1.2rem auto 4.8rem;
+        margin: 20px auto 56px;
         color: var(--text-color-white);
-        font-size: 16px;
+        font-size: 18px;
         line-height: 150%;
         font-weight: 400;
     }
@@ -1051,19 +1052,17 @@
         color: #11263a;
         border: 2px solid rgba(78, 221, 253, 0.5);
         border-radius: 40px;
-        padding: 80px 32px;
+        padding: 80px 93px 131px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
         text-align: center;
         align-items: center;
         justify-content: center;
-        min-height: 641px;
     }
 
     .card-light-content {
         padding: 0px 0px 40px;
-        max-width: 359px;
         width: 100%;
     }
 
@@ -1076,7 +1075,6 @@
         box-sizing: border-box;
         backdrop-filter: blur(7px);
         align-items: flex-start;
-        min-height: 640px;
     }
 
     /* Strong mobile overrides for community cards (placed after defaults) */
@@ -1107,10 +1105,6 @@
             box-sizing: border-box !important;
         }
 
-        .card-light-content {
-            max-width: 270px !important;
-            width: 100%;
-        }
     }
 
     .card-dark-items {
@@ -1122,8 +1116,7 @@
     .community-heart-icon {
         width: 7rem;
         height: 7rem;
-        margin: -0.15rem auto 1.15rem;
-        display: block;
+        margin-bottom: 14px;
     }
 
     .community-card-light h3 {
@@ -1131,14 +1124,16 @@
         font-weight: 700;
         line-height: 1.15;
         letter-spacing: -0.01em;
-        margin-bottom: 1.35rem;
+        margin-bottom: 24px;
     }
 
     .community-card-copy {
         font-family: var(--font-family);
-        font-weight: 700;
+        font-weight: 600;
         font-size: 16px;
         line-height: 150%;
+        max-width: 700px; 
+        margin: 24px auto 24px;
         text-align: center;
         color: var(--text-color-primary-text-black);
     }
@@ -1150,7 +1145,7 @@
         line-height: 150%;
         text-align: center;
         color: var(--text-color-primary-text-black);
-        margin: 0.38rem 0 0;
+        margin: 0;
     }
 
     .community-start-btn {
@@ -1181,7 +1176,7 @@
         display: flex;
         align-items: flex-start;
         gap: 0.85rem;
-        margin-bottom: 1.7rem;
+        margin-bottom: 40px;
     }
 
     .community-connect-icon {
@@ -1218,7 +1213,7 @@
         border: 1px solid rgba(64, 221, 255, 0.62);
         border-radius: 0.8rem;
         background: linear-gradient(180deg, rgba(16, 23, 35, 0.62), rgba(54, 59, 68, 0.46));
-        padding: 1rem 1.05rem;
+        padding: 24px;
         color: inherit;
     }
 
@@ -1447,7 +1442,7 @@
 
     <div class="getting-started-grid row g-4 g-md-5" id="overview">
         <!-- Card 1 -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <div class="getting-started-item col-12 col-md-6 col-xl-4">
             <a href="docs/packages/core/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
                 <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M24 14.9998C22.22 14.9998 20.4799 15.5276 18.9999 16.5166C17.5198 17.5055 16.3663 18.9111 15.6851 20.5556C15.0039 22.2002 14.8257 24.0098 15.1729 25.7556C15.5202 27.5014 16.3774 29.1051 17.636 30.3638C18.8947 31.6224 20.4984 32.4796 22.2442 32.8269C23.99 33.1741 25.7996 32.9959 27.4442 32.3147C29.0887 31.6335 30.4943 30.48 31.4832 28.9999C32.4722 27.5199 33 25.7798 33 23.9998C32.997 21.6138 32.0479 19.3263 30.3607 17.6391C28.6735 15.9519 26.386 15.0028 24 14.9998ZM24 29.9998C22.8133 29.9998 21.6533 29.6479 20.6666 28.9886C19.6799 28.3293 18.9108 27.3922 18.4567 26.2959C18.0026 25.1995 17.8838 23.9931 18.1153 22.8292C18.3468 21.6654 18.9182 20.5963 19.7574 19.7571C20.5965 18.918 21.6656 18.3466 22.8295 18.1151C23.9933 17.8836 25.1997 18.0024 26.2961 18.4565C27.3925 18.9106 28.3295 19.6797 28.9888 20.6664C29.6481 21.6531 30 22.8131 30 23.9998C30 25.5911 29.3679 27.1172 28.2426 28.2424C27.1174 29.3676 25.5913 29.9998 24 29.9998ZM41.94 12.4029L25.44 3.37479C24.9991 3.13119 24.5037 3.00342 24 3.00342C23.4963 3.00342 23.0009 3.13119 22.56 3.37479L6.06 12.4067C5.58879 12.6645 5.19544 13.0441 4.92103 13.5058C4.64663 13.9676 4.50122 14.4945 4.5 15.0317V32.9642C4.50122 33.5013 4.64663 34.0282 4.92103 34.49C5.19544 34.9517 5.58879 35.3313 6.06 35.5892L22.56 44.621C23.0009 44.8646 23.4963 44.9924 24 44.9924C24.5037 44.9924 24.9991 44.8646 25.44 44.621L41.94 35.5892C42.4112 35.3313 42.8046 34.9517 43.079 34.49C43.3534 34.0282 43.4988 33.5013 43.5 32.9642V15.0335C43.4998 14.4955 43.3549 13.9673 43.0804 13.5045C42.8059 13.0417 42.412 12.6612 41.94 12.4029ZM24 41.9998L7.5 32.966V15.0335L24 5.99979L40.5 15.0317V32.9642L24 41.9998Z" fill="#4EDDFD"/>
@@ -1470,7 +1465,7 @@
         </div>
 
         <!-- Card 2 -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <div class="getting-started-item col-12 col-md-6 col-xl-4">
             <a href="docs/packages/mcp-server/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
                 <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M39 6H9C8.20435 6 7.44129 6.31607 6.87868 6.87868C6.31607 7.44129 6 8.20435 6 9V39C6 39.7956 6.31607 40.5587 6.87868 41.1213C7.44129 41.6839 8.20435 42 9 42H39C39.7956 42 40.5587 41.6839 41.1213 41.1213C41.6839 40.5587 42 39.7956 42 39V9C42 8.20435 41.6839 7.44129 41.1213 6.87868C40.5587 6.31607 39.7956 6 39 6ZM16.5 30C16.7967 30 17.0867 30.088 17.3334 30.2528C17.58 30.4176 17.7723 30.6519 17.8858 30.926C17.9994 31.2001 18.0291 31.5017 17.9712 31.7926C17.9133 32.0836 17.7704 32.3509 17.5607 32.5607C17.3509 32.7704 17.0836 32.9133 16.7926 32.9712C16.5017 33.0291 16.2001 32.9994 15.926 32.8858C15.6519 32.7723 15.4176 32.58 15.2528 32.3334C15.088 32.0867 15 31.7967 15 31.5C15 31.1022 15.158 30.7206 15.4393 30.4393C15.7206 30.158 16.1022 30 16.5 30ZM9 9H15V27.2588C13.9992 27.6126 13.1557 28.3089 12.6186 29.2245C12.0814 30.1401 11.8853 31.2161 12.0648 32.2623C12.2443 33.3086 12.7879 34.2577 13.5995 34.9419C14.4111 35.6261 15.4385 36.0014 16.5 36.0014C17.5615 36.0014 18.5889 35.6261 19.4005 34.9419C20.2121 34.2577 20.7557 33.3086 20.9352 32.2623C21.1147 31.2161 20.9186 30.1401 20.3814 29.2245C19.8443 28.3089 19.0008 27.6126 18 27.2588V21.6206L27 30.6206V39H9V9ZM39 39H30V30C30.0002 29.803 29.9615 29.6078 29.8862 29.4257C29.8109 29.2436 29.7005 29.0782 29.5613 28.9387L18 17.3794V9H24V13.5C23.9998 13.697 24.0385 13.8922 24.1138 14.0743C24.1891 14.2564 24.2995 14.4218 24.4387 14.5613L27.4387 17.5613C27.1482 18.1662 26.9982 18.8289 27 19.5C27 20.39 27.2639 21.26 27.7584 22.0001C28.2529 22.7401 28.9557 23.3169 29.7779 23.6575C30.6002 23.9981 31.505 24.0872 32.3779 23.9135C33.2508 23.7399 34.0526 23.3113 34.682 22.682C35.3113 22.0526 35.7399 21.2508 35.9135 20.3779C36.0872 19.505 35.9981 18.6002 35.6575 17.7779C35.3169 16.9557 34.7401 16.2529 34.0001 15.7584C33.26 15.2639 32.39 15 31.5 15C30.8288 14.9988 30.166 15.1495 29.5613 15.4406L27 12.8794V9H39V39ZM31.5 18C31.7967 18 32.0867 18.088 32.3334 18.2528C32.58 18.4176 32.7723 18.6519 32.8858 18.926C32.9994 19.2001 33.0291 19.5017 32.9712 19.7926C32.9133 20.0836 32.7704 20.3509 32.5607 20.5607C32.3509 20.7704 32.0836 20.9133 31.7926 20.9712C31.5017 21.0291 31.2001 20.9994 30.926 20.8858C30.6519 20.7723 30.4176 20.58 30.2528 20.3334C30.088 20.0867 30 19.7967 30 19.5C30 19.1022 30.158 18.7206 30.4393 18.4393C30.7206 18.158 31.1022 18 31.5 18Z" fill="#4EDDFD"/>
@@ -1494,7 +1489,7 @@
         </div>
 
         <!-- Card 3 -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <div class="getting-started-item col-12 col-md-6 col-xl-4">
             <a href="docs/users/configuration/config-file-reference.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
                 <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M43.2956 32.2499C43.4937 32.5937 43.5476 33.002 43.4453 33.3854C43.343 33.7687 43.093 34.096 42.75 34.2955L24.75 44.7955C24.5206 44.9292 24.2599 44.9997 23.9944 44.9997C23.7289 44.9997 23.4681 44.9292 23.2388 44.7955L5.23875 34.2955C4.90068 34.0923 4.65622 33.7642 4.55831 33.3821C4.4604 33 4.51692 32.5948 4.71563 32.2541C4.91433 31.9134 5.23923 31.6646 5.61999 31.5617C6.00075 31.4588 6.40672 31.51 6.75 31.7042L24 41.7636L41.25 31.7042C41.5938 31.5061 42.0021 31.4523 42.3855 31.5546C42.7689 31.6568 43.0962 31.9068 43.2956 32.2499ZM41.25 22.7042L24 32.7636L6.75 22.7042C6.40846 22.5342 6.01495 22.5007 5.64957 22.6105C5.28419 22.7204 4.97441 22.9653 4.78326 23.2955C4.59212 23.6257 4.53399 24.0163 4.6207 24.3879C4.70741 24.7594 4.93244 25.084 5.25 25.2955L23.25 35.7955C23.4794 35.9292 23.7401 35.9997 24.0056 35.9997C24.2711 35.9997 24.5319 35.9292 24.7612 35.7955L42.7612 25.2955C42.9341 25.1977 43.0859 25.0665 43.2076 24.9096C43.3294 24.7526 43.4188 24.5731 43.4707 24.3813C43.5225 24.1896 43.5357 23.9894 43.5096 23.7925C43.4834 23.5956 43.4184 23.4058 43.3183 23.2343C43.2183 23.0627 43.0851 22.9127 42.9266 22.793C42.7681 22.6732 42.5874 22.5862 42.395 22.5369C42.2025 22.4876 42.0022 22.477 41.8057 22.5057C41.6091 22.5344 41.4203 22.6019 41.25 22.7042ZM4.5 14.9999C4.5006 14.7371 4.57019 14.4792 4.70181 14.2518C4.83344 14.0244 5.02247 13.8356 5.25 13.7042L23.25 3.20423C23.4794 3.07047 23.7401 3 24.0056 3C24.2711 3 24.5319 3.07047 24.7612 3.20423L42.7612 13.7042C42.9877 13.8363 43.1755 14.0255 43.3061 14.2528C43.4367 14.4801 43.5054 14.7377 43.5054 14.9999C43.5054 15.262 43.4367 15.5196 43.3061 15.7469C43.1755 15.9742 42.9877 16.1634 42.7612 16.2955L24.7612 26.7955C24.5319 26.9292 24.2711 26.9997 24.0056 26.9997C23.7401 26.9997 23.4794 26.9292 23.25 26.7955L5.25 16.2955C5.02247 16.1641 4.83344 15.9753 4.70181 15.7479C4.57019 15.5205 4.5006 15.2626 4.5 14.9999ZM8.9775 14.9999L24 23.7636L39.0225 14.9999L24 6.2361L8.9775 14.9999Z" fill="#4EDDFD"/>
@@ -1518,7 +1513,7 @@
         </div>
 
         <!-- Card 4 -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <div class="getting-started-item col-12 col-md-6 col-xl-4">
             <a href="docs/users/detailed-guides/file-conversion/README.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
                 <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M16.5 18C16.5 17.6022 16.658 17.2206 16.9393 16.9393C17.2206 16.658 17.6022 16.5 18 16.5H30C30.3978 16.5 30.7794 16.658 31.0607 16.9393C31.342 17.2206 31.5 17.6022 31.5 18C31.5 18.3978 31.342 18.7794 31.0607 19.0607C30.7794 19.342 30.3978 19.5 30 19.5H18C17.6022 19.5 17.2206 19.342 16.9393 19.0607C16.658 18.7794 16.5 18.3978 16.5 18ZM18 25.5H30C30.3978 25.5 30.7794 25.342 31.0607 25.0607C31.342 24.7794 31.5 24.3978 31.5 24C31.5 23.6022 31.342 23.2206 31.0607 22.9393C30.7794 22.658 30.3978 22.5 30 22.5H18C17.6022 22.5 17.2206 22.658 16.9393 22.9393C16.658 23.2206 16.5 23.6022 16.5 24C16.5 24.3978 16.658 24.7794 16.9393 25.0607C17.2206 25.342 17.6022 25.5 18 25.5ZM24 28.5H18C17.6022 28.5 17.2206 28.658 16.9393 28.9393C16.658 29.2206 16.5 29.6022 16.5 30C16.5 30.3978 16.658 30.7794 16.9393 31.0607C17.2206 31.342 17.6022 31.5 18 31.5H24C24.3978 31.5 24.7794 31.342 25.0607 31.0607C25.342 30.7794 25.5 30.3978 25.5 30C25.5 29.6022 25.342 29.2206 25.0607 28.9393C24.7794 28.658 24.3978 28.5 24 28.5ZM42 9V29.3794C42.0013 29.7735 41.9242 30.1639 41.7732 30.528C41.6222 30.892 41.4004 31.2224 41.1206 31.5L31.5 41.1206C31.2224 41.4004 30.892 41.6222 30.528 41.7732C30.1639 41.9242 29.7735 42.0013 29.3794 42H9C8.20435 42 7.44129 41.6839 6.87868 41.1213C6.31607 40.5587 6 39.7956 6 39V9C6 8.20435 6.31607 7.44129 6.87868 6.87868C7.44129 6.31607 8.20435 6 9 6H39C39.7956 6 40.5587 6.31607 41.1213 6.87868C41.6839 7.44129 42 8.20435 42 9ZM9 39H28.5V30C28.5 29.6022 28.658 29.2206 28.9393 28.9393C29.2206 28.658 29.6022 28.5 30 28.5H39V9H9V39ZM31.5 31.5V36.8812L36.8794 31.5H31.5Z" fill="#4EDDFD"/>
@@ -1542,7 +1537,7 @@
         </div>
 
         <!-- Card 5 -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <div class="getting-started-item col-12 col-md-6 col-xl-4">
             <a href="coverage/" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
                 <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M40.5 7.5H13.5C12.7044 7.5 11.9413 7.81607 11.3787 8.37868C10.8161 8.94129 10.5 9.70435 10.5 10.5V13.5H7.5C6.70435 13.5 5.94129 13.8161 5.37868 14.3787C4.81607 14.9413 4.5 15.7044 4.5 16.5V37.5C4.5 38.2956 4.81607 39.0587 5.37868 39.6213C5.94129 40.1839 6.70435 40.5 7.5 40.5H34.5C35.2956 40.5 36.0587 40.1839 36.6213 39.6213C37.1839 39.0587 37.5 38.2956 37.5 37.5V34.5H40.5C41.2956 34.5 42.0587 34.1839 42.6213 33.6213C43.1839 33.0587 43.5 32.2956 43.5 31.5V10.5C43.5 9.70435 43.1839 8.94129 42.6213 8.37868C42.0587 7.81607 41.2956 7.5 40.5 7.5ZM34.5 16.5V19.5H7.5V16.5H34.5ZM34.5 37.5H7.5V22.5H34.5V37.5ZM40.5 31.5H37.5V16.5C37.5 15.7044 37.1839 14.9413 36.6213 14.3787C36.0587 13.8161 35.2956 13.5 34.5 13.5H13.5V10.5H40.5V31.5Z" fill="#4EDDFD"/>
@@ -1566,7 +1561,7 @@
         </div>
 
         <!-- Card 6 -->
-        <div class="col-12 col-md-6 col-xl-4">
+        <div class="getting-started-item col-12 col-md-6 col-xl-4">
             <a  href="docs/getting-started/quick-start.html" class="getting-started-card d-flex gap-3 p-3 rounded-3 text-decoration-none text-dark">
                 <svg class="tool-card-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M42.6223 5.37751C42.2451 5.00051 41.7742 4.73089 41.2581 4.59642C40.742 4.46196 40.1993 4.46751 39.6861 4.61251H39.658L3.66922 15.5325C3.08496 15.7009 2.56566 16.0428 2.18013 16.513C1.7946 16.9832 1.56105 17.5595 1.51042 18.1654C1.45979 18.7713 1.59448 19.3783 1.89663 19.906C2.19878 20.4336 2.65413 20.857 3.20235 21.12L19.1248 28.875L26.8686 44.7881C27.1095 45.3021 27.4924 45.7364 27.9721 46.0398C28.4519 46.3431 29.0085 46.5028 29.5761 46.5C29.6623 46.5 29.7486 46.4963 29.8348 46.4888C30.4403 46.4397 31.0163 46.2067 31.4855 45.821C31.9547 45.4352 32.2947 44.9152 32.4598 44.3306L43.3723 8.34189C43.3723 8.33251 43.3723 8.32314 43.3723 8.31376C43.5192 7.80182 43.5272 7.26 43.3954 6.74397C43.2636 6.22794 42.9967 5.7563 42.6223 5.37751ZM29.593 43.4719L29.5836 43.4981V43.485L22.0723 28.0538L31.0723 19.0538C31.3418 18.7702 31.4898 18.3925 31.4848 18.0014C31.4797 17.6103 31.3221 17.2365 31.0455 16.9599C30.7689 16.6833 30.3952 16.5257 30.0041 16.5207C29.6129 16.5157 29.2353 16.6637 28.9517 16.9331L19.9517 25.9331L4.51485 18.4219H4.50172H4.52797L40.4998 7.50001L29.593 43.4719Z" fill="#4EDDFD"/>

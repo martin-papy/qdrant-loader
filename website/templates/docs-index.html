@@ -3,7 +3,7 @@
   .dh-hero {
     max-width: 80rem;
     margin-inline: auto;
-    padding: 3.5rem 1.25rem;
+    padding: 80px 20px;
     text-align: center;
     color: #0f172a;
   }
@@ -11,13 +11,16 @@
     font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin: 0;
+    margin-bottom: 24px;
+    font-family: var(--font-family);
   }
+
   .dh-hero p {
     max-width: 42rem;
-    margin: 1rem auto 0;
+    margin: 0 auto 0;
     color: #475569;
     font-size: 1.25rem;
+    font-family: var(--second-family);
   }
 
   /* cards grid section */
@@ -26,11 +29,11 @@
     margin-inline: auto;
     background-color: #E3FAFF;
   }
+
   .dh-grid {
     display: grid;
     grid-template-columns: 1fr;
-    row-gap: 80px;
-    column-gap: 80px;
+    gap: 80px;
     width: 100%;
     max-width: 1170px;
     margin-inline: auto;
@@ -57,7 +60,10 @@
   }
   .dh-card-header {
     text-align: center;
-    margin-bottom: 1.35rem;
+    margin-bottom: 40px;
+  }
+  .dh-card-icon {
+    margin-bottom: 10px;
   }
   .dh-card-header .dh-card-icon svg {
     margin: 0 auto;
@@ -66,9 +72,9 @@
   .dh-card-header h2 {
     font-size: 36px;
     font-weight: 700;
-    color: #1C1C1C;
-    font-family: var(--font-family);
-    margin-top: 10px;
+    color: var(--secondary-color);
+    font-family: var(--second-family);
+    margin: 0;
   }
 
   /* item list */
@@ -78,6 +84,7 @@
     flex-direction: column;
     gap: 0;
     padding: 24px;
+    margin: 0;
   }
   .dh-item-list li {
     display: flex;
@@ -244,9 +251,7 @@
       min-height: 0;
       padding: 2.5rem 0 2.75rem;
     }
-    .dh-quickactions-bg {
-      padding: 0 1rem;
-    }
+
     .dh-quickactions-inner {
       padding: 0 2rem;
       gap: 24px;
