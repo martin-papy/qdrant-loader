@@ -79,7 +79,7 @@ QDrant Loader is built on several key architectural principles:
 
 #### 1. **Interface Layer**
 
-- **CLI Interface** - Command-line tool for data ingestion and management (`init`, `ingest`, `config`, `project`)
+- **CLI Interface** - Command-line tool for data ingestion and management (`setup`, `init`, `ingest`, `config`, `project list|status|validate`)
 - **MCP Server** - Separate package (`qdrant-loader-mcp-server`) for AI tool integration
 - **Config Manager** - Multi-project configuration loading, validation, and environment variables
 
@@ -96,7 +96,7 @@ QDrant Loader is built on several key architectural principles:
 
 - **QDrant Database** - Vector storage and similarity search
 - **LLM APIs** - Embedding generation via provider-agnostic interface (OpenAI, Azure OpenAI, Ollama)
-- **Data Sources** - Git repositories, Confluence, JIRA, local files, web content
+- **Data Sources** - Git repositories, Confluence, Jira, local files, web content
 
 ## 🔧 Core Components
 
@@ -124,20 +124,8 @@ Implementation notes:
 
 **Interface (simplified)**:
 
-```python
-from abc import ABC, abstractmethod
-from qdrant_loader.config.source_config import SourceConfig
-from qdrant_loader.core.document import Document
-from qdrant_loader.core.file_conversion import FileConversionConfig
-
-class BaseConnector(ABC):
-    def __init__(self, config: SourceConfig): ...
-    async def __aenter__(self): ...
-    async def __aexit__(self, exc_type, exc_val, exc_tb): ...
-    def set_file_conversion_config(self, cfg: FileConversionConfig) -> None: ...
-    @abstractmethod
-    async def get_documents(self) -> list[Document]: ...
-```
+- Interface definition: [BaseConnector](../../../packages/qdrant-loader/src/qdrant_loader/connectors/base.py#L16)
+- Required connector method: [BaseConnector.get_documents](../../../packages/qdrant-loader/src/qdrant_loader/connectors/base.py#L47)
 
 ### File Converters
 
@@ -246,55 +234,15 @@ Implementation: `qdrant_loader/core/state/state_manager.py`
 
 ### Connector Architecture
 
-QDrant Loader uses a connector-based architecture for extensibility. Connectors are instantiated directly in the pipeline orchestrator:
+QDrant Loader uses a connector-based architecture for extensibility. Connectors are resolved through the connector factory in the pipeline orchestrator:
 
-```python
-# Actual connector instantiation in PipelineOrchestrator
-async def _collect_documents_from_sources(
-    self, filtered_config: SourcesConfig, project_id: str | None = None
-) -> list[Document]:
-    """Collect documents from all configured sources."""
-    documents = []
-
-    # Process each source type with direct connector instantiation
-    if filtered_config.confluence:
-        confluence_docs = await self.components.source_processor.process_source_type(
-            filtered_config.confluence, ConfluenceConnector, "Confluence"
-        )
-        documents.extend(confluence_docs)
-
-    if filtered_config.git:
-        git_docs = await self.components.source_processor.process_source_type(
-            filtered_config.git, GitConnector, "Git"
-        )
-        documents.extend(git_docs)
-
-    if filtered_config.jira:
-        jira_docs = await self.components.source_processor.process_source_type(
-            filtered_config.jira, JiraConnector, "Jira"
-        )
-        documents.extend(jira_docs)
-
-    if filtered_config.publicdocs:
-        publicdocs_docs = await self.components.source_processor.process_source_type(
-            filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
-        )
-        documents.extend(publicdocs_docs)
-
-    if filtered_config.localfile:
-        localfile_docs = await self.components.source_processor.process_source_type(
-            filtered_config.localfile, LocalFileConnector, "LocalFile"
-        )
-        documents.extend(localfile_docs)
-
-    return documents
-```
+Implementation citation: [PipelineOrchestrator._collect_documents_from_sources](../../../packages/qdrant-loader/src/qdrant_loader/core/pipeline/orchestrator.py#L278)
 
 ### Available Connectors
 
 - **GitConnector** - Git repository processing with file filtering
 - **ConfluenceConnector** - Confluence space content and attachments
-- **JiraConnector** - JIRA project issues and attachments
+- **JiraConnector** - Jira project issues and attachments
 - **LocalFileConnector** - Local file system processing
 - **PublicDocsConnector** - Web-based documentation crawling
 
@@ -304,50 +252,12 @@ async def _collect_documents_from_sources(
 
 QDrant Loader uses SQLite with SQLAlchemy for state management:
 
-```python
-class StateManager:
-    """Manages state for document ingestion."""
-
-    def __init__(self, config: StateManagementConfig):
-        self.config = config
-        self._engine = None
-        self._session_factory = None
-
-    async def initialize(self):
-        """Initialize the database schema and connection."""
-        db_url = self.config.database_path
-        if not db_url.startswith("sqlite:///"):
-            db_url = f"sqlite:///{db_url}"
-
-        self._engine = create_async_engine(f"sqlite+aiosqlite:///{db_file}")
-        self._session_factory = async_sessionmaker(bind=self._engine)
-
-        # Initialize schema
-        async with self._engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-```
+- State manager class: [StateManager](../../../packages/qdrant-loader/src/qdrant_loader/core/state/state_manager.py#L29)
+- Initialization flow: [StateManager.initialize](../../../packages/qdrant-loader/src/qdrant_loader/core/state/state_manager.py#L74)
 
 ### Incremental Updates
 
-```python
-async def update_document_state(
-    self, document: Document, project_id: str | None = None
-) -> DocumentStateRecord:
-    """Update document state for change detection."""
-    content_hash = hashlib.sha256(document.content.encode()).hexdigest()
-
-    # Check if document exists and has changed
-    existing = await self.get_document_state_record(
-        document.source_type, document.source, document.id, project_id
-    )
-
-    if existing and existing.content_hash == content_hash:
-        # No changes detected
-        return existing
-
-    # Update or create new state record
-    # ... implementation details
-```
+Implementation citation: [StateManager.update_document_state](../../../packages/qdrant-loader/src/qdrant_loader/core/state/state_manager.py#L314)
 
 ## 🚀 Performance Considerations
 
@@ -355,40 +265,11 @@ async def update_document_state(
 
 The entire pipeline is built on async/await patterns:
 
-```python
-class AsyncIngestionPipeline:
-    """Main async ingestion pipeline."""
-
-    async def process_documents(
-        self,
-        project_id: str | None = None,
-        source_type: str | None = None,
-        source: str | None = None,
-    ) -> None:
-        """Process documents asynchronously."""
-        # Async document collection and processing
-        async with self.state_manager:
-            documents = await self.orchestrator.process_documents(
-                project_id=project_id,
-                source_type=source_type,
-                source=source,
-            )
-```
+- Pipeline entry point: [AsyncIngestionPipeline.process_documents](../../../packages/qdrant-loader/src/qdrant_loader/core/async_ingestion_pipeline.py#L182)
 
 ### Batch Processing
 
-```python
-class QdrantManager:
-    """Manages QDrant operations with batching."""
-
-    async def upsert_points(self, points: list[dict]) -> None:
-        """Upsert points in batches."""
-        batch_size = self.batch_size  # Configurable batch size
-
-        for i in range(0, len(points), batch_size):
-            batch = points[i:i + batch_size]
-            await self._upsert_batch(batch)
-```
+Implementation citation: [QdrantManager.upsert_points](../../../packages/qdrant-loader/src/qdrant_loader/core/qdrant_manager.py#L212)
 
 ## 🔒 Security Architecture
 
@@ -396,17 +277,7 @@ class QdrantManager:
 
 Each connector handles its own authentication:
 
-```python
-class ConfluenceConnector(BaseConnector):
-    """Confluence connector with authentication."""
-
-    def _setup_authentication(self):
-        """Set up authentication based on deployment type."""
-        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
-            self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
-        else:
-            self.session.headers.update({"Authorization": f"Bearer {self.config.token}"})
-```
+Implementation citation: [ConfluenceConnector._setup_authentication](../../../packages/qdrant-loader/src/qdrant_loader/connectors/confluence/connector.py#L114)
 
 ### Data Privacy
 
@@ -424,7 +295,7 @@ class ConfluenceConnector(BaseConnector):
 
 ## 🔄 Architecture Evolution
 
-### Current State (v0.4.x)
+### Current Capabilities
 
 - Multi-project workspace support
 - SQLite-based state management with async support
@@ -432,13 +303,15 @@ class ConfluenceConnector(BaseConnector):
 - Separate MCP server package
 - MarkItDown-based file conversion
 
-### Future Roadmap (v1.x+)
+### Roadmap Priorities
 
 - **Enhanced connectors** - More data source integrations
 - **Improved performance** - Better parallel processing and caching
 - **Advanced search** - Enhanced MCP server capabilities
 - **Deployment options** - Container images and deployment scripts
 - **Monitoring and observability** - Enhanced metrics and logging
+
+For version-specific milestones and release status, see the project [CHANGELOG](../../../CHANGELOG.md).
 
 ---
 
