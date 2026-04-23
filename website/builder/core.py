@@ -369,15 +369,19 @@ class WebsiteBuilder:
                 )
             # Privacy policy page from template
             try:
+                privacy_template_path = self.templates_dir / "privacy-policy.html"
                 privacy_last_updated = self.get_git_timestamp(
-                    "website/templates/privacy-policy.html"
+                    str(privacy_template_path)
                 )
                 if privacy_last_updated:
                     privacy_last_updated = privacy_last_updated.split("T", 1)[0]
                 else:
                     from datetime import datetime, timezone
 
-                    privacy_last_updated = datetime.now(timezone.utc).date().isoformat()
+                    # Use stable template mtime fallback instead of build date.
+                    privacy_last_updated = datetime.fromtimestamp(
+                        privacy_template_path.stat().st_mtime, tz=timezone.utc
+                    ).date().isoformat()
 
                 self.build_page(
                     "base.html",
