@@ -1123,7 +1123,7 @@
             </div>
             <div class="col-md-4 text-md-end">
                 <div class="social-links d-flex flex-column flex-md-row justify-content-md-end align-items-start align-items-md-center mb-2 gap-2 mt-4 mt-md-0">
-                    <p class="mb-0 ml-2 small text-nowrap" id="build-info">Loading build information...</p>
+                    <p class="mb-0 ms-2 small text-nowrap" id="build-info">Loading build information...</p>
                     <div class="social-links-icons">
                         <a href="https://github.com/martin-papy" target="_blank" class="social-link"
                             title="Follow Martin Papy on GitHub">
@@ -1228,7 +1228,7 @@
                 const buildDate = new Date(data.build.timestamp);
                 const formattedDate = `${buildDate.getDate().toString().padStart(2, '0')}-${(buildDate.getMonth() + 1).toString().padStart(2, '0')}-${buildDate.getFullYear()}`;
                 const versionUrl = `https://github.com/martin-papy/qdrant-loader/releases/tag/v${encodeURIComponent(data.version)}`;
-                const commitUrl = `https://github.com/martin-papy/qdrant-loader/commit/${encodeURIComponent(data.commit.full || data.commit.short)}`;
+                const commitUrl = `https://github.com/martin-papy/qdrant-loader/commit/${encodeURIComponent(data.commit.hash || data.commit.short)}`;
                 document.getElementById('build-info').innerHTML =
                     `<a href="${versionUrl}" target="_blank" rel="noopener noreferrer">Version ${data.version}</a> • Built ${formattedDate} • Commit <a href="${commitUrl}" target="_blank" rel="noopener noreferrer">${data.commit.short}</a>`;
 
