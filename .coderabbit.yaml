@@ -1,29 +1,238 @@
-# CodeRabbit Configuration for Qdrant Loader
-# This configures automated code reviews for pull requests
-# Using CodeRabbit Schema v2
+# CodeRabbit Configuration for qdrant-loader monorepo
+# Schema: https://coderabbit.ai/integrations/schema.v2.json
 
-# Enable reviews for specific base branches
+language: "en-US"
+
+tone_instructions: "Be direct and precise. Focus on correctness, resource safety, and security. Flag real bugs and risks, not style nits already handled by Ruff and Black. For every issue flagged, provide a corrected code snippet and a one-sentence rationale."
+
 reviews:
-  # Auto review settings
+  profile: assertive
+
   auto_review:
     enabled: true
-    # Review PRs targeting these branches:
-    # - Any branch → develop
-    # - Any branch → main
+    drafts: false
     base_branches:
-      - develop
       - main
-  
-  # Path filters
-  path_filters:
-    # Include all files by default
-    - "**/*"
-    # Exclude markdown files (mostly documentation)
-    - "!**/*.md"
-    # Exclude test directories
-    - "!**/tests/**"
+      - develop
 
-# Chat settings
+  path_filters:
+    - "**/*"
+    - "!**/*.md"
+    - "!**/docs/**"
+    - "!**/website/**"
+    - "!**/.egg-info/**"
+    - "!**/__pycache__/**"
+    - "!**/dist/**"
+    - "!**/*.lock"
+
+  high_level_summary_instructions: >
+    Summarise: (1) which connectors or pipeline stages are affected,
+    (2) any config schema changes that are breaking or additive,
+    (3) whether tests cover the changed code paths,
+    (4) any security or resource-safety concerns.
+    Keep it under 150 words.
+
+  auto_title_instructions: >
+    Follow Conventional Commits: type(scope): description.
+    Valid types: feat, fix, refactor, perf, test, docs, ci, chore.
+    Scope should be the package or connector name (e.g. confluence, git, state, mcp-server).
+
+  path_instructions:
+    - path: "packages/qdrant-loader/src/qdrant_loader/connectors/**"
+      instructions: >
+        This is the connector layer — the highest-risk area of the codebase.
+
+        Check for:
+        - Every connector must use `async with` or implement `__aenter__`/`__aexit__`
+          to guarantee session cleanup. Flag any code path where a `requests.Session`
+          or aiohttp session could leak if an exception is raised.
+        - Rate limiting: verify that any new HTTP calls go through the shared
+          RateLimiter in `connectors/shared/http.py`, not raw `requests.get()`.
+        - Pagination: ensure all paginated API calls handle empty pages and
+          off-by-one termination conditions correctly.
+        - Authentication headers must never appear in log output. All exception
+          messages must pass through `sanitize_exception_message()` before logging.
+        - Bare `except Exception:` blocks are not acceptable — catch specific
+          exceptions (HTTPError, ConnectionError, TimeoutError) and re-raise or
+          handle deliberately.
+        - Connector registry: if a new connector is added, verify it is registered
+          in `connectors/registry.py` and has a corresponding factory entry.
+        - `get_documents()` must be `async def` and must yield or return a list of
+          `Document` objects — no silent empty returns on error.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/connectors/confluence/**"
+      instructions: >
+        Confluence connector supports Cloud (BasicAuth) and Data Center (Bearer).
+        Check for:
+        - Any new auth logic must handle both deployment types; look for missing
+          `if self.deployment_type == DeploymentType.CLOUD` branches.
+        - Attachment downloads are a resource-leak hotspot — verify temp files and
+          file handles are always closed in `finally` blocks or context managers.
+        - Rate limiting must apply to attachment downloads as well as page fetches.
+        - Pagination cursors (`_links.next`) must be followed until absent;
+          flag any loop that terminates on a fixed page count.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/connectors/git/**"
+      instructions: >
+        Git connector clones repos and traverses files using GitPython.
+        Check for:
+        - Command injection risk: branch names, repo URLs, and file paths from
+          config must never be interpolated into shell commands. Verify all
+          GitPython calls use object APIs, not `repo.git.execute()` with
+          user-supplied strings.
+        - Large repo handling: ensure timeouts and size limits are enforced before
+          clone completes to avoid filling disk.
+        - Credential leakage: SSH key paths and HTTPS tokens must not appear in
+          exception messages or debug logs.
+        - Temp directories created for cloning must be cleaned up on exception paths.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/core/state/**"
+      instructions: >
+        State management uses SQLAlchemy with connection pooling.
+        Check for:
+        - Every DB operation must be inside a transaction that is explicitly
+          committed or rolled back. Flag missing `session.rollback()` on exception
+          paths.
+        - Connection pool exhaustion: verify that all sessions are returned to the
+          pool (use context managers, not manual `session.close()`).
+        - Schema migrations: if a model field is added/removed, flag the missing
+          Alembic migration.
+        - No raw string SQL — all queries must use SQLAlchemy ORM or parameterised
+          text clauses. Flag any `text(f"... {variable}")` patterns.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/core/pipeline/**"
+      instructions: >
+        Pipeline orchestrator and workers handle concurrent async processing.
+        Check for:
+        - Exception handling in workers must not silently swallow errors that
+          should fail the pipeline. Verify that worker exceptions propagate or
+          are surfaced in the run summary.
+        - Force flag (`--force`) bypasses change detection — flag any expansion
+          of its scope or new code that ignores the force flag unintentionally.
+        - Concurrency controls: verify that new workers respect the configured
+          concurrency limits and do not spawn unbounded tasks.
+        - Project context: verify null checks for `project_id` and `project_config`
+          before use in all pipeline stages.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/core/file_conversion/**"
+      instructions: >
+        File conversion uses MarkItDown with ffmpeg for audio, PDF parsing, Office docs.
+        Check for:
+        - All file handles and temp files must be closed/deleted in `finally` blocks
+          or via context managers — no path should leave orphaned temp files.
+        - Timeouts must be enforced for ffmpeg and external process calls.
+        - Large file guards: flag any conversion that reads the entire file into
+          memory without a size check.
+        - Malicious file content: MarkItDown processes arbitrary user files —
+          verify no shell expansion or eval of file content occurs.
+        - LLM API key in `to_dict()` / config dumps: the `llm_api_key` field must
+          be masked (e.g. `***`) in any serialisation used for logging or display.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/config/**"
+      instructions: >
+        Pydantic V2 config models are the trust boundary for user input.
+        Check for:
+        - New fields must have explicit validators or constrained types (e.g.
+          `AnyHttpUrl`, `PositiveInt`, `constr(min_length=1)`).
+        - Any field that holds a secret (api_key, token, password) must use
+          `SecretStr` or be excluded from `model_dump()` / `__repr__`.
+        - YAML loading must use `yaml.safe_load()`, never `yaml.load()`.
+        - Environment variable expansion must not allow interpolation of one secret
+          into an unrelated field.
+        - Breaking config schema changes (renamed/removed fields) must include a
+          migration note or deprecation warning.
+
+    - path: "packages/qdrant-loader-mcp-server/**"
+      instructions: >
+        MCP server exposes semantic search via stdio and HTTP (FastAPI).
+        Check for:
+        - All FastAPI route handlers must validate input with Pydantic models —
+          no raw `request.body()` parsing.
+        - Errors returned to MCP clients must not include internal stack traces
+          or credential values.
+        - Async route handlers must not block the event loop with synchronous I/O.
+        - Any new MCP tool must be registered in the tool registry and have a
+          corresponding integration test.
+        - HTTP transport: verify CORS settings are not overly permissive for
+          production deployments.
+
+    - path: "packages/qdrant-loader-core/**"
+      instructions: >
+        Core LLM abstraction used by both qdrant-loader and mcp-server.
+        Check for:
+        - New LLM providers must implement the full `LLMProvider` interface —
+          flag missing method implementations.
+        - Rate limiting and retry logic must be consistent across providers.
+        - Token counting must account for the correct model's context window;
+          flag hardcoded token limits.
+        - Dependencies added here affect all downstream packages — flag any
+          new dependency that is not strictly necessary.
+
+    - path: ".github/workflows/**"
+      instructions: >
+        Check for:
+        - Secrets must only be injected into jobs that require them; flag any
+          `${{ secrets.* }}` exposure in steps that run on fork PRs.
+        - `pull_request_target` triggers must be audited carefully for injection
+          risk — prefer `pull_request` for untrusted code.
+        - Pinned action versions (`uses: actions/checkout@v4`) are good; flag
+          any unpinned `@main` or `@master` references.
+        - New jobs should use concurrency groups to cancel stale runs.
+
+    - path: "pyproject.toml"
+      instructions: >
+        Check for:
+        - New dependencies should have a minimum version pin.
+        - Dev-only dependencies must not appear in the main `[project.dependencies]`.
+        - Version bumps in `[project]` must be consistent across all three packages
+          if it is a coordinated release.
+
+  pre_merge_checks:
+    custom_checks:
+      - name: "No hardcoded secrets or tokens"
+        instructions: >
+          Fail if any hardcoded API key, token, password, or secret appears in
+          non-test source code. Look for patterns like `api_key = "sk-..."`,
+          `token = "ghp_..."`, `password = "..."`, or any string resembling a
+          credential assigned to a variable.
+
+      - name: "Async context managers on all connectors"
+        instructions: >
+          Fail if a connector class that inherits from BaseConnector does not
+          implement `__aenter__` and `__aexit__`, or if connector instances are
+          used without `async with` in the calling code.
+
+      - name: "No bare except in connector or pipeline code"
+        instructions: >
+          Fail if `except:` or `except Exception:` appears in any file under
+          `connectors/` or `core/pipeline/` without a specific comment explaining
+          why a broad catch is intentional.
+
+      - name: "SecretStr for credential fields"
+        instructions: >
+          Fail if a new Pydantic model field whose name contains 'key', 'token',
+          'password', 'secret', or 'credential' uses a plain `str` type instead
+          of `pydantic.SecretStr`.
+
+      - name: "Tests exist for new connectors"
+        instructions: >
+          Fail if a new connector module is added under `connectors/` but no
+          corresponding test file exists under `tests/unit/connectors/` or
+          `tests/integration/connectors/`.
+
+  tools:
+    ruff:
+      enabled: true
+    semgrep:
+      enabled: true
+    trufflehog:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+    hadolint:
+      enabled: true
+
 chat:
   auto_reply: true
-  art: true
