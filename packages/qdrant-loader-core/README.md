@@ -39,7 +39,7 @@ from qdrant_loader_core.logging import LoggingConfig
 
 LoggingConfig.setup(level="INFO", format="console", file=None)
 logger = LoggingConfig.get_logger(__name__)
-logger.info("LLM ready")
+logger.info("LLM ready", provider=settings.provider)
 ```
 
 ## 📝 Notes
@@ -83,4 +83,4 @@ This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) 
 
 ---
 
-**Ready to get started?** Check out our [Quick Start Guide](./docs/getting-started/quick-start.md) or browse the [complete documentation](./docs/).
+**Ready to get started?** Check out our [Quick Start Guide](../../docs/getting-started/quick-start.md) or browse the [complete documentation](../../docs/).

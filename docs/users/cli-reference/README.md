@@ -19,11 +19,17 @@ The `qdrant-loader` command is your primary interface for:
 # Initialize QDrant collection
 qdrant-loader init --workspace .
 
+# Generate config.yaml and .env with setup wizard
+qdrant-loader setup
+
 # Load data from all configured sources
 qdrant-loader ingest --workspace .
 
 # View configuration and project information
 qdrant-loader config --workspace .
+
+# List configured projects
+qdrant-loader project list --workspace .
 
 # Get help
 qdrant-loader --help
@@ -45,10 +51,14 @@ qdrant-loader --help
 Complete reference for all available commands:
 
 - **`init`** - Initialize QDrant collection and workspace
+- **`setup`** - Interactive setup wizard for `config.yaml` and `.env`
 - **`ingest`** - Process and load data from sources
 - **`config`** - View current configuration (includes all project information and validation)
+- **`project list`** - List configured projects
+- **`project status`** - Show project status, document counts, and ingestion history
+- **`project validate`** - Validate one or all projects
 
-### 🤖 Scripting and Automation (coming later)
+### 🤖 Scripting and Automation
 
 Using QDrant Loader in scripts and automated workflows:
 
@@ -112,7 +122,7 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-## 🔧Global Options
+## 🔧 Global Options
 
 ### Workspace and Configuration
 
@@ -136,6 +146,7 @@ qdrant-loader ingest --workspace .
 | `--source-type` | Process specific source type | All types    | `--source-type git`    |
 | `--source`      | Process specific source      | All sources  | `--source my-repo`     |
 | `--profile`     | Enable performance profiling | False        | `--profile`            |
+| `--force`       | Force full processing        | False        | `--force`              |
 
 ## 🎯 Command Examples
 
@@ -174,7 +185,7 @@ qdrant-loader ingest --workspace .
 
 ### Configuration and Project Information
 
-> **Note**: Dedicated project management commands (`project list`, `project status`, `project validate`) are not currently available. All project information is accessible through the `config` command.
+> **Note**: `config` shows resolved configuration. Use `project` subcommands for project-focused views and validation.
 
 ```bash
 # Display all configuration and project information
@@ -185,6 +196,25 @@ qdrant-loader config --workspace . --log-level DEBUG
 
 # Use specific configuration files
 qdrant-loader config --config custom-config.yaml --env custom.env
+```
+
+### Project Management
+
+```bash
+# List all projects
+qdrant-loader project list --workspace .
+
+# Show status for all projects
+qdrant-loader project status --workspace .
+
+# Show status for one project
+qdrant-loader project status --workspace . --project-id my-project
+
+# Validate all projects
+qdrant-loader project validate --workspace .
+
+# Validate one project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 ## 🔍 Advanced Usage
@@ -383,8 +413,10 @@ qdrant-loader --help
 
 # Command-specific help
 qdrant-loader init --help
+qdrant-loader setup --help
 qdrant-loader ingest --help
 qdrant-loader config --help
+qdrant-loader project --help
 ```
 
 ### Community Support

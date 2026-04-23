@@ -232,4 +232,4 @@ This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) 
 
 ---
 
-**Ready to get started?** Check out our [Quick Start Guide](./docs/getting-started/quick-start.md) or browse the [complete documentation](./docs/).
+**Ready to get started?** Check out our [Quick Start Guide](../../docs/getting-started/quick-start.md) or browse the [complete documentation](../../docs).

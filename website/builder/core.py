@@ -369,6 +369,16 @@ class WebsiteBuilder:
                 )
             # Privacy policy page from template
             try:
+                privacy_last_updated = self.get_git_timestamp(
+                    "website/templates/privacy-policy.html"
+                )
+                if privacy_last_updated:
+                    privacy_last_updated = privacy_last_updated.split("T", 1)[0]
+                else:
+                    from datetime import datetime, timezone
+
+                    privacy_last_updated = datetime.now(timezone.utc).date().isoformat()
+
                 self.build_page(
                     "base.html",
                     "privacy-policy.html",
@@ -376,6 +386,7 @@ class WebsiteBuilder:
                     "Privacy policy for QDrant Loader",
                     "privacy-policy.html",
                     content=self.load_template("privacy-policy.html"),
+                    last_updated=privacy_last_updated,
                 )
             except FileNotFoundError:
                 pass

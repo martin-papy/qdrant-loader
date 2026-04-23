@@ -69,6 +69,8 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 
 File conversion is configured globally and applies to all projects and sources that enable it:
 
+> **Note**: `markitdown.llm_*` fields are optional overrides for MarkItDown image-description flows. Prefer `global.llm` as the primary LLM configuration.
+
 ```yaml
 global:
   file_conversion:
@@ -122,6 +124,8 @@ projects:
 
 #### MarkItDown Settings
 
+`markitdown.llm_*` values are optional override fields. In most setups, keep LLM provider/model/auth under `global.llm`.
+
 | Option                    | Type   | Description                                   | Default                     |
 | ------------------------- | ------ | --------------------------------------------- | --------------------------- |
 | `enable_llm_descriptions` | bool   | Enable LLM integration for image descriptions | `false`                     |
@@ -142,16 +146,16 @@ Each data source can enable or disable file conversion:
 ### Conversion Process
 
 ```text
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│     File     │──▶│    Format    │──▶│  MarkItDown  │──▶│   Markdown   │
-│  Detection   │   │  Detection   │   │ Conversion   │   │   Content    │
-└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
-       │                  │                  │                  │
-       ▼                  ▼                  ▼                  ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│  MIME Type   │   │  Extension   │   │ Text + OCR   │   │  Structured  │
-│  Detection   │   │   Mapping    │   │   + Audio    │   │ Text Output  │
-└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│     File     │──▶│    Format    │──▶ │  MarkItDown  │──▶│   Markdown   │
+│  Detection   │    │  Detection   │    │ Conversion   │    │   Content    │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+       │                  │                  │                     │
+       ▼                  ▼                  ▼                     ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐      ┌──────────────┐
+│  MIME Type   │   │  Extension   │   │ Text + OCR   │      │  Structured  │
+│  Detection   │   │   Mapping    │   │   + Audio    │      │ Text Output  │
+└──────────────┘   └──────────────┘   └──────────────┘      └──────────────┘
 ```
 
 ### Processing Pipeline

@@ -153,9 +153,11 @@ pip install qdrant-loader-mcp-server  # MCP server only
    mcp-qdrant-loader --env /path/tp/your/.env
    ```
 
-## 🔧 Integration with Cursor
+## 🔧 MCP-Compatible IDE Setup
 
-Add to your Cursor settings (`.cursor/mcp.json`):
+QDrant Loader works with any IDE/tool that supports MCP, including Cursor, Windsurf, and Claude Desktop.
+
+Minimal MCP server entry (adapt path/format to your tool):
 
 ```json
 {
@@ -190,7 +192,14 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 }
 ```
 
-**Example queries in Cursor:**
+For tool-specific setup and exact config format:
+
+- **[MCP Setup and Integration](./docs/users/detailed-guides/mcp-server/setup-and-integration.md)** - Full guide
+- **[Cursor Setup](./docs/users/detailed-guides/mcp-server/setup-and-integration.md#-cursor-ide)**
+- **[Windsurf Setup](./docs/users/detailed-guides/mcp-server/setup-and-integration.md#-windsurf)**
+- **[Claude Desktop Setup](./docs/users/detailed-guides/mcp-server/setup-and-integration.md#-claude-desktop)**
+
+**Example queries in AI tools:**
 
 - _"Find documentation about authentication in our API"_
 - _"Show me examples of error handling patterns"_
@@ -204,7 +213,7 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - **[Getting Started](./docs/getting-started/)** - Quick start and core concepts
 - **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
 - **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
-- **Core Concepts** - Covered inline in Getting Started
+- **[Core Concepts](./docs/getting-started/README.md#-core-concepts)** - Understand the core architecture: workspace model, projects and sources, ingestion pipeline, and MCP search flow
 
 ### User Guides
 
@@ -214,24 +223,7 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 - **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
-## ⚠️ Migration Guide (v0.7.1+)
-
-### LLM Configuration Migration Required
-
-- **New unified configuration**: `global.llm.*` replaces legacy `global.embedding.*` and `file_conversion.markitdown.*`
-- **Provider-agnostic**: Now supports OpenAI, Azure OpenAI, Ollama, and custom endpoints
-- **Legacy support**: Old configuration still works but shows deprecation warnings
-- **Action required**: Update your `config.yaml` to use the new syntax (see examples above)
-- **[LLM Provider Guide](./docs/users/configuration/llm-provider-guide.md)** - Configure provider-specific LLM details
-
-### Migration Resources
-
-- **[Basic Configuration](./docs/getting-started/basic-configuration.md)** - Getting started with configuration
-- **[Configuration File Reference](./docs/users/configuration/config-file-reference.md)** - Complete new schema
-- **[Environment Variables](./docs/users/configuration/environment-variables.md)** - Updated variable names
-- **[Installation details](./docs/getting-started/installation.md)** - Platform-specific install methods and dependency requirements.
-
-### Developer Resources
+## 🛠️ Developer Resources
 
 - **[Developer hub](./docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
 - **[Architecture](./docs/developers/architecture/)** - System design overview

@@ -28,4 +28,5 @@ class TemplateProcessor:
         """Replace placeholders in content with actual values."""
         for placeholder, value in replacements.items():
             content = content.replace(f"{{{{ {placeholder} }}}}", str(value))
+            content = content.replace(f"{{{{{placeholder}}}}}", str(value))
         return content
