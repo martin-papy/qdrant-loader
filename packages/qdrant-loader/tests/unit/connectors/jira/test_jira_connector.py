@@ -7,7 +7,12 @@ import pytest
 from pydantic import HttpUrl
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.cloud_connector import JiraCloudConnector
-from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
+from qdrant_loader.connectors.jira.config import (
+    JiraDeploymentType,
+    JiraExtraField,
+    JiraFieldType,
+    JiraProjectConfig,
+)
 from qdrant_loader.connectors.jira.data_center_connector import JiraDataCenterConnector
 from qdrant_loader.connectors.jira.models import (
     JiraIssue,
@@ -107,6 +112,14 @@ def mock_data_center_issue_data():
             "parent": {"key": "TEST-0"},
             "subtasks": [{"key": "TEST-2"}],
             "issuelinks": [{"outwardIssue": {"key": "TEST-3"}}],
+            # Extra fields for testing
+            "customfield_10000": "EXT-12345",
+            "customfield_10001": {"name": "Fixed", "id": "1"},
+            "customfield_10002": ["tag1", "tag2", "tag3"],
+            "customfield_10003": [
+                {"name": "v1.0", "id": "100"},
+                {"name": "v2.0", "id": "200"},
+            ],
         },
     }
 
@@ -190,6 +203,14 @@ def mock_cloud_issue_data():
             "parent": {"key": "TEST-0"},
             "subtasks": [{"key": "TEST-2"}],
             "issuelinks": [{"outwardIssue": {"key": "TEST-3"}}],
+            # Extra fields for testing
+            "customfield_10000": "EXT-12345",
+            "customfield_10001": {"name": "Fixed", "id": "1"},
+            "customfield_10002": ["tag1", "tag2", "tag3"],
+            "customfield_10003": [
+                {"name": "v1.0", "id": "100"},
+                {"name": "v2.0", "id": "200"},
+            ],
         },
     }
 
@@ -773,6 +794,174 @@ class TestJiraConnector:
         assert '"Task"' in captured_jql
         assert "status IN " in captured_jql
         assert '"Done"' in captured_jql
+
+    # ─── extra_fields end-to-end tests ───────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_get_cloud_documents_with_extra_fields(self, mock_cloud_issue_data):
+        """Test that extra_fields appear in Document.metadata (end-to-end)."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_10000",
+                    name="external_id",
+                    field_type=JiraFieldType.SIMPLE,
+                ),
+                JiraExtraField(
+                    param_name="customfield_10001",
+                    name="resolution",
+                    field_type=JiraFieldType.OBJECT,
+                    attr_name="name",
+                ),
+                JiraExtraField(
+                    param_name="customfield_10002",
+                    name="tags",
+                    field_type=JiraFieldType.ARRAY,
+                ),
+                JiraExtraField(
+                    param_name="customfield_10003",
+                    name="versions",
+                    field_type=JiraFieldType.ARRAY_OBJECT,
+                    attr_name="name",
+                ),
+            ],
+        )
+        connector = JiraCloudConnector(config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [mock_cloud_issue_data]},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                document = documents[0]
+
+                # Verify extra fields are in metadata
+                assert document.metadata["external_id"] == "EXT-12345"
+                assert document.metadata["resolution"] == "Fixed"
+                assert document.metadata["tags"] == ["tag1", "tag2", "tag3"]
+                assert document.metadata["versions"] == ["v1.0", "v2.0"]
+
+    @pytest.mark.asyncio
+    async def test_get_datacenter_documents_with_extra_fields(
+        self, mock_data_center_issue_data
+    ):
+        """Test that extra_fields work with Data Center connector."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://jira.company.com"),
+            deployment_type=JiraDeploymentType.DATACENTER,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-pat-token",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_10000",
+                    name="external_id",
+                    field_type=JiraFieldType.SIMPLE,
+                ),
+            ],
+        )
+        connector = JiraDataCenterConnector(config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [mock_data_center_issue_data], "total": 1},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                assert documents[0].metadata["external_id"] == "EXT-12345"
+
+    @pytest.mark.asyncio
+    async def test_extra_fields_with_missing_param(self, mock_cloud_issue_data):
+        """Test extra_fields handling when param_name is missing from response."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_99999",  # doesn't exist in response
+                    name="missing_field",
+                    field_type=JiraFieldType.SIMPLE,
+                ),
+            ],
+        )
+        connector = JiraCloudConnector(config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [mock_cloud_issue_data]},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                # Should be None for missing field
+                assert documents[0].metadata["missing_field"] is None
+
+    @pytest.mark.asyncio
+    async def test_extra_fields_array_object_with_non_dict_items(
+        self, mock_cloud_issue_data
+    ):
+        """Test array_object field_type gracefully skips non-dict items."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_10000",
+                    name="items",
+                    field_type=JiraFieldType.ARRAY_OBJECT,
+                    attr_name="name",
+                ),
+            ],
+        )
+        connector = JiraCloudConnector(config)
+
+        issue_data = mock_cloud_issue_data.copy()
+        issue_data["fields"]["customfield_10000"] = [
+            {"name": "item1", "id": "1"},
+            "not a dict",  # should be skipped
+            {"name": "item2", "id": "2"},
+            None,  # should be skipped
+            {"name": "item3", "id": "3"},
+        ]
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [issue_data]},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                # Should extract only from dict items
+                assert documents[0].metadata["items"] == ["item1", "item2", "item3"]
 
 
 class TestJiraValidateConnection:

@@ -282,7 +282,9 @@ class TestWebsiteBuilderEdgeCases:
         # Create files with Unicode names
         unicode_dir = mock_project_structure / "docs" / "ünïcödé"
         unicode_dir.mkdir(parents=True)
-        (unicode_dir / "tëst.md").write_text("# Unicode Test\n\nContent with émojis 🚀", encoding="utf-8")
+        (unicode_dir / "tëst.md").write_text(
+            "# Unicode Test\n\nContent with émojis 🚀", encoding="utf-8"
+        )
 
         builder = WebsiteBuilder("website/templates", "site")
         builder.build_site()

@@ -341,6 +341,7 @@ def extract_changelog_for_version(version: str) -> str:
 
     # Find version section (format: ## [X.Y.Z] - Date)
     import re
+
     version_pattern = rf"## \[{re.escape(version)}\].*?\n(.*?)(?=\n## |\Z)"
     match = re.search(version_pattern, content, re.DOTALL)
 
@@ -381,7 +382,9 @@ def create_github_release(
     if not release_notes:
         logger.warning("No changelog found, falling back to git log for release notes")
         stdout, _ = run_command("git log --pretty=format:'%h %s' -n 10")
-        release_notes = f"## Changes for {package_name} v{version}\n\n```\n{stdout}\n```"
+        release_notes = (
+            f"## Changes for {package_name} v{version}\n\n```\n{stdout}\n```"
+        )
 
     # Create release
     headers = {
@@ -458,9 +461,7 @@ def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
         bool: `True` if a changelog section for `new_version` is found, `False` otherwise.
     """
     logger = logging.getLogger(__name__)
-    logger.debug(
-        f"Checking if CHANGELOG.md has been updated for version {new_version}"
-    )
+    logger.debug(f"Checking if CHANGELOG.md has been updated for version {new_version}")
 
     changelog_path = Path("CHANGELOG.md")
 
@@ -483,35 +484,25 @@ def check_changelog_updated(new_version: str, dry_run: bool = False) -> bool:
 
         found_version = None
         for line in lines:
-            if re.match(r'^## \[Unreleased\]', line):
+            if re.match(r"^## \[Unreleased\]", line):
                 continue  # Skip Unreleased section
 
             match = re.match(version_pattern, line)
             if match:
                 found_version = match.group(1)
-                logger.debug(
-                    f"Found version section in CHANGELOG.md: {found_version}"
-                )
+                logger.debug(f"Found version section in CHANGELOG.md: {found_version}")
                 break
 
         if found_version == new_version:
-            logger.debug(
-                "CHANGELOG.md is up to date with the new version"
-            )
+            logger.debug("CHANGELOG.md is up to date with the new version")
             return True
         elif found_version:
-            logger.error(
-                f"CHANGELOG.md has not been updated for version {new_version}"
-            )
-            logger.error(
-                f"Found version {found_version} but expected {new_version}"
-            )
+            logger.error(f"CHANGELOG.md has not been updated for version {new_version}")
+            logger.error(f"Found version {found_version} but expected {new_version}")
             logger.error(
                 f"Please add a changelog section for the new version at the top of {changelog_path}"
             )
-            logger.error(
-                f"Expected format: ## [{new_version}] - <Date>"
-            )
+            logger.error(f"Expected format: ## [{new_version}] - <Date>")
             if not dry_run:
                 sys.exit(1)
             return False
@@ -1164,9 +1155,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         status = "✅" if changelog_check else "❌"
         print(f"{status} Changelog Updated")
         if not changelog_check:
-            print(
-                f"   ⚠️  CHANGELOG.md needs to be updated for version {new_version}"
-            )
+            print(f"   ⚠️  CHANGELOG.md needs to be updated for version {new_version}")
         print()
 
     if dry_run:
@@ -1283,9 +1272,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     # Create GitHub releases with NEW version
     token = get_github_token(dry_run)
     for package_name in get_packages_for_release():
-        create_github_release(
-            package_name, new_version, token, dry_run
-        )
+        create_github_release(package_name, new_version, token, dry_run)
 
     if not dry_run:
         print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
