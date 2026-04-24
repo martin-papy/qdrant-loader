@@ -302,22 +302,22 @@ class MarkdownProcessor:
         )
         html_content = re.sub(
             r"<h2([^>]*)>",
-            r'<h2\1 class="h2 fw-bold text-primary mt-5 mb-3">',
+            r'<h2\1 class="h2 fw-bold text-primary">',
             html_content,
         )
         html_content = re.sub(
             r"<h3([^>]*)>",
-            r'<h3\1 class="h3 fw-bold text-primary mt-5 mb-3">',
+            r'<h3\1 class="h3 fw-bold text-primary">',
             html_content,
         )
         html_content = re.sub(
-            r"<h4([^>]*)>", r'<h4\1 class="h4 fw-bold mt-4 mb-3">', html_content
+            r"<h4([^>]*)>", r'<h4\1 class="h4 fw-bold">', html_content
         )
         html_content = re.sub(
-            r"<h5([^>]*)>", r'<h5\1 class="h5 fw-bold mt-3 mb-2">', html_content
+            r"<h5([^>]*)>", r'<h5\1 class="h5 fw-bold">', html_content
         )
         html_content = re.sub(
-            r"<h6([^>]*)>", r'<h6\1 class="h6 fw-semibold mt-2 mb-1">', html_content
+            r"<h6([^>]*)>", r'<h6\1 class="h6 fw-semibold">', html_content
         )
 
         # Add Bootstrap code block classes - clean approach

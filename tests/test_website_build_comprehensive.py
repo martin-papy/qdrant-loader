@@ -120,9 +120,9 @@ class TestWebsiteBuilderMarkdown:
         html = builder.basic_markdown_to_html(markdown)
 
         assert 'class="display-4 fw-bold text-primary mb-4"' in html
-        assert 'class="h2 fw-bold text-primary mt-5 mb-3"' in html
-        assert 'class="h3 fw-bold text-primary mt-5 mb-3"' in html
-        assert 'class="h4 fw-bold mt-4 mb-3"' in html
+        assert 'class="h2 fw-bold text-primary"' in html
+        assert 'class="h3 fw-bold text-primary"' in html
+        assert 'class="h4 fw-bold"' in html
 
     def test_basic_markdown_to_html_code(self):
         """Test basic markdown code conversion."""
@@ -197,9 +197,9 @@ class TestWebsiteBuilderMarkdown:
         result = builder.add_bootstrap_classes(html)
 
         assert 'class="display-4 fw-bold text-primary mb-4"' in result
-        assert 'class="h2 fw-bold text-primary mt-5 mb-3"' in result
-        assert 'class="h3 fw-bold text-primary mt-5 mb-3"' in result
-        assert 'class="h4 fw-bold mt-4 mb-3"' in result
+        assert 'class="h2 fw-bold text-primary"' in result
+        assert 'class="h3 fw-bold text-primary"' in result
+        assert 'class="h4 fw-bold"' in result
 
     def test_markdown_to_html_with_markdown_library(self):
         """Test markdown conversion with markdown library available."""

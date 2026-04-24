@@ -61,7 +61,7 @@
     .hero-features {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 40px 120px;
+        gap: 32px 120px;
         max-width: 38rem;
         color: var(--primary-color);
     }
@@ -407,6 +407,10 @@
         font-size: 1.25rem;
     }
 
+    #overview {
+        scroll-margin-top: 5.5rem;
+    }
+
     /* Getting Started Section */
     .getting-started-grid {
         margin-top: 80px;
@@ -572,21 +576,32 @@
     }
 
     .divider {
-        width: 110%;
-        max-width: 1280px;
+        width: 100%;
+        max-width: 1380px;
         height: 1px;
         background: #8D8D8D;
         margin: 32px auto;
-        position: relative;
-        left: 50%;
-        transform: translateX(-50%); 
+    }
+
+    @media (max-width: 1024px) {
+        .divider {
+            max-width: calc(100% - 100px);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .divider {
+            max-width: calc(100% - 80px);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .divider {
+            max-width: calc(100% - 40px); 
+        }
     }
 
     @media (max-width: 1200px) {
-        .divider {
-            width: 100%; 
-            max-width: 1100px;
-        }
 
         .section-getting-started {
             padding: 120px 40px;
@@ -594,7 +609,11 @@
     }
 
     .key-feature-content {
-        padding: 0 100px;
+        display: flex;
+        flex-direction: column;
+        align-self: center;
+        gap: 19px;
+        padding: 0 120px;
     }
 
     .key-feature-content h2 {
@@ -604,15 +623,19 @@
         letter-spacing: -0.03em;
         text-align: center;
         color: var(--text-color-primary-text-black);
+        margin: 0 auto;
     }
 
     .key-feature-content p {
+        max-width: 930px;
         font-family: var(--font-family);
         font-weight: 400;
         font-size: 18px;
         line-height: 150%;
         text-align: center;
         color: var(--text-color-primary-text-black);
+        letter-spacing: 0%;
+        margin: 0 auto;
     }
 
     .section-features .image-box {
@@ -807,7 +830,7 @@
         display: flex;
         gap: 56px;
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
     }
     .install-content {
         display: flex;
@@ -844,7 +867,7 @@
 
     .install-card {
         border-radius: 1.2rem;
-        background: rgba(255, 255, 255, 0.34);
+        background: #FFFFFF99;
         border: 1px solid rgba(255, 255, 255, 0.5);
         padding: 1.7rem 1.35rem 1.65rem;
         padding: 2.5rem 2.5rem 5rem;
@@ -914,8 +937,9 @@
     
     .install-cta {
         font-size: 16px;
-        padding: 16px 44px;
+        padding: 16px 32px;
         font-family: var(--font-family);
+        align-self: center;
     }
 
     .install-card a {
@@ -1583,10 +1607,9 @@
     </div>
 
 </section>
-
+<div class="divider"></div>
 <!-- Key Features Section -->
 <section class="container-custom section-features">
-    <div class="divider"></div>
     <div class="features-container">
         <div class="key-feature-content">
             <h2>Key Features</h2>

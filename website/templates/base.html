@@ -117,6 +117,7 @@
             --text-color-primary-text-black: var(--cbtw-neutral-cbtw-black);
             --text-color-white: #ffffff;
             --color-border-secondary: #8D8D8D;
+            --background-color-color-background-tertiary: #E3FAFF;
         }
 
         html {
@@ -261,8 +262,8 @@
         }
 
         .toc-sidebar {
-            width: 380px; 
-            flex: 0 0 380px;
+            width: 340px; 
+            flex: 0 0 340px;
         }
 
         .container-content {
@@ -272,10 +273,12 @@
 
         .toc {
             background-color: #ECFCFF;
-            padding: 1.5rem;
+            padding: 40px;
             border: 1px solid #e9ecef;
             overflow-y: auto;
-
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .toc h3 {
@@ -287,7 +290,7 @@
 
         .toc .list-group-item {
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 10px 20px;
             background: transparent;
         }
 
@@ -310,7 +313,18 @@
 
         .toc .list-group-item.active a {
             color: var(--secondary-color);
-            font-weight: 500; 
+        }
+
+        .toc > ul.list-group > li.list-group-item:first-child {
+            background: transparent !important;
+            padding-left: 0;
+            font-weight: 700;
+        }
+    
+        .toc > ul.list-group > li.list-group-item:first-child.active {
+            background: transparent !important;
+            padding-left: 0;
+            font-weight: 700;
         }
 
         /* Hierarchical TOC styling */
@@ -320,9 +334,12 @@
             margin-bottom: 0;
         }
 
-        .toc ul ul {
-            padding-left: 1.2rem;
-            margin-top: 0.25rem;
+        .toc > ul > ul {
+            padding-left: 0;
+        }
+
+        .toc > ul > ul > ul {
+            padding-left: 1rem;
         }
 
         .toc li {
@@ -559,6 +576,11 @@
             background-color: #ECFCFF;
         }
 
+        .navbar-py-32 {
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+        }
+
         /* Footer section */
         .footer-section {
             padding: 96px 40px 40px;
@@ -678,8 +700,9 @@
         }
 
         .footer-analytics {
-            font-size: 1rem;
             font-weight: 400;
+            font-size: 14px;
+            line-height: 143%;
             opacity: 0.75;
             margin-bottom: 0;
             font-family: var(--font-family);
@@ -740,6 +763,17 @@
             margin-top: 32px;
             color: var(--cbtw-neutral-cbtw-black);
         }
+
+        @media (max-width: 1200px) {
+            .footer-section .doc-links {
+                justify-content: start;
+            }
+
+            .footer-section .doc-links .row {
+                gap: 48px;
+            }
+        }
+
 
         @media (max-width: 768px) {
             .footer-section {
@@ -903,7 +937,7 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
+    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top navbar-py-32">
             <div class="container-fluid navbar-shell d-flex align-items-center justify-content-between px-navbar">
 
                 <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
