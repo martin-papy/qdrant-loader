@@ -580,8 +580,32 @@
         max-width: none;
         height: 1px;
         background: #8D8D8D;
-        margin: 32px 170px;
+        margin: 32px 270px;
         position: relative;
+    }
+
+    /* Laptop/Desktop (1200px - 1919px) */
+    @media (max-width: 1919px) and (min-width: 1200px) {
+        .divider {
+            margin-left: 120px;
+            margin-right: 120px;
+        }
+    }
+
+    /* Tablet (900px - 1199px) */
+    @media (max-width: 1199px) and (min-width: 900px) {
+        .divider {
+            margin-left: 40px;
+            margin-right: 40px;
+        }
+    }
+
+    /* Mobile (max 899px) */
+    @media (max-width: 899px) {
+        .divider {
+            margin-left: 12px;
+            margin-right: 12px;
+        }
     }
 
     @media (max-width: 1200px) {
