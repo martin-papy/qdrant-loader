@@ -117,6 +117,7 @@
             --text-color-primary-text-black: var(--cbtw-neutral-cbtw-black);
             --text-color-white: #ffffff;
             --color-border-secondary: #8D8D8D;
+            --background-color-color-background-tertiary: #E3FAFF;
         }
 
         html {
@@ -272,7 +273,7 @@
 
         .toc {
             background-color: #ECFCFF;
-            padding: 1.5rem;
+            padding: 40px;
             border: 1px solid #e9ecef;
             overflow-y: auto;
 
@@ -559,6 +560,11 @@
             background-color: #ECFCFF;
         }
 
+        .navbar-py-32 {
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+        }
+
         /* Footer section */
         .footer-section {
             padding: 96px 40px 40px;
@@ -678,8 +684,9 @@
         }
 
         .footer-analytics {
-            font-size: 1rem;
             font-weight: 400;
+            font-size: 14px;
+            line-height: 143%;
             opacity: 0.75;
             margin-bottom: 0;
             font-family: var(--font-family);
@@ -740,6 +747,17 @@
             margin-top: 32px;
             color: var(--cbtw-neutral-cbtw-black);
         }
+
+        @media (max-width: 1200px) {
+            .footer-section .doc-links {
+                justify-content: start;
+            }
+
+            .footer-section .doc-links .row {
+                gap: 48px;
+            }
+        }
+
 
         @media (max-width: 768px) {
             .footer-section {
@@ -903,7 +921,7 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
+    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top navbar-py-32">
             <div class="container-fluid navbar-shell d-flex align-items-center justify-content-between px-navbar">
 
                 <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
