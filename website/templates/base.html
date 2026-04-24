@@ -262,8 +262,8 @@
         }
 
         .toc-sidebar {
-            width: 380px; 
-            flex: 0 0 380px;
+            width: 340px; 
+            flex: 0 0 340px;
         }
 
         .container-content {
@@ -288,7 +288,7 @@
 
         .toc .list-group-item {
             border: none;
-            padding: 0.5rem 0;
+            padding: 10px 20px;
             background: transparent;
         }
 
@@ -311,7 +311,18 @@
 
         .toc .list-group-item.active a {
             color: var(--secondary-color);
-            font-weight: 500; 
+        }
+
+        .toc > ul.list-group > li.list-group-item:first-child {
+            background: transparent !important;
+            padding-left: 0;
+            font-weight: 700;
+        }
+    
+        .toc > ul.list-group > li.list-group-item:first-child.active {
+            background: transparent !important;
+            padding-left: 0;
+            font-weight: 700;
         }
 
         /* Hierarchical TOC styling */
@@ -321,9 +332,12 @@
             margin-bottom: 0;
         }
 
-        .toc ul ul {
-            padding-left: 1.2rem;
-            margin-top: 0.25rem;
+        .toc > ul > ul {
+            padding-left: 0;
+        }
+
+        .toc > ul > ul > ul {
+            padding-left: 1rem;
         }
 
         .toc li {
