@@ -576,43 +576,32 @@
     }
 
     .divider {
-        width: auto;
-        max-width: none;
+        width: 100%;
+        max-width: 1380px;
         height: 1px;
         background: #8D8D8D;
-        margin: 32px 270px;
-        position: relative;
+        margin: 32px auto;
     }
 
-    /* Laptop/Desktop (1200px - 1919px) */
-    @media (max-width: 1919px) and (min-width: 1200px) {
+    @media (max-width: 1024px) {
         .divider {
-            margin-left: 120px;
-            margin-right: 120px;
+            max-width: calc(100% - 100px);
         }
     }
 
-    /* Tablet (900px - 1199px) */
-    @media (max-width: 1199px) and (min-width: 900px) {
+    @media (max-width: 768px) {
         .divider {
-            margin-left: 40px;
-            margin-right: 40px;
+            max-width: calc(100% - 80px);
         }
     }
 
-    /* Mobile (max 899px) */
-    @media (max-width: 899px) {
+    @media (max-width: 560px) {
         .divider {
-            margin-left: 12px;
-            margin-right: 12px;
+            max-width: calc(100% - 40px); 
         }
     }
 
     @media (max-width: 1200px) {
-        .divider {
-            width: 100%; 
-            max-width: 1100px;
-        }
 
         .section-getting-started {
             padding: 120px 40px;
