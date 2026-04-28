@@ -118,6 +118,7 @@
             --text-color-white: #ffffff;
             --color-border-secondary: #8D8D8D;
             --background-color-color-background-tertiary: #E3FAFF;
+            --navbar-height: 96px;
         }
 
         html {
@@ -129,6 +130,18 @@
         body {
             font-family: var(--font-family);
             line-height: 1.6;
+        }
+
+        .navbar-py {
+            padding-top: 32px;
+            padding-bottom: 32px;
+        }
+
+        @media (max-width: 767.98px) {
+            .navbar-py {
+                padding-top: 20px;
+                padding-bottom: 20px;
+            }
         }
 
         a.nav-link-custom {
@@ -266,6 +279,10 @@
             flex: 0 0 340px;
         }
 
+        .toc-sidebar .position-sticky {
+            top: 134px;
+        }
+
         .container-content {
             flex: 1;
             min-width: 0;
@@ -285,7 +302,7 @@
             margin-top: 0;
             font-size: 1.1rem;
             border-bottom: 2px solid var(--text-color-placeholder-text);
-            padding-bottom: 0.5rem;
+            padding-bottom: 12px;
         }
 
         .toc .list-group-item {
@@ -574,11 +591,6 @@
 
         .container-content table th {
             background-color: #ECFCFF;
-        }
-
-        .navbar-py-32 {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
         }
 
         /* Footer section */
@@ -937,7 +949,7 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top navbar-py-32">
+    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top navbar-py">
             <div class="container-fluid navbar-shell d-flex align-items-center justify-content-between px-navbar">
 
                 <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
