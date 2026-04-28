@@ -646,7 +646,7 @@ Sitemap: {site_base}/sitemap.xml
     <div class=\"container-fluid\">
     <div class=\"row toc-layout\">
       <aside class=\"toc-sidebar d-none d-lg-block p-0\">
-        <div class=\"position-sticky\" style=\"top: 6rem;\">
+        <div class=\"position-sticky\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
@@ -980,7 +980,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
    <div class=\"container-fluid\">
     <div class=\"row toc-layout\">
       <aside class=\"toc-sidebar d-none d-lg-block p-0\">
-        <div class=\"position-sticky\" style=\"top: 6rem;\">
+        <div class=\"position-sticky\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
