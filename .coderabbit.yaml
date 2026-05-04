@@ -86,6 +86,46 @@ reviews:
           exception messages or debug logs.
         - Temp directories created for cloning must be cleaned up on exception paths.
 
+    - path: "packages/qdrant-loader/src/qdrant_loader/connectors/jira/**"
+      instructions: >
+        Jira connector has separate Cloud and Data Center implementations.
+        Check for:
+        - Auth handling must cover both Cloud (Basic Auth with API token) and
+          Data Center (Bearer token); flag any new auth code missing one branch.
+        - Issue traversal must handle pagination via `startAt`/`maxResults` correctly;
+          flag any loop that stops before `total` is reached.
+        - Changelog fetching is optional — verify it is gated on config and does not
+          silently fail if the field is absent from the API response.
+        - Exception messages must pass through `sanitize_exception_message()` to
+          prevent token or email leakage in logs.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/connectors/localfile/**"
+      instructions: >
+        Local file connector scans directories and converts via MarkItDown.
+        Check for:
+        - Path traversal: user-supplied directory paths must be resolved and
+          validated to stay within the configured root; flag any `open()` call
+          without a bounds check.
+        - File size limits must be enforced before reading into memory; flag any
+          file read without a size guard.
+        - All file handles must be closed in `finally` blocks or context managers —
+          no bare `open()` without `with`.
+        - Unsupported file types must be skipped gracefully, not raise unhandled
+          exceptions that abort the entire ingestion run.
+
+    - path: "packages/qdrant-loader/src/qdrant_loader/connectors/publicdocs/**"
+      instructions: >
+        Public docs connector crawls URLs and parses HTML with BeautifulSoup.
+        Check for:
+        - URL validation: crawl targets must be validated as `http`/`https` before
+          requests are made; flag any URL constructed from config without scheme check.
+        - Crawl scope must be bounded — verify the connector does not follow
+          off-domain links or exceed a configured depth/page limit.
+        - Rate limiting must apply to all outbound HTTP requests; flag any `requests`
+          call that bypasses the shared RateLimiter.
+        - BeautifulSoup parsing must use `html.parser` or `lxml`, never `html5lib`
+          with untrusted content unless explicitly reviewed for safety.
+
     - path: "packages/qdrant-loader/src/qdrant_loader/core/state/**"
       instructions: >
         State management uses SQLAlchemy with connection pooling.
