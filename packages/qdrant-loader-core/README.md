@@ -10,11 +10,12 @@ For provider, configuration, and architecture details, use the documentation lin
 
 ## 🎯 What It Provides
 
-- Provider-agnostic LLM facade for OpenAI, Azure OpenAI, OpenAI-compatible endpoints, and Ollama
-- Unified async APIs for embeddings and chat clients
-- Typed configuration mapping via `LLMSettings.from_global_config(...)`
-- Structured logging with secret redaction
-- Normalized provider exceptions for predictable handling across backends
+- **Provider-agnostic LLM facade** for OpenAI, Azure OpenAI, OpenAI-compatible endpoints, and Ollama
+- **Unified async APIs** for embeddings and chat clients
+- **Typed settings and mapping**: `LLMSettings.from_global_config(...)` supports the new `global.llm` schema and maps legacy fields with deprecation warnings
+- **Structured logging with redaction**: `LoggingConfig.setup(...)` masks secrets and reduces noisy logs
+- **Normalized errors**: consistent exceptions across providers (`TimeoutError`, `RateLimitedError`, `InvalidRequestError`, `AuthError`, `ServerError`)
+- **Optional dependencies** via extras: `openai`, `ollama`
 
 ## 📦 Installation
 
@@ -38,33 +39,48 @@ from qdrant_loader_core.logging import LoggingConfig
 
 LoggingConfig.setup(level="INFO", format="console", file=None)
 logger = LoggingConfig.get_logger(__name__)
-logger.info("LLM ready")
+logger.info("LLM ready", provider=settings.provider)
 ```
 
 ## 📝 Notes
 
-- Secrets (API keys/tokens) are redacted in logs
-- For MCP integrations, `MCP_DISABLE_CONSOLE_LOGGING=true` is recommended
-- [Environment variable reference](../../docs/users/configuration/environment-variables.md) - Required and optional environment variables for setup, authentication, and runtime behavior.
+- Secrets (keys/tokens) are masked in both stdlib and structlog output
+- Noisy third‑party logs are toned down; Qdrant version checks are filtered
+- For MCP integration, set `MCP_DISABLE_CONSOLE_LOGGING=true` to disable console output
 
 ## ❗ Error Handling
 
 Catch provider-normalized exceptions from `qdrant_loader_core.llm.errors`:
 
-- `TimeoutError`
-- `RateLimitedError`
-- `InvalidRequestError`
-- `AuthError`
-- `ServerError`
+- `TimeoutError` — request timed out
+- `RateLimitedError` — rate limit exceeded
+- `InvalidRequestError` — bad parameters or unsupported operation
+- `AuthError` — authentication/authorization failed
+- `ServerError` — transport/server failures
 
-## 📚 Canonical Documentation
+## 📚 Documentation
 
+- **[Getting Started](../../docs/getting-started/)** - Quick start and core concepts
 - **[Monorepo overview](../../)** - Project structure, packages, and high-level navigation across the repository.
+- **[Quick start](../../docs/getting-started/quick-start.md)** - Fast setup path from install to first successful ingestion.
+- **[User Guides](../../docs/users/)** - Detailed usage instructions
 - **[Developer hub](../../docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
 - **[Architecture hub](../../docs/developers/architecture)** - System design, component interactions, and core technical decisions.
-- **[User configuration reference](../../docs/users/configuration/config-file-reference.md)** - Complete config schema and practical setup examples.
-- **[User error troubleshooting](../../docs/users/troubleshooting/error-messages-reference.md)** - Common error messages, root causes, and recommended fixes.
+- **[Basic Configuration](../../docs/getting-started/basic-configuration.md)** - Getting started with configuration
+
+## 🆘 Support
+
+- **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
 
 ## 🤝 Contributing
 
 See **[CONTRIBUTING](../../CONTRIBUTING.md)** - Contribution guidelines, development standards, and pull request process.
+
+## 📄 License
+
+This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) file for details.
+
+---
+
+**Ready to get started?** Check out our [Quick Start Guide](../../docs/getting-started/quick-start.md) or browse the [complete documentation](../../docs/).

@@ -102,8 +102,8 @@ global:
   embedding:
     endpoint: "${LLM_BASE_URL}"
     # Ollama: Local Ollama OpenAI-compatible endpoint
-    # OpenAI equivalent: https://api.openai.com/v1       
-    model: "${LLM_EMBEDDING_MODEL}" 
+    # OpenAI equivalent: https://api.openai.com/v1
+    model: "${LLM_EMBEDDING_MODEL}"
     # Ollama: Local embedding model name
     # OpenAI equivalent: text-embedding-3-small   (1536 dimensions, cheaper)
     api_key: "${LLM_API_KEY}"
@@ -112,7 +112,7 @@ global:
     batch_size: 100
     vector_size: ${VECTOR_SIZE}
     # MUST match model output dimension
-    # OpenAI: text-embedding-3-small → 1536                      
+    # OpenAI: text-embedding-3-small → 1536
     tokenizer: "none"
     # Ollama: "none"
     # OpenAI: "cl100k_base"
@@ -366,7 +366,6 @@ projects:
           project_key: "${JIRA_PROJECT_KEY}" # Project to process
           requests_per_minute: 60 # Rate limit for API calls
           page_size: 50 # Number of issues per API request
-          process_attachments: true # Whether to process issue attachments
           track_last_sync: true # Track last sync time for incremental updates
           token: "${JIRA_TOKEN}" # Jira API token (from id.atlassian.com)
           email: "${JIRA_EMAIL}" # Jira user email

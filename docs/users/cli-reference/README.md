@@ -1,7 +1,5 @@
 # Command Line Interface (CLI) Reference
 
-📝
-
 QDrant Loader provides a comprehensive command-line interface for managing data ingestion, configuration, and project management. This section covers all available commands, options, and usage patterns.
 
 ## 🎯 CLI Overview
@@ -21,11 +19,17 @@ The `qdrant-loader` command is your primary interface for:
 # Initialize QDrant collection
 qdrant-loader init --workspace .
 
+# Generate config.yaml and .env with setup wizard
+qdrant-loader setup
+
 # Load data from all configured sources
 qdrant-loader ingest --workspace .
 
 # View configuration and project information
 qdrant-loader config --workspace .
+
+# List configured projects
+qdrant-loader project list --workspace .
 
 # Get help
 qdrant-loader --help
@@ -33,12 +37,12 @@ qdrant-loader --help
 
 ### Common Options
 
-| Option | Short | Description | Example |
-|--------|-------|-------------|---------|
-| `--workspace` | | Workspace directory | `--workspace /path/to/workspace` |
-| `--config` | | Configuration file | `--config custom-config.yaml` |
-| `--env` | | Environment file | `--env production.env` |
-| `--log-level` | | Set logging level | `--log-level DEBUG` |
+| Option        | Short | Description         | Example                          |
+| ------------- | ----- | ------------------- | -------------------------------- |
+| `--workspace` |       | Workspace directory | `--workspace /path/to/workspace` |
+| `--config`    |       | Configuration file  | `--config custom-config.yaml`    |
+| `--env`       |       | Environment file    | `--env production.env`           |
+| `--log-level` |       | Set logging level   | `--log-level DEBUG`              |
 
 ## 📚 Command Categories
 
@@ -47,10 +51,14 @@ qdrant-loader --help
 Complete reference for all available commands:
 
 - **`init`** - Initialize QDrant collection and workspace
-- **`ingest`** - Process and load data from sources  
+- **`setup`** - Interactive setup wizard for `config.yaml` and `.env`
+- **`ingest`** - Process and load data from sources
 - **`config`** - View current configuration (includes all project information and validation)
+- **`project list`** - List configured projects
+- **`project status`** - Show project status, document counts, and ingestion history
+- **`project validate`** - Validate one or all projects
 
-### 🤖 Scripting and Automation (coming later)
+### 🤖 Scripting and Automation
 
 Using QDrant Loader in scripts and automated workflows:
 
@@ -114,30 +122,31 @@ qdrant-loader init --workspace . --force
 qdrant-loader ingest --workspace .
 ```
 
-## 🔧Global Options
+## 🔧 Global Options
 
 ### Workspace and Configuration
 
-| Option | Description | Default | Example |
-|--------|-------------|---------|---------|
+| Option             | Description         | Default           | Example                       |
+| ------------------ | ------------------- | ----------------- | ----------------------------- |
 | `--workspace PATH` | Workspace directory | Current directory | `--workspace /data/workspace` |
-| `--config FILE` | Configuration file | `config.yaml` | `--config prod-config.yaml` |
-| `--env FILE` | Environment file | `.env` | `--env production.env` |
+| `--config FILE`    | Configuration file  | `config.yaml`     | `--config prod-config.yaml`   |
+| `--env FILE`       | Environment file    | `.env`            | `--env production.env`        |
 
 ### Output and Logging
 
-| Option | Description | Default | Example |
-|--------|-------------|---------|---------|
-| `--log-level LEVEL` | Set logging level | `INFO` | `--log-level DEBUG` |
+| Option              | Description       | Default | Example             |
+| ------------------- | ----------------- | ------- | ------------------- |
+| `--log-level LEVEL` | Set logging level | `INFO`  | `--log-level DEBUG` |
 
 ### Processing Options (for ingest command)
 
-| Option | Description | Default | Example |
-|--------|-------------|---------|---------|
-| `--project` | Process specific project | All projects | `--project my-project` |
-| `--source-type` | Process specific source type | All types | `--source-type git` |
-| `--source` | Process specific source | All sources | `--source my-repo` |
-| `--profile` | Enable performance profiling | False | `--profile` |
+| Option          | Description                  | Default      | Example                |
+| --------------- | ---------------------------- | ------------ | ---------------------- |
+| `--project`     | Process specific project     | All projects | `--project my-project` |
+| `--source-type` | Process specific source type | All types    | `--source-type git`    |
+| `--source`      | Process specific source      | All sources  | `--source my-repo`     |
+| `--profile`     | Enable performance profiling | False        | `--profile`            |
+| `--force`       | Force full processing        | False        | `--force`              |
 
 ## 🎯 Command Examples
 
@@ -176,7 +185,7 @@ qdrant-loader ingest --workspace .
 
 ### Configuration and Project Information
 
-> **Note**: Dedicated project management commands (`project list`, `project status`, `project validate`) are not currently available. All project information is accessible through the `config` command.
+> **Note**: `config` shows resolved configuration. Use `project` subcommands for project-focused views and validation.
 
 ```bash
 # Display all configuration and project information
@@ -187,6 +196,25 @@ qdrant-loader config --workspace . --log-level DEBUG
 
 # Use specific configuration files
 qdrant-loader config --config custom-config.yaml --env custom.env
+```
+
+### Project Management
+
+```bash
+# List all projects
+qdrant-loader project list --workspace .
+
+# Show status for all projects
+qdrant-loader project status --workspace .
+
+# Show status for one project
+qdrant-loader project status --workspace . --project-id my-project
+
+# Validate all projects
+qdrant-loader project validate --workspace .
+
+# Validate one project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 ## 🔍 Advanced Usage
@@ -293,13 +321,13 @@ qdrant-loader config --workspace . --log-level DEBUG
 
 QDrant Loader uses standard exit codes:
 
-| Code | Meaning | Description |
-|------|---------|-------------|
-| `0` | Success | Command completed successfully |
-| `1` | General error | Command failed due to an error |
-| `2` | Configuration error | Invalid configuration or missing settings |
-| `3` | Connection error | Failed to connect to data sources or QDrant |
-| `4` | Processing error | Error during data processing |
+| Code | Meaning             | Description                                 |
+| ---- | ------------------- | ------------------------------------------- |
+| `0`  | Success             | Command completed successfully              |
+| `1`  | General error       | Command failed due to an error              |
+| `2`  | Configuration error | Invalid configuration or missing settings   |
+| `3`  | Connection error    | Failed to connect to data sources or QDrant |
+| `4`  | Processing error    | Error during data processing                |
 
 ### Using Exit Codes in Scripts
 
@@ -385,8 +413,10 @@ qdrant-loader --help
 
 # Command-specific help
 qdrant-loader init --help
+qdrant-loader setup --help
 qdrant-loader ingest --help
 qdrant-loader config --help
+qdrant-loader project --help
 ```
 
 ### Community Support

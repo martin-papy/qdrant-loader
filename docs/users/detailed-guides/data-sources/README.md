@@ -434,7 +434,7 @@ projects:
           project_key: "RESEARCH"
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
-          process_attachments: true
+          download_attachments: true
 ```
 
 ## 🧪 Configuration Management

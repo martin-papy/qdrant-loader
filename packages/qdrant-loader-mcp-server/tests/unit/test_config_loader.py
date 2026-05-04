@@ -124,6 +124,9 @@ class TestSubstituteEnvVars:
 class TestLegacyEmbeddingMigration:
     def test_legacy_embedding_migrates_to_llm(self, monkeypatch):
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_EMBEDDING_MODEL", raising=False)
+        monkeypatch.delenv("LLM_CHAT_MODEL", raising=False)
+        monkeypatch.delenv("LLM_API_KEY", raising=False)
         config_data = {
             "global": {
                 "embedding": {
@@ -140,6 +143,9 @@ class TestLegacyEmbeddingMigration:
 
     def test_legacy_does_not_override_explicit_llm(self, monkeypatch):
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_EMBEDDING_MODEL", raising=False)
+        monkeypatch.delenv("LLM_CHAT_MODEL", raising=False)
+        monkeypatch.delenv("LLM_API_KEY", raising=False)
         config_data = {
             "global": {
                 "llm": {

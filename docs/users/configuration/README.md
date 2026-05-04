@@ -18,7 +18,17 @@ This section provides comprehensive documentation for configuring QDrant Loader.
 - Team or production rollout: use [Configuration File Reference](./config-file-reference.md) and [Security Considerations](./security-considerations.md)
 - Troubleshoot config or env issues: use [Troubleshooting](../troubleshooting/)
 
-## Quick baseline
+## 📁 Configuration Structure
+
+```text
+your-workspace/
+├── config.yaml # Main configuration file
+├── .env # Environment variables
+├── data/qdrant-loader.db # Processing state (auto-generated)
+└── logs/ # Log files (optional)
+```
+
+## 🚀 Quick Configuration
 
 Use this minimal pair as a baseline and then extend from references above.
 
@@ -64,16 +74,9 @@ projects:
             - "**/*.md"
 ```
 
-## Notes
-
-- Keep provider-specific details only in [LLM Provider Guide](./llm-provider-guide.md).
-- Keep all variable definitions only in [Environment Variables Reference](./environment-variables.md).
-- Keep schema-level field details only in [Configuration File Reference](./config-file-reference.md).
-
 ## Quick validation checklist
 
 - [ ] `qdrant-loader config --workspace .` loads without errors
 - [ ] Required env vars are set for your chosen provider
 - [ ] At least one project and one source are configured
 - [ ] QDrant URL and collection name are valid
-

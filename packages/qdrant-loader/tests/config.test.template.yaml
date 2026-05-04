@@ -152,7 +152,6 @@ projects:
             - "Open"
             - "In Progress"
             - "Done"
-          process_attachments: true
           track_last_sync: true
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"

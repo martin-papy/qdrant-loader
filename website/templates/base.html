@@ -116,6 +116,8 @@
             --cbtw-neutral-cbtw-black: #1c1c1c;
             --text-color-primary-text-black: var(--cbtw-neutral-cbtw-black);
             --text-color-white: #ffffff;
+            --color-border-secondary: #8D8D8D;
+            --background-color-color-background-tertiary: #E3FAFF;
         }
 
         html {
@@ -129,15 +131,16 @@
             line-height: 1.6;
         }
 
-        .header-top  {
-            padding: 32px 88px;
+        .navbar-py {
+            padding-top: 32px;
+            padding-bottom: 32px;
         }
 
-        .container-custom {
-            width: 100%;
-            max-width: 1913px;
-            margin: 0 auto;
-            padding: 0 clamp(1rem, 4vw, 3rem);
+        @media (max-width: 767.98px) {
+            .navbar-py {
+                padding-top: 20px;
+                padding-bottom: 20px;
+            }
         }
 
         a.nav-link-custom {
@@ -200,6 +203,11 @@
             font-size: 1.5rem;
         }
 
+        .px-navbar {
+            padding-left: 40px;
+            padding-right: 40px;
+        }
+
         .status-indicator {
             display: inline-block;
             width: auto;
@@ -249,6 +257,11 @@
             .hero-subtitle {
                 font-size: 1.1rem;
             }
+
+            .px-navbar {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
         }
 
         body.clickio-cmp-in-scope .clickio-cmp-settings-display {
@@ -256,24 +269,44 @@
         }
 
         /* Documentation-specific styles */
+        .toc-layout {
+            display: flex;
+        }
+
+        .toc-sidebar {
+            width: 340px; 
+            flex: 0 0 340px;
+        }
+
+        .toc-sidebar .position-sticky {
+            top: 134px;
+        }
+
+        .container-content {
+            flex: 1;
+            min-width: 0;
+        }
+
         .toc {
             background-color: #ECFCFF;
-            padding: 1.5rem;
+            padding: 40px;
             border: 1px solid #e9ecef;
             overflow-y: auto;
-
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .toc h3 {
             margin-top: 0;
             font-size: 1.1rem;
             border-bottom: 2px solid var(--text-color-placeholder-text);
-            padding-bottom: 0.5rem;
+            padding-bottom: 12px;
         }
 
         .toc .list-group-item {
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 10px 20px;
             background: transparent;
         }
 
@@ -296,7 +329,18 @@
 
         .toc .list-group-item.active a {
             color: var(--secondary-color);
-            font-weight: 500; 
+        }
+
+        .toc > ul.list-group > li.list-group-item:first-child {
+            background: transparent !important;
+            padding-left: 0;
+            font-weight: 700;
+        }
+    
+        .toc > ul.list-group > li.list-group-item:first-child.active {
+            background: transparent !important;
+            padding-left: 0;
+            font-weight: 700;
         }
 
         /* Hierarchical TOC styling */
@@ -306,9 +350,12 @@
             margin-bottom: 0;
         }
 
-        .toc ul ul {
-            padding-left: 1.2rem;
-            margin-top: 0.25rem;
+        .toc > ul > ul {
+            padding-left: 0;
+        }
+
+        .toc > ul > ul > ul {
+            padding-left: 1rem;
         }
 
         .toc li {
@@ -468,11 +515,11 @@
         }
 
         /* Improve list styling in content */
-        .col-lg-9 ul.list-group {
+        .container-content ul.list-group {
             margin-bottom: 1.5rem;
         }
 
-        .col-lg-9 .list-group-item {
+        .container-content .list-group-item {
             border-left: 3px solid var(--primary-color);
             border-top: none;
             border-right: none;
@@ -484,14 +531,14 @@
         }
 
         /* Simple numbered list styling */
-        .col-lg-9 ol.list-group-numbered {
+        .container-content ol.list-group-numbered {
             padding-left: 0;
             margin-bottom: 2rem;
             list-style: none;
             counter-reset: step-counter;
         }
 
-        .col-lg-9 ol.list-group-numbered .list-group-item {
+        .container-content ol.list-group-numbered .list-group-item {
             counter-increment: step-counter;
             position: relative;
             padding: 15px 20px 15px 60px;
@@ -502,7 +549,7 @@
             border-left: 4px solid var(--primary-color);
         }
 
-        .col-lg-9 ol.list-group-numbered .list-group-item::before {
+        .container-content ol.list-group-numbered .list-group-item::before {
             content: counter(step-counter);
             position: absolute;
             left: 20px;
@@ -521,19 +568,51 @@
         }
 
         /* Regular ordered lists */
-        .col-lg-9 ol:not(.list-group-numbered) {
-            padding-left: 0;
+        .container-content ol:not(.list-group-numbered) {
+            padding-left: 1.5rem;
             margin-bottom: 20px;
         }
 
-        .col-lg-9 ol:not(.list-group-numbered) li {
+        .container-content ol:not(.list-group-numbered) li {
             margin-bottom: 8px;
             line-height: 2.6;
         }
 
+        .container-content table {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            border-collapse: separate;
+            border-spacing: 0;
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
+            border: 1px solid #ECFCFF;
+        }
+
+        .container-content table th {
+            background-color: #ECFCFF;
+        }
+
         /* Footer section */
         .footer-section {
-            padding: 7.5rem 5.5rem 2.5rem;
+            padding: 96px 40px 40px;
+        }
+
+        .footer-section .row {
+            align-items: flex-start;
+        }
+
+        .footer-logo {
+            margin-bottom: 12px;
+        }
+
+        .doc-description {
+            padding-left: 92px;
+            margin-top: 12px;
+            font-size: 18px;
+            line-height: 1.6;
+            font-weight: 700;
+            max-width: 46rem;
+            font-family: var(--font-family);
         }
 
         .doc-section-title {
@@ -542,15 +621,30 @@
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
+            font-family: var(--font-family);
         }
 
-        .doc-description {
-            max-width: 600px;
-            padding-left: 92px;
-            margin-top: 12px;
-            font-size: 18px;
-            line-height: 1.6;
-            font-weight: 700;
+        .doc-section .view-doc-link svg {
+            stroke-width: 0;
+        }
+
+        .doc-section .view-doc-link {
+            font-family: var(--second-family);
+        }
+
+        .footer-section .doc-links {
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 120px;
+        }
+
+        .footer-section .doc-links .row {
+            gap: 120px;
+        }
+
+        .footer-section .doc-links .col-md-6 {
+            flex: 0 0 auto;
+            width: auto;
         }
 
         .project-supporter {
@@ -560,7 +654,7 @@
         }
 
         .support-text {
-            font-family: var(--second-family);
+            font-family: var(--font-family);
             font-weight: 400;
             font-size: 20px;
             line-height: 150%;
@@ -579,27 +673,50 @@
 
         .support-link {
             font-size: 16px;
-            gap: 0.5rem; 
+            gap: 0.5rem;
             text-decoration: none;
             color: var(--cbtw-neutral-cbtw-black);
         }
 
         .support-link .indicator {
-            width: 0.9375rem; 
+            width: 0.9375rem;
             height: 0.9375rem;
+            background-color: #FFF200;
+        }
+
+        .support-link span {
+            font-family: var(--font-family);
+            font-weight: 400;
+            font-size: 16px;
+            letter-spacing: 0.13em;
+            color: var(--text-color-primary-text-black);
+        }
+
+        @media (min-width: 1201px) and (max-width: 1600px) {
+            .footer-section .doc-links .row {
+                justify-content: flex-start;
+                gap: 64px !important;
+            }
+
+            .doc-description {
+                max-width: 100%;
+            }
         }
 
         .footer-copy {
             font-size: 1rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
+            font-family: var(--font-family);
         }
 
         .footer-analytics {
-            font-size: 0.875rem;
             font-weight: 400;
+            font-size: 14px;
+            line-height: 143%;
             opacity: 0.75;
             margin-bottom: 0;
+            font-family: var(--font-family);
         }
 
         .footer-analytics a {
@@ -612,11 +729,35 @@
             transition: color 0.2s;
         }
 
+        .social-links .social-link svg path {
+            fill: currentColor;
+        }
+
+        .social-links-icons {
+            display: flex;
+            gap: 20px;
+        }
+
+        .social-links {
+            gap: 20px !important;
+        }
+
         #build-info {
+            font-family: var(--second-family);
             font-size: 1rem;
             font-weight: 400;
             white-space: nowrap;
             color: var(--text-color-placeholder-text);
+        }
+
+        #build-info a {
+            font-family: var(--second-family);
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 150%;
+            text-align: center;
+            color: var(--text-color-placeholder-text);
+            text-decoration: none;
         }
 
         #build-info::after {
@@ -625,7 +766,7 @@
             width: 2px;      
             height: 24px;          
             background-color: var(--text-color-placeholder-text);
-            margin-left: 0.5rem; 
+            margin-left: 20px;
             vertical-align: middle; 
         }
 
@@ -634,24 +775,49 @@
             color: var(--cbtw-neutral-cbtw-black);
         }
 
-        @media (max-width: 767.98px) {
+        @media (max-width: 1200px) {
+            .footer-section .doc-links {
+                justify-content: start;
+            }
+
+            .footer-section .doc-links .row {
+                gap: 48px;
+            }
+        }
+
+
+        @media (max-width: 768px) {
             .footer-section {
                 padding: 20px;
             }
 
-            .doc-link {
-                margin-top: 40px;
+            .footer-section .doc-links .row {
+                flex-direction: column;
+                gap: 40px;
+            }
+
+            .footer-section .doc-links {
+                display: block;
+                padding: 40px 20px;
             }
         }       
 
         /* Responsive improvements */
         @media (max-width: 991.98px) {
+            .toc-layout {
+                flex-direction: column;
+            }
+
+            .toc-sidebar {
+                width: 100%;
+                flex: 0 0 auto;
+            }
+
             .toc {
                 margin-bottom: 2rem;
             }
 
             .footer-logo {
-                padding-top: 20px;
                 margin-left: 12px;
             }
 
@@ -670,7 +836,7 @@
                 font-size: 36px;
             }
 
-            .doc-links {
+            .footer-section .doc-links {
                 padding: 40px 20px;
             }
 
@@ -690,33 +856,42 @@
             .container-content {
                 padding: 3.25rem  2rem;
             }
+
+            .footer-section {
+                margin-top: 24px;
+            }
+
+            .footer-logo img {
+                max-width: 200px;
+                max-height: 200px;
+            }
         }
 
         /* Ensure proper spacing for documentation content */
-        .col-lg-9 h1, .col-lg-9 h2, .col-lg-9 h3, .col-lg-9 h4, .col-lg-9 h5, .col-lg-9 h6 {
+        .container-content h1, .container-content h2, .container-content h3, .container-content h4, .container-content h5, .container-content h6 {
             margin-top: 1.5rem;
             margin-bottom: 0.5rem;
         }
 
-        .col-lg-9 h1:first-child {
+        .container-content h1:first-child {
             margin-top: 0;
         }
 
-        .col-lg-9 p {
+        .container-content p {
             margin-bottom: 5px;
             text-align: justify;
         }
 
-        .col-lg-9 a {
+        .container-content a {
             margin: 0;
             text-align: justify;
         }
 
         /* Badge styling improvements */
-        .col-lg-9 img[alt*="PyPI"], 
-        .col-lg-9 img[alt*="License"], 
-        .col-lg-9 img[alt*="Coverage"],
-        .col-lg-9 img[alt*="CodeRabbit"] {
+        .container-content img[alt*="PyPI"], 
+        .container-content img[alt*="License"], 
+        .container-content img[alt*="Coverage"],
+        .container-content img[alt*="CodeRabbit"] {
             margin: 2px 4px;
             display: inline-flex;
             align-items: center;
@@ -773,8 +948,8 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top py-4">
-            <div class="container d-flex align-items-center justify-content-between">
+    <nav class="navbar navbar-expand-lg navbar-light  bg-white shadow-sm sticky-top navbar-py">
+            <div class="container-fluid navbar-shell d-flex align-items-center justify-content-between px-navbar">
 
                 <a class="navbar-brand d-flex align-items-center" href="{{ base_url }}">
                     <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60">
@@ -839,7 +1014,7 @@
                     </ul>
                 </div>
             </div>
-        </nav>
+    </nav>
   
 
     <!-- Main Content -->
@@ -852,7 +1027,7 @@
         <div class="row">
             <div class="col-12 col-lg-6 px-0">
                 <div class="footer-logo">
-                    <img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="logo">
+                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader"></a>
                 </div>
                 <p class="doc-description">
                     Enterprise-ready vector database toolkit for building searchable knowledge bases
@@ -872,12 +1047,8 @@
                                 <li>
                                     <a href="{{ base_url }}docs/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M8.25 9C8.25 8.80109 8.32902 8.61032 8.46967 8.46967C8.61032 8.32902 8.80109 8.25 9 8.25H15C15.1989 8.25 15.3897 8.32902 15.5303 8.46967C15.671 8.61032 15.75 8.80109 15.75 9C15.75 9.19891 15.671 9.38968 15.5303 9.53033C15.3897 9.67098 15.1989 9.75 15 9.75H9C8.80109 9.75 8.61032 9.67098 8.46967 9.53033C8.32902 9.38968 8.25 9.19891 8.25 9ZM9 12.75H15C15.1989 12.75 15.3897 12.671 15.5303 12.5303C15.671 12.3897 15.75 12.1989 15.75 12C15.75 11.8011 15.671 11.6103 15.5303 11.4697C15.3897 11.329 15.1989 11.25 15 11.25H9C8.80109 11.25 8.61032 11.329 8.46967 11.4697C8.32902 11.6103 8.25 11.8011 8.25 12C8.25 12.1989 8.32902 12.3897 8.46967 12.5303C8.61032 12.671 8.80109 12.75 9 12.75ZM12 14.25H9C8.80109 14.25 8.61032 14.329 8.46967 14.4697C8.32902 14.6103 8.25 14.8011 8.25 15C8.25 15.1989 8.32902 15.3897 8.46967 15.5303C8.61032 15.671 8.80109 15.75 9 15.75H12C12.1989 15.75 12.3897 15.671 12.5303 15.5303C12.671 15.3897 12.75 15.1989 12.75 15C12.75 14.8011 12.671 14.6103 12.5303 14.4697C12.3897 14.329 12.1989 14.25 12 14.25ZM21 4.5V14.6897C21.0006 14.8867 20.9621 15.082 20.8866 15.264C20.8111 15.446 20.7002 15.6112 20.5603 15.75L15.75 20.5603C15.6112 20.7002 15.446 20.8111 15.264 20.8866C15.082 20.9621 14.8867 21.0006 14.6897 21H4.5C4.10218 21 3.72064 20.842 3.43934 20.5607C3.15804 20.2794 3 19.8978 3 19.5V4.5C3 4.10218 3.15804 3.72064 3.43934 3.43934C3.72064 3.15804 4.10218 3 4.5 3H19.5C19.8978 3 20.2794 3.15804 20.5607 3.43934C20.842 3.72064 21 4.10218 21 4.5ZM4.5 19.5H14.25V15C14.25 14.8011 14.329 14.6103 14.4697 14.4697C14.6103 14.329 14.8011 14.25 15 14.25H19.5V4.5H4.5V19.5ZM15.75 15.75V18.4406L18.4397 15.75H15.75Z" fill="currentColor"/>
                                         </svg>
                                         <span>Documentation</span>
                                     </a>
@@ -886,25 +1057,18 @@
                                 <li>
                                     <a href="{{ base_url }}coverage/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M20.25 3.75H6.75C6.35218 3.75 5.97064 3.90804 5.68934 4.18934C5.40804 4.47064 5.25 4.85218 5.25 5.25V6.75H3.75C3.35218 6.75 2.97064 6.90804 2.68934 7.18934C2.40804 7.47064 2.25 7.85218 2.25 8.25V18.75C2.25 19.1478 2.40804 19.5294 2.68934 19.8107C2.97064 20.092 3.35218 20.25 3.75 20.25H17.25C17.6478 20.25 18.0294 20.092 18.3107 19.8107C18.592 19.5294 18.75 19.1478 18.75 18.75V17.25H20.25C20.6478 17.25 21.0294 17.092 21.3107 16.8107C21.592 16.5294 21.75 16.1478 21.75 15.75V5.25C21.75 4.85218 21.592 4.47064 21.3107 4.18934C21.0294 3.90804 20.6478 3.75 20.25 3.75ZM17.25 8.25V9.75H3.75V8.25H17.25ZM17.25 18.75H3.75V11.25H17.25V18.75ZM20.25 15.75H18.75V8.25C18.75 7.85218 18.592 7.47064 18.3107 7.18934C18.0294 6.90804 17.6478 6.75 17.25 6.75H6.75V5.25H20.25V15.75Z" fill="currentColor"/>
                                         </svg>
+
                                         <span>Test Coverage </span>
                                     </a>
                                 </li>
                                 <li>
                                     <a id="feedback-link" href="https://github.com/martin-papy/qdrant-loader/issues/new?assignees=martin-papy&labels=docs-feedback&title=%5BDocs%20Feedback%5D%20Documentation%20-%20QDrant%20Loader&body=Page%3A%20https%3A%2F%2Fqdrant-loader.net%2Fdocs%2F%0ADocs%20commit%3A%20f1e5516%0A%0AFeedback%3A%0A"
                                         class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M20.25 4.5H3.75003C3.3522 4.5 2.97067 4.65804 2.68937 4.93934C2.40806 5.22064 2.25003 5.60218 2.25003 6V21C2.24833 21.2859 2.32916 21.5662 2.48281 21.8074C2.63646 22.0485 2.85641 22.2401 3.11628 22.3594C3.31486 22.4516 3.53109 22.4996 3.75003 22.5C4.10215 22.4992 4.4426 22.3736 4.71096 22.1456L4.7194 22.1391L7.78128 19.5H20.25C20.6479 19.5 21.0294 19.342 21.3107 19.0607C21.592 18.7794 21.75 18.3978 21.75 18V6C21.75 5.60218 21.592 5.22064 21.3107 4.93934C21.0294 4.65804 20.6479 4.5 20.25 4.5ZM20.25 18H7.50003C7.31994 18.0001 7.1459 18.065 7.00971 18.1828L3.75003 21V6H20.25V18ZM8.25003 10.5C8.25003 10.3011 8.32904 10.1103 8.4697 9.96967C8.61035 9.82902 8.80111 9.75 9.00003 9.75H15C15.1989 9.75 15.3897 9.82902 15.5304 9.96967C15.671 10.1103 15.75 10.3011 15.75 10.5C15.75 10.6989 15.671 10.8897 15.5304 11.0303C15.3897 11.171 15.1989 11.25 15 11.25H9.00003C8.80111 11.25 8.61035 11.171 8.4697 11.0303C8.32904 10.8897 8.25003 10.6989 8.25003 10.5ZM8.25003 13.5C8.25003 13.3011 8.32904 13.1103 8.4697 12.9697C8.61035 12.829 8.80111 12.75 9.00003 12.75H15C15.1989 12.75 15.3897 12.829 15.5304 12.9697C15.671 13.1103 15.75 13.3011 15.75 13.5C15.75 13.6989 15.671 13.8897 15.5304 14.0303C15.3897 14.171 15.1989 14.25 15 14.25H9.00003C8.80111 14.25 8.61035 14.171 8.4697 14.0303C8.32904 13.8897 8.25003 13.6989 8.25003 13.5Z" fill="currentColor"/>
                                         </svg>
 
                                         <span>Was this helpful? Give feedback</span>
@@ -913,13 +1077,10 @@
                                 <li>
                                     <a href="{{ base_url }}privacy-policy.html"
                                         class="d-flex align-items-center text-decoration-none view-doc-link">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M19.5 3.75H4.5C4.10218 3.75 3.72064 3.90804 3.43934 4.18934C3.15804 4.47064 3 4.85218 3 5.25V10.5C3 15.4425 5.3925 18.4378 7.39969 20.0803C9.56156 21.8484 11.7122 22.4484 11.8059 22.4738C11.9348 22.5088 12.0708 22.5088 12.1997 22.4738C12.2934 22.4484 14.4413 21.8484 16.6059 20.0803C18.6075 18.4378 21 15.4425 21 10.5V5.25C21 4.85218 20.842 4.47064 20.5607 4.18934C20.2794 3.90804 19.8978 3.75 19.5 3.75ZM19.5 10.5C19.5 13.9753 18.2194 16.7962 15.6937 18.8831C14.5943 19.7885 13.344 20.493 12 20.9644C10.6736 20.5012 9.4387 19.8092 8.35125 18.9197C5.79563 16.8291 4.5 13.9969 4.5 10.5V5.25H19.5V10.5ZM7.71937 13.2806C7.57864 13.1399 7.49958 12.949 7.49958 12.75C7.49958 12.551 7.57864 12.3601 7.71937 12.2194C7.86011 12.0786 8.05098 11.9996 8.25 11.9996C8.44902 11.9996 8.63989 12.0786 8.78063 12.2194L10.5 13.9397L15.2194 9.21937C15.2891 9.14969 15.3718 9.09442 15.4628 9.0567C15.5539 9.01899 15.6515 8.99958 15.75 8.99958C15.8485 8.99958 15.9461 9.01899 16.0372 9.0567C16.1282 9.09442 16.2109 9.14969 16.2806 9.21937C16.3503 9.28906 16.4056 9.37178 16.4433 9.46283C16.481 9.55387 16.5004 9.65145 16.5004 9.75C16.5004 9.84855 16.481 9.94613 16.4433 10.0372C16.4056 10.1282 16.3503 10.2109 16.2806 10.2806L11.0306 15.5306C10.961 15.6004 10.8783 15.6557 10.7872 15.6934C10.6962 15.7312 10.5986 15.7506 10.5 15.7506C10.4014 15.7506 10.3038 15.7312 10.2128 15.6934C10.1217 15.6557 10.039 15.6004 9.96937 15.5306L7.71937 13.2806Z" fill="currentColor"/>
                                         </svg>
+
                                         <span>Privacy Policy</span>
                                     </a>
                                 </li>
@@ -939,12 +1100,8 @@
                                 <li>
                                     <a href="https://github.com/martin-papy/qdrant-loader"
                                         class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M19.5291 7.09501C19.7583 6.35551 19.8318 5.57653 19.745 4.80719C19.6582 4.03785 19.413 3.29484 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0967 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.2407 8.81793 19.9924 7.90381 19.5291 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6517 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.511 8.26475 18.7388 8.99779 18.75 9.75001V10.5Z" fill="currentColor"/>
                                         </svg>
                                         <span>GitHub Repository</span>
                                     </a>
@@ -953,41 +1110,26 @@
                                 <li>
                                     <a href="https://pypi.org/project/qdrant-loader/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"    xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 7.50014C11.11 7.50014 10.24 7.76406 9.49993 8.25853C8.75991 8.75299 8.18314 9.4558 7.84254 10.2781C7.50195 11.1003 7.41283 12.0051 7.58647 12.878C7.7601 13.751 8.18868 14.5528 8.81802 15.1821C9.44736 15.8115 10.2492 16.24 11.1221 16.4137C11.995 16.5873 12.8998 16.4982 13.7221 16.1576C14.5443 15.817 15.2471 15.2402 15.7416 14.5002C16.2361 13.7602 16.5 12.8902 16.5 12.0001C16.4985 10.8071 16.0239 9.66339 15.1803 8.8198C14.3367 7.97621 13.193 7.50163 12 7.50014ZM12 15.0001C11.4067 15.0001 10.8266 14.8242 10.3333 14.4945C9.83994 14.1649 9.45542 13.6964 9.22836 13.1482C9.0013 12.6 8.94189 11.9968 9.05764 11.4149C9.1734 10.8329 9.45912 10.2984 9.87868 9.87882C10.2982 9.45926 10.8328 9.17354 11.4147 9.05778C11.9967 8.94203 12.5999 9.00144 13.148 9.2285C13.6962 9.45556 14.1648 9.84008 14.4944 10.3334C14.8241 10.8268 15 11.4068 15 12.0001C15 12.7958 14.6839 13.5588 14.1213 14.1215C13.5587 14.6841 12.7956 15.0001 12 15.0001ZM20.97 6.2017L12.72 1.68764C12.4996 1.56584 12.2518 1.50195 12 1.50195C11.7482 1.50195 11.5004 1.56584 11.28 1.68764L3.03 6.20358C2.7944 6.33249 2.59772 6.52229 2.46052 6.75316C2.32331 6.98404 2.25061 7.24751 2.25 7.51608V16.4823C2.25061 16.7509 2.32331 17.0144 2.46052 17.2452C2.59772 17.4761 2.7944 17.6659 3.03 17.7948L11.28 22.3108C11.5004 22.4326 11.7482 22.4964 12 22.4964C12.2518 22.4964 12.4996 22.4326 12.72 22.3108L20.97 17.7948C21.2056 17.6659 21.4023 17.4761 21.5395 17.2452C21.6767 17.0144 21.7494 16.7509 21.75 16.4823V7.51701C21.7499 7.24797 21.6774 6.98391 21.5402 6.7525C21.403 6.52108 21.206 6.33084 20.97 6.2017ZM12 21.0001L3.75 16.4833V7.51701L12 3.00014L20.25 7.51608V16.4823L12 21.0001Z" fill="currentColor"/>
                                         </svg>
-
-
                                         <span>Qdrant Loader PyPI</span>
                                     </a>
                                 </li>
                                 <li>
                                     <a href="https://pypi.org/project/qdrant-loader-mcp-server/" 
                                         class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M19.5 3H4.5C4.10218 3 3.72064 3.15804 3.43934 3.43934C3.15804 3.72064 3 4.10218 3 4.5V19.5C3 19.8978 3.15804 20.2794 3.43934 20.5607C3.72064 20.842 4.10218 21 4.5 21H19.5C19.8978 21 20.2794 20.842 20.5607 20.5607C20.842 20.2794 21 19.8978 21 19.5V4.5C21 4.10218 20.842 3.72064 20.5607 3.43934C20.2794 3.15804 19.8978 3 19.5 3ZM8.25 15C8.39834 15 8.54334 15.044 8.66668 15.1264C8.79001 15.2088 8.88614 15.3259 8.94291 15.463C8.99968 15.6 9.01453 15.7508 8.98559 15.8963C8.95665 16.0418 8.88522 16.1754 8.78033 16.2803C8.67544 16.3852 8.5418 16.4567 8.39632 16.4856C8.25083 16.5145 8.10003 16.4997 7.96299 16.4429C7.82594 16.3861 7.70881 16.29 7.6264 16.1667C7.54399 16.0433 7.5 15.8983 7.5 15.75C7.5 15.5511 7.57902 15.3603 7.71967 15.2197C7.86032 15.079 8.05109 15 8.25 15ZM4.5 4.5H7.5V13.6294C6.99959 13.8063 6.57783 14.1544 6.30928 14.6122C6.04072 15.07 5.94265 15.6081 6.0324 16.1312C6.12216 16.6543 6.39395 17.1288 6.79976 17.471C7.20556 17.8131 7.71923 18.0007 8.25 18.0007C8.78077 18.0007 9.29444 17.8131 9.70024 17.471C10.106 17.1288 10.3778 16.6543 10.4676 16.1312C10.5574 15.6081 10.4593 15.07 10.1907 14.6122C9.92217 14.1544 9.50041 13.8063 9 13.6294V10.8103L13.5 15.3103V19.5H4.5V4.5ZM19.5 19.5H15V15C15.0001 14.9015 14.9807 14.8039 14.9431 14.7129C14.9055 14.6218 14.8503 14.5391 14.7806 14.4694L9 8.68969V4.5H12V6.75C11.9999 6.84852 12.0193 6.94609 12.0569 7.03714C12.0945 7.12818 12.1497 7.21092 12.2194 7.28063L13.7194 8.78063C13.5741 9.08308 13.4991 9.41447 13.5 9.75C13.5 10.195 13.632 10.63 13.8792 11C14.1264 11.37 14.4778 11.6584 14.889 11.8287C15.3001 11.999 15.7525 12.0436 16.189 11.9568C16.6254 11.87 17.0263 11.6557 17.341 11.341C17.6557 11.0263 17.87 10.6254 17.9568 10.189C18.0436 9.7525 17.999 9.3001 17.8287 8.88896C17.6584 8.47783 17.37 8.12643 17 7.87919C16.63 7.63196 16.195 7.5 15.75 7.5C15.4144 7.49941 15.083 7.57473 14.7806 7.72031L13.5 6.43969V4.5H19.5V19.5ZM15.75 9C15.8983 9 16.0433 9.04399 16.1667 9.1264C16.29 9.20881 16.3861 9.32594 16.4429 9.46299C16.4997 9.60003 16.5145 9.75083 16.4856 9.89632C16.4567 10.0418 16.3852 10.1754 16.2803 10.2803C16.1754 10.3852 16.0418 10.4567 15.8963 10.4856C15.7508 10.5145 15.6 10.4997 15.463 10.4429C15.3259 10.3861 15.2088 10.29 15.1264 10.1667C15.044 10.0433 15 9.89834 15 9.75C15 9.55109 15.079 9.36032 15.2197 9.21967C15.3603 9.07902 15.5511 9 15.75 9Z" fill="currentColor"/>
                                         </svg>
-
                                         <span>MCP Server PyPI</span>
                                     </a>
                                 </li>
                                 <li>
                                     <a href="https://pypi.org/project/qdrant-loader-core/"
                                         class="d-flex align-items-center text-decoration-none view-doc-link" target="_blank">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-arrow-right-icon lucide-arrow-right">
-                                            <path d="M5 12h14" />
-                                            <path d="m12 5 7 7-7 7" />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2.25C6.95344 2.25 3 4.55625 3 7.5V16.5C3 19.4437 6.95344 21.75 12 21.75C17.0466 21.75 21 19.4437 21 16.5V7.5C21 4.55625 17.0466 2.25 12 2.25ZM19.5 12C19.5 12.9019 18.7612 13.8216 17.4741 14.5237C16.0247 15.3141 14.0803 15.75 12 15.75C9.91969 15.75 7.97531 15.3141 6.52594 14.5237C5.23875 13.8216 4.5 12.9019 4.5 12V10.44C6.09937 11.8463 8.83406 12.75 12 12.75C15.1659 12.75 17.9006 11.8425 19.5 10.44V12ZM6.52594 4.97625C7.97531 4.18594 9.91969 3.75 12 3.75C14.0803 3.75 16.0247 4.18594 17.4741 4.97625C18.7612 5.67844 19.5 6.59813 19.5 7.5C19.5 8.40187 18.7612 9.32156 17.4741 10.0237C16.0247 10.8141 14.0803 11.25 12 11.25C9.91969 11.25 7.97531 10.8141 6.52594 10.0237C5.23875 9.32156 4.5 8.40187 4.5 7.5C4.5 6.59813 5.23875 5.67844 6.52594 4.97625ZM17.4741 19.0237C16.0247 19.8141 14.0803 20.25 12 20.25C9.91969 20.25 7.97531 19.8141 6.52594 19.0237C5.23875 18.3216 4.5 17.4019 4.5 16.5V14.94C6.09937 16.3463 8.83406 17.25 12 17.25C15.1659 17.25 17.9006 16.3425 19.5 14.94V16.5C19.5 17.4019 18.7612 18.3216 17.4741 19.0237Z" fill="currentColor"/>
                                         </svg>
                                         <span>Core Library PyPI</span>
                                     </a>
@@ -1006,7 +1148,7 @@
             <p class="support-text">This project is proudly supported and powered by <b>CBTW</b></p> 
             <h1 class="support-title text-uppercase">COLLABORATION BETTERS THE WORLD</h1> 
             <a href="https://cbtw.tech/" class="support-link d-flex align-items-center justify-content-lg-center gap-2 text-decoration-none text-dark" target="_blank">
-                <div class="indicator rounded-circle bg-warning"></div>
+                <div class="indicator rounded-circle"></div>
                 <span>www.cbtw.tech</span> 
             </a>
         </div>
@@ -1025,22 +1167,24 @@
                 </p>
             </div>
             <div class="col-md-4 text-md-end">
-                <div class="social-links d-flex justify-content-md-end align-items-center mb-2 gap-2">
-                    <p class="mb-0 ml-2 text-black small text-nowrap" id="build-info">Loading build information...</p>
-                    <a href="https://github.com/martin-papy" target="_blank" class="social-link "
-                        title="Follow Martin Papy on GitHub">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path opacity="0.2" d="M19.5 9.75V10.5C19.5 11.6935 19.0259 12.8381 18.182 13.682C17.3381 14.5259 16.1935 15 15 15H12.75C13.5456 15 14.3087 15.3161 14.8713 15.8787C15.4339 16.4413 15.75 17.2044 15.75 18V21.75H9.75V18C9.75 17.2044 10.0661 16.4413 10.6287 15.8787C11.1913 15.3161 11.9544 15 12.75 15H10.5C9.30653 15 8.16193 14.5259 7.31802 13.682C6.47411 12.8381 6 11.6935 6 10.5V9.75C6.00713 8.83677 6.28476 7.94614 6.79781 7.19062C6.53575 6.51206 6.42912 5.78338 6.48574 5.05817C6.54236 4.33297 6.7608 3.62967 7.125 3C7.94376 2.99981 8.74937 3.20583 9.46752 3.59907C10.1857 3.9923 10.7932 4.56008 11.2341 5.25H14.2659C14.7068 4.56008 15.3143 3.9923 16.0325 3.59907C16.7506 3.20583 17.5562 2.99981 18.375 3C18.7392 3.62967 18.9576 4.33297 19.0143 5.05817C19.0709 5.78338 18.9642 6.51206 18.7022 7.19062C19.2152 7.94614 19.4929 8.83677 19.5 9.75Z" fill="#343330" />
-                            <path d="M19.5281 7.09501C19.7577 6.35561 19.8315 5.57662 19.7449 4.80725C19.6582 4.03787 19.413 3.29482 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0968 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.241 8.81776 19.9924 7.90349 19.5281 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6516 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.5108 8.26485 18.7386 8.99783 18.75 9.75001V10.5Z" fill="#343330" />
-                        </svg>
-                    </a>
-                    <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="social-link me-3"
-                        title="Connect with Martin Papy on LinkedIn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path opacity="0.2" d="M21 3.75V20.25C21 20.4489 20.921 20.6397 20.7803 20.7803C20.6397 20.921 20.4489 21 20.25 21H3.75C3.55109 21 3.36032 20.921 3.21967 20.7803C3.07902 20.6397 3 20.4489 3 20.25V3.75C3 3.55109 3.07902 3.36032 3.21967 3.21967C3.36032 3.07902 3.55109 3 3.75 3H20.25C20.4489 3 20.6397 3.07902 20.7803 3.21967C20.921 3.36032 21 3.55109 21 3.75Z" fill="#343330" />
-                            <path d="M20.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V20.25C2.25 20.6478 2.40804 21.0294 2.68934 21.3107C2.97064 21.592 3.35218 21.75 3.75 21.75H20.25C20.6478 21.75 21.0294 21.592 21.3107 21.3107C21.592 21.0294 21.75 20.6478 21.75 20.25V3.75C21.75 3.35218 21.592 2.97064 21.3107 2.68934C21.0294 2.40804 20.6478 2.25 20.25 2.25ZM20.25 20.25H3.75V3.75H20.25V20.25ZM9 10.5V16.5C9 16.6989 8.92098 16.8897 8.78033 17.0303C8.63968 17.171 8.44891 17.25 8.25 17.25C8.05109 17.25 7.86032 17.171 7.71967 17.0303C7.57902 16.8897 7.5 16.6989 7.5 16.5V10.5C7.5 10.3011 7.57902 10.1103 7.71967 9.96967C7.86032 9.82902 8.05109 9.75 8.25 9.75C8.44891 9.75 8.63968 9.82902 8.78033 9.96967C8.92098 10.1103 9 10.3011 9 10.5ZM17.25 13.125V16.5C17.25 16.6989 17.171 16.8897 17.0303 17.0303C16.8897 17.171 16.6989 17.25 16.5 17.25C16.3011 17.25 16.1103 17.171 15.9697 17.0303C15.829 16.8897 15.75 16.6989 15.75 16.5V13.125C15.75 12.6277 15.5525 12.1508 15.2008 11.7992C14.8492 11.4475 14.3723 11.25 13.875 11.25C13.3777 11.25 12.9008 11.4475 12.5492 11.7992C12.1975 12.1508 12 12.6277 12 13.125V16.5C12 16.6989 11.921 16.8897 11.7803 17.0303C11.6397 17.171 11.4489 17.25 11.25 17.25C11.0511 17.25 10.8603 17.171 10.7197 17.0303C10.579 16.8897 10.5 16.6989 10.5 16.5V10.5C10.5009 10.3163 10.5693 10.1393 10.692 10.0026C10.8148 9.86596 10.9834 9.7791 11.166 9.75852C11.3485 9.73794 11.5323 9.78508 11.6824 9.891C11.8325 9.99691 11.9385 10.1542 11.9803 10.3331C12.4877 9.98894 13.0792 9.78947 13.6914 9.75611C14.3036 9.72276 14.9133 9.85679 15.455 10.1438C15.9968 10.4308 16.4501 10.86 16.7664 11.3852C17.0826 11.9105 17.2498 12.5119 17.25 13.125ZM9.375 7.875C9.375 8.0975 9.30902 8.31501 9.1854 8.50002C9.06179 8.68502 8.88609 8.82922 8.68052 8.91436C8.47495 8.99951 8.24875 9.02179 8.03052 8.97838C7.81229 8.93498 7.61184 8.82783 7.4545 8.6705C7.29717 8.51316 7.19002 8.31271 7.14662 8.09448C7.10321 7.87625 7.12549 7.65005 7.21064 7.44448C7.29578 7.23891 7.43998 7.06321 7.62498 6.9396C7.80999 6.81598 8.0275 6.75 8.25 6.75C8.54837 6.75 8.83452 6.86853 9.0455 7.0795C9.25647 7.29048 9.375 7.57663 9.375 7.875Z" fill="#343330" />
-                        </svg>
-                    </a>
+                <div class="social-links d-flex flex-column flex-md-row justify-content-md-end align-items-start align-items-md-center mb-2 gap-2 mt-4 mt-md-0">
+                    <p class="mb-0 ms-2 small text-nowrap" id="build-info">Loading build information...</p>
+                    <div class="social-links-icons">
+                        <a href="https://github.com/martin-papy" target="_blank" class="social-link"
+                            title="Follow Martin Papy on GitHub">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path opacity="0.2" d="M19.5 9.75V10.5C19.5 11.6935 19.0259 12.8381 18.182 13.682C17.3381 14.5259 16.1935 15 15 15H12.75C13.5456 15 14.3087 15.3161 14.8713 15.8787C15.4339 16.4413 15.75 17.2044 15.75 18V21.75H9.75V18C9.75 17.2044 10.0661 16.4413 10.6287 15.8787C11.1913 15.3161 11.9544 15 12.75 15H10.5C9.30653 15 8.16193 14.5259 7.31802 13.682C6.47411 12.8381 6 11.6935 6 10.5V9.75C6.00713 8.83677 6.28476 7.94614 6.79781 7.19062C6.53575 6.51206 6.42912 5.78338 6.48574 5.05817C6.54236 4.33297 6.7608 3.62967 7.125 3C7.94376 2.99981 8.74937 3.20583 9.46752 3.59907C10.1857 3.9923 10.7932 4.56008 11.2341 5.25H14.2659C14.7068 4.56008 15.3143 3.9923 16.0325 3.59907C16.7506 3.20583 17.5562 2.99981 18.375 3C18.7392 3.62967 18.9576 4.33297 19.0143 5.05817C19.0709 5.78338 18.9642 6.51206 18.7022 7.19062C19.2152 7.94614 19.4929 8.83677 19.5 9.75Z" fill="#343330" />
+                                <path d="M19.5281 7.09501C19.7577 6.35561 19.8315 5.57662 19.7449 4.80725C19.6582 4.03787 19.413 3.29482 19.0247 2.62501C18.9588 2.51097 18.8641 2.41628 18.7501 2.35045C18.636 2.28462 18.5067 2.24998 18.375 2.25001C17.5014 2.24818 16.6395 2.4507 15.8582 2.84137C15.0768 3.23205 14.3977 3.80006 13.875 4.50001H11.625C11.1023 3.80006 10.4232 3.23205 9.64182 2.84137C8.86047 2.4507 7.99857 2.24818 7.125 2.25001C6.99332 2.24998 6.86395 2.28462 6.7499 2.35045C6.63586 2.41628 6.54115 2.51097 6.47531 2.62501C6.08704 3.29484 5.84177 4.03785 5.75497 4.80719C5.66816 5.57653 5.74169 6.35551 5.97094 7.09501C5.50756 7.90381 5.25934 8.81793 5.25 9.75001V10.5C5.25158 11.769 5.71225 12.9946 6.54696 13.9504C7.38166 14.9063 8.53402 15.5278 9.79125 15.7003C9.27807 16.357 8.99952 17.1666 9 18V18.75H6.75C6.15326 18.75 5.58097 18.513 5.15901 18.091C4.73705 17.669 4.5 17.0968 4.5 16.5C4.5 16.0076 4.403 15.5199 4.21455 15.0649C4.02609 14.61 3.74987 14.1966 3.40165 13.8484C3.05343 13.5001 2.64003 13.2239 2.18506 13.0355C1.73009 12.847 1.24246 12.75 0.75 12.75C0.551088 12.75 0.360322 12.829 0.21967 12.9697C0.0790176 13.1103 0 13.3011 0 13.5C0 13.6989 0.0790176 13.8897 0.21967 14.0303C0.360322 14.171 0.551088 14.25 0.75 14.25C1.34674 14.25 1.91903 14.4871 2.34099 14.909C2.76295 15.331 3 15.9033 3 16.5C3 17.4946 3.39509 18.4484 4.09835 19.1517C4.80161 19.8549 5.75544 20.25 6.75 20.25H9V21.75C9 21.9489 9.07902 22.1397 9.21967 22.2803C9.36032 22.421 9.55109 22.5 9.75 22.5C9.94891 22.5 10.1397 22.421 10.2803 22.2803C10.421 22.1397 10.5 21.9489 10.5 21.75V18C10.5 17.4033 10.7371 16.831 11.159 16.409C11.581 15.9871 12.1533 15.75 12.75 15.75C13.3467 15.75 13.919 15.9871 14.341 16.409C14.7629 16.831 15 17.4033 15 18V21.75C15 21.9489 15.079 22.1397 15.2197 22.2803C15.3603 22.421 15.5511 22.5 15.75 22.5C15.9489 22.5 16.1397 22.421 16.2803 22.2803C16.421 22.1397 16.5 21.9489 16.5 21.75V18C16.5005 17.1666 16.2219 16.357 15.7087 15.7003C16.966 15.5278 18.1183 14.9063 18.953 13.9504C19.7877 12.9946 20.2484 11.769 20.25 10.5V9.75001C20.241 8.81776 19.9924 7.90349 19.5281 7.09501ZM18.75 10.5C18.75 11.4946 18.3549 12.4484 17.6516 13.1517C16.9484 13.8549 15.9946 14.25 15 14.25H10.5C9.50544 14.25 8.55161 13.8549 7.84835 13.1517C7.14509 12.4484 6.75 11.4946 6.75 10.5V9.75001C6.7592 9.00004 6.98373 8.2685 7.39688 7.64251C7.47389 7.541 7.52377 7.42154 7.54182 7.2954C7.55986 7.16926 7.54547 7.04061 7.5 6.92157C7.30465 6.41776 7.21063 5.88035 7.22334 5.34013C7.23605 4.79992 7.35523 4.26752 7.57406 3.77345C8.18786 3.83948 8.77892 4.04281 9.30344 4.36836C9.82796 4.69391 10.2725 5.13334 10.6041 5.65407C10.6716 5.75974 10.7646 5.84676 10.8745 5.9072C10.9844 5.96763 11.1077 5.99955 11.2331 6.00001H14.2659C14.3918 6.00002 14.5157 5.96833 14.6261 5.90787C14.7366 5.84742 14.83 5.76014 14.8978 5.65407C15.2293 5.1333 15.6738 4.69383 16.1984 4.36827C16.7229 4.04271 17.314 3.83941 17.9278 3.77345C18.1463 4.26765 18.2652 4.80011 18.2776 5.34032C18.29 5.88053 18.1956 6.41788 18 6.92157C17.9547 7.03947 17.9395 7.16682 17.9559 7.29206C17.9722 7.41731 18.0196 7.53648 18.0938 7.63876C18.5108 8.26485 18.7386 8.99783 18.75 9.75001V10.5Z" fill="#343330" />
+                            </svg>
+                        </a>
+                        <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="social-link"
+                            title="Connect with Martin Papy on LinkedIn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path opacity="0.2" d="M21 3.75V20.25C21 20.4489 20.921 20.6397 20.7803 20.7803C20.6397 20.921 20.4489 21 20.25 21H3.75C3.55109 21 3.36032 20.921 3.21967 20.7803C3.07902 20.6397 3 20.4489 3 20.25V3.75C3 3.55109 3.07902 3.36032 3.21967 3.21967C3.36032 3.07902 3.55109 3 3.75 3H20.25C20.4489 3 20.6397 3.07902 20.7803 3.21967C20.921 3.36032 21 3.55109 21 3.75Z" fill="#343330" />
+                                <path d="M20.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V20.25C2.25 20.6478 2.40804 21.0294 2.68934 21.3107C2.97064 21.592 3.35218 21.75 3.75 21.75H20.25C20.6478 21.75 21.0294 21.592 21.3107 21.3107C21.592 21.0294 21.75 20.6478 21.75 20.25V3.75C21.75 3.35218 21.592 2.97064 21.3107 2.68934C21.0294 2.40804 20.6478 2.25 20.25 2.25ZM20.25 20.25H3.75V3.75H20.25V20.25ZM9 10.5V16.5C9 16.6989 8.92098 16.8897 8.78033 17.0303C8.63968 17.171 8.44891 17.25 8.25 17.25C8.05109 17.25 7.86032 17.171 7.71967 17.0303C7.57902 16.8897 7.5 16.6989 7.5 16.5V10.5C7.5 10.3011 7.57902 10.1103 7.71967 9.96967C7.86032 9.82902 8.05109 9.75 8.25 9.75C8.44891 9.75 8.63968 9.82902 8.78033 9.96967C8.92098 10.1103 9 10.3011 9 10.5ZM17.25 13.125V16.5C17.25 16.6989 17.171 16.8897 17.0303 17.0303C16.8897 17.171 16.6989 17.25 16.5 17.25C16.3011 17.25 16.1103 17.171 15.9697 17.0303C15.829 16.8897 15.75 16.6989 15.75 16.5V13.125C15.75 12.6277 15.5525 12.1508 15.2008 11.7992C14.8492 11.4475 14.3723 11.25 13.875 11.25C13.3777 11.25 12.9008 11.4475 12.5492 11.7992C12.1975 12.1508 12 12.6277 12 13.125V16.5C12 16.6989 11.921 16.8897 11.7803 17.0303C11.6397 17.171 11.4489 17.25 11.25 17.25C11.0511 17.25 10.8603 17.171 10.7197 17.0303C10.579 16.8897 10.5 16.6989 10.5 16.5V10.5C10.5009 10.3163 10.5693 10.1393 10.692 10.0026C10.8148 9.86596 10.9834 9.7791 11.166 9.75852C11.3485 9.73794 11.5323 9.78508 11.6824 9.891C11.8325 9.99691 11.9385 10.1542 11.9803 10.3331C12.4877 9.98894 13.0792 9.78947 13.6914 9.75611C14.3036 9.72276 14.9133 9.85679 15.455 10.1438C15.9968 10.4308 16.4501 10.86 16.7664 11.3852C17.0826 11.9105 17.2498 12.5119 17.25 13.125ZM9.375 7.875C9.375 8.0975 9.30902 8.31501 9.1854 8.50002C9.06179 8.68502 8.88609 8.82922 8.68052 8.91436C8.47495 8.99951 8.24875 9.02179 8.03052 8.97838C7.81229 8.93498 7.61184 8.82783 7.4545 8.6705C7.29717 8.51316 7.19002 8.31271 7.14662 8.09448C7.10321 7.87625 7.12549 7.65005 7.21064 7.44448C7.29578 7.23891 7.43998 7.06321 7.62498 6.9396C7.80999 6.81598 8.0275 6.75 8.25 6.75C8.54837 6.75 8.83452 6.86853 9.0455 7.0795C9.25647 7.29048 9.375 7.57663 9.375 7.875Z" fill="#343330" />
+                            </svg>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1128,8 +1272,10 @@
             .then(data => {
                 const buildDate = new Date(data.build.timestamp);
                 const formattedDate = `${buildDate.getDate().toString().padStart(2, '0')}-${(buildDate.getMonth() + 1).toString().padStart(2, '0')}-${buildDate.getFullYear()}`;
+                const versionUrl = `https://github.com/martin-papy/qdrant-loader/releases/tag/v${encodeURIComponent(data.version)}`;
+                const commitUrl = `https://github.com/martin-papy/qdrant-loader/commit/${encodeURIComponent(data.commit.hash || data.commit.short)}`;
                 document.getElementById('build-info').innerHTML =
-                    `Version ${data.version} • Built ${formattedDate} • Commit ${data.commit.short}`;
+                    `<a href="${versionUrl}" target="_blank" rel="noopener noreferrer">Version ${data.version}</a> • Built ${formattedDate} • Commit <a href="${commitUrl}" target="_blank" rel="noopener noreferrer">${data.commit.short}</a>`;
 
                 // Configure feedback link to open a prefilled GitHub issue
                 try {

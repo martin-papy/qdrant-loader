@@ -30,6 +30,15 @@ Workspace mode in QDrant Loader provides a structured approach to organizing you
 
 ### Create Workspace Directory
 
+Use the setup wizard to generate a workspace with `config.yaml` and `.env`:
+
+```bash
+qdrant-loader setup --output-dir my-qdrant-workspace --mode default
+cd my-qdrant-workspace
+```
+
+Or manually copy the templates:
+
 ```bash
 # Create workspace directory
 mkdir my-qdrant-workspace
@@ -152,9 +161,6 @@ qdrant-loader ingest --workspace . --force
 ```bash
 # Show current configuration
 qdrant-loader config --workspace .
-
-# Note: Project-specific commands are not currently available in the CLI
-# The config command shows all configured projects and their status
 ```
 
 ## 📁 Project Management
@@ -168,15 +174,21 @@ Each project in the configuration has:
 - **description**: Brief description of the project's purpose
 - **sources**: Configuration for data sources (git, confluence, jira, etc.)
 
-### Project Management via Configuration
+### Project Management Commands
 
 ```bash
 # View all configured projects and their settings
 qdrant-loader config --workspace .
 
-# Note: Dedicated project management commands (list, status, validate)
-# are not currently implemented in the CLI. Project information is
-# displayed through the config command.
+# List all configured projects
+qdrant-loader project list --workspace .
+
+# Show project status including document counts
+qdrant-loader project status --workspace .
+qdrant-loader project status --workspace . --project-id docs-project
+
+# Validate project configurations
+qdrant-loader project validate --workspace .
 ```
 
 ### Project Isolation
@@ -420,10 +432,9 @@ Workspace mode support for the MCP server is planned for future releases, which 
 
 ## 🚀 Getting Started Checklist
 
-- [ ] **Create workspace directory** and navigate to it
-- [ ] **Copy configuration template** to `config.yaml`
-- [ ] **Create environment file** with required credentials
-- [ ] **Configure projects** with your data sources
+- [ ] **Generate workspace** with `qdrant-loader setup --output-dir my-workspace --mode default`
+- [ ] **Edit `config.yaml`** and configure your projects and data sources
+- [ ] **Edit `.env`** with required credentials
 - [ ] **Initialize collection** with `qdrant-loader init --workspace .`
 - [ ] **Ingest data** with `qdrant-loader ingest --workspace .`
 - [ ] **Verify setup** with `qdrant-loader config --workspace .`

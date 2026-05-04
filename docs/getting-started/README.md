@@ -1,13 +1,13 @@
-# 📝 Getting Started with QDrant Loader
+# Getting Started with QDrant Loader
 
 Welcome to QDrant Loader! This section will help you understand, install, and start using QDrant Loader effectively, whether you're a content creator, researcher, developer, or system administrator.
 
 ## 🎯 Start path
 
 1. Understand the project: [What Is QDrant Loader](./what-is-qdrant-loader.md)
-2. Complete setup and first ingestion: [Quick Start Guide](./quick-start.md)
-3. Use install troubleshooting only if needed: [installation.md](./installation.md)
-4. Review starter config patterns: [Basic Configuration](./basic-configuration.md)
+2. Get up and running in 5 minutes: [Quick Start Guide](./quick-start.md)
+3. Complete installation instructions: [installation.md](./installation.md)
+4. Essential configuration to get started: [Basic Configuration](./basic-configuration.md)
 
 ## 🧠 Core Concepts
 
