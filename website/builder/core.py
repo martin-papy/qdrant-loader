@@ -369,6 +369,20 @@ class WebsiteBuilder:
                 )
             # Privacy policy page from template
             try:
+                privacy_template_path = self.templates_dir / "privacy-policy.html"
+                privacy_last_updated = self.get_git_timestamp(
+                    str(privacy_template_path)
+                )
+                if privacy_last_updated:
+                    privacy_last_updated = privacy_last_updated.split("T", 1)[0]
+                else:
+                    from datetime import datetime, timezone
+
+                    # Use stable template mtime fallback instead of build date.
+                    privacy_last_updated = datetime.fromtimestamp(
+                        privacy_template_path.stat().st_mtime, tz=timezone.utc
+                    ).date().isoformat()
+
                 self.build_page(
                     "base.html",
                     "privacy-policy.html",
@@ -376,6 +390,7 @@ class WebsiteBuilder:
                     "Privacy policy for QDrant Loader",
                     "privacy-policy.html",
                     content=self.load_template("privacy-policy.html"),
+                    last_updated=privacy_last_updated,
                 )
             except FileNotFoundError:
                 pass
@@ -633,13 +648,13 @@ Sitemap: {site_base}/sitemap.xml
         wrapped_content = f"""
 <section>
     <div class=\"container-fluid\">
-    <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block p-0\">
-        <div class=\"position-sticky\" style=\"top: 6rem;\">
+    <div class=\"row toc-layout\">
+      <aside class=\"toc-sidebar d-none d-lg-block p-0\">
+        <div class=\"position-sticky\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9 container-content\">
+      <div class=\"container-content\">
         {html_content}
       </div>
     </div>
@@ -967,13 +982,13 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                 wrapped_content = f"""
 <section>
    <div class=\"container-fluid\">
-    <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block p-0\">
-        <div class=\"position-sticky\" style=\"top: 6rem;\">
+    <div class=\"row toc-layout\">
+      <aside class=\"toc-sidebar d-none d-lg-block p-0\">
+        <div class=\"position-sticky\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9 container-content\">
+      <div class=\"container-content\">
         {html_content}
       </div>
     </div>

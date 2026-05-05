@@ -302,22 +302,22 @@ class MarkdownProcessor:
         )
         html_content = re.sub(
             r"<h2([^>]*)>",
-            r'<h2\1 class="h2 fw-bold text-primary mt-5 mb-3">',
+            r'<h2\1 class="h2 fw-bold text-primary">',
             html_content,
         )
         html_content = re.sub(
             r"<h3([^>]*)>",
-            r'<h3\1 class="h3 fw-bold text-primary mt-5 mb-3">',
+            r'<h3\1 class="h3 fw-bold text-primary">',
             html_content,
         )
         html_content = re.sub(
-            r"<h4([^>]*)>", r'<h4\1 class="h4 fw-bold mt-4 mb-3">', html_content
+            r"<h4([^>]*)>", r'<h4\1 class="h4 fw-bold">', html_content
         )
         html_content = re.sub(
-            r"<h5([^>]*)>", r'<h5\1 class="h5 fw-bold mt-3 mb-2">', html_content
+            r"<h5([^>]*)>", r'<h5\1 class="h5 fw-bold">', html_content
         )
         html_content = re.sub(
-            r"<h6([^>]*)>", r'<h6\1 class="h6 fw-semibold mt-2 mb-1">', html_content
+            r"<h6([^>]*)>", r'<h6\1 class="h6 fw-semibold">', html_content
         )
 
         # Add Bootstrap code block classes - clean approach
@@ -760,8 +760,9 @@ class MarkdownProcessor:
                     
             display_text = _html.escape(_html.unescape(display_text))
 
-            # If no icon and this is a leaf heading, use the default SVG
-            if not icon_html and not has_child:
+            # If no icon and this is a level-3 leaf heading (and not already a numbered item), use the default SVG
+            starts_with_number = bool(re.match(r'^\d+\.', display_text))
+            if not icon_html and not has_child and level == 3 and not starts_with_number:
                 icon_html = default_svg
 
             toc_html += f'<li class="list-group-item"><a href="#{heading_id}">{icon_html}{display_text}</a></li>\n'

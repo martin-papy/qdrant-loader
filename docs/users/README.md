@@ -112,6 +112,21 @@ This documentation is organized to help you accomplish specific tasks and unders
 | **Local Files**            | ✅ Full Support | [Guide](./detailed-guides/data-sources/local-files.md)      |
 | **Public Documentation**   | ✅ Full Support | [Guide](./detailed-guides/data-sources/public-docs.md)      |
 
+## 🆘 Getting Help
+
+### Community Support
+
+- **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
+- **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A and discussions
+- Getting Help Guide - Coming later
+
+### Documentation Feedback
+
+Found an issue with the documentation? Help us improve:
+
+- **[Report documentation issues](https://github.com/martin-papy/qdrant-loader/issues/new?labels=documentation)**
+- **[Suggest improvements](https://github.com/martin-papy/qdrant-loader/discussions/new?category=ideas)**
+
 ---
 
 **Ready to dive in?** Start with the [Data Sources guide](./detailed-guides/data-sources/) or jump to a specific topic that interests you. If you're new to QDrant Loader, consider starting with the [Getting Started section](../getting-started/) first.

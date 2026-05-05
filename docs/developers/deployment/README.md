@@ -1,6 +1,6 @@
 # Deployment Documentation
 
-This section provides comprehensive deployment documentation for QDrant Loader, covering production deployment strategies, environment setup, monitoring, and performance optimization. All examples are verified against the actual implementation.
+This section provides comprehensive deployment documentation for QDrant Loader, covering production deployment strategies, environment setup, monitoring, and performance optimization. Examples are aligned with the current CLI and configuration model.
 
 ## 🎯 Deployment Overview
 
@@ -69,7 +69,7 @@ global:
       embeddings: "text-embedding-3-small"
       chat: "gpt-4o-mini"
   state_management:
-    state_db_path: "./data/state.db"
+    database_path: "./data/state.db"
 
 projects:
   docs:
@@ -229,7 +229,7 @@ global:
       embeddings: "text-embedding-3-small"
       chat: "gpt-4o-mini"
   state_management:
-    state_db_path: "${STATE_DB_PATH}"
+    database_path: "${STATE_DB_PATH}"
   chunking:
     chunk_size: 1200
     chunk_overlap: 300
@@ -337,20 +337,53 @@ sudo systemctl restart mcp-qdrant-loader
 
 #### Log Configuration
 
-```python
+```yaml
 # logging.yaml
 version: 1
-formatters: default: format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s' json: format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
-handlers: console: class: logging.StreamHandler level: INFO formatter: json stream: ext://sys.stdout file: class: logging.handlers.RotatingFileHandler level: DEBUG formatter: default filename: /opt/qdrant-loader/logs/app.log maxBytes: 10485760 # 10MB backupCount: 5
-loggers: qdrant_loader: level: DEBUG handlers: [console, file] propagate: false
-root: level: INFO handlers: [console]
+formatters:
+  default:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  json:
+    format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: json
+    stream: ext://sys.stdout
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: default
+    filename: /opt/qdrant-loader/logs/app.log
+    maxBytes: 10485760 # 10MB
+    backupCount: 5
+loggers:
+  qdrant_loader:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: false
+root:
+  level: INFO
+  handlers: [console]
 ```
 
 #### Log Rotation
 
 ```bash
 # /etc/logrotate.d/qdrant-loader
-/opt/qdrant-loader/logs/*.log { daily missingok rotate 30 compress delaycompress notifempty create 644 qdrant-loader qdrant-loader postrotate systemctl reload qdrant-loader endscript }
+/opt/qdrant-loader/logs/*.log {
+  daily
+  missingok
+  rotate 30
+  compress
+  delaycompress
+  notifempty
+  create 644 qdrant-loader qdrant-loader
+  postrotate
+    systemctl reload qdrant-loader
+  endscript
+}
 ```
 
 ### Health Monitoring
@@ -460,7 +493,7 @@ openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -
 # Add to QDrant configuration
 ```
 
-##  Scaling Strategies
+## Scaling Strategies
 
 ### Horizontal Scaling
 
@@ -479,9 +512,21 @@ wait
 ```bash
 # Use nginx for load balancing MCP servers
 # /etc/nginx/sites-available/qdrant-loader
-upstream mcp_servers { server 127.0.0.1:8001; server 127.0.0.1:8002; server 127.0.0.1:8003;
+upstream mcp_servers {
+  server 127.0.0.1:8001;
+  server 127.0.0.1:8002;
+  server 127.0.0.1:8003;
 }
-server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pass http://mcp_servers; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+
+server {
+  listen 80;
+  server_name qdrant-loader.example.com;
+
+  location / {
+    proxy_pass http://mcp_servers;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
 }
 ```
 
@@ -496,7 +541,8 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 # chunking:
 # chunk_size: 2000
 # chunk_overlap: 400
-# Run ingestion with specific projectqdrant-loader ingest --workspace /opt/qdrant-loader/config --project high-priority
+# Run ingestion with specific project
+qdrant-loader ingest --workspace /opt/qdrant-loader/config --project high-priority
 ```
 
 ## 📚 Deployment Documentation
@@ -536,12 +582,12 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report deployment issues
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Ask deployment questions
-- **[Deployment Examples](https://github.com/martin-papy/qdrant-loader/tree/main/examples/deployment)** - Reference configurations
+- **[Configuration Templates](../../../packages/qdrant-loader/conf/)** - Reference workspace templates for config and environment setup
 
 ### Community Resources
 
-- **[Configuration Examples](https://github.com/martin-papy/qdrant-loader/wiki/Configuration)** - Community configurations
-- **[Deployment Guides](https://github.com/martin-papy/qdrant-loader/wiki/Deployment)** - Community deployment guides
+- **[Configuration Reference](../../users/configuration/config-file-reference.md)** - Full configuration schema and options
+- **[MCP Server Setup](../../users/detailed-guides/mcp-server/setup-and-integration.md)** - Production MCP integration guidance
 
 ---
 

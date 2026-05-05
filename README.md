@@ -7,7 +7,7 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📝 **[Changelog v1.0.0](./CHANGELOG.md)** - Latest improvements and bug fixes
+📝 **[Changelog v1.0.1](./CHANGELOG.md)** - Latest improvements and bug fixes
 
 <div align="left">
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
@@ -19,10 +19,10 @@ QDrant Loader is a data ingestion and retrieval system that collects content fro
 
 **Perfect for:**
 
-- 🤖 AI-powered development with Cursor, Windsurf, and other MCP-compatible tools
-- 📚 Knowledge base creation from technical documentation
-- 🔍 Intelligent code assistance with contextual information
-- 🏢 Enterprise content integration from multiple data sources
+- 🤖 **AI-powered development** with Cursor, Windsurf, and other MCP-compatible tools
+- 📚 **Knowledge base creation** from technical documentation
+- 🔍 **Intelligent code assistance** with contextual information
+- 🏢 **Enterprise content integration** from multiple data sources
 
 ## 📦 Packages
 
@@ -153,9 +153,11 @@ pip install qdrant-loader-mcp-server  # MCP server only
    mcp-qdrant-loader --env /path/tp/your/.env
    ```
 
-## 🔧 Integration with Cursor
+## 🔧 MCP-Compatible IDE Setup
 
-Add to your Cursor settings (`.cursor/mcp.json`):
+QDrant Loader works with any IDE/tool that supports MCP, including Cursor, Windsurf, and Claude Desktop.
+
+Minimal MCP server entry (adapt path/format to your tool):
 
 ```json
 {
@@ -190,7 +192,14 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 }
 ```
 
-**Example queries in Cursor:**
+For tool-specific setup and exact config format:
+
+- **[MCP Setup and Integration](./docs/users/detailed-guides/mcp-server/setup-and-integration.md)** - Full guide
+- **[Cursor Setup](./docs/users/detailed-guides/mcp-server/setup-and-integration.md#-cursor-ide)**
+- **[Windsurf Setup](./docs/users/detailed-guides/mcp-server/setup-and-integration.md#-windsurf)**
+- **[Claude Desktop Setup](./docs/users/detailed-guides/mcp-server/setup-and-integration.md#-claude-desktop)**
+
+**Example queries in AI tools:**
 
 - _"Find documentation about authentication in our API"_
 - _"Show me examples of error handling patterns"_
@@ -201,35 +210,29 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 
 ### Getting Started
 
+- **[Getting Started](./docs/getting-started/)** - Quick start and core concepts
 - **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
 - **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
-- **Core Concepts** - Covered inline in Getting Started
+- **[Core Concepts](./docs/getting-started/README.md#-core-concepts)** - Understand the core architecture: workspace model, projects and sources, ingestion pipeline, and MCP search flow
 
 ### User Guides
 
+- **[User Guides](./docs/users/)** - Detailed usage instructions
 - **[Configuration](./docs/users/configuration/)** - Complete configuration reference
 - **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA setup
 - **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
-## ⚠️ Migration Guide (v0.7.1+)
-### LLM Configuration Migration Required
+## 🛠️ Developer Resources
 
-- **New unified configuration**: `global.llm.*` replaces legacy `global.embedding.*` and `file_conversion.markitdown.*`
-- **Provider-agnostic**: Now supports OpenAI, Azure OpenAI, Ollama, and custom endpoints
-- **Legacy support**: Old configuration still works but shows deprecation warnings
-- **Action required**: Update your `config.yaml` to use the new syntax (see examples above)
-
-### Migration Resources
-
-- **[Configuration File Reference](./docs/users/configuration/config-file-reference.md)** - Complete new schema
-- **[Environment Variables](./docs/users/configuration/environment-variables.md)** - Updated variable names
-
-### Developer Resources
-
+- **[Developer hub](./docs/developers)** - Developer guides for architecture, testing, deployment, and contribution workflows.
 - **[Architecture](./docs/developers/architecture/)** - System design overview
 - **[Testing](./docs/developers/testing/)** - Testing guide and best practices
-- **[Contributing](./CONTRIBUTING.md)** - Development setup and guidelines
+
+## 🆘 Support
+
+- **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
 
 ## 🤝 Contributing
 

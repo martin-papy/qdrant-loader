@@ -34,7 +34,7 @@ grep -r "your error message" docs/users/troubleshooting/
 # See: Error Messages Reference → [specific error category]
 ```
 
-## Troubleshooting Guides
+## 📚 Troubleshooting Guides
 
 ### 🔧 [Common Issues](./common-issues.md)
 
@@ -331,7 +331,7 @@ watch -n 30 'free -h && df -h'
 
 - **GitHub Issues**: [Report bugs and get help](https://github.com/martin-papy/qdrant-loader/issues)
 - **Discussions**: [Community Q&A and tips](https://github.com/martin-papy/qdrant-loader/discussions)
-- **Documentation**: [Complete documentation](/docs/README.md)
+- **Documentation**: [Complete documentation](../../)
 
 ### Professional Support
 

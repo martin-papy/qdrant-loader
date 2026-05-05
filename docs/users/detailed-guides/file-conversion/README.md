@@ -6,7 +6,7 @@ QDrant Loader supports comprehensive file conversion to extract text content fro
 
 QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of file formats:
 
-### Document Formats
+### 📄 Document Formats
 
 | Format           | Extension              | Description                        | Features                                  |
 | ---------------- | ---------------------- | ---------------------------------- | ----------------------------------------- |
@@ -16,7 +16,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **Excel**        | `.xlsx`, `.xls`        | Microsoft Excel spreadsheets       | Cell data, formulas, sheet names          |
 | **OpenDocument** | `.odt`, `.ods`, `.odp` | LibreOffice/OpenOffice documents   | Text, tables, metadata                    |
 
-### Text Formats
+### 📝 Text Formats
 
 | Format               | Extension          | Description             | Features                              |
 | -------------------- | ------------------ | ----------------------- | ------------------------------------- |
@@ -26,7 +26,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **Rich Text**        | `.rtf`             | Rich Text Format        | Formatted text, basic styling         |
 | **LaTeX**            | `.tex`             | LaTeX documents         | Mathematical content, structured text |
 
-### Image Formats (with OCR)
+### 🖼️ Image Formats (with OCR)
 
 | Format   | Extension       | Description   | Features                              |
 | -------- | --------------- | ------------- | ------------------------------------- |
@@ -36,7 +36,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **TIFF** | `.tiff`, `.tif` | TIFF images   | OCR text extraction, high quality     |
 | **BMP**  | `.bmp`          | Bitmap images | OCR text extraction                   |
 
-### Audio Formats (with Transcription)
+### 🎵 Audio Formats (with Transcription)
 
 | Format   | Extension | Description | Features                     |
 | -------- | --------- | ----------- | ---------------------------- |
@@ -45,7 +45,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **M4A**  | `.m4a`    | M4A audio   | Speech-to-text transcription |
 | **FLAC** | `.flac`   | FLAC audio  | Speech-to-text transcription |
 
-### Data Formats
+### 📊 Data Formats
 
 | Format   | Extension       | Description            | Features                    |
 | -------- | --------------- | ---------------------- | --------------------------- |
@@ -55,7 +55,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 | **YAML** | `.yaml`, `.yml` | YAML configuration     | Configuration data          |
 | **TOML** | `.toml`         | TOML configuration     | Configuration data          |
 
-### Archive Formats
+### 📦 Archive Formats
 
 | Format    | Extension                 | Description    | Features                     |
 | --------- | ------------------------- | -------------- | ---------------------------- |
@@ -68,6 +68,8 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 ### Global File Conversion Configuration
 
 File conversion is configured globally and applies to all projects and sources that enable it:
+
+> **Note**: `markitdown.llm_*` fields are optional overrides for MarkItDown image-description flows. Prefer `global.llm` as the primary LLM configuration.
 
 ```yaml
 global:
@@ -122,6 +124,8 @@ projects:
 
 #### MarkItDown Settings
 
+`markitdown.llm_*` values are optional override fields. In most setups, keep LLM provider/model/auth under `global.llm`.
+
 | Option                    | Type   | Description                                   | Default                     |
 | ------------------------- | ------ | --------------------------------------------- | --------------------------- |
 | `enable_llm_descriptions` | bool   | Enable LLM integration for image descriptions | `false`                     |
@@ -142,16 +146,16 @@ Each data source can enable or disable file conversion:
 ### Conversion Process
 
 ```text
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│     File    │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
-│  Detection  │    │  Detection  │    │ Conversion  │    │   Content   │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  MIME Type  │    │  Extension  │    │ Text + OCR  │    │ Structured  │
-│  Detection  │    │   Mapping   │    │  + Audio    │    │Text Output  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│     File     │──▶│    Format    │──▶ │  MarkItDown  │──▶│   Markdown   │
+│  Detection   │    │  Detection   │    │ Conversion   │    │   Content    │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+       │                  │                  │                     │
+       ▼                  ▼                  ▼                     ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐      ┌──────────────┐
+│  MIME Type   │   │  Extension   │   │ Text + OCR   │      │  Structured  │
+│  Detection   │   │   Mapping    │   │   + Audio    │      │ Text Output  │
+└──────────────┘   └──────────────┘   └──────────────┘      └──────────────┘
 ```
 
 ### Processing Pipeline

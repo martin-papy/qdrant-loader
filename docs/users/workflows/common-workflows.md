@@ -46,7 +46,7 @@ graph LR
 - Improved developer productivity
 - Better code discoverability
 
-**Tools Involved**: Git, GitHub Actions/GitLab CI, QDrant Loader, Cursor/Windsurf
+**Tools Involved**: Git, GitHub Actions/GitLab CI, QDrant Loader, MCP-compatible IDEs/tools (Cursor/Windsurf/Claude)
 
 ---
 
@@ -335,31 +335,31 @@ graph TD
 
 ### By Role
 
-| Role | Primary Workflows | Key Benefits |
-|------|------------------|--------------|
-| **Developer** | Code Documentation, API Documentation | Current docs, better productivity |
-| **Content Manager** | Publishing, Curation | Streamlined process, quality control |
-| **Team Lead** | Cross-Team Sharing, Onboarding | Better collaboration, faster onboarding |
-| **DevOps Engineer** | CI/CD Integration, Multi-Environment | Automation, reliability |
-| **Researcher** | Research & Analysis, Discovery | Comprehensive insights, faster research |
+| Role                | Primary Workflows                     | Key Benefits                            |
+| ------------------- | ------------------------------------- | --------------------------------------- |
+| **Developer**       | Code Documentation, API Documentation | Current docs, better productivity       |
+| **Content Manager** | Publishing, Curation                  | Streamlined process, quality control    |
+| **Team Lead**       | Cross-Team Sharing, Onboarding        | Better collaboration, faster onboarding |
+| **DevOps Engineer** | CI/CD Integration, Multi-Environment  | Automation, reliability                 |
+| **Researcher**      | Research & Analysis, Discovery        | Comprehensive insights, faster research |
 
 ### By Organization Size
 
-| Size | Recommended Workflows | Focus Areas |
-|------|----------------------|-------------|
-| **Small Team** | Development, Publishing | Simplicity, efficiency |
-| **Medium Team** | Collaboration, CI/CD | Coordination, automation |
-| **Large Organization** | Multi-Environment, Cross-Team | Scale, governance |
-| **Enterprise** | All workflows | Comprehensive, integrated |
+| Size                   | Recommended Workflows         | Focus Areas               |
+| ---------------------- | ----------------------------- | ------------------------- |
+| **Small Team**         | Development, Publishing       | Simplicity, efficiency    |
+| **Medium Team**        | Collaboration, CI/CD          | Coordination, automation  |
+| **Large Organization** | Multi-Environment, Cross-Team | Scale, governance         |
+| **Enterprise**         | All workflows                 | Comprehensive, integrated |
 
 ### By Use Case
 
-| Use Case | Primary Workflows | Key Considerations |
-|----------|------------------|-------------------|
-| **Documentation Site** | Publishing, CI/CD | User experience, automation |
-| **Internal Knowledge Base** | Collaboration, Discovery | Access control, search quality |
-| **Developer Tools** | Code Documentation, API | Integration, real-time updates |
-| **Research Platform** | Analysis, Discovery | Comprehensive coverage, insights |
+| Use Case                    | Primary Workflows        | Key Considerations               |
+| --------------------------- | ------------------------ | -------------------------------- |
+| **Documentation Site**      | Publishing, CI/CD        | User experience, automation      |
+| **Internal Knowledge Base** | Collaboration, Discovery | Access control, search quality   |
+| **Developer Tools**         | Code Documentation, API  | Integration, real-time updates   |
+| **Research Platform**       | Analysis, Discovery      | Comprehensive coverage, insights |
 
 ## 🚀 Getting Started with Workflows
 
@@ -387,6 +387,7 @@ graph TD
 
 ```bash
 # Begin with basic workflow
+qdrant-loader setup --output-dir ./my-workspace --mode default
 qdrant-loader init --workspace .
 qdrant-loader ingest --workspace .
 mcp-qdrant-loader
