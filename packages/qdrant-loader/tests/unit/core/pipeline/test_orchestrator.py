@@ -13,6 +13,7 @@ from qdrant_loader.core.pipeline.orchestrator import (
 )
 from qdrant_loader.core.pipeline.source_filter import SourceFilter
 from qdrant_loader.core.pipeline.source_processor import SourceProcessor
+from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
 
 
@@ -36,17 +37,20 @@ class TestPipelineComponents:
         source_filter = Mock(spec=SourceFilter)
         state_manager = Mock(spec=StateManager)
 
+        qdrant_manager = Mock(spec=QdrantManager)
         components = PipelineComponents(
             document_pipeline=document_pipeline,
             source_processor=source_processor,
             source_filter=source_filter,
             state_manager=state_manager,
+            qdrant_manager=qdrant_manager,
         )
 
         assert components.document_pipeline == document_pipeline
         assert components.source_processor == source_processor
         assert components.source_filter == source_filter
         assert components.state_manager == state_manager
+        assert components.qdrant_manager == qdrant_manager
 
 
 class TestPipelineOrchestrator:
@@ -66,11 +70,13 @@ class TestPipelineOrchestrator:
         self.state_manager = AsyncMock(spec=StateManager)
         self.state_manager._initialized = False  # Add the _initialized attribute
 
+        self.qdrant_manager = AsyncMock(spec=QdrantManager)
         self.components = PipelineComponents(
             document_pipeline=self.document_pipeline,
             source_processor=self.source_processor,
             source_filter=self.source_filter,
             state_manager=self.state_manager,
+            qdrant_manager=self.qdrant_manager,
         )
 
         self.orchestrator = PipelineOrchestrator(self.settings, self.components)
@@ -436,6 +442,55 @@ class TestPipelineOrchestrator:
             mock_change_detector.detect_changes.assert_called_once_with(
                 mock_documents, filtered_config
             )
+
+    @pytest.mark.asyncio
+    async def test_detect_document_changes_handles_deleted_documents(self):
+        """Test deleted documents are marked deleted and removed from Qdrant."""
+        mock_documents = cast(
+            list[Document],
+            [
+                Mock(spec=Document, id="doc1"),
+            ],
+        )
+        deleted_document = Mock(spec=Document, id="deleted-doc")
+        deleted_document.source_type = "jira"
+        deleted_document.source = "my-jira"
+
+        filtered_config = Mock(spec=SourcesConfig)
+        self.state_manager._initialized = False
+        async def _initialize_side_effect():
+            self.state_manager._initialized = True
+
+        self.state_manager.initialize.side_effect = _initialize_side_effect
+        self.state_manager.mark_document_deleted = AsyncMock()
+        self.qdrant_manager.delete_points_by_document_id = AsyncMock()
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.detect_changes.return_value = {
+            "new": mock_documents,
+            "updated": [],
+            "deleted": [deleted_document],
+        }
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector"
+        ) as mock_detector_class:
+            mock_detector_class.return_value.__aenter__.return_value = (
+                mock_change_detector
+            )
+
+            result = await self.orchestrator._detect_document_changes(
+                mock_documents, filtered_config, None
+            )
+
+        assert result == mock_documents
+        self.state_manager.initialize.assert_called_once()
+        self.state_manager.mark_document_deleted.assert_awaited_once_with(
+            "jira", "my-jira", "deleted-doc", None
+        )
+        self.qdrant_manager.delete_points_by_document_id.assert_awaited_once_with(
+            ["deleted-doc"]
+        )
 
     @pytest.mark.asyncio
     async def test_detect_document_changes_empty_documents(self):

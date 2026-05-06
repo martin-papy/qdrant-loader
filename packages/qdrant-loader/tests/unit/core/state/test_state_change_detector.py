@@ -21,6 +21,7 @@ class TestDocumentState:
     def test_valid_document_state(self):
         """Test creating a valid DocumentState."""
         state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="abc123",
             updated_at=datetime.now(UTC),
@@ -54,12 +55,14 @@ class TestDocumentState:
         timestamp = datetime.now(UTC)
 
         state1 = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="abc123",
             updated_at=timestamp,
         )
 
         state2 = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="abc123",
             updated_at=timestamp,
@@ -250,6 +253,9 @@ class TestStateChangeDetector:
         assert deleted_doc.title == "Deleted Document"
         assert deleted_doc.content == ""
         assert deleted_doc.url == "http://example.com/deleted_doc"
+        assert deleted_doc.id == "deleted_doc"
+        assert deleted_doc.source_type == "git"
+        assert deleted_doc.source == "repo1"
 
     @pytest.mark.asyncio
     async def test_detect_changes_no_changes(
@@ -323,12 +329,14 @@ class TestStateChangeDetector:
         detector = StateChangeDetector(mock_state_manager)
 
         current_state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="new_hash",
             updated_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
 
         previous_state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="old_hash",
             updated_at=datetime(2023, 1, 1, tzinfo=UTC),
@@ -341,12 +349,14 @@ class TestStateChangeDetector:
         detector = StateChangeDetector(mock_state_manager)
 
         current_state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="same_hash",
             updated_at=datetime(2023, 1, 2, tzinfo=UTC),
         )
 
         previous_state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="same_hash",
             updated_at=datetime(2023, 1, 1, tzinfo=UTC),
@@ -361,12 +371,14 @@ class TestStateChangeDetector:
         timestamp = datetime(2023, 1, 1, tzinfo=UTC)
 
         current_state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="same_hash",
             updated_at=timestamp,
         )
 
         previous_state = DocumentState(
+            document_id="doc1",
             uri="git:repo:http://example.com/doc",
             content_hash="same_hash",
             updated_at=timestamp,
@@ -379,7 +391,8 @@ class TestStateChangeDetector:
         detector = StateChangeDetector(mock_state_manager)
 
         state = DocumentState(
-            uri="git:repo1:http%3A//example.com/deleted",
+            document_id="deleted_doc",
+            uri="git:repo1:http%3A%2F%2Fexample.com%2Fdeleted",
             content_hash="deleted_hash",
             updated_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
@@ -392,6 +405,8 @@ class TestStateChangeDetector:
         assert deleted_doc.source == "repo1"
         assert deleted_doc.source_type == "git"
         assert deleted_doc.metadata["uri"] == state.uri
+        assert deleted_doc.id == "deleted_doc"
+        assert deleted_doc.id == "deleted_doc"
 
     def test_normalize_url(self, mock_state_manager):
         """Test _normalize_url method."""
