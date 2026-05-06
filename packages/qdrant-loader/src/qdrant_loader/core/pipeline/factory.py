@@ -130,6 +130,7 @@ class PipelineComponentsFactory:
             source_processor=source_processor,
             source_filter=source_filter,
             state_manager=state_manager,
+            qdrant_manager=qdrant_manager,
         )
 
         logger.debug("Pipeline components created successfully")
