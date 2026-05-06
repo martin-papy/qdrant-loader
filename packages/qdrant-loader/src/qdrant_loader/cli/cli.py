@@ -402,6 +402,51 @@ async def ingest(
 
 @cli.command()
 @option(
+    "--workspace",
+    type=ClickPath(path_type=Path),
+    help="Workspace directory containing config.yaml and .env files. All output will be stored here.",
+)
+@option(
+    "--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file."
+)
+@option("--env", type=ClickPath(exists=True, path_type=Path), help="Path to .env file.")
+@option(
+    "--host",
+    type=str,
+    default="0.0.0.0",
+    help="Host address for the webhook server.",
+)
+@option(
+    "--port",
+    type=int,
+    default=8080,
+    help="Port for the webhook server.",
+)
+@option(
+    "--log-level",
+    type=Choice(
+        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+    ),
+    default="INFO",
+    help="Set the logging level.",
+)
+@async_command
+async def webhook(
+    workspace: Path | None,
+    config: Path | None,
+    env: Path | None,
+    host: str,
+    port: int,
+    log_level: str,
+):
+    """Run the webhook server to receive connector events and trigger ingestion."""
+    from qdrant_loader.cli.commands.webhook_cmd import run_webhook_command
+
+    await run_webhook_command(workspace, config, env, host, port, log_level)
+
+
+@cli.command()
+@option(
     "--output-dir",
     type=ClickPath(path_type=Path),
     default=None,
