@@ -203,3 +203,38 @@ class StateChangeDetector:
     ) -> str:
         """Generate a URI from document components."""
         return f"{source_type}:{source}:{self._normalize_url(url)}"
+
+    async def classify_batch(
+        self,
+        docs: list[Document],
+    ) -> tuple[list[Document], list[Document], list[str]]:
+        """
+        Classify a batch of documents into:
+        - new
+        - updated
+        - deleted (IDs only
+        """
+        if not docs:
+            return [], [], []
+        # build states for incoming docs
+        current_states = [self._get_document_state(doc) for doc in docs]
+
+        # extract URIs
+        uris = [state.uri for state in current_states]
+
+        existing_map = await self.state_manager.get_by_uris(uris)
+
+        new_docs = []
+        updated_docs = []
+        for state, doc in zip(current_states, docs, strict=False):
+            prev = existing_map.get(state.uri)
+            if not prev:
+                new_docs.append(doc)
+            else:
+                if (
+                    prev.content_hash != state.content_hash
+                    or state.updated_at > prev.updated_at
+                ):
+                    updated_docs.append(doc)
+        deleted_ids = list[str] = []
+        return new_docs, updated_docs, deleted_ids

@@ -1,7 +1,10 @@
 """Main orchestrator for the ingestion pipeline."""
 
+import asyncio
+import os
 import traceback
 
+import psutil
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.base import ConnectorConfigurationError
 from qdrant_loader.connectors.factory import get_connector_instance
@@ -128,43 +131,14 @@ class PipelineOrchestrator:
                 raise ValueError(f"No sources found for type '{source_type}'")
 
             # Collect documents from all sources
-            documents = await self._collect_documents_from_sources(
-                filtered_config, current_project_id
+            await self._stream_and_process_sources(
+                filtered_config,
+                current_project_id,
+                force=force,
             )
 
-            if not documents:
-                logger.info("✅ No documents found from sources")
-                return []
-
-            # Detect changes in documents (bypass if force=True)
-            if force:
-                logger.warning(
-                    f"🔄 Force mode enabled: bypassing change detection, processing all {len(documents)} documents"
-                )
-            else:
-                documents = await self._detect_document_changes(
-                    documents, filtered_config, current_project_id
-                )
-
-                if not documents:
-                    logger.info("✅ No new or updated documents to process")
-                    return []
-
-            # Process documents through the pipeline
-            result = await self.components.document_pipeline.process_documents(
-                documents
-            )
-            self.last_pipeline_result = result
-
-            # Update document states for successfully processed documents
-            await self._update_document_states(
-                documents, result.successfully_processed_documents, current_project_id
-            )
-
-            logger.info(
-                f"✅ Ingestion completed: {result.success_count} chunks processed successfully"
-            )
-            return documents
+            logger.info("✅ Streaming ingestion completed")
+            return []
 
         except Exception as e:
             logger.error(
@@ -275,58 +249,6 @@ class PipelineOrchestrator:
             )
         return all_documents
 
-    async def _collect_documents_from_sources(
-        self, filtered_config: SourcesConfig, project_id: str | None = None
-    ) -> list[Document]:
-        """Collect documents from all configured sources."""
-        documents = []
-
-        # Process each source type with project context
-        if filtered_config.confluence:
-            confluence_docs = (
-                await self.components.source_processor.process_source_type(
-                    filtered_config.confluence, get_connector_instance, "Confluence"
-                )
-            )
-            documents.extend(confluence_docs)
-
-        if filtered_config.git:
-            git_docs = await self.components.source_processor.process_source_type(
-                filtered_config.git, get_connector_instance, "Git"
-            )
-            documents.extend(git_docs)
-
-        if filtered_config.jira:
-            jira_docs = await self.components.source_processor.process_source_type(
-                filtered_config.jira, get_connector_instance, "Jira"
-            )
-            documents.extend(jira_docs)
-
-        if filtered_config.publicdocs:
-            publicdocs_docs = (
-                await self.components.source_processor.process_source_type(
-                    filtered_config.publicdocs, get_connector_instance, "PublicDocs"
-                )
-            )
-            documents.extend(publicdocs_docs)
-
-        if filtered_config.localfile:
-            localfile_docs = await self.components.source_processor.process_source_type(
-                filtered_config.localfile, get_connector_instance, "LocalFile"
-            )
-            documents.extend(localfile_docs)
-
-        # Inject project metadata into documents if project context is available
-        if project_id and self.project_manager:
-            for document in documents:
-                enhanced_metadata = self.project_manager.inject_project_metadata(
-                    project_id, document.metadata
-                )
-                document.metadata = enhanced_metadata
-
-        logger.info(f"📄 Collected {len(documents)} documents from all sources")
-        return documents
-
     async def _detect_document_changes(
         self,
         documents: list[Document],
@@ -398,3 +320,109 @@ class PipelineOrchestrator:
                     f"Failed to update document state for {doc.id}: {sanitize_exception_message(e)}",
                     error_type=type(e).__name__,
                 )
+
+    async def _stream_and_process_sources(
+        self,
+        filtered_config: SourcesConfig,
+        project_id: str | None = None,
+        force: bool = False,
+    ):
+        batch_size = self.settings.global_config.embedding.batch_size or 100
+        first_batch_size = 32
+
+        state_manager = self.components.state_manager
+        pipeline = self.components.document_pipeline
+
+        if not state_manager._initialized:
+            await state_manager.initialize()
+        
+        async with StateChangeDetector(state_manager) as change_detector:
+            sources = await self.components.source_processor.get_sources(filtered_config)
+            tasks = [
+                asyncio.create_task(
+                    self._ingest_single_source(
+                        source,
+                        pipeline,
+                        change_detector,
+                        batch_size,
+                        first_batch_size,
+                        force,
+                        project_id,
+                    )
+                )
+                for source in sources
+            ]
+            await asyncio.gather(*tasks)
+        
+    async def _ingest_single_source(
+        self,
+        connector,
+        pipeline,
+        change_detector,
+        batch_size,
+        first_batch_size,
+        force,
+        project_id,
+    ):
+        batch = []
+        started = False
+
+        async for doc in connector.stream_documents():
+
+            batch.append(doc)
+
+            # 🚀 early flush để đạt <2s
+            if not started and len(batch) >= first_batch_size:
+                await self._handle_batch(batch, pipeline, change_detector, force, project_id)
+                batch.clear()
+                started = True
+
+            elif len(batch) >= batch_size:
+                self.log_memory()
+                await self._handle_batch(batch, pipeline, change_detector, force, project_id)
+                batch.clear()
+
+        # flush cuối
+        if batch:
+            await self._handle_batch(batch, pipeline, change_detector, force, project_id)
+    
+    async def _handle_batch(
+        self,
+        batch,
+        pipeline,
+        change_detector,
+        force,
+        project_id,
+    ):
+        try:
+            if force:
+                to_process = batch
+            else:
+                new_docs, updated_docs, deleted_ids = await change_detector.classify_batch(batch)
+
+                to_process = new_docs + updated_docs
+
+                if deleted_ids:
+                    await pipeline.delete_batch(deleted_ids)
+
+            if not to_process:
+                return
+
+            result = await pipeline.process_batch(to_process)
+
+            # 🔥 update state ngay sau mỗi batch
+            await self._update_document_states(
+                to_process,
+                result.successfully_processed_documents,
+                project_id,
+            )
+
+        except Exception as e:
+            logger.exception("Batch processing failed", error=str(e))
+    
+    # function to test memory usage at any point in the pipeline
+    def log_memory():
+        process = psutil.Process(os.getpid())
+        mem = process.memory_info().rss / 1024 / 1024
+        logger.info(f"🧠 Memory usage: {mem:.2f} MB")
+

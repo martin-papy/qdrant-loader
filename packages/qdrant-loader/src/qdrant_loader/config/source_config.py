@@ -1,6 +1,7 @@
 """Base configuration for all source types."""
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from qdrant_loader.config.sources import SourcesConfig
 
 
 class SourceConfig(BaseModel):

@@ -429,3 +429,24 @@ class StateManager:
             self.logger.debug("Closing database connections")
             await _dispose_engine(self._engine)
             self.logger.debug("Database connections closed")
+    
+    async def get_by_uris(
+        self,
+        uris: list[str],
+    ) -> dict[str, DocumentStateRecord]:
+        """
+        Batch fetch by URI (optimized for streaming change detection)
+        """
+        if not self._initialized:
+            await self.initialize()
+
+        async with await self.get_session() as session:
+            result = await session.execute(
+                select(DocumentStateRecord).where(
+                    DocumentStateRecord.uri.in_(uris)
+                )
+            )
+
+            records = result.scalars().all()
+
+        return {r.uri: r for r in records}

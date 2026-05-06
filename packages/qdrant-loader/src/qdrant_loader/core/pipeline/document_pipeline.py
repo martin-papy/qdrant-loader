@@ -5,12 +5,20 @@ import time
 
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
+from dataclasses import dataclass
 
 from .workers import ChunkingWorker, EmbeddingWorker, UpsertWorker
 from .workers.upsert_worker import PipelineResult
 
 logger = LoggingConfig.get_logger(__name__)
 
+@dataclass
+class BatchResult:
+    """Result of processing a batch of documents."""
+
+    success_count: int = 0
+    failure_count: int = 0
+    skipped_count: int = 0
 
 class DocumentPipeline:
     """Handles the chunking -> embedding -> upsert pipeline."""
@@ -92,3 +100,27 @@ class DocumentPipeline:
             result.error_count = len(documents)
             result.errors = [f"Pipeline failed: {e}"]
             return result
+    
+    async def process_batch(self, docs: list[Document]) -> BatchResult:
+        """
+        Process a bounded batch of documents.
+        Return existing pipeline safety.
+        """
+
+        if not docs:
+            return BatchResult()
+        try:
+            result = await self.process_documents(docs)
+
+            return BatchResult(
+                success_count=result.success_count,
+                failure_count=result.error_count,
+                skipped_count=0,  # Skipping logic can be added if needed
+            )
+        except Exception as e:
+            logger.error(f"❌ Batch processing failed: {e}", exc_info=True)
+            return BatchResult(
+                success_count=0,
+                failure_count=len(docs),
+                skipped_count=0,
+            )

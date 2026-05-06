@@ -3,8 +3,11 @@
 import asyncio
 from collections.abc import Callable, Mapping
 
+from qdrant_loader import connectors
 from qdrant_loader.config.source_config import SourceConfig
+from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationError
+from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
@@ -98,3 +101,51 @@ class SourceProcessor:
                 f"📥 {source_type}: {len(all_documents)} documents from {len(source_configs)} sources"
             )
         return all_documents
+
+    async def get_sources(
+        self,
+        filtered_config: SourcesConfig,
+    ) -> list[BaseConnector]:
+        """
+        Create and return all connectors (No document fetching).
+        """
+        connectors: list[BaseConnector] = []
+
+        def _prepare_connector(connector, source_config):
+            if(
+                self.file_conversion_config
+                and hasattr(connector, "set_file_conversion_config")
+                and hasattr(source_config, "enable_file_conversion")
+                and source_config.enable_file_conversion
+            ):
+                connector.set_file_conversion_config(self.file_conversion_config)
+            return connector
+        
+        source_groups = {
+            "jira": filtered_config.jira,
+            "confluence": filtered_config.confluence,
+            "git": filtered_config.git,
+            "localfile": filtered_config.localfile,
+            "publicdocs": filtered_config.publicdocs,
+        }
+
+        for source_type, sources in source_groups.items():
+            if not sources:
+                continue
+            for source_name, source_config in sources.items():
+                try:
+                    connector = get_connector_instance(source_config)
+                    connectors.append(_prepare_connector(connector, source_config))
+
+                    logger.debug(
+                        "Connector created",
+                        source_type=source_type,
+                        source_name=source_name,
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to create connector for {source_type} source {source_name}: {sanitize_exception_message(e)}",
+                        error_type=type(e).__name__,
+                    )
+                    continue
+        return connectors

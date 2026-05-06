@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import datetime
+from typing import AsyncIterator
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.document import Document
@@ -46,3 +48,23 @@ class BaseConnector(ABC):
     @abstractmethod
     async def get_documents(self) -> list[Document]:
         """Get documents from the source."""
+    
+    @abstractmethod
+    async def stream_documents(self, since: datetime | None) -> AsyncIterator[Document]: # type: ignore
+        """Stream documents from the source."""
+    
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """
+        Fetch by single document ID.
+        Optional: connectors may override this for efficient lookup.
+        Default implementation returns None.
+        """
+        return None
+    
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """
+        Stream entity ID from the source.
+        Used for delete detection.
+        Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError(f"{self.__class__.__name__} does not implement list_entity_ids")
