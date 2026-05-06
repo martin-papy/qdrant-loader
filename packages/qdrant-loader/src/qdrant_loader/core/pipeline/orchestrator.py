@@ -6,6 +6,7 @@ from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.base import ConnectorConfigurationError
 from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
@@ -29,11 +30,13 @@ class PipelineComponents:
         source_processor: SourceProcessor,
         source_filter: SourceFilter,
         state_manager: StateManager,
+        qdrant_manager: QdrantManager,
     ):
         self.document_pipeline = document_pipeline
         self.source_processor = source_processor
         self.source_filter = source_filter
         self.state_manager = state_manager
+        self.qdrant_manager = qdrant_manager
 
 
 class PipelineOrchestrator:
@@ -357,12 +360,71 @@ class PipelineOrchestrator:
                     f"{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
                 )
 
-                # Return new and updated documents
-                return changes["new"] + changes["updated"]
+                if changes["deleted"]:
+                    await self._process_deleted_documents(changes["deleted"], project_id)
+
+                documents_to_process = changes["new"] + changes["updated"]
+                if not documents_to_process and changes["deleted"]:
+                    logger.info(
+                        "No new or updated documents to process, but deleted documents were handled"
+                    )
+
+                return documents_to_process
 
         except Exception as e:
             logger.error(
                 f"Error during change detection: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+            )
+            raise
+
+    async def _process_deleted_documents(
+        self,
+        deleted_documents: list[Document],
+        project_id: str | None = None,
+    ) -> None:
+        """Process deleted documents by updating state and removing points from Qdrant."""
+        if not deleted_documents:
+            return
+
+        logger.info(
+            f"Processing {len(deleted_documents)} deleted documents"
+        )
+
+        if not self.components.state_manager._initialized:
+            logger.debug(
+                "Initializing state manager for deleted document processing"
+            )
+            await self.components.state_manager.initialize()
+
+        document_ids: list[str] = []
+        for document in deleted_documents:
+            try:
+                await self.components.state_manager.mark_document_deleted(
+                    document.source_type,
+                    document.source,
+                    document.id,
+                    project_id,
+                )
+                document_ids.append(document.id)
+                logger.debug(f"Marked document deleted in state: {document.id}")
+            except Exception as e:
+                logger.error(
+                    f"Failed to mark document deleted for {document.id}: {sanitize_exception_message(e)}",
+                    error_type=type(e).__name__,
+                )
+                raise
+
+        try:
+            await self.components.qdrant_manager.delete_points_by_document_id(
+                document_ids
+            )
+            logger.info(
+                f"Deleted {len(document_ids)} document points from Qdrant"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to delete document points from Qdrant: {sanitize_exception_message(e)}",
                 error_type=type(e).__name__,
             )
             raise

@@ -19,6 +19,7 @@ class DocumentState(BaseModel):
     all sources. It includes the essential fields needed for change detection.
     """
 
+    document_id: str
     uri: str  # Universal identifier in format: {source_type}:{source}:{url}
     content_hash: str  # Hash of document content
     updated_at: datetime  # Last update timestamp
@@ -116,6 +117,7 @@ class StateChangeDetector:
         """Get the standardized state of a document."""
         try:
             return DocumentState(
+                document_id=document.id,
                 uri=self._generate_uri_from_document(document),
                 content_hash=document.content_hash,
                 updated_at=document.updated_at,
@@ -138,6 +140,7 @@ class StateChangeDetector:
         url = unquote(url)
 
         return Document(
+            id=document_state.document_id,
             content="",
             content_type="md",
             source=source,
@@ -179,6 +182,7 @@ class StateChangeDetector:
         # Convert records to states efficiently
         return [
             DocumentState(
+                document_id=record.document_id,  # type: ignore
                 uri=self._generate_uri(
                     record.url, record.source, record.source_type, record.document_id  # type: ignore
                 ),
