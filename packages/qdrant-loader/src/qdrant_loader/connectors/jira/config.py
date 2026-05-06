@@ -1,6 +1,7 @@
 """Configuration for Jira connector."""
 
 import os
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Self
 
@@ -68,6 +69,12 @@ class JiraProjectConfig(SourceConfig):
     include_statuses: list[str] = Field(
         default=[],
         description="Optional list of statuses to include (e.g., ['Open', 'In Progress']). If empty, all statuses are included.",
+    )
+
+    # Issue filtering
+    updated_after: datetime | None = Field(
+        default=None,
+        description="Only fetch issues updated after this datetime. Supports ISO 8601 format (e.g., '2026-05-04T12:00:00') or relative format (e.g., '-2 days', '-48h', '-1w'). Set to None to fetch all issues.",
     )
 
     model_config = ConfigDict(validate_default=True, arbitrary_types_allowed=True)
@@ -149,3 +156,47 @@ class JiraProjectConfig(SourceConfig):
         if any(not item.strip() for item in v):
             raise ValueError("List items cannot be empty strings")
         return [item.strip() for item in v]
+
+    @field_validator("updated_after", mode="before")
+    @classmethod
+    def parse_updated_after(cls, v: str | datetime | None) -> datetime | None:
+        """Parse updated_after field supporting relative date strings.
+
+        Supports formats like:
+        - ISO 8601: "2026-05-04T12:00:00"
+        - Relative: "-2 days", "-48h", "-2d", "-1w"
+        - None: fetch all issues
+        """
+        if v is None or isinstance(v, datetime):
+            return v
+
+        if isinstance(v, str):
+            import re
+
+            # Try to parse as ISO 8601 datetime first
+            try:
+                return datetime.fromisoformat(v)
+            except ValueError:
+                pass
+
+            # Parse relative dates like "-2 days", "-48h", "-2d", "-1w"
+            match = re.match(
+                r"^-(\d+)\s*(days?|hours?|h|d|w|weeks?)$", v.strip(), re.IGNORECASE
+            )
+            if match:
+                amount = int(match.group(1))
+                unit = match.group(2).lower()
+
+                if unit in ("day", "days", "d"):
+                    return datetime.now() - timedelta(days=amount)
+                elif unit in ("hour", "hours", "h"):
+                    return datetime.now() - timedelta(hours=amount)
+                elif unit in ("week", "weeks", "w"):
+                    return datetime.now() - timedelta(weeks=amount)
+
+            raise ValueError(
+                f"Invalid updated_after format: '{v}'. "
+                "Use ISO 8601 (e.g., '2026-05-04T12:00:00') or relative format (e.g., '-2 days', '-48h', '-1w')"
+            )
+
+        raise ValueError(f"updated_after must be a datetime or string, got {type(v)}")

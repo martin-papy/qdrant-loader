@@ -124,6 +124,9 @@ projects:
             - "In Progress"
             - "Done"
           
+          # Update filtering - fetch issues updated in the last 2 days
+          updated_after: "-2 days"
+
           # File conversion (requires global file_conversion config)
           enable_file_conversion: true
 ```
@@ -200,6 +203,8 @@ projects:
 |--------|------|-------------|---------|
 | `issue_types` | list | Issue types to include | All types |
 | `include_statuses` | list | Issue statuses to include | All statuses |
+| `updated_after` | string | Only fetch issues updated after this time. Supports ISO 8601 format (`"2026-05-04T12:00:00"`) or relative format (`"-2 days"`, `"-48h"`, `"-1w"`) | None (fetch all) |
+
 
 ## 🚀 Usage Examples
 
