@@ -263,3 +263,220 @@ class TestDataCenterPlaceholders:
         assert "project_key" in msg
         assert "token" in msg
         assert "base_url" in msg
+
+
+# ---------------------------------------------------------------------------
+# updated_after field parsing
+# ---------------------------------------------------------------------------
+
+
+class TestUpdatedAfterParsing:
+    """Test parse_updated_after validator with various input formats."""
+
+    # ── None and datetime objects ──────────────────────────────────────────────
+
+    def test_none_value_accepted(self):
+        """None value should be accepted (fetch all issues)."""
+        from datetime import datetime
+
+        cfg = _make(updated_after=None)
+        assert cfg.updated_after is None
+
+    def test_datetime_object_accepted(self):
+        """Datetime object should pass through unchanged."""
+        from datetime import datetime
+
+        test_dt = datetime(2026, 5, 4, 12, 0, 0)
+        cfg = _make(updated_after=test_dt)
+        assert cfg.updated_after == test_dt
+
+    # ── ISO 8601 format ────────────────────────────────────────────────────────
+
+    def test_iso8601_datetime_parsed(self):
+        """ISO 8601 datetime string should be parsed correctly."""
+        from datetime import datetime
+
+        cfg = _make(updated_after="2026-05-04T12:30:45")
+        assert isinstance(cfg.updated_after, datetime)
+        assert cfg.updated_after.year == 2026
+        assert cfg.updated_after.month == 5
+        assert cfg.updated_after.day == 4
+        assert cfg.updated_after.hour == 12
+        assert cfg.updated_after.minute == 30
+        assert cfg.updated_after.second == 45
+
+    def test_iso8601_datetime_no_time(self):
+        """ISO 8601 date without time should be parsed."""
+        from datetime import datetime
+
+        cfg = _make(updated_after="2026-05-04")
+        assert isinstance(cfg.updated_after, datetime)
+        assert cfg.updated_after.year == 2026
+        assert cfg.updated_after.month == 5
+        assert cfg.updated_after.day == 4
+
+    # ── Relative date formats ──────────────────────────────────────────────────
+
+    def test_relative_days_format(self):
+        """Relative format '-2 days' should be parsed."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-2 days")
+        assert isinstance(cfg.updated_after, datetime)
+        # Check that it's approximately 2 days ago (allow 1 second tolerance)
+        expected = datetime.now() - timedelta(days=2)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1, f"Expected ~2 days ago, got diff of {time_diff} seconds"
+
+    def test_relative_day_singular(self):
+        """Singular 'day' should also work."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-1 day")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(days=1)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_days_short_format(self):
+        """Short format '-2d' should work."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-2d")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(days=2)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_hours_format(self):
+        """Relative format '-48 hours' should be parsed."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-48 hours")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(hours=48)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_hours_short_format(self):
+        """Short format '-48h' should work."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-48h")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(hours=48)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_hour_singular(self):
+        """Singular 'hour' should work."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-1 hour")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(hours=1)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_weeks_format(self):
+        """Relative format '-1 weeks' should be parsed."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-1 weeks")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(weeks=1)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_weeks_short_format(self):
+        """Short format '-1w' should work."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-1w")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(weeks=1)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_week_singular(self):
+        """Singular 'week' should work."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-1 week")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(weeks=1)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_format_with_whitespace(self):
+        """Format with extra whitespace should be handled."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="  -2 days  ")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(days=2)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_relative_format_case_insensitive(self):
+        """Relative format should be case-insensitive."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-2 DAYS")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(days=2)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    # ── Invalid formats ────────────────────────────────────────────────────────
+
+    def test_invalid_relative_format_raises(self):
+        """Invalid relative format should raise ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            _make(updated_after="-2 months")  # months not supported
+        msg = _error_messages(exc_info)
+        assert "invalid" in msg.lower() or "updated_after" in msg.lower()
+
+    def test_invalid_iso8601_raises(self):
+        """Invalid ISO 8601 format should raise ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            _make(updated_after="2026-13-01T12:00:00")  # invalid month
+        msg = _error_messages(exc_info)
+        assert "updated_after" in msg.lower() or "invalid" in msg.lower()
+
+    def test_random_string_raises(self):
+        """Random string that doesn't match any format should raise."""
+        with pytest.raises(ValidationError) as exc_info:
+            _make(updated_after="some random text")
+        msg = _error_messages(exc_info)
+        assert "updated_after" in msg.lower()
+
+    def test_positive_days_raises(self):
+        """Positive days (without minus) should raise."""
+        with pytest.raises(ValidationError) as exc_info:
+            _make(updated_after="2 days")
+        msg = _error_messages(exc_info)
+        assert "updated_after" in msg.lower()
+
+    # ── Large relative values ──────────────────────────────────────────────────
+
+    def test_large_days_value(self):
+        """Large day values should be handled."""
+        from datetime import datetime, timedelta
+
+        cfg = _make(updated_after="-365 days")
+        assert isinstance(cfg.updated_after, datetime)
+        expected = datetime.now() - timedelta(days=365)
+        time_diff = abs((cfg.updated_after - expected).total_seconds())
+        assert time_diff < 1
+
+    def test_zero_days_not_allowed(self):
+        """Zero days format is technically valid (equals datetime.now())."""
+        from datetime import datetime
+
+        # -0 days is technically valid and equals datetime.now()
+        cfg = _make(updated_after="-0 days")
+        assert isinstance(cfg.updated_after, datetime)
+        # Should be very close to now
+        time_diff = abs((cfg.updated_after - datetime.now()).total_seconds())
+        assert time_diff < 1

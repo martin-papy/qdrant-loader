@@ -289,7 +289,7 @@ class BaseJiraConnector(BaseConnector):
 
         # Add updated_after filter if provided
         if updated_after:
-            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M:%S')}'"
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
 
         return jql
 
@@ -450,7 +450,7 @@ class BaseJiraConnector(BaseConnector):
 
         # Collect all issues
         issues = []
-        async for issue in self.get_issues():
+        async for issue in self.get_issues(updated_after=self.config.updated_after):
             issues.append(issue)
 
         # Convert issues to documents
