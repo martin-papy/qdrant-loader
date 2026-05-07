@@ -757,7 +757,7 @@ class MarkdownProcessor:
                     display_text = m.group(1).strip()
                 else:
                     display_text = heading_id
-                    
+
             display_text = _html.escape(_html.unescape(display_text))
 
             # If no icon and this is a level-3 leaf heading (and not already a numbered item), use the default SVG
