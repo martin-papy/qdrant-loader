@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from inspect import isawaitable
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
@@ -193,10 +194,21 @@ class ProjectManager:
                 # Best-effort add; proceed to commit
                 pass
 
-        # Update project sources
-        await self._update_project_sources(session, context.project_id, config)
-
-        await session.commit()
+        try:
+            # Update project sources
+            await self._update_project_sources(session, context.project_id, config)
+            await session.commit()
+        except IntegrityError as e:
+            # The unique-constraint error can be triggered by autoflush during
+            # session.execute() inside _update_project_sources, before commit.
+            await session.rollback()
+            err = str(e)
+            if "projects.collection_name" in err or "uix_project_collection" in err:
+                raise ValueError(
+                    "State DB schema is outdated and still enforces unique projects.collection_name. "
+                    "Reset state DB once and retry: `qdrant-loader init --workspace . --force`."
+                ) from e
+            raise
 
     async def _update_project_sources(
         self, session: AsyncSession, project_id: str, config: ProjectConfig

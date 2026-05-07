@@ -8,8 +8,13 @@ import pytest
 from pydantic import AnyUrl
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.config.sources import SourcesConfig
+from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.core.project_manager import ProjectContext, ProjectManager
+from qdrant_loader.core.state.models import Project
+from qdrant_loader.core.state.state_manager import StateManager
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -184,3 +189,103 @@ def test_project_listing(project_manager):
     assert len(all_contexts) == 2
     assert all_contexts["project-1"].display_name == "Project 1"
     assert all_contexts["project-2"].display_name == "Project 2"
+
+
+@pytest.mark.asyncio
+async def test_multi_project_shared_collection_name_allowed():
+    """Two projects should be persisted even when sharing global collection name."""
+    git_config_1 = GitRepoConfig(
+        source_type="git",
+        source="repo-1",
+        base_url=AnyUrl("https://github.com/test/repo-1.git"),
+        branch="main",
+        token="test-token",
+        temp_dir="/tmp/test-1",
+        file_types=["md"],
+    )
+    git_config_2 = GitRepoConfig(
+        source_type="git",
+        source="repo-2",
+        base_url=AnyUrl("https://github.com/test/repo-2.git"),
+        branch="main",
+        token="test-token",
+        temp_dir="/tmp/test-2",
+        file_types=["md"],
+    )
+
+    sources_1 = SourcesConfig()
+    sources_1.git = {"repo-1": git_config_1}
+    sources_2 = SourcesConfig()
+    sources_2.git = {"repo-2": git_config_2}
+
+    project_1 = ProjectConfig(
+        project_id="project-1",
+        display_name="Project 1",
+        description="First project",
+        sources=sources_1,
+    )
+    project_2 = ProjectConfig(
+        project_id="project-2",
+        display_name="Project 2",
+        description="Second project",
+        sources=sources_2,
+    )
+
+    projects_config = ProjectsConfig()
+    projects_config.projects = {
+        "project-1": project_1,
+        "project-2": project_2,
+    }
+
+    state_manager = StateManager(StateManagementConfig(database_path=":memory:"))
+    await state_manager.initialize()
+    try:
+        async with await state_manager.get_session() as session:
+            manager = ProjectManager(
+                projects_config=projects_config,
+                global_collection_name="shared_collection",
+            )
+            await manager.initialize(session)
+
+            result = await session.execute(select(Project))
+            projects = result.scalars().all()
+
+            assert len(projects) == 2
+            assert all(p.collection_name == "shared_collection" for p in projects)
+    finally:
+        await state_manager.dispose()
+
+
+@pytest.mark.asyncio
+async def test_outdated_state_db_error_surfaces_actionable_hint(project_manager):
+    """Autoflush IntegrityError should be converted to a clear recovery hint."""
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_session.execute.return_value = mock_result
+
+    async def _raise_autoflush_error(*_args, **_kwargs):
+        raise IntegrityError(
+            statement="INSERT INTO projects ...",
+            params={},
+            orig=Exception("UNIQUE constraint failed: projects.collection_name"),
+        )
+
+    project_manager._update_project_sources = _raise_autoflush_error  # type: ignore[method-assign]
+
+    context = ProjectContext(
+        project_id="test-project",
+        display_name="Test Project",
+        description="A test project",
+        collection_name="global_collection",
+        config=project_manager.projects_config.projects["test-project"],
+    )
+
+    with pytest.raises(ValueError, match="State DB schema is outdated"):
+        await project_manager._ensure_project_in_database(  # type: ignore[attr-defined]
+            mock_session,
+            context,
+            project_manager.projects_config.projects["test-project"],
+        )
+
+    mock_session.rollback.assert_awaited_once()
