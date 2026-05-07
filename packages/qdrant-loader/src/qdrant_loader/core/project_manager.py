@@ -209,6 +209,9 @@ class ProjectManager:
                     "Reset state DB once and retry: `qdrant-loader init --workspace . --force`."
                 ) from e
             raise
+        except Exception:
+            await session.rollback()
+            raise
 
     async def _update_project_sources(
         self, session: AsyncSession, project_id: str, config: ProjectConfig
