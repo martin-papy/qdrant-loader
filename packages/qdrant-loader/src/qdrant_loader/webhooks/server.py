@@ -10,7 +10,7 @@ logger = LoggingConfig.get_logger(__name__)
 
 app = FastAPI(
     title="QDrant Loader Webhook Server",
-    version="1.0.0",
+    version="0.9.0",
     description="Receives connector webhook events and triggers source ingestion.",
 )
 
