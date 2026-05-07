@@ -44,8 +44,8 @@ def setup_test_environment():
     data_dir.mkdir(parents=True, exist_ok=True)
 
     # Load test configuration
-    config_path = Path("tests/config.test.yaml")
-    env_path = Path("tests/.env.test")
+    config_path = Path("config.test.yaml")
+    env_path = Path(".env.test")
 
     # Load environment variables first
     load_dotenv(env_path, override=True)

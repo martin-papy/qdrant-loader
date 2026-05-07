@@ -1,28 +1,47 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Request, status
+import os
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, status, Query
 from fastapi.responses import JSONResponse
 
 from qdrant_loader.utils.logging import LoggingConfig
 
-from .handlers import normalize_source_type, process_webhook_event
+from .handlers import SUPPORTED_SOURCE_TYPES, normalize_source_type, process_webhook_event
 
 logger = LoggingConfig.get_logger(__name__)
 
 app = FastAPI(
     title="QDrant Loader Webhook Server",
-    version="0.9.0",
+    version="1.0.0",
     description="Receives connector webhook events and triggers source ingestion.",
 )
 
-SUPPORTED_SOURCE_TYPES = {
-    "jira",
-    "confluence",
-    "git",
-    "publicdocs",
-    "localfile",
-}
+WEBHOOK_SECRET_ENV_VAR = "WEBHOOK_SECRET"
+WEBHOOK_QUERY_PARAM = "token"
 
+async def verify_webhook_token(
+    webhook_token: str | None = Query(None, alias=WEBHOOK_QUERY_PARAM),
+) -> None:
+    """Verify the shared webhook secret via query parameter when configured."""
+    secret = os.getenv(WEBHOOK_SECRET_ENV_VAR)
+    
+    if secret:
+        if not webhook_token or webhook_token != secret:
+            logger.warning(
+                "Unauthorized webhook request",
+                param=WEBHOOK_QUERY_PARAM,
+                received=bool(webhook_token),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing webhook token in URL.",
+            )
+    else:
+        logger.warning(
+            "Webhook secret is not configured; webhook endpoints are unprotected",
+            env_var=WEBHOOK_SECRET_ENV_VAR,
+        )
 
 @app.get("/health")
 async def health_check() -> dict[str, object]:
@@ -44,7 +63,10 @@ async def _parse_json_request(request: Request) -> object:
         ) from exc
 
 
-@app.post("/webhooks/projects/{project_id}/{source_type}/{source}")
+@app.post(
+    "/webhooks/projects/{project_id}/{source_type}/{source}",
+    dependencies=[Depends(verify_webhook_token)],
+)
 async def webhook_project_route(
     project_id: str,
     source_type: str,
@@ -54,9 +76,9 @@ async def webhook_project_route(
 ) -> JSONResponse:
     """Receive a webhook for a specific project source."""
     payload = await _parse_json_request(request)
-    normalized_source_type = normalize_source_type(source_type)
 
     try:
+        normalized_source_type = normalize_source_type(source_type)
         await process_webhook_event(
             project_id=project_id,
             source_type=normalized_source_type,
@@ -66,6 +88,11 @@ async def webhook_project_route(
         )
     except HTTPException:
         raise
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
     except Exception as exc:
         logger.error(
             "Webhook processing failed",
@@ -91,7 +118,10 @@ async def webhook_project_route(
     )
 
 
-@app.post("/webhooks/{source_type}/{source}")
+@app.post(
+    "/webhooks/{source_type}/{source}",
+    dependencies=[Depends(verify_webhook_token)],
+)
 async def webhook_source_route(
     source_type: str,
     source: str,

@@ -13,7 +13,7 @@ def test_normalize_source_type_accepts_known_values():
 
 
 def test_normalize_source_type_rejects_unknown_value():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Unsupported source type"):
         normalize_source_type("unknown")
 
 @pytest.mark.asyncio
@@ -62,6 +62,7 @@ async def test_process_webhook_event_calls_ingestion(monkeypatch):
         force=True,
     )
 
+    assert "args" in called, "run_pipeline_ingestion was never called"
     assert called["args"]["project"] == "project1"
     assert called["args"]["source_type"] == "jira"
     assert called["args"]["source"] == "my-jira-source"
