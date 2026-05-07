@@ -1,5 +1,4 @@
 import pytest
-
 from qdrant_loader.webhooks.handlers import normalize_source_type, process_webhook_event
 
 
@@ -7,18 +6,15 @@ class DummySettings:
     pass
 
 
-@pytest.mark.asyncio
-async def test_normalize_source_type_accepts_known_values():
+def test_normalize_source_type_accepts_known_values():
     assert normalize_source_type("Jira") == "jira"
     assert normalize_source_type("confluence") == "confluence"
     assert normalize_source_type("PublicDocs") == "publicdocs"
 
 
-@pytest.mark.asyncio
-async def test_normalize_source_type_rejects_unknown_value():
+def test_normalize_source_type_rejects_unknown_value():
     with pytest.raises(ValueError):
         normalize_source_type("unknown")
-
 
 @pytest.mark.asyncio
 async def test_process_webhook_event_calls_ingestion(monkeypatch):

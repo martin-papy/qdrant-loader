@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import uvicorn
-
 from click.exceptions import ClickException
 
 from qdrant_loader.cli.config_loader import (
@@ -13,7 +11,6 @@ from qdrant_loader.cli.config_loader import (
 )
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.utils.logging import LoggingConfig
-
 from qdrant_loader.webhooks.server import app
 
 
@@ -57,16 +54,15 @@ async def run_webhook_command(
         workspace=str(workspace_config.workspace_path) if workspace_config else None,
     )
 
-    config = uvicorn.Config(
+    server_config = uvicorn.Config(
         app,
         host=host,
         port=port,
         log_level=log_level.lower(),
-        loop="asyncio",
     )
-    server = uvicorn.Server(config)
     try:
+        server = uvicorn.Server(server_config)
         await server.serve()
     except Exception as exc:
-        logger.error("Webhook server failed", error=str(exc))
-        raise ClickException(f"Failed to start webhook server: {exc}") from exc
+        logger.exception("Webhook server error")
+        raise ClickException(f"Webhook server failed: {exc}") from exc

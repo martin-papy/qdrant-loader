@@ -413,9 +413,9 @@ async def ingest(
 @option(
     "--host",
     type=str,
-    default="0.0.0.0",
-    help="Host address for the webhook server.",
-)
+    default="127.0.0.1",
+    show_default=True,
+    help="Host address for the webhook server. Use 0.0.0.0 to bind to all interfaces.")
 @option(
     "--port",
     type=int,

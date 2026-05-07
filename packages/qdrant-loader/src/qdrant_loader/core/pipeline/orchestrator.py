@@ -6,8 +6,8 @@ from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.base import ConnectorConfigurationError
 from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.project_manager import ProjectManager
+from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig

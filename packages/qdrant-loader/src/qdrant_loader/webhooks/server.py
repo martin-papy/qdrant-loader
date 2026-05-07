@@ -4,7 +4,8 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from qdrant_loader.utils.logging import LoggingConfig
-from .handlers import process_webhook_event, normalize_source_type
+
+from .handlers import normalize_source_type, process_webhook_event
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -55,13 +56,28 @@ async def webhook_project_route(
     payload = await _parse_json_request(request)
     normalized_source_type = normalize_source_type(source_type)
 
-    await process_webhook_event(
-        project_id=project_id,
-        source_type=normalized_source_type,
-        source=source,
-        payload=payload,
-        force=force,
-    )
+    try:
+        await process_webhook_event(
+            project_id=project_id,
+            source_type=normalized_source_type,
+            source=source,
+            payload=payload,
+            force=force,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(
+            "Webhook processing failed",
+            project_id=project_id,
+            source_type=normalized_source_type,
+            source=source,
+            error=str(exc),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Webhook processing failed.",
+        ) from exc
 
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
@@ -86,13 +102,27 @@ async def webhook_source_route(
     payload = await _parse_json_request(request)
     normalized_source_type = normalize_source_type(source_type)
 
-    await process_webhook_event(
-        project_id=None,
-        source_type=normalized_source_type,
-        source=source,
-        payload=payload,
-        force=force,
-    )
+    try:
+        await process_webhook_event(
+            project_id=None,
+            source_type=normalized_source_type,
+            source=source,
+            payload=payload,
+            force=force,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(
+            "Webhook processing failed",
+            source_type=normalized_source_type,
+            source=source,
+            error=str(exc),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Webhook processing failed.",
+        ) from exc
 
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
