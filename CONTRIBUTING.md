@@ -101,11 +101,14 @@ git checkout -b fix/issue-description
 ### 2. Make Your Changes
 
 - **Follow our coding standards** (see below)
-- **Add tests** for new functionality
-- **Update documentation** as needed
+- **Add tests** for new functionality and bug fixes
+- **Ensure unit test coverage** for the code you changed
+- **Update documentation** for every new feature or behavior change
 - **Keep commits focused** and atomic
 
 ### 3. Test Your Changes
+
+> **Note**: `make` commands are convenience shortcuts. Since `uv` is a required prerequisite, the `uv run` equivalents in the [Testing Guidelines](#-testing-guidelines) below work on all platforms (macOS, Linux, Windows) without additional setup.
 
 ```bash
 # Run all tests
@@ -144,7 +147,10 @@ git commit -m "fix: resolve issue with file conversion timeout"
 git push origin feature/your-feature-name
 
 # Create a pull request on GitHub
+# Set the base branch to: develop
+# Do NOT set the base branch to: main
 # Include a clear description of your changes
+# Wait for team review and approval before merging
 ```
 
 ## 📝 Coding Standards
