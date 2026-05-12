@@ -114,6 +114,36 @@ LLM_EMBEDDING_MODEL=your-embedding-model
 LLM_CHAT_MODEL=your-chat-model
 ```
 
+### Amazon Bedrock
+
+```bash
+LLM_PROVIDER=bedrock
+LLM_AWS_REGION=us-east-1
+LLM_EMBEDDING_MODEL=amazon.titan-embed-text-v2:0
+VECTOR_SIZE=1024
+```
+
+```yaml
+global:
+  llm:
+    provider: "${LLM_PROVIDER}"
+    api_key: "${LLM_API_KEY}"
+    models:
+      embeddings: "${LLM_EMBEDDING_MODEL}"
+    embeddings:
+      vector_size: ${VECTOR_SIZE}
+    provider_options:
+      aws_region: "${LLM_AWS_REGION}"
+      model_id: "${LLM_EMBEDDING_MODEL}"
+      provisioned_throughput_arn: null
+```
+
+Notes:
+
+- Use `provider_options.model_id` or `models.embeddings` to specify the Bedrock Titan embedding model.
+- `AWS_REGION` may also be supplied through the normal AWS environment variables.
+- Bedrock chat is not currently implemented; only embeddings are supported.
+
 ## Vector size mapping
 
 Set `global.llm.embeddings.vector_size` to match embedding output dimension.

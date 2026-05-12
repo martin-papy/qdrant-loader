@@ -150,6 +150,10 @@ global:
       azure_endpoint: null
       # For Ollama native servers: force endpoint behavior (auto|embed|embeddings)
       native_endpoint: auto
+      # For Bedrock: configure AWS region and Titan model id
+      # aws_region: "us-east-1"
+      # model_id: "amazon.titan-embed-text-v2:0"
+      # provisioned_throughput_arn: null
 
   # Semantic analysis configuration
   # Controls text processing and topic extraction
