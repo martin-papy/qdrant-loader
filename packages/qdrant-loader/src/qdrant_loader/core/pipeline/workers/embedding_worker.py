@@ -65,7 +65,18 @@ class EmbeddingWorker(BaseWorker):
                     logger.debug("EmbeddingWorker skipping result due to shutdown")
                     return []
 
-                result = list(zip(chunks, embeddings, strict=False))
+                # Filter out chunks whose embedding is empty (invalid content was
+                # skipped in get_embeddings and replaced with [] placeholder).
+                result = [
+                    (chunk, emb)
+                    for chunk, emb in zip(chunks, embeddings, strict=False)
+                    if emb
+                ]
+                skipped = len(chunks) - len(result)
+                if skipped:
+                    logger.warning(
+                        f"Skipped {skipped} chunk(s) with empty embeddings, they will not be upserted"
+                    )
                 logger.debug(f"EmbeddingWorker completed batch of {len(chunks)} items")
 
                 # Cleanup after large batches
@@ -115,9 +126,9 @@ class EmbeddingWorker(BaseWorker):
                             f"🔄 Processing embedding batch of {len(batch)} chunks..."
                         )
                         results = await self.process(batch)
-                        total_processed += len(batch)
+                        total_processed += len(results)
                         logger.info(
-                            f"🔗 Generated embeddings: {len(batch)} items in batch, {total_processed} total processed"
+                            f"🔗 Generated embeddings: {len(results)} items in batch, {total_processed} total processed"
                         )
 
                         for result in results:
@@ -137,9 +148,9 @@ class EmbeddingWorker(BaseWorker):
                         f"🔄 Processing final embedding batch of {len(batch)} chunks..."
                     )
                     results = await self.process(batch)
-                    total_processed += len(batch)
+                    total_processed += len(results)
                     logger.info(
-                        f"🔗 Generated embeddings: {len(batch)} items in final batch, {total_processed} total processed"
+                        f"🔗 Generated embeddings: {len(results)} items in final batch, {total_processed} total processed"
                     )
 
                     for result in results:
