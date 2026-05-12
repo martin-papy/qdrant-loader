@@ -94,34 +94,54 @@ def _map_bedrock_exception(exc: Exception) -> LLMError:
 
     return ServerError(str(exc))
 
-
 def _extract_embeddings(response_payload: Any) -> list[list[float]]:
-    if isinstance(response_payload, dict):
-        if "embeddings" in response_payload:
-            embeddings = response_payload["embeddings"]
-        elif "data" in response_payload and isinstance(response_payload["data"], list):
-            embeddings = [item.get("embedding", item) if isinstance(item, dict) else item for item in response_payload["data"]]
-        else:
-            raise InvalidRequestError("Bedrock response did not contain embeddings")
-    elif isinstance(response_payload, list):
-        embeddings = response_payload
-    else:
-        raise InvalidRequestError("Bedrock response has unexpected format")
+    if not isinstance(response_payload, (dict, list)):
+        raise InvalidRequestError(
+            "Bedrock response has unexpected format"
+        )
 
-    if not isinstance(embeddings, list):
-        raise InvalidRequestError("Bedrock response contains malformed embeddings")
+    raw_embeddings: list[Any]
+
+    if isinstance(response_payload, list):
+        raw_embeddings = response_payload
+
+    elif "embedding" in response_payload:
+        raw_embeddings = [response_payload["embedding"]]
+
+    elif "embeddings" in response_payload:
+        raw_embeddings = response_payload["embeddings"]
+
+    elif (
+        "data" in response_payload
+        and isinstance(response_payload["data"], list)
+    ):
+        raw_embeddings = [
+            item.get("embedding", item)
+            if isinstance(item, dict)
+            else item
+            for item in response_payload["data"]
+        ]
+
+    else:
+        raise InvalidRequestError(
+            "Bedrock response did not contain embeddings"
+        )
 
     normalized: list[list[float]] = []
-    for item in embeddings:
-        if isinstance(item, dict) and "embedding" in item:
-            vector = item["embedding"]
-        else:
-            vector = item
+
+    for vector in raw_embeddings:
+        if isinstance(vector, dict):
+            vector = vector.get("embedding", vector)
 
         if not isinstance(vector, list):
-            raise InvalidRequestError("Bedrock embedding payload must be a list of vectors")
+            raise InvalidRequestError(
+                "Bedrock embedding payload must be a list of floats"
+            )
 
-        normalized.append([float(value) for value in vector])
+        normalized.append([
+            float(value)
+            for value in vector
+        ])
 
     return normalized
 
@@ -158,7 +178,77 @@ class BedrockEmbeddings(EmbeddingsClient):
                 f"Bedrock embedding batch size cannot exceed {self.MAX_BATCH_SIZE}"
             )
 
-        body = json.dumps({"input": inputs})
+        vectors: list[list[float]] = []
+
+        for text in inputs:
+            body = json.dumps({
+                "inputText": text
+            })
+
+            invoke_kwargs: dict[str, Any] = {
+                "modelId": self._model_id,
+                "contentType": "application/json",
+                "accept": "application/json",
+                "body": body,
+            }
+
+            if self._provisioned_throughput_arn:
+                invoke_kwargs["provisionedThroughputArn"] = (
+                    self._provisioned_throughput_arn
+                )
+
+            response = await asyncio.to_thread(
+                self._client.invoke_model,
+                **invoke_kwargs
+            )
+
+            body_data = (
+                response.get("body")
+                if isinstance(response, dict)
+                else getattr(response, "body", None)
+            )
+
+            if body_data is None:
+                raise ServerError(
+                    "Bedrock response body missing"
+                )
+
+            if hasattr(body_data, "read"):
+                body_bytes = body_data.read()
+            else:
+                body_bytes = body_data
+
+            if isinstance(body_bytes, bytes):
+                raw_text = body_bytes.decode("utf-8")
+            elif isinstance(body_bytes, str):
+                raw_text = body_bytes
+            else:
+                raise ServerError(
+                    "Bedrock response body is not bytes or string"
+                )
+
+            payload = json.loads(raw_text)
+
+            if "embedding" not in payload:
+                raise InvalidRequestError(
+                    "Bedrock response did not contain embedding"
+                )
+
+            vector = [
+                float(value)
+                for value in payload["embedding"]
+            ]
+
+            if (
+                self._expected_vector_size is not None
+                and len(vector) != self._expected_vector_size
+            ):
+                raise ServerError(
+                    "Bedrock returned embedding vector with unexpected dimension"
+                )
+
+            vectors.append(vector)
+
         invoke_kwargs: dict[str, Any] = {
             "modelId": self._model_id,
             "contentType": "application/json",
