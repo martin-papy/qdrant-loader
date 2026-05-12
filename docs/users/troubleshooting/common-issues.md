@@ -240,6 +240,30 @@ qdrant-loader ingest --workspace .
 
 ## ⚙️ Configuration Issues
 
+### Issue: `UNIQUE constraint failed: projects.collection_name` during multi-project ingest
+
+**Symptoms:**
+
+- `qdrant-loader ingest --workspace .` fails when initializing projects
+- Error includes `sqlite3.IntegrityError: UNIQUE constraint failed: projects.collection_name`
+
+**Cause:**
+
+- Your existing state database was created with an older schema that enforced a unique constraint on `projects.collection_name`.
+- In workspace mode, multiple projects can share the same global collection name.
+
+**Fix (one-time):**
+
+```bash
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
+```
+
+**Notes:**
+
+- `--force` resets the state DB metadata for the workspace.
+- If needed, you can also delete the workspace state DB file manually, then run `init` again.
+
 ### Issue: Configuration validation fails
 
 **Symptoms:**
