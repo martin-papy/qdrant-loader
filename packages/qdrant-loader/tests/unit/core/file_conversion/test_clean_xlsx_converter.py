@@ -38,27 +38,27 @@ def test_clean_dataframe_preserves_literal_na_strings():
 
 
 from qdrant_loader.core.file_conversion.clean_xlsx_converter import (
-    _should_skip_sheet,
+    _is_blank_dataframe,
 )
 
 
-def test_should_skip_sheet_returns_true_for_empty_dataframe():
-    assert _should_skip_sheet(pd.DataFrame()) is True
+def test_is_blank_dataframe_returns_true_for_empty_dataframe():
+    assert _is_blank_dataframe(pd.DataFrame()) is True
 
 
-def test_should_skip_sheet_returns_true_for_all_nan_dataframe():
+def test_is_blank_dataframe_returns_true_for_all_nan_dataframe():
     df = pd.DataFrame({"a": [np.nan, np.nan], "b": [np.nan, np.nan]})
-    assert _should_skip_sheet(df) is True
+    assert _is_blank_dataframe(df) is True
 
 
-def test_should_skip_sheet_returns_false_for_dataframe_with_data():
+def test_is_blank_dataframe_returns_false_for_dataframe_with_data():
     df = pd.DataFrame({"a": [1, 2], "b": ["x", "y"]})
-    assert _should_skip_sheet(df) is False
+    assert _is_blank_dataframe(df) is False
 
 
-def test_should_skip_sheet_returns_false_for_partial_data():
+def test_is_blank_dataframe_returns_false_for_partial_data():
     df = pd.DataFrame({"a": [1, np.nan], "b": [np.nan, "y"]})
-    assert _should_skip_sheet(df) is False
+    assert _is_blank_dataframe(df) is False
 
 
 from markitdown._stream_info import StreamInfo

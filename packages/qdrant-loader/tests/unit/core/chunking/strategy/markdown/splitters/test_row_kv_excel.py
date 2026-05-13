@@ -210,6 +210,25 @@ from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
 )
 
 
+def test_splitter_truncates_at_max_chunks_per_section_cap():
+    """Match legacy ExcelSplitter: stop producing chunks once the per-section
+    cap (or half the per-document cap) is reached. A 50k-row sheet must not
+    silently produce 50k chunks just because the budget allows it."""
+    settings = MagicMock()
+    settings.global_config.chunking.chunk_overlap = 0
+    settings.global_config.chunking.max_chunks_per_document = 10
+    settings.global_config.chunking.strategies.markdown.max_chunks_per_section = 3
+    # 10 rows in one subtable, tight budget so each row becomes its own chunk.
+    rows_md = "\n".join(f"| {i} |" for i in range(10))
+    content = f"## Sheet: Big\n| n |\n|---|\n{rows_md}\n"
+
+    splitter = RowKVExcelSplitter(settings)
+    chunks = splitter.split_content(content, max_size=40)
+
+    expected_cap = min(3, 10 // 2)  # min(per_section, per_doc // 2) = 3
+    assert len(chunks) == expected_cap
+
+
 def test_section_splitter_uses_row_kv_excel_splitter():
     settings = _settings_with_chunk_overlap()
     splitter = SectionSplitter(settings)

@@ -11,11 +11,18 @@ import re
 from dataclasses import dataclass
 from typing import Iterable
 
+import structlog
+
 from qdrant_loader.core.chunking.strategy.markdown.splitters.base import BaseSplitter
 from qdrant_loader.core.file_conversion.xlsx_markdown_format import SHEET_HEADING_RE
 
+logger = structlog.get_logger(__name__)
+
 # Split on `|` only when it is NOT preceded by a backslash (escaped pipe).
 _UNESCAPED_PIPE_RE = re.compile(r"(?<!\\)\|")
+
+# Separator between row blocks within a chunk body — a blank line.
+_ROW_SEP = "\n\n"
 
 
 @dataclass(frozen=True)
@@ -53,12 +60,21 @@ class MarkdownTableParser:
             return (), []
         header_cells = MarkdownTableParser._row_cells(lines[0])
         body: list[dict[str, str]] = []
+        dropped = 0
         # lines[1] is the separator (`|---|---|`); skip it.
         for line in lines[2:]:
             cells = MarkdownTableParser._row_cells(line)
             if len(cells) != len(header_cells):
+                dropped += 1
                 continue
             body.append(dict(zip(header_cells, cells)))
+        if dropped:
+            logger.debug(
+                "row_kv_excel: parser dropped rows whose cell count != header count",
+                dropped=dropped,
+                kept=len(body),
+                header_cells=len(header_cells),
+            )
         return tuple(header_cells), body
 
     @staticmethod
@@ -74,25 +90,40 @@ class MarkdownTableParser:
 class RowChunkContextualizer:
     """Render a slice of rows with contextual preamble for embedding."""
 
-    def build(self, ctx: _SubTableContext, rows: Iterable[dict[str, str]]) -> str:
+    def preamble(self, ctx: _SubTableContext) -> str:
+        """Render the sheet/subtable/columns header that prefixes every chunk."""
         lines: list[str] = [f"Sheet: {ctx.sheet}"]
         if ctx.subtable is not None:
             lines.append(f"Subtable: {ctx.subtable}")
         lines.append(f"Columns: {', '.join(ctx.columns)}")
-        lines.append("")
-        for row in rows:
-            lines.append("Row:")
-            for col in ctx.columns:
-                value = row.get(col, "")
-                if value == "":
-                    continue
-                lines.append(f"  {col}: {value}")
-            lines.append("")
-        return "\n".join(lines).rstrip() + "\n"
+        return "\n".join(lines)
+
+    def row_block(self, ctx: _SubTableContext, row: dict[str, str]) -> str:
+        """Render one row as a KV block (no trailing separator)."""
+        lines: list[str] = ["Row:"]
+        for col in ctx.columns:
+            value = row.get(col, "")
+            if value == "":
+                continue
+            lines.append(f"  {col}: {value}")
+        return "\n".join(lines)
+
+    def build(self, ctx: _SubTableContext, rows: Iterable[dict[str, str]]) -> str:
+        """Render preamble + body for the given rows. Compatible output format."""
+        preamble = self.preamble(ctx)
+        blocks = [self.row_block(ctx, r) for r in rows]
+        if not blocks:
+            return f"{preamble}\n"
+        return f"{preamble}\n\n{_ROW_SEP.join(blocks)}\n"
 
 
 class RowKVChunker:
-    """Pack rows into chunks under a character budget, re-emitting context per chunk."""
+    """Pack rows into chunks under a character budget, re-emitting context per chunk.
+
+    Single-pass O(N): pre-renders each row block once, then walks them while
+    tracking the projected chunk length. Only assembles the full chunk string
+    at emit time, not on every probe.
+    """
 
     def __init__(self) -> None:
         self._renderer = RowChunkContextualizer()
@@ -105,17 +136,27 @@ class RowKVChunker:
     ) -> list[str]:
         if not rows:
             return []
+        preamble = self._renderer.preamble(ctx)
+        blocks = [self._renderer.row_block(ctx, r) for r in rows]
+        # Chunk shape: "{preamble}\n\n{block}{_ROW_SEP}{block}...\n"
+        # — preamble + "\n\n" + (N blocks joined by _ROW_SEP) + trailing "\n".
+        overhead = len(preamble) + 2 + 1  # "\n\n" after preamble + trailing "\n"
+        sep_len = len(_ROW_SEP)
+
         chunks: list[str] = []
-        current: list[dict[str, str]] = []
-        for row in rows:
-            candidate = current + [row]
-            if current and len(self._renderer.build(ctx, candidate)) > max_size:
-                chunks.append(self._renderer.build(ctx, current))
-                current = [row]
+        current: list[str] = []
+        current_body_len = 0
+        for block in blocks:
+            addition = len(block) if not current else len(block) + sep_len
+            if current and overhead + current_body_len + addition > max_size:
+                chunks.append(f"{preamble}\n\n{_ROW_SEP.join(current)}\n")
+                current = [block]
+                current_body_len = len(block)
             else:
-                current = candidate
+                current.append(block)
+                current_body_len += addition
         if current:
-            chunks.append(self._renderer.build(ctx, current))
+            chunks.append(f"{preamble}\n\n{_ROW_SEP.join(current)}\n")
         return chunks
 
 
@@ -143,7 +184,28 @@ class RowKVExcelSplitter(BaseSplitter):
             # No structured heading — preserve content as a single chunk so
             # upstream mis-classification doesn't drop content.
             return [content]
+
+        # Match legacy ExcelSplitter: bound per-section output so a 50k-row
+        # sheet doesn't silently emit 50k chunks.
+        md_cfg = self.settings.global_config.chunking.strategies.markdown
+        per_section_cap = min(
+            md_cfg.max_chunks_per_section,
+            self.settings.global_config.chunking.max_chunks_per_document // 2,
+        )
+
         chunks: list[str] = []
         for ctx, rows in sections:
-            chunks.extend(self._chunker.chunk(ctx, rows, max_size=max_size))
+            section_chunks = self._chunker.chunk(ctx, rows, max_size=max_size)
+            if len(section_chunks) > per_section_cap:
+                logger.warning(
+                    "row_kv_excel: section reached max_chunks_per_section cap, truncating",
+                    sheet=ctx.sheet,
+                    subtable=ctx.subtable,
+                    produced=len(section_chunks),
+                    cap=per_section_cap,
+                    rows_dropped=len(rows)
+                    - sum(c.count("Row:") for c in section_chunks[:per_section_cap]),
+                )
+                section_chunks = section_chunks[:per_section_cap]
+            chunks.extend(section_chunks)
         return chunks

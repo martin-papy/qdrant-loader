@@ -425,18 +425,24 @@ class SectionSplitter:
         final_sections: list[dict[str, Any]] = []
 
         for section in sections:
-            if len(section["content"]) > chunk_size:
+            is_excel_sheet = section.get("is_excel_sheet", False)
+            # Excel sections always go through the KV splitter so chunk shape
+            # stays uniform across the file. Non-Excel content only splits when
+            # it exceeds the chunk budget — that's the standard-splitter
+            # bypass and is unchanged.
+            needs_split = is_excel_sheet or len(section["content"]) > chunk_size
+            if needs_split:
                 logger.debug(
-                    f"Section too large ({len(section['content'])} chars), splitting into smaller chunks",
+                    f"Splitting section ({len(section['content'])} chars)",
                     extra={
                         "section_title": section.get("title", "Unknown"),
                         "section_size": len(section["content"]),
                         "chunk_size_limit": chunk_size,
-                        "is_excel_sheet": section.get("is_excel_sheet", False),
+                        "is_excel_sheet": is_excel_sheet,
                     },
                 )
 
-                if section.get("is_excel_sheet", False):
+                if is_excel_sheet:
                     sub_chunks = self.excel_splitter.split_content(
                         section["content"], chunk_size
                     )

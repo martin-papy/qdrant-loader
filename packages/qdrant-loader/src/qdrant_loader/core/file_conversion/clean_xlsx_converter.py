@@ -28,8 +28,12 @@ def _clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return cleaned
 
 
-def _should_skip_sheet(df: pd.DataFrame) -> bool:
-    """Return True for sheets that hold no real data after cleaning."""
+def _is_blank_dataframe(df: pd.DataFrame) -> bool:
+    """Return True for a DataFrame that holds no real data after cleaning.
+
+    Used on per-subtable frames, not full sheets — the name avoids the older
+    "_should_skip_sheet" misnomer.
+    """
     if df.empty:
         return True
     return bool(df.isna().all().all())
@@ -135,7 +139,7 @@ class _CleanSpreadsheetConverter(DocumentConverter):
         body = raw.iloc[1:].reset_index(drop=True)
         body.columns = header
         cleaned = _clean_dataframe(body)
-        if _should_skip_sheet(cleaned):
+        if _is_blank_dataframe(cleaned):
             return None
         escaped = cleaned.map(_escape_string_cell)
         html = escaped.to_html(index=False, na_rep="")
