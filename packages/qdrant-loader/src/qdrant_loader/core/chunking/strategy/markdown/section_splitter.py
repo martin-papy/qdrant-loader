@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 # Re-export classes and local dependencies at top to satisfy E402
 from .document_parser import DocumentParser, HierarchyBuilder  # noqa: F401
 from .splitters.base import BaseSplitter  # re-export base class  # noqa: F401
-from .splitters.excel import ExcelSplitter  # re-export  # noqa: F401
+from .splitters.row_kv_excel import RowKVExcelSplitter  # noqa: F401
 from .splitters.fallback import FallbackSplitter  # re-export  # noqa: F401
 from .splitters.standard import StandardSplitter  # re-export  # noqa: F401
 
@@ -101,7 +101,7 @@ class SectionSplitter:
         """
         self.settings = settings
         self.standard_splitter = StandardSplitter(settings)
-        self.excel_splitter = ExcelSplitter(settings)
+        self.excel_splitter = RowKVExcelSplitter(settings)
         self.fallback_splitter = FallbackSplitter(settings)
 
     def _is_excel_document(self, document: Any) -> bool:

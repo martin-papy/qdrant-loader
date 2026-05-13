@@ -4,12 +4,15 @@ from unittest.mock import Mock, patch
 
 from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
     BaseSplitter,
-    ExcelSplitter,
     FallbackSplitter,
     HeaderAnalysis,
+    RowKVExcelSplitter,
     SectionMetadata,
     SectionSplitter,
     StandardSplitter,
+)
+from qdrant_loader.core.chunking.strategy.markdown.splitters.excel import (
+    ExcelSplitter,
 )
 
 
@@ -492,7 +495,7 @@ class TestSectionSplitter:
         """Test SectionSplitter initialization."""
         assert self.splitter.settings is self.mock_settings
         assert isinstance(self.splitter.standard_splitter, StandardSplitter)
-        assert isinstance(self.splitter.excel_splitter, ExcelSplitter)
+        assert isinstance(self.splitter.excel_splitter, RowKVExcelSplitter)
         assert isinstance(self.splitter.fallback_splitter, FallbackSplitter)
 
     def test_analyze_header_distribution(self):
