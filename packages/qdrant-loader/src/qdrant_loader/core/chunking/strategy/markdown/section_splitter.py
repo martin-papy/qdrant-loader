@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 # Re-export classes and local dependencies at top to satisfy E402
 from .document_parser import DocumentParser, HierarchyBuilder  # noqa: F401
 from .splitters.base import BaseSplitter  # re-export base class  # noqa: F401
-from .splitters.excel import ExcelSplitter  # re-export  # noqa: F401
+from .splitters.row_kv_excel import RowKVExcelSplitter  # noqa: F401
 from .splitters.fallback import FallbackSplitter  # re-export  # noqa: F401
 from .splitters.standard import StandardSplitter  # re-export  # noqa: F401
 
@@ -101,7 +101,7 @@ class SectionSplitter:
         """
         self.settings = settings
         self.standard_splitter = StandardSplitter(settings)
-        self.excel_splitter = ExcelSplitter(settings)
+        self.excel_splitter = RowKVExcelSplitter(settings)
         self.fallback_splitter = FallbackSplitter(settings)
 
     def _is_excel_document(self, document: Any) -> bool:
@@ -425,18 +425,24 @@ class SectionSplitter:
         final_sections: list[dict[str, Any]] = []
 
         for section in sections:
-            if len(section["content"]) > chunk_size:
+            is_excel_sheet = section.get("is_excel_sheet", False)
+            # Excel sections always go through the KV splitter so chunk shape
+            # stays uniform across the file. Non-Excel content only splits when
+            # it exceeds the chunk budget — that's the standard-splitter
+            # bypass and is unchanged.
+            needs_split = is_excel_sheet or len(section["content"]) > chunk_size
+            if needs_split:
                 logger.debug(
-                    f"Section too large ({len(section['content'])} chars), splitting into smaller chunks",
+                    f"Splitting section ({len(section['content'])} chars)",
                     extra={
                         "section_title": section.get("title", "Unknown"),
                         "section_size": len(section["content"]),
                         "chunk_size_limit": chunk_size,
-                        "is_excel_sheet": section.get("is_excel_sheet", False),
+                        "is_excel_sheet": is_excel_sheet,
                     },
                 )
 
-                if section.get("is_excel_sheet", False):
+                if is_excel_sheet:
                     sub_chunks = self.excel_splitter.split_content(
                         section["content"], chunk_size
                     )

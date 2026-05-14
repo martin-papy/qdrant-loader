@@ -543,5 +543,59 @@ class TestErrorHandling:
             temp_path.unlink(missing_ok=True)
 
 
+from tests.unit.core.file_conversion._xlsx_fixtures import make_xlsx_file
+
+
+def test_convert_file_strips_nan_from_xlsx(tmp_path):
+    """Regression: an xlsx with empty cells must not produce literal 'NaN' strings."""
+    rows = [
+        ["Name", "Age", "City"],
+        ["Alice", 30, "NYC"],
+        ["Bob", None, "LA"],
+        ["Carol", 25, None],
+    ]
+    xlsx_path = make_xlsx_file(tmp_path, {"Data": rows}, name="people.xlsx")
+
+    fc = FileConverter(FileConversionConfig())
+    markdown = fc.convert_file(str(xlsx_path))
+
+    assert "NaN" not in markdown
+    assert "NaT" not in markdown
+    assert "Alice" in markdown
+    assert "Bob" in markdown
+    assert "Carol" in markdown
+
+
+def test_xlsx_pipeline_produces_row_kv_chunks(tmp_path):
+    """Full ingestion path: xlsx -> clean markdown -> row-KV chunks with context."""
+    from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
+        SectionSplitter,
+    )
+    from unittest.mock import MagicMock
+
+    rows = [
+        ["Name", "Age", "City"],
+        ["Alice", 30, "NYC"],
+        ["Bob", 25, "LA"],
+    ]
+    xlsx_path = make_xlsx_file(tmp_path, {"People": rows}, name="people.xlsx")
+
+    fc = FileConverter(FileConversionConfig())
+    markdown = fc.convert_file(str(xlsx_path))
+
+    settings = MagicMock()
+    settings.global_config.chunking.chunk_overlap = 0
+    settings.global_config.chunking.max_chunks_per_document = 10_000
+    settings.global_config.chunking.strategies.markdown.max_chunks_per_section = 10_000
+    chunks = SectionSplitter(settings).excel_splitter.split_content(
+        markdown, max_size=10_000
+    )
+
+    assert any("Sheet: People" in c for c in chunks)
+    assert any("Name: Alice" in c for c in chunks)
+    assert any("Name: Bob" in c for c in chunks)
+    assert all("NaN" not in c for c in chunks)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

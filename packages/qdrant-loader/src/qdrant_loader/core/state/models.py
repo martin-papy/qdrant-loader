@@ -70,10 +70,7 @@ class Project(Base):
         "DocumentStateRecord", back_populates="project", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (
-        UniqueConstraint("collection_name", name="uix_project_collection"),
-        Index("ix_project_display_name", "display_name"),
-    )
+    __table_args__ = (Index("ix_project_display_name", "display_name"),)
 
 
 class ProjectSource(Base):
