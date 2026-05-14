@@ -178,85 +178,22 @@ class BedrockEmbeddings(EmbeddingsClient):
                 f"Bedrock embedding batch size cannot exceed {self.MAX_BATCH_SIZE}"
             )
 
-        vectors: list[list[float]] = []
-
-        for text in inputs:
-            body = json.dumps({
-                "inputText": text
-            })
-
-            invoke_kwargs: dict[str, Any] = {
-                "modelId": self._model_id,
-                "contentType": "application/json",
-                "accept": "application/json",
-                "body": body,
-            }
-
-            if self._provisioned_throughput_arn:
-                invoke_kwargs["provisionedThroughputArn"] = (
-                    self._provisioned_throughput_arn
-                )
-
-            response = await asyncio.to_thread(
-                self._client.invoke_model,
-                **invoke_kwargs
-            )
-
-            body_data = (
-                response.get("body")
-                if isinstance(response, dict)
-                else getattr(response, "body", None)
-            )
-
-            if body_data is None:
-                raise ServerError(
-                    "Bedrock response body missing"
-                )
-
-            if hasattr(body_data, "read"):
-                body_bytes = body_data.read()
-            else:
-                body_bytes = body_data
-
-            if isinstance(body_bytes, bytes):
-                raw_text = body_bytes.decode("utf-8")
-            elif isinstance(body_bytes, str):
-                raw_text = body_bytes
-            else:
-                raise ServerError(
-                    "Bedrock response body is not bytes or string"
-                )
-
-            payload = json.loads(raw_text)
-
-            if "embedding" not in payload:
-                raise InvalidRequestError(
-                    "Bedrock response did not contain embedding"
-                )
-
-            vector = [
-                float(value)
-                for value in payload["embedding"]
-            ]
-
-            if (
-                self._expected_vector_size is not None
-                and len(vector) != self._expected_vector_size
-            ):
-                raise ServerError(
-                    "Bedrock returned embedding vector with unexpected dimension"
-                )
-
-            vectors.append(vector)
+        if len(inputs) == 1:
+            payload_body = {"inputText": inputs[0]}
+        else:
+            payload_body = {"inputText": inputs}
 
         invoke_kwargs: dict[str, Any] = {
             "modelId": self._model_id,
             "contentType": "application/json",
             "accept": "application/json",
-            "body": body,
+            "body": json.dumps(payload_body),
         }
+
         if self._provisioned_throughput_arn:
-            invoke_kwargs["provisionedThroughputArn"] = self._provisioned_throughput_arn
+            invoke_kwargs["provisionedThroughputArn"] = (
+                self._provisioned_throughput_arn
+            )
 
         started = datetime.now(UTC)
         try:

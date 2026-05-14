@@ -1,3 +1,4 @@
+import builtins
 import importlib
 import io
 import json
@@ -45,6 +46,18 @@ class _FakeBotocoreClientError(Exception):
         self.operation_name = operation_name
 
 
+class _FakeNoCredentialsError(Exception):
+    pass
+
+
+class _FakeEndpointConnectionError(Exception):
+    pass
+
+
+class _FakeBotoCoreError(Exception):
+    pass
+
+
 def _make_boto3_stub(client: _FakeBedrockClient):
     mod = types.ModuleType("boto3")
 
@@ -59,15 +72,6 @@ def _make_boto3_stub(client: _FakeBedrockClient):
 def _make_botocore_stub():
     botocore = types.ModuleType("botocore")
     exceptions = types.ModuleType("botocore.exceptions")
-
-    class _FakeNoCredentialsError(Exception):
-        pass
-
-    class _FakeEndpointConnectionError(Exception):
-        pass
-
-    class _FakeBotoCoreError(Exception):
-        pass
 
     exceptions.BotoCoreError = _FakeBotoCoreError
     exceptions.ClientError = _FakeBotocoreClientError
@@ -130,6 +134,85 @@ def test_bedrock_provider_invalid_model_id(monkeypatch):
 
     with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError):
         mod.BedrockProvider(_make_llm_settings(model_id="bad-model"))
+
+
+@pytest.mark.asyncio
+async def test_bedrock_provider_embed_multiple_inputs(monkeypatch):
+    vector1 = [1.0] * 1024
+    vector2 = [2.0] * 1024
+    response_body = json.dumps({"embeddings": [vector1, vector2]}).encode("utf-8")
+
+    client = _FakeBedrockClient(response_body=response_body)
+    mod = _reload_bedrock_module(monkeypatch, client)
+
+    settings = _make_llm_settings()
+    provider = mod.BedrockProvider(settings)
+    vectors = await provider.embeddings().embed(["hello", "world"])
+
+    assert vectors == [vector1, vector2]
+
+
+def test_bedrock_extract_embeddings_payload_variants():
+    mod = import_module("qdrant_loader_core.llm.providers.bedrock")
+    vector = [1.0, 2.0, 3.0]
+
+    assert mod._extract_embeddings([vector]) == [vector]
+    assert mod._extract_embeddings({"embedding": vector}) == [vector]
+    assert mod._extract_embeddings({"embeddings": [vector]}) == [vector]
+    assert mod._extract_embeddings({"data": [{"embedding": vector}, vector]}) == [vector, vector]
+
+    with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError):
+        mod._extract_embeddings({"unknown": "payload"})
+
+
+@pytest.mark.asyncio
+async def test_bedrock_provider_no_credentials_error(monkeypatch):
+    exc = _FakeNoCredentialsError("no creds")
+    client = _FakeBedrockClient(response_body=b"", raise_exc=exc)
+    mod = _reload_bedrock_module(monkeypatch, client)
+
+    settings = _make_llm_settings()
+    provider = mod.BedrockProvider(settings)
+
+    with pytest.raises(import_module("qdrant_loader_core.llm.errors").AuthError):
+        await provider.embeddings().embed(["hello"])
+
+
+@pytest.mark.asyncio
+async def test_bedrock_provider_server_error_status_code(monkeypatch):
+    response = {"ResponseMetadata": {"HTTPStatusCode": 500}}
+    exc = _FakeBotocoreClientError(response, "InvokeModel")
+    client = _FakeBedrockClient(response_body=b"", raise_exc=exc)
+    mod = _reload_bedrock_module(monkeypatch, client)
+
+    settings = _make_llm_settings()
+    provider = mod.BedrockProvider(settings)
+
+    with pytest.raises(import_module("qdrant_loader_core.llm.errors").ServerError):
+        await provider.embeddings().embed(["hello"])
+
+
+def test_bedrock_import_fallback_with_missing_boto3(monkeypatch):
+    module_name = "qdrant_loader_core.llm.providers.bedrock"
+    original_module = sys.modules.pop(module_name, None)
+
+    original_import = builtins.__import__
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "boto3":
+            raise ImportError("no boto3")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    try:
+        mod = import_module(module_name)
+        assert mod.boto3 is None
+        assert hasattr(mod, "ClientError")
+    finally:
+        sys.modules.pop(module_name, None)
+        if original_module is not None:
+            sys.modules[module_name] = original_module
 
 
 @pytest.mark.asyncio
