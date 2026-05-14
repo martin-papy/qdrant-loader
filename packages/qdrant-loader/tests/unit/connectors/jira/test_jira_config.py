@@ -277,7 +277,6 @@ class TestUpdatedAfterParsing:
 
     def test_none_value_accepted(self):
         """None value should be accepted (fetch all issues)."""
-        from datetime import datetime
 
         cfg = _make(updated_after=None)
         assert cfg.updated_after is None
