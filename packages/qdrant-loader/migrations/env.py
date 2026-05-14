@@ -50,8 +50,14 @@ def _deterministic_sqlalchemy_url() -> str:
         if _is_special_sqlite_form(raw_path):
             return configured_url
 
-        if raw_path and not Path(raw_path).is_absolute() and config.config_file_name is not None:
-            resolved = (Path(config.config_file_name).resolve().parent / raw_path).resolve()
+        if (
+            raw_path
+            and not Path(raw_path).is_absolute()
+            and config.config_file_name is not None
+        ):
+            resolved = (
+                Path(config.config_file_name).resolve().parent / raw_path
+            ).resolve()
             return str(parsed.set(database=resolved.as_posix()))
 
     return configured_url
