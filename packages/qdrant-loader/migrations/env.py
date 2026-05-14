@@ -27,6 +27,9 @@ def _deterministic_sqlalchemy_url() -> str:
         return f"sqlite:///{candidate.resolve().as_posix()}"
 
     configured_url = config.get_main_option("sqlalchemy.url")
+    if configured_url is None:
+        raise ValueError("Missing sqlalchemy.url in Alembic configuration")
+
     sqlite_prefix = "sqlite:///"
     if configured_url.startswith(sqlite_prefix):
         raw_path = configured_url[len(sqlite_prefix) :]
