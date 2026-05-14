@@ -1,0 +1,65 @@
+services:
+  qdrant:
+    container_name: qdrant
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - qdrant-net
+  
+  qdrant-loader:
+    container_name: qdrant-loader
+    build:
+      context: .
+      dockerfile: Dockerfile.qdrant-loader
+    image: qdrant-loader:latest
+    restart: unless-stopped
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+    networks:
+      - qdrant-net
+
+  qdrant-loader-mcp-server:
+    container_name: qdrant-loader-mcp-server
+    build:
+      context: .
+      dockerfile: Dockerfile.qdrant-loader-mcp-server
+    image: qdrant-loader-mcp-server:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_EMBEDDING_MODEL=${LLM_EMBEDDING_MODEL}
+      - LLM_CHAT_MODEL=${LLM_CHAT_MODEL}
+      - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
+      - MCP_LOG_FILE=${MCP_LOG_FILE:-mcp.log}
+      - MCP_DISABLE_CONSOLE_LOGGING=${MCP_DISABLE_CONSOLE_LOGGING:-false}
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+    networks:
+      - qdrant-net
+
+volumes:
+  qdrant_data:
+    driver: local
+
+networks:
+  qdrant-net:
+    driver: bridge
+

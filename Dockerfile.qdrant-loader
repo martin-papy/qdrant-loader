@@ -1,0 +1,38 @@
+FROM python:3.12-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /qdrant-loader
+
+COPY uv.lock pyproject.toml README.md* LICENSE* ./
+COPY packages/qdrant-loader-core /qdrant-loader/packages/qdrant-loader-core
+COPY packages/qdrant-loader /qdrant-loader/packages/qdrant-loader
+
+RUN uv sync  --frozen --package qdrant-loader --package qdrant-loader-core --all-extras --no-dev --no-cache --no-install-project \
+    && .venv/bin/python -m spacy download en_core_web_md
+
+
+
+FROM python:3.12-slim
+
+WORKDIR /qdrant-loader
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=base /qdrant-loader/.venv /qdrant-loader/.venv
+COPY packages/qdrant-loader-core /qdrant-loader/packages/qdrant-loader-core
+COPY packages/qdrant-loader /qdrant-loader/packages/qdrant-loader
+
+ENV PATH="/qdrant-loader/.venv/bin:$PATH"
+
+# Default command
+# TUD
+CMD ["sh", "-c", "qdrant-loader --help; sleep infinity"]
