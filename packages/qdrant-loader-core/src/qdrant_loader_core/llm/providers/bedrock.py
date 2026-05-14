@@ -13,7 +13,7 @@ try:
         EndpointConnectionError,
         NoCredentialsError,
     )
-except Exception:
+except ImportError:
     boto3 = None  # type: ignore[assignment]
 
     class _BedrockBaseError(Exception):
@@ -238,6 +238,8 @@ class BedrockEmbeddings(EmbeddingsClient):
                         )
 
             return embeddings
+        except LLMError:
+            raise
         except Exception as exc:
             mapped = _map_bedrock_exception(exc)
             try:
@@ -250,7 +252,7 @@ class BedrockEmbeddings(EmbeddingsClient):
                 )
             except Exception:
                 pass
-            raise mapped
+            raise mapped from exc
 
 
 class _BedrockChat(ChatClient):
