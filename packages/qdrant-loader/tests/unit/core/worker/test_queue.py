@@ -6,8 +6,11 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from qdrant_loader.config.state import StateManagementConfig
-from qdrant_loader.core.state.session import create_tables, dispose_engine
-from qdrant_loader.core.state.session import initialize_engine_and_session
+from qdrant_loader.core.state.session import (
+    create_tables,
+    dispose_engine,
+    initialize_engine_and_session,
+)
 from qdrant_loader.core.worker.queue import SQLiteJobQueue
 
 
@@ -120,7 +123,9 @@ async def test_mark_done_sets_status_and_completion_fields(
 
 
 @pytest.mark.asyncio
-async def test_claim_next_reclaims_after_lease_timeout(sqlite_job_queue: SQLiteJobQueue):
+async def test_claim_next_reclaims_after_lease_timeout(
+    sqlite_job_queue: SQLiteJobQueue,
+):
     job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
 
     first_claim = await sqlite_job_queue.claim_next(lease_seconds=0)
