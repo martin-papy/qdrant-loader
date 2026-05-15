@@ -19,11 +19,13 @@ class JobQueue(Protocol):
     async def claim_next(self, lease_seconds: int = 60) -> Job | None:
         """Atomically claim the next visible pending job."""
 
-    async def mark_done(self, job_id: int) -> bool:
-        """Mark a job as completed."""
+    async def mark_done(self, job_id: int, claim_attempt: int) -> bool:
+        """Mark a claimed job as completed if claim ownership still matches."""
 
-    async def mark_failed(self, job_id: int, error_message: str) -> bool:
-        """Mark a job as failed with an error message."""
+    async def mark_failed(
+        self, job_id: int, error_message: str, claim_attempt: int
+    ) -> bool:
+        """Mark a claimed job as failed if claim ownership still matches."""
 
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         """List jobs with optional status filter."""
@@ -61,6 +63,8 @@ class SQLiteJobQueue:
             return job
 
     async def claim_next(self, lease_seconds: int = 60) -> Job | None:
+        if lease_seconds < 0:
+            raise ValueError("lease_seconds must be non-negative")
         now = datetime.now(UTC)
         visibility_deadline = now + timedelta(seconds=lease_seconds)
 
@@ -102,12 +106,16 @@ class SQLiteJobQueue:
             claimed_job = await session.get(Job, claimed_job_id)
             return claimed_job
 
-    async def mark_done(self, job_id: int) -> bool:
+    async def mark_done(self, job_id: int, claim_attempt: int) -> bool:
         now = datetime.now(UTC)
         async with self._session_factory() as session:
             stmt = (
                 update(Job)
-                .where(Job.id == job_id)
+                .where(
+                    Job.id == job_id,
+                    Job.status == self.RUNNING,
+                    Job.attempts == claim_attempt,
+                )
                 .values(
                     status=self.DONE,
                     finished_at=now,
@@ -121,12 +129,18 @@ class SQLiteJobQueue:
             await session.commit()
             return updated_job_id is not None
 
-    async def mark_failed(self, job_id: int, error_message: str) -> bool:
+    async def mark_failed(
+        self, job_id: int, error_message: str, claim_attempt: int
+    ) -> bool:
         now = datetime.now(UTC)
         async with self._session_factory() as session:
             stmt = (
                 update(Job)
-                .where(Job.id == job_id)
+                .where(
+                    Job.id == job_id,
+                    Job.status == self.RUNNING,
+                    Job.attempts == claim_attempt,
+                )
                 .values(
                     status=self.FAILED,
                     finished_at=now,
