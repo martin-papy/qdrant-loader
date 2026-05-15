@@ -5,6 +5,114 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-05-12
+
+### Changed
+
+#### Documentation
+
+- Updated contributing guide for external contributors [#273]
+
+## [1.0.1] - 2026-04-23
+
+### Fixed
+
+#### Qdrant-loader
+
+- Fixed UI layout issues across website pages [#253]
+- Privacy policy `last_updated` fallback now uses template file mtime instead of build date when Git timestamp is unavailable [#259]
+
+#### Documentation
+
+- Updated docs and removed broken internal links [#258]
+
+## [1.0.0] - 2026-04-09
+
+### Added
+
+#### Qdrant-loader
+
+- Contextual embeddings for enriched chunk context during ingestion [#221]
+
+### Fixed
+
+#### Qdrant-loader
+
+- Jira Cloud connection failure due to deprecated search API endpoints [#215]
+- Duplicate chunks for Python files by rewriting AST parser [#217]
+- Duplicate document IDs causing missing chunks in metric tracking [#222]
+- Ingestion metrics: aligned size metrics and aggregated project results [#222]
+- JQL injection and query breaking when configuration values include special characters [#223]
+- Jira connector validation for environment configuration and connection errors [#224]
+- Optional `issue_types` and `include_statuses` configuration for Jira connector [#223]
+- Error message sanitization to prevent accidental exposure of sensitive data [#230]
+- Contextual embedding content formatting [#228]
+- YAML syntax error and broken markdown in configuration documentation [#231]
+
+#### Qdrant-loader-core
+
+- Sensitive data redaction in logging processors [#230]
+
+#### Qdrant-loader-mcp-server
+
+- Embedding logic and configuration for local (Ollama) model support [#229]
+- `vector_search_service` to use correct `embedding_model` parameter [#229]
+- Retry logic and failure context reporting in search pipeline [#229]
+
+### Changed
+
+#### Qdrant-loader
+
+- Aligned configuration templates with Ollama-first and OpenAI unified setup [#231]
+- Migrated pip/venv to uv for monorepo package management [#220]
+- Updated deprecated GitHub Actions from Node.js 20 to Node.js 24 [#227]
+- Updated website UI to v1 [#219]
+
+## [0.9.0] - 2026-03-26
+
+### Added
+
+#### Qdrant-loader
+
+- `enable_semantic_analysis` global NLP kill switch in `chunking` config to skip spaCy/LDA processing entirely for faster ingestion [#189]
+- `enable_enhanced_semantic_analysis` opt-in flag in `chunking` config to gate advanced NLP fields (`pos_tags`, `dependencies`, `document_similarity`) [#195]
+
+#### Qdrant-loader-mcp-server
+
+- `expand_chunk_context` MCP tool to retrieve surrounding chunks for richer context around a specific chunk [#185]
+- `cluster_session_id` required parameter to `expand_cluster` tool schema for session isolation [#175]
+
+### Fixed
+
+#### Qdrant-loader
+
+- Semantic analyzer now filters out garbage/punctuation-only entities from NLP metadata [#178]
+- Improved semantic similarity caching to avoid self-matches and keep similarity results fresh across repeated enhanced analyses [#195]
+
+#### Qdrant-loader-mcp-server
+
+- Instance-level `_clustering_cache` causing cross-request data leakage in `IntelligenceHandler`; replaced with session-scoped store with TTL cleanup [#175]
+- MCP server concurrency improved with FastAPI-centric workers and semaphore-based search load distribution [#176]
+- Removed redundant top-level `schemas.py` that duplicated per-tool schema modules [#181]
+- Search handler config instance de-duplicated to eliminate redundant initialization [#174]
+
+### Changed
+
+#### Qdrant-loader-mcp-server
+
+- CLI and transport layer refactored: `server.py` centralizes startup; HTTP handler split into focused route modules [#176]
+
+## [0.8.1] - 2026-03-24
+
+### Fixed
+
+- CI secret injection restricted to develop/main branches only [#187]
+- CI secrets and integration tests skipped for fork/Dependabot PRs [#187]
+
+### Changed
+
+- Removed `uv.lock` from version control tracking [#187]
+
 ## [0.8.0] - 2026-03-17
 
 ### Removed
@@ -522,6 +630,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change detection for incremental updates [#21]
 - Signal handling for graceful shutdown [#21]
 
+[1.0.2]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.1...qdrant-loader-v1.0.2
+[1.0.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.0...qdrant-loader-v1.0.1
+[1.0.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.9.0...qdrant-loader-v1.0.0
+[0.9.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.1...qdrant-loader-v0.9.0
+[0.8.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.0...qdrant-loader-v0.8.1
 [0.8.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.6...qdrant-loader-v0.8.0
 [0.7.6]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.5...qdrant-loader-v0.7.6
 [0.7.5]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.7.4...qdrant-loader-v0.7.5

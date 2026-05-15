@@ -163,8 +163,14 @@ def get_cluster_documents_tool_schema() -> dict[str, Any]:
                         "additionalProperties": False,
                     },
                 },
+                "cluster_session_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "UUID representing a clustering session",
+                    "example": "550e8400-e29b-41d4-a716-446655440000",
+                },
             },
-            "required": ["clusters", "clustering_metadata"],
+            "required": ["clusters", "clustering_metadata", "cluster_session_id"],
             "additionalProperties": False,
         },
     }

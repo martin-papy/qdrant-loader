@@ -404,7 +404,7 @@ class TestQdrantManager:
             mock_qdrant_client.create_collection.assert_called_once_with(
                 collection_name="test_collection",
                 vectors_config={
-                    "dense": VectorParams(size=1536, distance=Distance.COSINE)
+                    "dense": VectorParams(size=1024, distance=Distance.COSINE)
                 },
                 sparse_vectors_config={"sparse": models.SparseVectorParams()},
             )

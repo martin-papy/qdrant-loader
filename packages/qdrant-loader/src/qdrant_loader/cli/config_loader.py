@@ -7,6 +7,7 @@ from click.exceptions import ClickException
 
 from qdrant_loader.config.state import DatabaseDirectoryError
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 
 # Back-compat shim for tests that import _get_logger from cli.cli
@@ -54,7 +55,9 @@ def load_config_with_workspace(
     except ClickException:
         raise
     except Exception as e:
-        LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error(
+            "config_load_failed", error=sanitize_exception_message(e)
+        )
         # Lazy import to avoid slowing CLI startup
         from qdrant_loader.config.error_formatter import print_config_error
 
@@ -123,7 +126,9 @@ def load_config(
     except ClickException:
         raise
     except Exception as e:
-        LoggingConfig.get_logger(__name__).error("config_load_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error(
+            "config_load_failed", error=sanitize_exception_message(e)
+        )
         # Lazy import to avoid slowing CLI startup
         from qdrant_loader.config.error_formatter import print_config_error
 

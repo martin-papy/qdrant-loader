@@ -31,6 +31,7 @@ sources:
         - "*.txt"
         - "*.py"
       max_file_size: 1048576  # 1MB
+      enable_file_conversion: true
 
   # --- Git Repository (uncomment to enable) ---
   # git:
@@ -41,6 +42,7 @@ sources:
   #     file_types:
   #       - "*.md"
   #       - "*.py"
+  #     enable_file_conversion: true
 
   # --- Confluence (uncomment to enable) ---
   # confluence:
@@ -49,6 +51,7 @@ sources:
   #     space_key: "YOUR_SPACE"
   #     token: "${CONFLUENCE_TOKEN}"
   #     email: "${CONFLUENCE_EMAIL}"
+  #     enable_file_conversion: true
 
   # --- Jira (uncomment to enable) ---
   # jira:
@@ -57,6 +60,7 @@ sources:
   #     project_key: "YOUR_PROJECT"
   #     token: "${JIRA_TOKEN}"
   #     email: "${JIRA_EMAIL}"
+  #     enable_file_conversion: true
 
   # --- Public Documentation (uncomment to enable) ---
   # publicdocs:

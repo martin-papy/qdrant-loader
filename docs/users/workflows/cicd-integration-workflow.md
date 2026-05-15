@@ -44,7 +44,7 @@ graph TD
     O[Workflow Run Completion] --> G
 ```
 
-## 📋 Prerequisites
+## 📝 Prerequisites
 
 ### Repository Setup
 
@@ -103,19 +103,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
       - name: Install system dependencies
         run: |
           # Install ffmpeg for MarkItDown audio processing
           sudo apt-get update
           sudo apt-get install -y ffmpeg
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e packages/qdrant-loader[dev]
+        run: uv sync --all-packages --all-extras
       - name: Create test configuration
         run: |
           cd packages/qdrant-loader
@@ -128,8 +128,7 @@ jobs:
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
       - name: Run tests with coverage
         run: |
-          cd packages/qdrant-loader
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --cov-report=html:../../htmlcov-loader -v
+          uv run pytest packages/qdrant-loader/tests/ --cov=src --cov-report=xml:coverage-loader.xml --cov-report=html:htmlcov-loader -v
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -187,21 +186,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[docs]"
+        run: uv sync --all-packages --all-extras
       - name: Generate favicons
         run: |
-          python website/assets/generate_favicons.py
+          uv run python website/assets/generate_favicons.py
       - name: Build website using templates
         run: |
           echo "🚀 Building website using template system"
-          python website/build.py \
+          uv run python website/build.py \
             --output site \
             --templates website/templates \
             --coverage-artifacts coverage-artifacts/ \
@@ -283,12 +282,11 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+          uv sync --all-packages --all-extras
       - name: Build loader package
         run: |
           cd packages/qdrant-loader
-          python -m build
+          uv build
       - name: Publish loader package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -410,8 +408,7 @@ website/templates/
 # Modify for your package structure
 - name: Install dependencies
   run: |
-    python -m pip install --upgrade pip
-    pip install -e packages/your-package[dev]
+    uv sync --all-packages --all-extras
 
 # Add your specific test requirements
 - name: Install system dependencies
@@ -460,7 +457,7 @@ on:
 - name: Build package
   run: |
     cd packages/your-package
-    python -m build
+    uv build
 ```
 
 ### Step 3: Configuration Management
@@ -523,7 +520,7 @@ CONFLUENCE_TOKEN=placeholder
 JIRA_TOKEN=placeholder
 ```
 
-## 📊 Monitoring and Observability
+## 🧪 Monitoring and Observability
 
 ### Workflow Monitoring
 
@@ -592,7 +589,7 @@ git tag -l
 
 # Verify package build
 cd packages/qdrant-loader
-python -m build
+uv build
 ```
 
 1. **Secret Configuration Issues**
@@ -673,8 +670,8 @@ gh run watch <run-id>
 
 ## 📚 Additional Resources
 
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
-- [GitHub Pages Deployment](https://docs.github.com/en/pages)
-- [QDrant Loader CLI Reference](../cli-reference/README.md)
-- [Configuration Guide](../configuration/README.md)
+- **[GitHub Actions Documentation](https://docs.github.com/en/actions)** - Official workflow syntax, runners, and CI automation references.
+- **[PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)** - Secure OIDC-based publishing without long-lived API tokens.
+- **[GitHub Pages Deployment](https://docs.github.com/en/pages)** - Static site deployment and hosting guidance for docs portals.
+- **[QDrant Loader CLI Reference](../cli-reference/)** - Command options and examples used throughout pipeline scripts.
+- **[Configuration Guide](../configuration/)** - Environment and config settings needed for predictable CI/CD runs.

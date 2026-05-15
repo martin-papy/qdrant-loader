@@ -36,7 +36,7 @@ class TestModularChunkingIntegration:
 
         # Configure strategy-specific settings with test values
         global_config.chunking.strategies.default.min_chunk_size = 50
-        global_config.chunking.strategies.default.enable_semantic_analysis = (
+        global_config.chunking.enable_semantic_analysis = (
             False  # Disable for faster tests
         )
         global_config.chunking.strategies.default.enable_entity_extraction = True
@@ -288,7 +288,7 @@ class TestModularChunkingIntegration:
         # Test default strategy configuration
         default_config = config.chunking.strategies.default
         assert default_config.min_chunk_size == 100
-        assert default_config.enable_semantic_analysis is True
+        assert config.chunking.enable_semantic_analysis is True
         assert default_config.enable_entity_extraction is True
 
         # Test HTML strategy configuration

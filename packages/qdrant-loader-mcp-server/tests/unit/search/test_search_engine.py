@@ -462,6 +462,7 @@ async def test_search_engine_initialization_with_search_config(
             openai_client=mock_openai_client,
             collection_name=qdrant_config.collection_name,
             search_config=search_config,
+            embedding_model=openai_config.model,
         )
 
         assert search_engine.hybrid_search is not None

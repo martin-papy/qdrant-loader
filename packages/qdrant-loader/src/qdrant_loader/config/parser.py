@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from ..utils.logging import LoggingConfig
+from ..utils.sensitive import sanitize_exception_message
 from .global_config import GlobalConfig
 from .models import ParsedConfig, ProjectConfig, ProjectsConfig
 from .sources import SourcesConfig
@@ -128,7 +129,10 @@ class MultiProjectConfigParser:
         try:
             return GlobalConfig(**global_data, skip_validation=skip_validation)
         except ValidationError as e:
-            _get_logger().error("Failed to parse global configuration", error=str(e))
+            _get_logger().error(
+                "Failed to parse global configuration",
+                error=sanitize_exception_message(e),
+            )
             raise
 
     def _parse_projects(

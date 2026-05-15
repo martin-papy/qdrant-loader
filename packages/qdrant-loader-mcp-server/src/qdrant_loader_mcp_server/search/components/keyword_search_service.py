@@ -129,6 +129,7 @@ class KeywordSearchService:
         sources = []
         created_ats = []
         updated_ats = []
+        contextual_contents = []
 
         for point in all_points:
             if point.payload:
@@ -142,6 +143,7 @@ class KeywordSearchService:
                 source = point.payload.get("source", "")
                 created_at = point.payload.get("created_at", "")
                 updated_at = point.payload.get("updated_at", "")
+                contextual_content = point.payload.get("contextual_content", "")
 
                 documents.append(content)
                 metadata_list.append(metadata)
@@ -152,6 +154,7 @@ class KeywordSearchService:
                 sources.append(source)
                 created_ats.append(created_at)
                 updated_ats.append(updated_at)
+                contextual_contents.append(contextual_content)
 
         if not documents:
             self.logger.warning("No documents found for keyword search")
@@ -193,6 +196,7 @@ class KeywordSearchService:
                     "source": sources[idx],
                     "created_at": created_ats[idx],
                     "updated_at": updated_ats[idx],
+                    "contextual_content": contextual_contents[idx],
                 }
 
                 results.append(result)

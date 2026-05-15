@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import signal
+import time
+import traceback
 from pathlib import Path
 
 from click.exceptions import ClickException
@@ -13,6 +15,7 @@ from qdrant_loader.cli.config_loader import (
 )
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 from . import run_pipeline_ingestion
 
@@ -35,6 +38,8 @@ async def run_ingest_command(
     force: bool,
 ) -> None:
     """Implementation for the `ingest` CLI command with identical behavior."""
+
+    ingest_start_time = time.perf_counter()
 
     try:
         # Validate flag combinations
@@ -144,28 +149,35 @@ async def run_ingest_command(
                         logger.error(
                             "Pending task failed during shutdown",
                             task_index=idx,
-                            error=str(result),
+                            error=sanitize_exception_message(result),
                             error_type=type(result).__name__,
-                            exc_info=True,
                         )
             await asyncio.sleep(0.1)
+            end_to_end_duration = time.perf_counter() - ingest_start_time
+            logger.info(
+                f"Ingestion end-to-end completed in {end_to_end_duration:.2f} seconds"
+            )
         except asyncio.CancelledError:
             # Preserve cancellation semantics so Ctrl+C results in a normal exit
             raise
         except Exception as e:
             logger = LoggingConfig.get_logger(__name__)
             error_msg = (
-                str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+                sanitize_exception_message(e)
+                or f"Empty exception of type: {type(e).__name__}"
             )
+            sanitized_traceback = sanitize_exception_message(traceback.format_exc())
+            end_to_end_duration = time.perf_counter() - ingest_start_time
             logger.error(
                 "Document ingestion process failed during execution",
                 error=error_msg,
                 error_type=type(e).__name__,
+                sanitized_traceback=sanitized_traceback,
+                end_to_end_duration_seconds=round(end_to_end_duration, 2),
                 suggestion=(
                     "Check data sources, configuration, and system resources. "
                     "Run 'qdrant-loader project validate' to verify setup"
                 ),
-                exc_info=True,
             )
             raise ClickException(f"Failed to run ingestion: {error_msg}") from e
         finally:
@@ -182,12 +194,18 @@ async def run_ingest_command(
         raise
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
-        error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+        error_msg = (
+            sanitize_exception_message(e)
+            or f"Empty exception of type: {type(e).__name__}"
+        )
+        sanitized_traceback = sanitize_exception_message(traceback.format_exc())
+        end_to_end_duration = time.perf_counter() - ingest_start_time
         logger.error(
             "Unexpected error during ingestion command execution",
             error=error_msg,
             error_type=type(e).__name__,
+            sanitized_traceback=sanitized_traceback,
+            end_to_end_duration_seconds=round(end_to_end_duration, 2),
             suggestion="Check logs above for specific error details and verify system configuration",
-            exc_info=True,
         )
         raise ClickException(f"Failed to run ingestion: {error_msg}") from e

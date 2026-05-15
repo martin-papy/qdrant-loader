@@ -29,6 +29,19 @@ class ChunkingConfig(BaseModel):
         default=200, description="Number of characters to overlap between chunks"
     )
 
+    enable_semantic_analysis: bool = Field(
+        default=True,
+        description="Enable semantic analysis (NLP entities, topics, key phrases). "
+        "Disable for faster ingestion when semantic enrichment is not needed.",
+    )
+
+    enable_enhanced_semantic_analysis: bool = Field(
+        default=False,
+        description="Enable advanced NLP fields: pos_tags, dependencies,document_similarity."
+        "Requires enable_semantic_analysis=true. "
+        "Increases payload size and ingestion time.",
+    )
+
 
 class GlobalConfig(BaseModel):
     """Global configuration settings."""

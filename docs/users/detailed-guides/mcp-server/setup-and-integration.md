@@ -88,8 +88,7 @@ pip install qdrant-loader qdrant-loader-mcp-server
 # Option 3: Install from source
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-pip install -e packages/qdrant-loader
-pip install -e packages/qdrant-loader-mcp-server
+uv sync --all-packages --all-extras
 ```
 
 ### Verify Installation
@@ -220,10 +219,10 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
    ```bash
    # macOS
    ~/.cursor/User/globalStorage/cursor.mcp/
-   
+
    # Windows
    %APPDATA%\Cursor\User\globalStorage\cursor.mcp\
-   
+
    # Linux
    ~/.config/Cursor/User/globalStorage/cursor.mcp/
    ```
@@ -410,10 +409,10 @@ Claude Desktop is Anthropic's desktop AI assistant with MCP support.
    ```bash
    # macOS
    ~/Library/Application Support/Claude/claude_desktop_config.json
-   
+
    # Windows
    %APPDATA%\Claude\claude_desktop_config.json
-   
+
    # Linux
    ~/.config/Claude/claude_desktop_config.json
    ```
@@ -514,7 +513,7 @@ Example: "Find architecture diagrams related to our microservices"
 
 ### Cross-Document Intelligence Tools
 
-#### 4. Document Relationships (`analyze_document_relationships`)
+#### 4. Document Relationships (`analyze_relationships`)
 
 **Purpose**: Comprehensive analysis of document connections and dependencies
 
@@ -557,6 +556,32 @@ Example: "What content complements our deployment guide?"
 
 ```text
 Example: "Cluster our microservices documentation by related topics"
+```
+
+### Document Expansion Tools
+
+#### 9. Expand Document (`expand_document`)
+
+**Purpose**: Retrieve full document details along with metadata and its related context for deeper understanding
+
+```text
+Example: "Expand the document 'api-auth-guide' with metadata and related context"
+```
+
+#### 10. Expand Cluster (`expand_cluster`)
+
+**Purpose**: Inspect a cluster in detail, including metrics and member documents
+
+```text
+Example: "Expand cluster auth-cluster-01 to inspect member documents"
+```
+
+#### 11. Expand Chunk Context (`expand_chunk_context`)
+
+**Purpose**: Fetch neighboring chunks around a target chunk for local context
+
+```text
+Example: "Expand context around chunk 12 in document api-auth-guide"
 ```
 
 ## ⚙️ Configuration Reference
@@ -755,7 +780,7 @@ mcp-qdrant-loader
    - Watch memory consumption
    - Monitor QDrant performance
 
-## 📊 Best Practices
+## 🧪 Best Practices
 
 ### Effective Prompting
 
@@ -814,7 +839,7 @@ mcp-qdrant-loader
 }
 ```
 
-## 📊 Available Search Tools Summary
+## 🧪 Available Search Tools Summary
 
 The MCP server provides these search capabilities:
 
@@ -826,13 +851,19 @@ The MCP server provides these search capabilities:
 
 ### Intelligence Tools Overview
 
-1. **analyze_document_relationships** - Comprehensive relationship analysis
+1. **analyze_relationships** - Comprehensive relationship analysis
 2. **find_similar_documents** - Document similarity detection using multiple metrics
 3. **detect_document_conflicts** - Conflict and inconsistency identification
 4. **find_complementary_content** - Complementary content discovery
 5. **cluster_documents** - Document clustering based on content and relationships
 
-## 📋 Integration Checklist
+### Expansion Tools Overview
+
+1. **expand_document** - Fetch full document context along with metadata
+2. **expand_cluster** - Detailed cluster analysis
+3. **expand_chunk_context** - Local neighboring chunk expansion
+
+## 📝 Integration Checklist
 
 ### Pre-Setup
 

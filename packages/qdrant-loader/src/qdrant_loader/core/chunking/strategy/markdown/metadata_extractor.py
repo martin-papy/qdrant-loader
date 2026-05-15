@@ -139,6 +139,13 @@ class MetadataExtractor:
             settings: Configuration settings containing markdown strategy config
         """
         self.settings = settings
+        self._semantic_analysis_enabled = bool(
+            getattr(
+                getattr(getattr(settings, "global_config", None), "chunking", None),
+                "enable_semantic_analysis",
+                True,
+            )
+        )
         self.cross_reference_extractor = CrossReferenceExtractor()
         self.entity_extractor = EntityExtractor()
         self.hierarchy_extractor = HierarchyExtractor()
@@ -163,16 +170,20 @@ class MetadataExtractor:
             self.cross_reference_extractor.extract_cross_references(chunk_content)
         )
 
-        # Extract entities
-        metadata["entities"] = self.entity_extractor.extract_entities(chunk_content)
+        # Respect global semantic-analysis master switch.
+        if self._semantic_analysis_enabled:
+            metadata["entities"] = self.entity_extractor.extract_entities(chunk_content)
+            metadata["topic_analysis"] = self.topic_analyzer.analyze_topic(
+                chunk_content
+            )
+        else:
+            metadata["entities"] = []
+            metadata["topic_analysis"] = {"topics": [], "coherence": 0.0}
 
         # Extract hierarchical relationships
         metadata["hierarchy"] = self.hierarchy_extractor.map_hierarchical_relationships(
             chunk_content
         )
-
-        # Analyze topics
-        metadata["topic_analysis"] = self.topic_analyzer.analyze_topic(chunk_content)
 
         return metadata
 

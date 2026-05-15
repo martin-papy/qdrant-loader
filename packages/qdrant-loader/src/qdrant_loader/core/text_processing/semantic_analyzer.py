@@ -1,6 +1,8 @@
 """Semantic analysis module for text processing."""
 
+import hashlib
 import logging
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,6 +14,19 @@ from spacy.cli.download import download as spacy_download
 from spacy.tokens import Doc
 
 logger = logging.getLogger(__name__)
+
+
+def is_meaningful_text(text: str) -> bool:
+    """Check if text contains meaningful content (letters or digits).
+
+    Returns False for text that only contains:
+    - Punctuation marks: ., #, @, |, -, _, etc.
+    - Whitespace characters
+    - Special symbols without semantic meaning (---, ..., |||, etc.)
+
+    """
+    # Check if text contains at least one alphanumeric character
+    return any(c.isalnum() for c in text)
 
 
 @dataclass
@@ -64,23 +79,66 @@ class SemanticAnalyzer:
         self.dictionary = None
 
         # Cache for processed documents
-        self._doc_cache = {}
+        self._doc_cache: dict = {}
+        self._doc_cache_lock = threading.Lock()
+
+    def _build_cache_key(
+        self, text: str, doc_id: str | None, include_enhanced: bool
+    ) -> tuple[str, bool, str] | None:
+        """Build a cache key that includes a content fingerprint.
+
+        Including a fingerprint prevents stale cache hits when the same doc_id
+        is reused with different content.
+        """
+        if not doc_id:
+            return None
+
+        text_fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return (doc_id, include_enhanced, text_fingerprint)
 
     def analyze_text(
-        self, text: str, doc_id: str | None = None
+        self,
+        text: str,
+        doc_id: str | None = None,
+        include_enhanced: bool = False,
     ) -> SemanticAnalysisResult:
         """Perform comprehensive semantic analysis on text.
 
         Args:
             text: Text to analyze
             doc_id: Optional document ID for caching
+            include_enhanced: Whether to compute enhanced NLP fields
+                (pos_tags, dependencies, document_similarity)
 
         Returns:
             SemanticAnalysisResult containing all analysis results
         """
         # Check cache
-        if doc_id and doc_id in self._doc_cache:
-            return self._doc_cache[doc_id]
+        cache_key = self._build_cache_key(text, doc_id, include_enhanced)
+
+        # Protected read
+        with self._doc_cache_lock:
+            cached = self._doc_cache.get(cache_key) if cache_key else None
+
+        if cached is not None:
+            if include_enhanced:
+                # Compute similarity OUTSIDE the lock (can be slow)
+                doc_similarity = self._calculate_document_similarity(
+                    text, doc_id=doc_id
+                )
+                refreshed = SemanticAnalysisResult(
+                    entities=cached.entities,
+                    pos_tags=cached.pos_tags,
+                    dependencies=cached.dependencies,
+                    topics=cached.topics,
+                    key_phrases=cached.key_phrases,
+                    document_similarity=doc_similarity,
+                )
+                # Protected write-back
+                with self._doc_cache_lock:
+                    self._doc_cache[cache_key] = refreshed
+                return refreshed
+            return cached
 
         # Process with spaCy
         doc = self.nlp(text)
@@ -88,11 +146,15 @@ class SemanticAnalyzer:
         # Extract entities with linking
         entities = self._extract_entities(doc)
 
-        # Get part-of-speech tags
-        pos_tags = self._get_pos_tags(doc)
+        if include_enhanced:
+            # Get part-of-speech tags
+            pos_tags = self._get_pos_tags(doc)
 
-        # Get dependency parse
-        dependencies = self._get_dependencies(doc)
+            # Get dependency parse
+            dependencies = self._get_dependencies(doc)
+        else:
+            pos_tags = []
+            dependencies = []
 
         # Extract topics
         topics = self._extract_topics(text)
@@ -101,7 +163,11 @@ class SemanticAnalyzer:
         key_phrases = self._extract_key_phrases(doc)
 
         # Calculate document similarity
-        doc_similarity = self._calculate_document_similarity(text)
+        doc_similarity = (
+            self._calculate_document_similarity(text, doc_id=doc_id)
+            if include_enhanced
+            else {}
+        )
 
         # Create result
         result = SemanticAnalysisResult(
@@ -113,14 +179,20 @@ class SemanticAnalyzer:
             document_similarity=doc_similarity,
         )
 
-        # Cache result
-        if doc_id:
-            self._doc_cache[doc_id] = result
+        # Protected write
+        if cache_key:
+            with self._doc_cache_lock:
+                self._doc_cache[cache_key] = result
 
         return result
 
     def _extract_entities(self, doc: Doc) -> list[dict[str, Any]]:
-        """Extract named entities with linking.
+        """Extract named entities with linking, filtering garbage entities.
+
+        Filters out entities that:
+        - Only contain punctuation/symbols (., #, |, etc.)
+        - Don't have any alphanumeric characters
+        - Are just whitespace
 
         Args:
             doc: spaCy document
@@ -130,6 +202,10 @@ class SemanticAnalyzer:
         """
         entities = []
         for ent in doc.ents:
+            # Filter entities that only contain punctuation/symbols
+            if not is_meaningful_text(ent.text):
+                continue
+
             # Get entity context
             start_sent = ent.sent.start
             end_sent = ent.sent.end
@@ -138,17 +214,19 @@ class SemanticAnalyzer:
             # Get entity description
             description = self.nlp.vocab.strings[ent.label_]
 
-            # Get related entities
+            # Get related entities (also filter meaningless ones)
             related = []
             for token in ent.sent:
                 if token.ent_type_ and token.text != ent.text:
-                    related.append(
-                        {
-                            "text": token.text,
-                            "type": token.ent_type_,
-                            "relation": token.dep_,
-                        }
-                    )
+                    # Only add related entities with meaningful text
+                    if is_meaningful_text(token.text):
+                        related.append(
+                            {
+                                "text": token.text,
+                                "type": token.ent_type_,
+                                "relation": token.dep_,
+                            }
+                        )
 
             entities.append(
                 {
@@ -165,16 +243,32 @@ class SemanticAnalyzer:
         return entities
 
     def _get_pos_tags(self, doc: Doc) -> list[dict[str, Any]]:
-        """Get part-of-speech tags with detailed information.
+        """Get part-of-speech tags with detailed information, filtering noise tokens.
+
+        Filters out multiple types of noise:
+        - Whitespace tokens (is_space=True)
+        - Punctuation tokens (is_punct=True)
+        - Symbol-only tokens without alphanumeric content (e.g., ---, ..., |||)
+
+        This is especially important for Excel tables and structured data.
 
         Args:
             doc: spaCy document
 
         Returns:
-            List of POS tag dictionaries
+            List of POS tag dictionaries (excluding spaces, punctuation, and symbols)
         """
         pos_tags = []
         for token in doc:
+            # Skip whitespace and punctuation - they pollute metadata
+            if token.is_space or token.is_punct:
+                continue
+
+            # Also skip tokens with no meaningful content (e.g., ---, ...)
+            # This catches edge cases where spaCy doesn't mark as punct
+            if not is_meaningful_text(token.text):
+                continue
+
             pos_tags.append(
                 {
                     "text": token.text,
@@ -182,30 +276,51 @@ class SemanticAnalyzer:
                     "tag": token.tag_,
                     "lemma": token.lemma_,
                     "is_stop": token.is_stop,
-                    "is_punct": token.is_punct,
-                    "is_space": token.is_space,
                 }
             )
         return pos_tags
 
     def _get_dependencies(self, doc: Doc) -> list[dict[str, Any]]:
-        """Get dependency parse information.
+        """Get dependency parse information with filtering.
+
+        Filters out:
+        - Whitespace tokens (is_space=True)
+        - Punctuation tokens (is_punct=True)
+        - Symbol-only tokens without alphanumeric content
+        - Children that are punctuation or meaningless symbols
 
         Args:
             doc: spaCy document
 
         Returns:
-            List of dependency dictionaries
+            List of dependency dictionaries (excluding noise tokens)
         """
         dependencies = []
         for token in doc:
+            # Skip whitespace and punctuation tokens
+            if token.is_space or token.is_punct:
+                continue
+
+            # Skip tokens with no meaningful content (e.g., ---, ...)
+            if not is_meaningful_text(token.text):
+                continue
+
+            # Filter children to only include meaningful tokens
+            meaningful_children = [
+                child.text
+                for child in token.children
+                if not child.is_space
+                and not child.is_punct
+                and is_meaningful_text(child.text)
+            ]
+
             dependencies.append(
                 {
                     "text": token.text,
                     "dep": token.dep_,
                     "head": token.head.text,
                     "head_pos": token.head.pos_,
-                    "children": [child.text for child in token.children],
+                    "children": meaningful_children,
                 }
             )
         return dependencies
@@ -332,22 +447,34 @@ class SemanticAnalyzer:
 
         return list(set(key_phrases))  # Remove duplicates
 
-    def _calculate_document_similarity(self, text: str) -> dict[str, float]:
+    def _calculate_document_similarity(
+        self, text: str, doc_id: str | None = None
+    ) -> dict[str, float]:
         """Calculate similarity with other processed documents.
 
         Args:
             text: Text to compare
+            doc_id: Optional current document ID to exclude from results
 
         Returns:
             Dictionary of document similarities
         """
         similarities = {}
+        skipped_ids = {doc_id} if doc_id else set()
+
         doc = self.nlp(text)
 
         # Check if the model has word vectors
         has_vectors = self.nlp.vocab.vectors_length > 0
 
-        for doc_id, cached_result in self._doc_cache.items():
+        with self._doc_cache_lock:
+            cached_items = list(self._doc_cache.items())
+
+        for cache_key, cached_result in cached_items:
+            cached_doc_id = cache_key[0] if isinstance(cache_key, tuple) else cache_key
+            if cached_doc_id is None or cached_doc_id in skipped_ids:
+                continue
+
             # Check if cached_result has entities and the first entity has context
             if not cached_result.entities or not cached_result.entities[0].get(
                 "context"
@@ -364,7 +491,8 @@ class SemanticAnalyzer:
                 # This avoids the spaCy warning about missing word vectors
                 similarity = self._calculate_alternative_similarity(doc, cached_doc)
 
-            similarities[doc_id] = float(similarity)
+            similarities[cached_doc_id] = float(similarity)
+            skipped_ids.add(cached_doc_id)
 
         return similarities
 
@@ -437,7 +565,8 @@ class SemanticAnalyzer:
     def clear_cache(self):
         """Clear the document cache and release all resources."""
         # Clear document cache
-        self._doc_cache.clear()
+        with self._doc_cache_lock:
+            self._doc_cache.clear()
 
         # Release LDA model resources
         if hasattr(self, "lda_model") and self.lda_model is not None:

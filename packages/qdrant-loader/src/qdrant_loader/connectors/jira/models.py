@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
 class JiraUser(BaseModel):
@@ -38,6 +38,7 @@ class JiraAttachment(BaseModel):
 class JiraIssue(BaseModel):
     """Jira issue model."""
 
+    model_config = ConfigDict(extra="allow")
     id: str = Field(..., description="Issue ID")
     key: str = Field(..., description="Issue key")
     summary: str = Field(..., description="Issue summary")

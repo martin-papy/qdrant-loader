@@ -15,6 +15,7 @@ from pydantic import Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ..utils.logging import LoggingConfig
+from ..utils.sensitive import sanitize_exception_message
 from .chunking import ChunkingConfig
 
 # Import consolidated configs
@@ -151,8 +152,11 @@ def initialize_config(
         _get_logger().debug("Successfully initialized configuration")
 
     except Exception as e:
+        safe_error = sanitize_exception_message(e)
         _get_logger().error(
-            "Failed to initialize configuration", error=str(e), yaml_path=str(yaml_path)
+            "Failed to initialize configuration",
+            error=safe_error,
+            yaml_path=str(yaml_path),
         )
         raise
 
@@ -216,9 +220,10 @@ def initialize_config_with_workspace(
         )
 
     except Exception as e:
+        safe_error = sanitize_exception_message(e)
         _get_logger().error(
             "Failed to initialize configuration with workspace",
-            error=str(e),
+            error=safe_error,
             workspace=str(workspace_config.workspace_path),
         )
         raise
@@ -450,13 +455,22 @@ class Settings(BaseSettings):
             return settings
 
         except yaml.YAMLError as e:
-            _get_logger().error("Failed to parse YAML configuration", error=str(e))
+            _get_logger().error(
+                "Failed to parse YAML configuration",
+                error=sanitize_exception_message(e),
+            )
             raise
         except ValidationError as e:
-            _get_logger().error("Configuration validation failed", error=str(e))
+            _get_logger().error(
+                "Configuration validation failed",
+                error=sanitize_exception_message(e),
+            )
             raise
         except Exception as e:
-            _get_logger().error("Unexpected error loading configuration", error=str(e))
+            _get_logger().error(
+                "Unexpected error loading configuration",
+                error=sanitize_exception_message(e),
+            )
             raise
 
     def to_dict(self) -> dict:

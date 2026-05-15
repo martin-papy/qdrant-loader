@@ -266,7 +266,21 @@ class EmbeddingService:
         logger.info(
             f"🔗 Generated embeddings: {len(embeddings)} items in {batch_count} batches"
         )
-        return embeddings
+
+        if len(valid_indices) != len(embeddings):
+            raise ValueError(
+                "Embedding count mismatch: "
+                f"expected {len(valid_indices)} embeddings for valid contents, "
+                f"got {len(embeddings)}"
+            )
+
+        # Reconstruct full-length result aligned with original input indices.
+        # Invalid entries (filtered out above) get an empty list as placeholder so
+        # callers can zip safely without index shift.
+        full_result: list[list[float]] = [[] for _ in contents]
+        for idx, embedding in zip(valid_indices, embeddings, strict=False):
+            full_result[idx] = embedding
+        return full_result
 
     async def _process_batch(self, batch: list[str]) -> list[list[float]]:
         """Process a single batch of content for embeddings.
@@ -394,7 +408,7 @@ class EmbeddingService:
         )
         if not dimension:
             logger.warning(
-                "Embedding dimension not set in config; using 1536 (deprecated default). Set global.llm.embeddings.vector_size."
+                "Embedding dimension not set in config; using 1024 (deprecated default). Set global.llm.embeddings.vector_size."
             )
-            return 1536
+            return 1024
         return int(dimension)

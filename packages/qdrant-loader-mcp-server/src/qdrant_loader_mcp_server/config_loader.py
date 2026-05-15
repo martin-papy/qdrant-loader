@@ -13,6 +13,7 @@ Environment variables overlay values from file. CLI flags override env.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,37 @@ def _first_existing(paths: list[Path]) -> Path | None:
         if p and p.exists() and p.is_file():
             return p
     return None
+
+
+_ENV_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def _substitute_env_vars(data: Any) -> Any:
+    """Substitute ${VAR_NAME} patterns with environment variable values.
+
+    Only standard env var names are matched (letters, digits, underscores,
+    starting with a letter or underscore). Bash-style defaults like
+    ``${VAR:-fallback}`` are NOT supported — use .env files instead.
+
+    Processes strings, dicts, and lists recursively. Raises ValueError
+    if a referenced variable is not set.
+    """
+    if isinstance(data, str):
+
+        def replace(m: re.Match) -> str:
+            val = os.getenv(m.group(1))
+            if val is None:
+                raise ValueError(
+                    f"Environment variable '{m.group(1)}' referenced in config is not set"
+                )
+            return val
+
+        return _ENV_VAR_PATTERN.sub(replace, data)
+    if isinstance(data, dict):
+        return {k: _substitute_env_vars(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [_substitute_env_vars(i) for i in data]
+    return data
 
 
 def resolve_config_path(cli_config: Path | None) -> Path | None:
@@ -97,7 +129,8 @@ def _overlay_env_search(search: dict[str, Any]) -> None:
 
 def load_file_config(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+        raw = yaml.safe_load(f) or {}
+    return _substitute_env_vars(raw)
 
 
 def build_config_from_dict(config_data: dict[str, Any]) -> Config:
@@ -123,6 +156,27 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     except Exception:
         pass
 
+    # Migrate legacy global.embedding → global.llm (backward compat)
+    if legacy_embedding:
+        if not llm.get("api_key") and legacy_embedding.get("api_key"):
+            llm["api_key"] = legacy_embedding["api_key"]
+        models_cfg = dict(llm.get("models") or {})
+        if not models_cfg.get("embeddings") and legacy_embedding.get("model"):
+            models_cfg["embeddings"] = legacy_embedding["model"]
+        llm["models"] = models_cfg
+        # Migrate vector_size for use in OpenAIConfig
+        if not llm.get("vector_size") and isinstance(
+            legacy_embedding.get("vector_size"), int
+        ):
+            llm["vector_size"] = legacy_embedding["vector_size"]
+
+    # Extract vector_size from new format: global.llm.embeddings.vector_size
+    # (different from models.embeddings which is a model name string)
+    emb_cfg = llm.get("embeddings") or {}
+    if isinstance(emb_cfg, dict) and isinstance(emb_cfg.get("vector_size"), int):
+        if not llm.get("vector_size"):
+            llm["vector_size"] = emb_cfg["vector_size"]
+
     # Apply environment overrides
     _overlay_env_llm(llm)
     _overlay_env_qdrant(qdrant)
@@ -145,10 +199,14 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
             raise ValueError("global.reranking must be a mapping")
         reranking_cfg = MCPReranking(**global_data["reranking"])
 
+    vector_size = llm.get("vector_size")  # int | None
     cfg = Config(
         qdrant=QdrantConfig(**qdrant) if qdrant else QdrantConfig(),
         openai=OpenAIConfig(
-            api_key=api_key, model=embedding_model, chat_model=chat_model
+            api_key=api_key,
+            model=embedding_model,
+            chat_model=chat_model,
+            vector_size=vector_size,
         ),
         search=SearchConfig(**search) if search else SearchConfig(),
         reranking=reranking_cfg if reranking_cfg is not None else MCPReranking(),

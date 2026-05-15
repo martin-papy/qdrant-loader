@@ -17,6 +17,9 @@ class Document(BaseModel):
     title: str
     content_type: str
     content: str
+    contextual_content: str | None = (
+        None  # Optional field for contextual embedding content
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
     content_hash: str
     source_type: str
@@ -56,6 +59,7 @@ class Document(BaseModel):
         return {
             "id": self.id,
             "content": self.content,
+            "contextual_content": self.contextual_content,
             "metadata": self.metadata,
             "source": self.source,
             "source_type": self.source_type,
@@ -350,3 +354,21 @@ class Document(BaseModel):
             context_parts.append(f"Children: {children_count}")
 
         return " | ".join(context_parts)
+
+    def build_contextual_content(self) -> str | None:
+        """Build a contextual prefix like:
+        [Source: confluence | Document: My Title | Project: X]\n\n
+
+        Returns:
+            Contextual prefix string or None if required fields are missing.
+        """
+        if not self.source or not self.title:
+            return None
+        parts = [
+            f"Source: {self.source_type}",
+            f"Title: {self.title}",
+        ]
+        project = self.metadata.get("project_name")
+        if project:
+            parts.append(f"Project: {project}")
+        return f"[{' | '.join(parts)}]\n\n"

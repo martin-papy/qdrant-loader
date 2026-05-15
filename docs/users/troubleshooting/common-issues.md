@@ -136,7 +136,7 @@ projects:
       localfile:
         my-docs:
           include_paths:
-            - "*.md"  # Only markdown files
+            - "*.md" # Only markdown files
 ```
 
 ```yaml
@@ -240,6 +240,30 @@ qdrant-loader ingest --workspace .
 
 ## ⚙️ Configuration Issues
 
+### Issue: `UNIQUE constraint failed: projects.collection_name` during multi-project ingest
+
+**Symptoms:**
+
+- `qdrant-loader ingest --workspace .` fails when initializing projects
+- Error includes `sqlite3.IntegrityError: UNIQUE constraint failed: projects.collection_name`
+
+**Cause:**
+
+- Your existing state database was created with an older schema that enforced a unique constraint on `projects.collection_name`.
+- In workspace mode, multiple projects can share the same global collection name.
+
+**Fix (one-time):**
+
+```bash
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
+```
+
+**Notes:**
+
+- `--force` resets the state DB metadata for the workspace.
+- If needed, you can also delete the workspace state DB file manually, then run `init` again.
+
 ### Issue: Configuration validation fails
 
 **Symptoms:**
@@ -297,7 +321,7 @@ export OPENAI_API_KEY="your-key-here"  # Legacy support
 # Ensure URLs are complete and accessible
 global:
   qdrant:
-    url: "https://your-qdrant-instance.com"  # Include protocol
+    url: "https://your-qdrant-instance.com" # Include protocol
 ```
 
 ### Issue: Environment variables not loaded
@@ -581,12 +605,12 @@ qdrant-loader ingest --workspace .
 ### Support Channels
 
 - **GitHub Issues**: [Report bugs and feature requests](https://github.com/martin-papy/qdrant-loader/issues)
-- **Documentation**: [Check latest documentation](../../README.md)
+- **Documentation**: [Check latest documentation](../../)
 - **Discussions**: [Community Q&A](https://github.com/martin-papy/qdrant-loader/discussions)
 
 ### Issue Report Template
 
-```markdown
+````markdown
 ## Issue Description
 
 Brief description of the problem
@@ -617,6 +641,7 @@ What actually happened
 ```yaml
 [Paste relevant configuration (sanitized)]
 ```
+````
 
 ## Logs
 
@@ -631,8 +656,6 @@ What actually happened
 qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 ```
-
-```text
 
 ## 🔗 Related Documentation
 

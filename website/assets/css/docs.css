@@ -59,7 +59,7 @@ pre.ql-has-copy {
   margin-bottom: .25rem;
 }
 .admonition.note { border-color: #0d6efd33; background: #0d6efd0d; }
-.admonition.note .admonition-title { color: #0d6efd; }
+.admonition.note .admonition-title { color: #1c1c1c; }
 .admonition.tip { border-color: #19875433; background: #1987540d; }
 .admonition.tip .admonition-title { color: #198754; }
 .admonition.warning { border-color: #ffc10766; background: #ffc1070f; }

@@ -41,11 +41,11 @@ website/
 
 ```bash
 # Install dependencies (from project root)
-pip install -e packages/qdrant-loader[dev]
-pip install -e packages/qdrant-loader-mcp-server[dev]
+uv sync --all-packages --all-extras
 
 # Required Python packages for website generation
-pip install markdown jinja2 python-frontmatter
+uv add --dev markdown jinja2 python-frontmatter
+uv sync
 ```
 
 ### Build Commands
@@ -171,11 +171,10 @@ Markdown files can include frontmatter for metadata:
 ---
 title: "Custom Page Title"
 description: "Page description for SEO"
-template: "custom-template.html"  # Optional custom template
-nav_order: 10                    # Optional navigation ordering
-hide_nav: true                   # Optional: hide from navigation
+template: "custom-template.html" # Optional custom template
+nav_order: 10 # Optional navigation ordering
+hide_nav: true # Optional: hide from navigation
 ---
-
 # Your markdown content here
 ```
 
@@ -214,7 +213,7 @@ python -m http.server 8000
 3. **Rebuild website** to copy assets to output
 4. **Test asset loading** in the generated website
 
-## 📊 Integration Features
+## 🧪 Integration Features
 
 ### Test Coverage Reports
 

@@ -1,13 +1,14 @@
 """Source processor for handling different source types."""
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from qdrant_loader.config.source_config import SourceConfig
-from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationError
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -26,14 +27,14 @@ class SourceProcessor:
     async def process_source_type(
         self,
         source_configs: Mapping[str, SourceConfig],
-        connector_class: type[BaseConnector],
+        connector_factory: Callable[[SourceConfig], BaseConnector],
         source_type: str,
     ) -> list[Document]:
         """Process documents from a specific source type.
 
         Args:
             source_configs: Mapping of source name to source configuration
-            connector_class: The connector class to use for this source type
+            connector_factory: Factory function that creates a connector from a source config
             source_type: The type of source being processed
 
         Returns:
@@ -54,7 +55,7 @@ class SourceProcessor:
                 logger.debug(f"Processing {source_type} source: {source_name}")
 
                 # Create connector instance and use as async context manager
-                connector = connector_class(source_config)
+                connector = connector_factory(source_config)
 
                 # Set file conversion config if available and connector supports it
                 if (
@@ -78,10 +79,16 @@ class SourceProcessor:
                     )
                     all_documents.extend(documents)
 
+            except ConnectorConfigurationError:
+                # Fatal configuration error – re-raise immediately so the
+                # pipeline stops with a clear message instead of silently
+                # producing 0 documents.
+                raise
             except Exception as e:
+                safe_error = sanitize_exception_message(e)
                 logger.error(
-                    f"Failed to process {source_type} source {source_name}: {e}",
-                    exc_info=True,
+                    f"Failed to process {source_type} source {source_name}: {safe_error}",
+                    error_type=type(e).__name__,
                 )
                 # Continue processing other sources even if one fails
                 continue

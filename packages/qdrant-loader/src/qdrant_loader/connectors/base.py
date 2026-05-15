@@ -5,6 +5,14 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 
 
+class ConnectorConfigurationError(Exception):
+    """Raised when a connector's configuration is invalid or access is denied.
+
+    This is a *fatal* error: the pipeline should stop rather than silently
+    continuing with 0 documents.
+    """
+
+
 class BaseConnector(ABC):
     """Base class for all connectors."""
 

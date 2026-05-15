@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Tag shape -->
+  <path d="M6 6H17L26 15L15 26L6 17V6Z"
+        stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- Hole -->
+  <circle cx="12" cy="12" r="2"
+          stroke="#1C1C1C" stroke-width="2"/>
+
+</svg>

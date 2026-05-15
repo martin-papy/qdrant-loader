@@ -6,7 +6,7 @@ This guide covers the powerful AI-driven search capabilities available through t
 
 The QDrant Loader MCP Server provides **intelligent search capabilities** powered by advanced AI technologies including semantic understanding, document relationship analysis, and cross-document intelligence. These features work together to provide contextually relevant results and comprehensive knowledge discovery.
 
-### 🎉 Available Intelligence Features
+### Available Intelligence Features
 
 Our search system provides sophisticated capabilities for knowledge exploration and analysis:
 
@@ -21,7 +21,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 2. **Hierarchy Search** - Structure-aware search with document relationships
 3. **Attachment Search** - Specialized search for files and documents
 
-### 🔥 Cross-Document Intelligence Features
+### Cross-Document Intelligence Features
 
 1. **Document Relationship Analysis** - Comprehensive relationship analysis **(Available)**
 2. **Document Similarity Detection** - Find similar and related documents **(Available)**
@@ -29,7 +29,7 @@ Our search system provides sophisticated capabilities for knowledge exploration 
 4. **Complementary Content Discovery** - Find related and supporting content **(Available)**
 5. **Document Clustering** - Group documents by similarity and relationships **(Available)**
 
-### 📄 Document Expansion Tools
+### Document Expansion Tools
 
 1. **Expand Document** - Get detailed document information and context **(Available)**
 2. **Expand Cluster** - Explore document clusters with detailed analysis **(Available)**
@@ -259,7 +259,7 @@ Content Analysis Results:
 
 ```json
 {
-  "name": "analyze_document_relationships",
+  "name": "analyze_relationships",
   "parameters": {
     "query": "search query to get documents for analysis",
     "limit": 15, // Maximum documents to analyze
@@ -455,7 +455,7 @@ Document Clusters Created:
 - Good coverage across implementation lifecycle
 ```
 
-## 📄 Document Expansion Tools Reference
+## 📚 Document Expansion Tools Reference
 
 ### Expand Document (`expand_document`)
 
@@ -537,6 +537,44 @@ Query: Expand cluster "authentication-docs"
     ├── Most Referenced: OAuth 2.0 Implementation Guide
     ├── Recent Updates: 3 documents updated this month
     └── Knowledge Gaps: Missing mobile authentication patterns
+```
+
+### Expand Chunk Context (`expand_chunk_context`)
+
+Expand surrounding chunks around a specific chunk so AI tools can reason with nearby context without loading an entire document.
+
+#### Expand Chunk Context Parameters
+
+```json
+{
+  "name": "expand_chunk_context",
+  "arguments": {
+    "document_id": "string", // Required: document identifier
+    "chunk_index": 3, // Required: zero-based chunk index
+    "window": 2 // Optional: number of chunks before/after (default: 2)
+  }
+}
+```
+
+#### Expand Chunk Context Example
+
+```text
+Query: Expand context around chunk 12 in "api-auth-guide"
+
+🔍 Expand Chunk Context Results:
+🎯 Center Chunk: 12
+📚 Window: 2 (returns chunks 10..14)
+
+Chunks Returned:
+- [10] Previous setup prerequisites
+- [11] Token validation flow intro
+- [12] JWT refresh implementation details (target)
+- [13] Error handling and retries
+- [14] Testing checklist and edge cases
+
+💡 Outcome:
+- Preserves local continuity for LLM reasoning
+- Avoids fetching entire document when only nearby context is needed
 ```
 
 ## 🎯 Advanced Search Strategies
@@ -630,7 +668,6 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 #### For Large Knowledge Bases
 
 1. **Optimize Search Parameters**
-
    - Use appropriate `limit` values for your needs
    - Filter by `source_types` or `project_ids` when possible
    - Use specific search tools for targeted queries
@@ -659,7 +696,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 - ✅ **Content Intelligence**: Comprehensive file and attachment analysis
 - ✅ **Scalability**: Handles large document collections effectively
 
-## 📋 Search Capabilities Checklist
+## 📝 Search Capabilities Checklist
 
 ### Understanding Available Tools
 

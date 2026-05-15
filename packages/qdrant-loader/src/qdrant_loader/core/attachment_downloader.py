@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+import uuid
 from pathlib import Path
 
 import requests
@@ -365,7 +366,17 @@ class AttachmentDownloader:
                 )
 
             # Create attachment document
+            # Use an explicit attachment-specific ID so attachments under the same
+            # parent cannot collide if URL normalization strips fragments.
+            attachment_doc_id = str(
+                uuid.uuid5(
+                    uuid.NAMESPACE_URL,
+                    f"{parent_document.id}:attachment:{attachment.id}",
+                )
+            )
+
             document = Document(
+                id=attachment_doc_id,
                 title=f"Attachment: {attachment.filename}",
                 content=content,
                 content_type=content_type,

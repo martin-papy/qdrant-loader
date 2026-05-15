@@ -1,0 +1,24 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Head -->
+  <circle cx="16" cy="12" r="4" stroke="#1C1C1C" stroke-width="2"/>
+
+  <!-- Antennas -->
+  <path d="M14 8L11 6" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M18 8L21 6" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Body -->
+  <path d="M12 18C12 15.8 14 14 16 14C18 14 20 15.8 20 18V22C20 24.5 18.2 26 16 26C13.8 26 12 24.5 12 22V18Z"
+        stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- Middle dividing line -->
+  <line x1="16" y1="14" x2="16" y2="26" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Legs -->
+  <path d="M10 14H6" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M10 18L6 20" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M10 22L6 24" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+
+  <path d="M22 14H26" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M22 18L26 20" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M22 22L26 24" stroke="#1C1C1C" stroke-width="2" stroke-linecap="round"/>
+</svg>

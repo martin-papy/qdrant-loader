@@ -61,11 +61,11 @@ global:
     base_url: ${LLM_BASE_URL} # e.g. https://api.openai.com/v1, http://localhost:11434/v1
     api_key: ${LLM_API_KEY} # optional for local providers like Ollama
     models:
-      embeddings: ${LLM_EMBEDDING_MODEL} # e.g. text-embedding-3-small | nomic-embed-text | bge-small-en-v1.5
+      embeddings: ${LLM_EMBEDDING_MODEL} # e.g. text-embedding-3-small | argus-ai/pplx-embed-v1-0.6b:fp32
       chat: ${LLM_CHAT_MODEL} # e.g. gpt-4o-mini | llama3.1:8b-instruct
     tokenizer: cl100k_base # cl100k_base | none
     embeddings:
-      vector_size: 1536 # set according to chosen embedding model
+      vector_size: ${VECTOR_SIZE}
 
 projects:
   my-project:
@@ -95,13 +95,13 @@ global:
   llm:
     provider: ${LLM_PROVIDER}
     base_url: ${LLM_BASE_URL}
-    api_key: ${LLM_API_KEY}
+    api_key: ${LLM_API_KEY} # {OPENAI_API_KEY} if LLM_ PROVIDER=openai
     api_version: ${LLM_API_VERSION}  # Required for azure_openai
     headers: {}
     models:
       embeddings: ${LLM_EMBEDDING_MODEL}
       chat: ${LLM_CHAT_MODEL}
-    tokenizer: cl100k_base
+    tokenizer: none # OpenAI: cl100k_base
     request:
       timeout_s: 30
       max_retries: 3
@@ -142,10 +142,11 @@ global:
     chunk_size: 1500
     chunk_overlap: 200
     max_chunks_per_document: 500
+    enable_semantic_analysis: true
+    enable_enhanced_semantic_analysis: false
     strategies:
       default:
         min_chunk_size: 100
-        enable_semantic_analysis: true
         enable_entity_extraction: true
       html:
         simple_parsing_threshold: 100000
@@ -312,18 +313,18 @@ global:
     # Required: Provider and endpoint
     provider: ${LLM_PROVIDER}
     base_url: ${LLM_BASE_URL}
-    api_key: ${LLM_API_KEY}
+    api_key: ${LLM_API_KEY} # {OPENAI_API_KEY} if LLM_ PROVIDER=openai
     # Required: Models
     models:
       embeddings: ${LLM_EMBEDDING_MODEL}
       chat: ${LLM_CHAT_MODEL}
     # Optional: Tokenizer and policies
-    tokenizer: cl100k_base
+    tokenizer: none # OpenAI: cl100k_base
     request:
       timeout_s: 30
       max_retries: 3
     embeddings:
-      vector_size: 1536
+      vector_size: ${VECTOR_SIZE}
 
 > Deprecation: `global.embedding.*` is still honored but will be removed in a future release. Migrate to `global.llm.*`.
 ```
@@ -357,11 +358,14 @@ global:
     chunk_overlap: 200
     # Optional: Maximum chunks per document - safety limit (default: 500)
     max_chunks_per_document: 500
+    # Optional: Master switch for NLP enrichment (spaCy + LDA) across all strategies (default: true)
+    enable_semantic_analysis: true
+    # Optional: Advanced NLP fields: pos_tags, dependencies, document_similarity (default: false)
+    enable_enhanced_semantic_analysis: false
     # Optional: Strategy-specific configurations for different content types
     strategies:
       default:
         min_chunk_size: 100
-        enable_semantic_analysis: true
         enable_entity_extraction: true
       html:
         simple_parsing_threshold: 100000
@@ -403,10 +407,14 @@ global:
 
 The `strategies` section allows you to fine-tune how different content types are processed:
 
+**Chunking (top-level flags):**
+
+- `enable_semantic_analysis`: Master switch for NLP enrichment (spaCy + LDA) across **all** chunking strategies. Set to `false` for faster ingestion when semantic enrichment is not needed.
+- `enable_enhanced_semantic_analysis`: Opt-in flag (default: `false`) that enables advanced NLP fields: `pos_tags`, `dependencies`, `document_similarity`. Requires `enable_semantic_analysis: true`. Increases payload size and ingestion time.
+
 **Default Strategy (Text Files):**
 
 - `min_chunk_size`: Prevents creation of very small chunks that may lack context
-- `enable_semantic_analysis`: Controls topic extraction and semantic analysis
 - `enable_entity_extraction`: Controls named entity recognition processing
 
 **HTML Strategy:**
@@ -582,6 +590,15 @@ sources:
       email: "${JIRA_EMAIL}"
       requests_per_minute: 60
       page_size: 100
+      extra_fields:
+        - param_name: customfield_12000
+          name: version
+          field_type: simple
+
+        - param_name: customfield_12001
+          name: affected_versions   # Metadata key under which the extracted value will be stored in Qdrant
+          field_type: array_object  # Use for fields that return a list of JIRA objects, e.g. [<JIRA Version: name='1.0.2', id='3900'>]
+          attr_name: name           # Attribute to extract from each object in the list
       issue_types:
         - "Bug"
         - "Story"
@@ -697,7 +714,7 @@ qdrant-loader config --workspace .
 # supported in the CLI. All project information is shown together.
 ```
 
-## 📋 Environment Variables
+## 📝 Environment Variables
 
 Configuration files support environment variable substitution using `${VARIABLE_NAME}` syntax:
 
@@ -796,10 +813,11 @@ global:
     chunk_size: 1500
     chunk_overlap: 200
     max_chunks_per_document: 500
+    enable_semantic_analysis: true
+    enable_enhanced_semantic_analysis: false
     strategies:
       default:
         min_chunk_size: 100
-        enable_semantic_analysis: true
         enable_entity_extraction: true
       html:
         simple_parsing_threshold: 100000
@@ -900,7 +918,7 @@ projects:
 - **[Data Sources](../detailed-guides/data-sources/)** - Source-specific configuration guides
 - **[Workspace Mode](./workspace-mode.md)** - Workspace configuration details
 
-## 📋 Configuration Checklist
+## 📝 Configuration Checklist
 
 - [ ] **Global configuration** completed (qdrant, llm, state_management)
 - [ ] **Environment variables** configured in `.env` file

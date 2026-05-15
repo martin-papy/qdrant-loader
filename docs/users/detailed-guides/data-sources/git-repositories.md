@@ -369,13 +369,13 @@ qdrant-loader init --workspace .
 qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader config --workspace . --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all configured projects
-qdrant-loader config --workspace .
+qdrant-loader project list --workspace .
 
 # Validate project configuration
-qdrant-loader config --workspace .
+qdrant-loader project validate --workspace .
 ```
 
 ### Debug Git Processing
@@ -567,13 +567,13 @@ curl -H "Authorization: token $REPO_TOKEN" https://api.github.com/repos/org/repo
 
 ```bash
 # View project status
-qdrant-loader config --workspace .
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader config --workspace . --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader config --workspace .
+qdrant-loader project list --workspace .
 ```
 
 ### Configuration Management
@@ -583,7 +583,7 @@ qdrant-loader config --workspace .
 qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader config --workspace .
+qdrant-loader project validate --workspace .
 ```
 
 ## 🔄 Best Practices

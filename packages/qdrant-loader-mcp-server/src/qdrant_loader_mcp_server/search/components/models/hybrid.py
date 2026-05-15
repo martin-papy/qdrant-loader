@@ -30,6 +30,7 @@ class HybridSearchResult:
     chunking: ChunkingContext | None = None
     conversion: ConversionInfo | None = None
     cross_reference: CrossReferenceInfo | None = None
+    contextual_content: str | None = None
 
     # Convenience properties (subset to keep file concise)
     @property
@@ -656,6 +657,9 @@ def create_hybrid_search_result(
             content_type_context=kwargs.get("content_type_context"),
         )
 
+    # Extract contextual_content (simple string, not a sub-model)
+    contextual_content_value = kwargs.get("contextual_content") or None
+
     return HybridSearchResult(
         base=base,
         project=project,
@@ -668,4 +672,5 @@ def create_hybrid_search_result(
         chunking=chunking,
         conversion=conversion,
         cross_reference=cross_reference,
+        contextual_content=contextual_content_value,
     )

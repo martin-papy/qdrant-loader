@@ -120,9 +120,9 @@ class TestWebsiteBuilderMarkdown:
         html = builder.basic_markdown_to_html(markdown)
 
         assert 'class="display-4 fw-bold text-primary mb-4"' in html
-        assert 'class="h2 fw-bold text-primary mt-5 mb-3"' in html
-        assert 'class="h3 fw-bold text-primary mt-5 mb-3"' in html
-        assert 'class="h4 fw-bold mt-4 mb-3"' in html
+        assert 'class="h2 fw-bold text-primary"' in html
+        assert 'class="h3 fw-bold text-primary"' in html
+        assert 'class="h4 fw-bold"' in html
 
     def test_basic_markdown_to_html_code(self):
         """Test basic markdown code conversion."""
@@ -133,8 +133,8 @@ class TestWebsiteBuilderMarkdown:
         html = builder.basic_markdown_to_html(markdown)
         # The output varies depending on whether the markdown library is available
         # Just verify it contains code-related elements
-        assert '<code' in html
-        assert "print('hello')" in html or 'print(&#39;hello&#39;)' in html
+        assert "<code" in html
+        assert "print('hello')" in html or "print(&#39;hello&#39;)" in html
 
         # Test inline code
         markdown = "Use `pip install` to install"
@@ -197,9 +197,9 @@ class TestWebsiteBuilderMarkdown:
         result = builder.add_bootstrap_classes(html)
 
         assert 'class="display-4 fw-bold text-primary mb-4"' in result
-        assert 'class="h2 fw-bold text-primary mt-5 mb-3"' in result
-        assert 'class="h3 fw-bold text-primary mt-5 mb-3"' in result
-        assert 'class="h4 fw-bold mt-4 mb-3"' in result
+        assert 'class="h2 fw-bold text-primary"' in result
+        assert 'class="h3 fw-bold text-primary"' in result
+        assert 'class="h4 fw-bold"' in result
 
     def test_markdown_to_html_with_markdown_library(self):
         """Test markdown conversion with markdown library available."""
@@ -224,6 +224,20 @@ class TestWebsiteBuilderMarkdown:
 
         # Should convert basic markdown
         assert "<h1>Test Header</h1>" in result
+
+    def test_markdown_to_html_renders_task_list_checkboxes(self):
+        """Task list markers should render as disabled checkbox inputs."""
+        builder = WebsiteBuilder()
+
+        markdown = "- [ ] Pending item\n- [x] Done item"
+        result = builder.markdown_to_html(markdown)
+
+        assert 'type="checkbox"' in result
+        assert "disabled" in result
+        assert "task-list-item" in result
+        assert "checked" in result
+        assert "Pending item" in result
+        assert "Done item" in result
 
 
 class TestWebsiteBuilderPageBuilding:
@@ -921,8 +935,7 @@ class TestGitHubActionsWorkflow:
         favicon_script.parent.mkdir(parents=True, exist_ok=True)
 
         # Create a mock favicon generation script
-        favicon_script.write_text(
-            """
+        favicon_script.write_text("""
 import sys
 from pathlib import Path
 
@@ -967,8 +980,7 @@ def main():
 if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)
-"""
-        )
+""")
 
         # Test favicon generation step
         result = subprocess.run(

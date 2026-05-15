@@ -9,8 +9,74 @@ QDrant Loader provides a focused command-line interface for data ingestion and m
 ### Available Commands
 
 ```text
+🚀 Setup          - setup (interactive config generation)
 📊 Data Management - init, ingest
-🔧 Configuration - config (includes project information)
+🔧 Configuration  - config (includes project information)
+```
+
+## 🚀 Setup Command
+
+### `qdrant-loader setup`
+
+Interactive setup wizard that generates `config.yaml` and `.env` files for your workspace. This is the fastest way to get started with QDrant Loader.
+
+#### Basic Usage
+
+```bash
+# Interactive mode — prompts for workspace folder and setup mode
+qdrant-loader setup
+
+# Quick start with defaults (localfile source pointing to ./docs)
+qdrant-loader setup --output-dir ./my-workspace --mode default
+
+# Interactive wizard with source selection
+qdrant-loader setup --output-dir ./my-workspace --mode normal
+
+# Full control over global settings and multi-project config
+qdrant-loader setup --output-dir ./my-workspace --mode advanced
+```
+
+#### Options
+
+- `--output-dir PATH` - Directory to write `config.yaml` and `.env` files to. If omitted, you are prompted interactively.
+- `--mode [default|normal|advanced]` - Setup mode. If omitted, a TUI selector is shown.
+
+#### Setup Modes
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **default** | Creates a localfile source pointing to `<workspace>/docs/` with no prompts | Quick start, testing |
+| **normal** | Interactive wizard — prompts for Qdrant URL, API keys, and data sources (git, confluence, jira, publicdocs, localfile) | Most users |
+| **advanced** | Full control — configure embedding model, vector size, chunking, reranking, and multi-project setup | Production deployments |
+
+#### What Gets Generated
+
+```text
+<output-dir>/
+├── config.yaml    # Configuration with your selected sources
+├── .env           # Environment variables (API keys, credentials)
+└── docs/          # (default mode only) Directory for local documents
+```
+
+All source configurations include `enable_file_conversion: true` by default, enabling automatic conversion of PDF, DOCX, XLSX, and other binary formats.
+
+#### Examples
+
+```bash
+# Set up a workspace for ingesting local documentation
+qdrant-loader setup --output-dir ./docs-workspace --mode default
+cd docs-workspace
+# Place your documents in the docs/ folder, then:
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
+
+# Set up with Confluence and Git sources
+qdrant-loader setup --output-dir ./team-kb --mode normal
+# Follow the prompts to configure each source
+
+# Advanced multi-project setup
+qdrant-loader setup --output-dir ./production --mode advanced
+# Configure embedding model, chunking strategy, and multiple projects
 ```
 
 ## 📊 Data Management Commands

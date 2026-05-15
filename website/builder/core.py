@@ -8,6 +8,7 @@ all build operations and manages the overall build lifecycle.
 import json
 import re
 import subprocess
+from datetime import UTC
 from pathlib import Path
 
 from .assets import AssetManager
@@ -369,6 +370,24 @@ class WebsiteBuilder:
                 )
             # Privacy policy page from template
             try:
+                privacy_template_path = self.templates_dir / "privacy-policy.html"
+                privacy_last_updated = self.get_git_timestamp(
+                    str(privacy_template_path)
+                )
+                if privacy_last_updated:
+                    privacy_last_updated = privacy_last_updated.split("T", 1)[0]
+                else:
+                    from datetime import datetime
+
+                    # Use stable template mtime fallback instead of build date.
+                    privacy_last_updated = (
+                        datetime.fromtimestamp(
+                            privacy_template_path.stat().st_mtime, tz=UTC
+                        )
+                        .date()
+                        .isoformat()
+                    )
+
                 self.build_page(
                     "base.html",
                     "privacy-policy.html",
@@ -376,6 +395,7 @@ class WebsiteBuilder:
                     "Privacy policy for QDrant Loader",
                     "privacy-policy.html",
                     content=self.load_template("privacy-policy.html"),
+                    last_updated=privacy_last_updated,
                 )
             except FileNotFoundError:
                 pass
@@ -631,19 +651,19 @@ Sitemap: {site_base}/sitemap.xml
             toc_html = self.add_bootstrap_classes(toc_html)
 
         wrapped_content = f"""
-<section class=\"py-5\">
-  <div class=\"container\">
-    <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block\">
-        <div class=\"position-sticky\" style=\"top: 6rem;\">
+<section>
+    <div class=\"container-fluid\">
+    <div class=\"row toc-layout\">
+      <aside class=\"toc-sidebar d-none d-lg-block p-0\">
+        <div class=\"position-sticky\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9\">
+      <div class=\"container-content\">
         {html_content}
       </div>
     </div>
-  </div>
+</div>
 </section>
 """
 
@@ -965,19 +985,19 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                     toc_html = self.add_bootstrap_classes(toc_html)
 
                 wrapped_content = f"""
-<section class=\"py-5\">
-  <div class=\"container\">
-    <div class=\"row\">
-      <aside class=\"col-lg-3 d-none d-lg-block\">
-        <div class=\"position-sticky\" style=\"top: 6rem;\">
+<section>
+   <div class=\"container-fluid\">
+    <div class=\"row toc-layout\">
+      <aside class=\"toc-sidebar d-none d-lg-block p-0\">
+        <div class=\"position-sticky\">
           {toc_html or '<div class=\"text-muted small\">No sections</div>'}
         </div>
       </aside>
-      <div class=\"col-lg-9\">
+      <div class=\"container-content\">
         {html_content}
       </div>
     </div>
-  </div>
+    </div>
 </section>
 """
 
@@ -1030,8 +1050,8 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
                                 index_file = directory / "index.html"
                                 if source_file.suffix == ".html":
                                     # Copy HTML file content directly (always overwrite to avoid stale links)
-                                    content = source_file.read_text()
-                                    index_file.write_text(content)
+                                    content = source_file.read_text(encoding="utf-8")
+                                    index_file.write_text(content, encoding="utf-8")
                                     print(
                                         f"📄 Generated index.html from {source_file.name}"
                                     )
@@ -1042,7 +1062,7 @@ fetch('core/status.json').then(r=>r.json()).then(d=>renderCoverage('core-coverag
 
                                 if source_file.suffix == ".html":
                                     # Copy HTML file content directly
-                                    content = source_file.read_text()
+                                    content = source_file.read_text(encoding="utf-8")
                                     self.build_page(
                                         "base.html",
                                         output_path,

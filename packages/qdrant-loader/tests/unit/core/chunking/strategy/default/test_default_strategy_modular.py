@@ -24,12 +24,11 @@ class TestDefaultChunkingStrategyModular:
         settings.global_config.chunking.chunk_size = 1500
         settings.global_config.chunking.chunk_overlap = 200
         settings.global_config.chunking.max_chunks_per_document = 500
+        settings.global_config.chunking.enable_semantic_analysis = True
+        settings.global_config.chunking.enable_enhanced_semantic_analysis = False
         settings.global_config.chunking.strategies = Mock()
         settings.global_config.chunking.strategies.default = Mock()
         settings.global_config.chunking.strategies.default.min_chunk_size = 100
-        settings.global_config.chunking.strategies.default.enable_semantic_analysis = (
-            True
-        )
         settings.global_config.chunking.strategies.default.enable_entity_extraction = (
             True
         )

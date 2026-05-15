@@ -364,6 +364,107 @@ class TestConversionSummary:
         assert summary["error_types"] == {}
 
 
+class TestEndBatchTotalCalculation:
+    """Test total chunk/size calculation branches in end_batch."""
+
+    def test_end_batch_prefers_explicit_totals(self, monitor):
+        """Explicit total_* values should override list and metadata-derived totals."""
+        batch_id = "batch_explicit_totals"
+        monitor.start_batch(batch_id, batch_size=2)
+
+        # Seed metadata fallback values that should be ignored when explicit totals exist.
+        monitor.ingestion_metrics["doc_1"] = IngestionMetrics(
+            start_time=1.0, metadata={"num_chunks": 10, "size": 1000}
+        )
+
+        monitor.end_batch(
+            batch_id,
+            success_count=2,
+            error_count=0,
+            document_sizes=[50, 75],
+            chunk_sizes=[20, 25, 30],
+            total_chunks=7,
+            total_size_bytes=350,
+        )
+
+        summary = monitor.batch_metrics[batch_id].summary
+        assert summary is not None
+        assert summary.total_chunks == 7
+        assert summary.total_size_bytes == 350
+
+    def test_end_batch_uses_batch_scoped_lists(self, monitor):
+        """When explicit totals are missing, chunk_sizes/document_sizes should be used."""
+        batch_id = "batch_list_totals"
+        monitor.start_batch(batch_id, batch_size=3)
+
+        monitor.end_batch(
+            batch_id,
+            success_count=3,
+            error_count=0,
+            document_sizes=[100, 200, 50],
+            chunk_sizes=[10, 20, 30, 40],
+        )
+
+        summary = monitor.batch_metrics[batch_id].summary
+        assert summary is not None
+        assert summary.total_chunks == 4
+        assert summary.total_size_bytes == 350
+
+    def test_end_batch_empty_lists_are_zero_not_metadata_fallback(self, monitor):
+        """Empty batch lists should produce zero totals even if metadata fallback has values."""
+        batch_id = "batch_empty_lists"
+        monitor.start_batch(batch_id, batch_size=0)
+
+        # These should not be used when lists are explicitly provided (even if empty).
+        monitor.ingestion_metrics["doc_1"] = IngestionMetrics(
+            start_time=1.0, metadata={"num_chunks": 99, "size": 9999}
+        )
+
+        monitor.end_batch(
+            batch_id,
+            success_count=0,
+            error_count=0,
+            document_sizes=[],
+            chunk_sizes=[],
+        )
+
+        summary = monitor.batch_metrics[batch_id].summary
+        assert summary is not None
+        assert summary.total_chunks == 0
+        assert summary.total_size_bytes == 0
+
+    def test_end_batch_falls_back_to_metadata_when_lists_missing(self, monitor):
+        """When explicit totals and lists are missing, metadata fallback should be used."""
+        batch_id = "batch_metadata_fallback"
+        monitor.start_batch(batch_id, batch_size=2)
+
+        monitor.ingestion_metrics["doc_1"] = IngestionMetrics(
+            start_time=1.0, metadata={"num_chunks": 2, "size": 120}
+        )
+        monitor.ingestion_metrics["doc_2"] = IngestionMetrics(
+            start_time=1.0, metadata={"num_chunks": 3, "size": 80}
+        )
+        # Non-doc operation should not be counted by fallback.
+        monitor.ingestion_metrics["op_x"] = IngestionMetrics(
+            start_time=1.0, metadata={"num_chunks": 100, "size": 10000}
+        )
+
+        monitor.end_batch(
+            batch_id,
+            success_count=2,
+            error_count=0,
+            document_sizes=None,
+            chunk_sizes=None,
+            total_chunks=None,
+            total_size_bytes=None,
+        )
+
+        summary = monitor.batch_metrics[batch_id].summary
+        assert summary is not None
+        assert summary.total_chunks == 5
+        assert summary.total_size_bytes == 200
+
+
 class TestMetricsPersistence:
     """Test saving and loading metrics with conversion data."""
 

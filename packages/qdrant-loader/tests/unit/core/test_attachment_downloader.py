@@ -286,6 +286,50 @@ class TestAttachmentDownload:
 class TestProcessAttachment:
     """Test attachment processing functionality."""
 
+    def test_process_attachment_generates_unique_ids_per_attachment(self, mock_session):
+        """Attachments under the same parent must not collide on document ID."""
+        downloader = AttachmentDownloader(
+            session=mock_session, enable_file_conversion=False
+        )
+
+        parent_document = Document(
+            title="Parent Document",
+            content="Parent content",
+            content_type="html",
+            source_type="jira",
+            source="test_project",
+            url="https://example.com/browse/ABC-1",
+            metadata={},
+        )
+
+        metadata_1 = AttachmentMetadata(
+            id="att_001",
+            filename="document-a.pdf",
+            size=1024,
+            mime_type="application/pdf",
+            download_url="https://example.com/rest/api/attachment/content/att_001",
+            parent_document_id="ABC-1",
+        )
+        metadata_2 = AttachmentMetadata(
+            id="att_002",
+            filename="document-b.pdf",
+            size=2048,
+            mime_type="application/pdf",
+            download_url="https://example.com/rest/api/attachment/content/att_002",
+            parent_document_id="ABC-1",
+        )
+
+        doc_1 = downloader.process_attachment(
+            metadata_1, "/tmp/document-a.pdf", parent_document
+        )
+        doc_2 = downloader.process_attachment(
+            metadata_2, "/tmp/document-b.pdf", parent_document
+        )
+
+        assert doc_1 is not None
+        assert doc_2 is not None
+        assert doc_1.id != doc_2.id
+
     def test_process_attachment_with_conversion(self, attachment_downloader):
         """Test processing attachment with file conversion."""
         metadata = AttachmentMetadata(
