@@ -64,7 +64,7 @@ async def test_claim_next_no_duplicates_under_race(sqlite_job_queue: SQLiteJobQu
                     duplicate_claims.append(job.id)
                 claimed_ids.add(job.id)
 
-            await sqlite_job_queue.mark_done(job.id)
+            await sqlite_job_queue.mark_done(job.id, claim_attempt=job.attempts)
 
     await asyncio.gather(*(worker() for _ in range(workers)))
 
@@ -87,7 +87,9 @@ async def test_mark_failed_sets_error(sqlite_job_queue: SQLiteJobQueue):
     assert claimed is not None
     assert claimed.id == job.id
 
-    updated = await sqlite_job_queue.mark_failed(job.id, "source timeout")
+    updated = await sqlite_job_queue.mark_failed(
+        job.id, "source timeout", claim_attempt=claimed.attempts
+    )
     assert updated is True
 
     failed_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.FAILED)
@@ -109,7 +111,7 @@ async def test_mark_done_sets_status_and_completion_fields(
     assert claimed.visibility_deadline is not None
     assert claimed.attempts == 1
 
-    updated = await sqlite_job_queue.mark_done(job.id)
+    updated = await sqlite_job_queue.mark_done(job.id, claim_attempt=claimed.attempts)
     assert updated is True
 
     done_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.DONE)
@@ -139,3 +141,28 @@ async def test_claim_next_reclaims_after_lease_timeout(
     assert second_claim.id == job.id
     assert second_claim.status == SQLiteJobQueue.RUNNING
     assert second_claim.attempts == 2
+
+
+@pytest.mark.asyncio
+async def test_mark_done_rejects_stale_claim_attempt(sqlite_job_queue: SQLiteJobQueue):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+
+    first_claim = await sqlite_job_queue.claim_next(lease_seconds=0)
+    assert first_claim is not None
+    assert first_claim.id == job.id
+    assert first_claim.attempts == 1
+
+    second_claim = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert second_claim is not None
+    assert second_claim.id == job.id
+    assert second_claim.attempts == 2
+
+    stale_update = await sqlite_job_queue.mark_done(
+        job.id, claim_attempt=first_claim.attempts
+    )
+    assert stale_update is False
+
+    fresh_update = await sqlite_job_queue.mark_done(
+        job.id, claim_attempt=second_claim.attempts
+    )
+    assert fresh_update is True
