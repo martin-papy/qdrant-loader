@@ -18,7 +18,7 @@ class _BoundingBox:
     col_min: int
     col_max: int
 
-    def overlaps_row_wise(self, other: "_BoundingBox") -> bool:
+    def overlaps_row_wise(self, other: _BoundingBox) -> bool:
         return not (self.row_max < other.row_min or other.row_max < self.row_min)
 
 
@@ -41,7 +41,9 @@ class SubTableDetector:
 
         tables: list[pd.DataFrame] = []
         for box in merged:
-            sub = sheet.iloc[box.row_min : box.row_max + 1, box.col_min : box.col_max + 1]
+            sub = sheet.iloc[
+                box.row_min : box.row_max + 1, box.col_min : box.col_max + 1
+            ]
             sub = sub.dropna(axis=0, how="all").dropna(axis=1, how="all")
             sub = sub.reset_index(drop=True)
             sub.columns = range(sub.shape[1])
@@ -59,7 +61,10 @@ class SubTableDetector:
                 if not non_empty.iat[r, c]:
                     continue
                 graph.add_node((r, c))
-                for dr, dc in ((-1, 0), (0, -1)):  # 4-connected: only up and left needed
+                for dr, dc in (
+                    (-1, 0),
+                    (0, -1),
+                ):  # 4-connected: only up and left needed
                     rr, cc = r + dr, c + dc
                     if 0 <= rr < nrows and 0 <= cc < ncols and non_empty.iat[rr, cc]:
                         graph.add_edge((r, c), (rr, cc))

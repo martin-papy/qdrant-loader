@@ -1,5 +1,13 @@
+from unittest.mock import MagicMock
+
+from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
+    SectionSplitter,
+)
 from qdrant_loader.core.chunking.strategy.markdown.splitters.row_kv_excel import (
     MarkdownTableParser,
+    RowChunkContextualizer,
+    RowKVChunker,
+    RowKVExcelSplitter,
     _SubTableContext,
 )
 
@@ -15,17 +23,14 @@ def test_parses_heading_with_subtable_index():
     parsed = MarkdownTableParser().parse(content)
     assert len(parsed) == 1
     ctx, rows = parsed[0]
-    assert ctx == _SubTableContext(sheet="Inventory", subtable=2, columns=("SKU", "Qty"))
+    assert ctx == _SubTableContext(
+        sheet="Inventory", subtable=2, columns=("SKU", "Qty")
+    )
     assert rows == [{"SKU": "A1", "Qty": "10"}, {"SKU": "A2", "Qty": "20"}]
 
 
 def test_parses_heading_without_subtable_index():
-    content = (
-        "## Sheet: Solo\n"
-        "| a | b |\n"
-        "|---|---|\n"
-        "| 1 | 2 |\n"
-    )
+    content = "## Sheet: Solo\n| a | b |\n|---|---|\n| 1 | 2 |\n"
     parsed = MarkdownTableParser().parse(content)
     ctx, rows = parsed[0]
     assert ctx.sheet == "Solo"
@@ -75,15 +80,8 @@ def test_parser_unescapes_pipe_characters_in_cells():
     assert rows == [{"URL": "http://x.com?a=1|b=2", "Note": "with pipe"}]
 
 
-from qdrant_loader.core.chunking.strategy.markdown.splitters.row_kv_excel import (
-    RowChunkContextualizer,
-)
-
-
 def test_contextualizer_emits_preamble_and_rows():
-    ctx = _SubTableContext(
-        sheet="Inventory", subtable=1, columns=("SKU", "Qty")
-    )
+    ctx = _SubTableContext(sheet="Inventory", subtable=1, columns=("SKU", "Qty"))
     rows = [{"SKU": "A1", "Qty": "10"}, {"SKU": "A2", "Qty": "20"}]
     text = RowChunkContextualizer().build(ctx, rows)
 
@@ -110,11 +108,6 @@ def test_contextualizer_skips_empty_cells_in_kv_block():
     assert "a: 1" in text
     assert "c: 3" in text
     assert "b:" not in text
-
-
-from qdrant_loader.core.chunking.strategy.markdown.splitters.row_kv_excel import (
-    RowKVChunker,
-)
 
 
 def test_chunker_packs_all_rows_into_one_chunk_when_under_budget():
@@ -146,13 +139,6 @@ def test_chunker_emits_oversized_row_as_its_own_chunk():
 def test_chunker_returns_empty_for_no_rows():
     ctx = _SubTableContext(sheet="S", subtable=None, columns=("a",))
     assert RowKVChunker().chunk(ctx, [], max_size=1000) == []
-
-
-from unittest.mock import MagicMock
-
-from qdrant_loader.core.chunking.strategy.markdown.splitters.row_kv_excel import (
-    RowKVExcelSplitter,
-)
 
 
 def _settings_with_chunk_overlap(overlap: int = 0) -> MagicMock:
@@ -203,11 +189,6 @@ def test_splitter_handles_multi_subtable_content():
     assert len(chunks) == 2
     assert "x: 1" in chunks[0]
     assert "y: 2" in chunks[1]
-
-
-from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
-    SectionSplitter,
-)
 
 
 def test_splitter_truncates_at_max_chunks_per_section_cap():

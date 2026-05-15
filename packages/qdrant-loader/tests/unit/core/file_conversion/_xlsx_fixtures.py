@@ -27,7 +27,9 @@ def make_xlsx_bytes(sheets: dict[str, list[list]]) -> BytesIO:
     return buf
 
 
-def make_xlsx_file(tmp_path: Path, sheets: dict[str, list[list]], name: str = "test.xlsx") -> Path:
+def make_xlsx_file(
+    tmp_path: Path, sheets: dict[str, list[list]], name: str = "test.xlsx"
+) -> Path:
     """Persist an xlsx to disk for FileConverter end-to-end tests."""
     path = tmp_path / name
     path.write_bytes(make_xlsx_bytes(sheets).getvalue())

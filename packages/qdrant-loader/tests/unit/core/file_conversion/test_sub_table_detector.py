@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 from qdrant_loader.core.file_conversion.sub_table_detector import (
     SubTableDetector,
 )

@@ -44,7 +44,6 @@ def capture_openpyxl_warnings(logger_instance, file_path: str):
                 or "Conditional Formatting extension" in str(message)
             )
         ):
-
             # Extract the specific warning type
             warning_type = "Unknown Excel feature"
             if "Data Validation extension" in str(message):

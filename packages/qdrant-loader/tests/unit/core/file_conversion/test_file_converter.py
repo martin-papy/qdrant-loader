@@ -24,6 +24,7 @@ from qdrant_loader.core.file_conversion.file_converter import (
     FileConverter,
     TimeoutHandler,
 )
+from tests.unit.core.file_conversion._xlsx_fixtures import make_xlsx_file
 
 
 @pytest.fixture
@@ -543,9 +544,6 @@ class TestErrorHandling:
             temp_path.unlink(missing_ok=True)
 
 
-from tests.unit.core.file_conversion._xlsx_fixtures import make_xlsx_file
-
-
 def test_convert_file_strips_nan_from_xlsx(tmp_path):
     """Regression: an xlsx with empty cells must not produce literal 'NaN' strings."""
     rows = [
@@ -568,10 +566,11 @@ def test_convert_file_strips_nan_from_xlsx(tmp_path):
 
 def test_xlsx_pipeline_produces_row_kv_chunks(tmp_path):
     """Full ingestion path: xlsx -> clean markdown -> row-KV chunks with context."""
+    from unittest.mock import MagicMock
+
     from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
         SectionSplitter,
     )
-    from unittest.mock import MagicMock
 
     rows = [
         ["Name", "Age", "City"],

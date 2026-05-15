@@ -787,7 +787,7 @@ class TestSectionSplitter:
                     # Should create multiple sub-sections
                     assert len(result) == 3
                     for i, section in enumerate(result):
-                        assert f"Part {i+1}" in section["title"]
+                        assert f"Part {i + 1}" in section["title"]
 
     def test_split_sections_routes_small_excel_through_kv_splitter(self):
         """Excel sections must go through RowKVExcelSplitter regardless of size.
@@ -796,10 +796,13 @@ class TestSectionSplitter:
         in chunk_size, leaving small Excel sheets as raw markdown tables while
         large ones became KV blocks. Same xlsx file produced two chunk shapes.
         """
-        with patch(
-            "qdrant_loader.core.chunking.strategy.markdown.section_splitter.DocumentParser"
-        ) as mock_parser_class, patch(
-            "qdrant_loader.core.chunking.strategy.markdown.section_splitter.HierarchyBuilder"
+        with (
+            patch(
+                "qdrant_loader.core.chunking.strategy.markdown.section_splitter.DocumentParser"
+            ) as mock_parser_class,
+            patch(
+                "qdrant_loader.core.chunking.strategy.markdown.section_splitter.HierarchyBuilder"
+            ),
         ):
             mock_parser = Mock()
             mock_parser_class.return_value = mock_parser

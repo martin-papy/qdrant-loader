@@ -1,9 +1,14 @@
 import numpy as np
 import pandas as pd
-
+from markitdown._stream_info import StreamInfo
 from qdrant_loader.core.file_conversion.clean_xlsx_converter import (
+    CleanXlsxConverter,
     _clean_dataframe,
+    _is_blank_dataframe,
 )
+from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
+from qdrant_loader.core.file_conversion.file_converter import FileConverter
+from tests.unit.core.file_conversion._xlsx_fixtures import make_xlsx_bytes
 
 
 def test_clean_dataframe_drops_fully_empty_rows():
@@ -37,11 +42,6 @@ def test_clean_dataframe_preserves_literal_na_strings():
     assert list(result["a"]) == ["N/A", "real", "data"]
 
 
-from qdrant_loader.core.file_conversion.clean_xlsx_converter import (
-    _is_blank_dataframe,
-)
-
-
 def test_is_blank_dataframe_returns_true_for_empty_dataframe():
     assert _is_blank_dataframe(pd.DataFrame()) is True
 
@@ -59,14 +59,6 @@ def test_is_blank_dataframe_returns_false_for_dataframe_with_data():
 def test_is_blank_dataframe_returns_false_for_partial_data():
     df = pd.DataFrame({"a": [1, np.nan], "b": [np.nan, "y"]})
     assert _is_blank_dataframe(df) is False
-
-
-from markitdown._stream_info import StreamInfo
-
-from qdrant_loader.core.file_conversion.clean_xlsx_converter import (
-    CleanXlsxConverter,
-)
-from tests.unit.core.file_conversion._xlsx_fixtures import make_xlsx_bytes
 
 
 def test_xlsx_converter_accepts_xlsx_extension():
@@ -124,10 +116,6 @@ def test_xlsx_converter_emits_one_heading_per_kept_sheet():
     assert result.markdown.count("## Sheet: Second") == 1
 
 
-from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
-from qdrant_loader.core.file_conversion.file_converter import FileConverter
-
-
 def test_file_converter_registers_clean_xlsx_converters():
     fc = FileConverter(FileConversionConfig())
     md = fc._get_markitdown()
@@ -137,11 +125,13 @@ def test_file_converter_registers_clean_xlsx_converters():
     assert "CleanXlsConverter" in types
 
     clean_priority = next(
-        reg.priority for reg in md._converters
+        reg.priority
+        for reg in md._converters
         if type(reg.converter).__name__ == "CleanXlsxConverter"
     )
     default_priority = next(
-        reg.priority for reg in md._converters
+        reg.priority
+        for reg in md._converters
         if type(reg.converter).__name__ == "XlsxConverter"
     )
     # MarkItDown sorts ascending — lower priority value is tried first
@@ -190,8 +180,9 @@ def test_xlsx_converter_raises_on_malformed_bytes():
     isn't load-bearing; the important thing is that callers get a clear
     failure signal.
     """
-    import pytest
     from io import BytesIO
+
+    import pytest
 
     info = StreamInfo(extension=".xlsx")
     bad_stream = BytesIO(b"not really an xlsx")

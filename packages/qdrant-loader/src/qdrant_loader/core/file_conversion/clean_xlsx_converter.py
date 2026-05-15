@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any, BinaryIO
 
 import pandas as pd
-
 from markitdown._base_converter import (
     DocumentConverter,
     DocumentConverterResult,
@@ -121,7 +120,9 @@ class _CleanSpreadsheetConverter(DocumentConverter):
 
     @staticmethod
     def _heading(sheet_name: str, idx: int, total: int) -> str:
-        return format_sheet_heading(sheet_name, subtable_idx=None if total <= 1 else idx)
+        return format_sheet_heading(
+            sheet_name, subtable_idx=None if total <= 1 else idx
+        )
 
     def _render_subtable(self, raw: pd.DataFrame, **kwargs: Any) -> str | None:
         """Promote first row to header, clean, render to markdown.
