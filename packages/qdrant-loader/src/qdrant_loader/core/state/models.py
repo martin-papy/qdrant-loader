@@ -4,6 +4,7 @@ SQLAlchemy models for state management database.
 
 from datetime import UTC
 
+import sqlalchemy as sa
 from sqlalchemy import (
     Boolean,
     Column,
@@ -209,3 +210,22 @@ class DocumentStateRecord(Base):
         Index("ix_document_conversion_method", "conversion_method"),
         Index("ix_document_project_id", "project_id"),
     )
+
+
+class Job(Base):
+    """Queue job persisted in the state database."""
+
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String, nullable=False)
+    payload_json = Column(Text, nullable=False)
+    status = Column(String, nullable=False)
+    enqueued_at = Column(UTCDateTime(timezone=True), nullable=False)
+    started_at = Column(UTCDateTime(timezone=True), nullable=True)
+    finished_at = Column(UTCDateTime(timezone=True), nullable=True)
+    attempts = Column(Integer, nullable=False, default=0, server_default=sa.text("0"))
+    last_error = Column(Text, nullable=True)
+    visibility_deadline = Column(UTCDateTime(timezone=True), nullable=True)
+
+    __table_args__ = (Index("ix_jobs_status_enqueued_at", "status", "enqueued_at"),)
