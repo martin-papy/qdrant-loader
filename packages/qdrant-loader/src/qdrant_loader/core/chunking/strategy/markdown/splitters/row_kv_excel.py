@@ -8,8 +8,8 @@ each row becomes a key-value block, prefixed with sheet/subtable/column context.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import structlog
 
@@ -35,7 +35,9 @@ class _SubTableContext:
 class MarkdownTableParser:
     """Parse `## Sheet: ... / Subtable: N` sections back into structured rows."""
 
-    def parse(self, content: str) -> list[tuple[_SubTableContext, list[dict[str, str]]]]:
+    def parse(
+        self, content: str
+    ) -> list[tuple[_SubTableContext, list[dict[str, str]]]]:
         sections: list[tuple[_SubTableContext, list[dict[str, str]]]] = []
         matches = list(SHEET_HEADING_RE.finditer(content))
         for i, m in enumerate(matches):
@@ -67,7 +69,7 @@ class MarkdownTableParser:
             if len(cells) != len(header_cells):
                 dropped += 1
                 continue
-            body.append(dict(zip(header_cells, cells)))
+            body.append(dict(zip(header_cells, cells, strict=True)))
         if dropped:
             logger.debug(
                 "row_kv_excel: parser dropped rows whose cell count != header count",

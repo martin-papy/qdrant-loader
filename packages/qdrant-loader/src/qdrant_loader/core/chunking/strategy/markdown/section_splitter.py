@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 # Re-export classes and local dependencies at top to satisfy E402
 from .document_parser import DocumentParser, HierarchyBuilder  # noqa: F401
 from .splitters.base import BaseSplitter  # re-export base class  # noqa: F401
-from .splitters.row_kv_excel import RowKVExcelSplitter  # noqa: F401
 from .splitters.fallback import FallbackSplitter  # re-export  # noqa: F401
+from .splitters.row_kv_excel import RowKVExcelSplitter  # noqa: F401
 from .splitters.standard import StandardSplitter  # re-export  # noqa: F401
 
 logger = structlog.get_logger(__name__)
@@ -456,9 +456,9 @@ class SectionSplitter:
                         "content": sub_chunk,
                         "level": section["level"],
                         "title": (
-                            f"{section['title']} (Part {i+1})"
+                            f"{section['title']} (Part {i + 1})"
                             if section.get("title")
-                            else f"Part {i+1}"
+                            else f"Part {i + 1}"
                         ),
                         "path": section["path"],
                         "parent_section": section.get("title", "Unknown"),
