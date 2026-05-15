@@ -8,6 +8,7 @@ all build operations and manages the overall build lifecycle.
 import json
 import re
 import subprocess
+from datetime import UTC
 from pathlib import Path
 
 from .assets import AssetManager
@@ -376,12 +377,16 @@ class WebsiteBuilder:
                 if privacy_last_updated:
                     privacy_last_updated = privacy_last_updated.split("T", 1)[0]
                 else:
-                    from datetime import datetime, timezone
+                    from datetime import datetime
 
                     # Use stable template mtime fallback instead of build date.
-                    privacy_last_updated = datetime.fromtimestamp(
-                        privacy_template_path.stat().st_mtime, tz=timezone.utc
-                    ).date().isoformat()
+                    privacy_last_updated = (
+                        datetime.fromtimestamp(
+                            privacy_template_path.stat().st_mtime, tz=UTC
+                        )
+                        .date()
+                        .isoformat()
+                    )
 
                 self.build_page(
                     "base.html",

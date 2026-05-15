@@ -205,10 +205,12 @@ Regular paragraph text.
         result = processor.render_task_list_checkboxes(html)
 
         assert result.count('type="checkbox"') == 2
-        assert result.count('disabled') == 2
-        assert 'task-list-item' in result
-        assert 'checked' in result
-        assert 'existing task-list-item' in result or 'task-list-item existing' in result
+        assert result.count("disabled") == 2
+        assert "task-list-item" in result
+        assert "checked" in result
+        assert (
+            "existing task-list-item" in result or "task-list-item existing" in result
+        )
 
     def test_convert_markdown_links_edge_cases(self):
         """Test markdown link conversion edge cases."""

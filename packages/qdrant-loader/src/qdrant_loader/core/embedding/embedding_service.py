@@ -278,7 +278,7 @@ class EmbeddingService:
         # Invalid entries (filtered out above) get an empty list as placeholder so
         # callers can zip safely without index shift.
         full_result: list[list[float]] = [[] for _ in contents]
-        for idx, embedding in zip(valid_indices, embeddings):
+        for idx, embedding in zip(valid_indices, embeddings, strict=False):
             full_result[idx] = embedding
         return full_result
 
