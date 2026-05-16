@@ -1,7 +1,6 @@
 """Upsert worker for upserting embedded chunks to Qdrant."""
 
 import asyncio
-import inspect
 from collections import Counter
 from collections.abc import AsyncIterator
 from typing import Any
@@ -119,7 +118,7 @@ class UpsertWorker(BaseWorker):
                 )
 
                 def _resolve_vector(chunk: Any, embedding: list[float]) -> object:
-                    if inspect.ismethod(build_point_vector):
+                    if callable(build_point_vector):
                         try:
                             return build_point_vector(embedding, chunk.content)
                         except Exception as e:

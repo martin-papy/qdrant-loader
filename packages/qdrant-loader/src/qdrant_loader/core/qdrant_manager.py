@@ -113,8 +113,12 @@ class QdrantManager:
                 cfg.auto_fallback = self._parse_bool(
                     sparse_cfg.get("auto_fallback"), cfg.auto_fallback
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.warning(
+                "Failed to resolve sparse runtime config from global LLM config; using defaults",
+                error=str(e),
+                exc_info=True,
+            )
 
         cfg.enabled = self._parse_bool(os.getenv("LLM_SPARSE_ENABLED"), cfg.enabled)
         cfg.model = str(os.getenv("LLM_SPARSE_MODEL") or cfg.model)
@@ -157,27 +161,36 @@ class QdrantManager:
         try:
             client = self._ensure_client_connected()
             info = client.get_collection(collection_name=self.collection_name)
-            params = getattr(getattr(info, "config", None), "params", None)
-            vectors = getattr(params, "vectors", None)
-            sparse_vectors = getattr(params, "sparse_vectors", None)
-
-            has_named_dense = False
-            if isinstance(vectors, dict):
-                has_named_dense = self.sparse_runtime.dense_vector_name in vectors
-            else:
-                vectors_dict = self._model_to_dict(vectors)
-                has_named_dense = self.sparse_runtime.dense_vector_name in vectors_dict
-
-            sparse_dict = self._model_to_dict(sparse_vectors)
-            has_sparse = self.sparse_runtime.sparse_vector_name in sparse_dict
-
-            self._collection_vector_capabilities = CollectionVectorCapabilities(
-                has_named_dense=has_named_dense, has_sparse=has_sparse
+        except Exception as e:
+            # Don't cache transient inspection failures: a brief network blip
+            # would otherwise pin every subsequent upsert to dense-only payload
+            # shape even after Qdrant becomes reachable again, mismatching the
+            # collection's named-vector schema and failing every write.
+            self.logger.warning(
+                "Failed to inspect collection vector schema; falling back to dense-only for this call",
+                collection=self.collection_name,
+                error=str(e),
             )
-            return self._collection_vector_capabilities
-        except Exception:
-            self._collection_vector_capabilities = default_caps
             return default_caps
+
+        params = getattr(getattr(info, "config", None), "params", None)
+        vectors = getattr(params, "vectors", None)
+        sparse_vectors = getattr(params, "sparse_vectors", None)
+
+        has_named_dense = False
+        if isinstance(vectors, dict):
+            has_named_dense = self.sparse_runtime.dense_vector_name in vectors
+        else:
+            vectors_dict = self._model_to_dict(vectors)
+            has_named_dense = self.sparse_runtime.dense_vector_name in vectors_dict
+
+        sparse_dict = self._model_to_dict(sparse_vectors)
+        has_sparse = self.sparse_runtime.sparse_vector_name in sparse_dict
+
+        self._collection_vector_capabilities = CollectionVectorCapabilities(
+            has_named_dense=has_named_dense, has_sparse=has_sparse
+        )
+        return self._collection_vector_capabilities
 
     def _dense_query_using(self) -> str | None:
         caps = self._get_collection_vector_capabilities()

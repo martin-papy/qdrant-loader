@@ -32,6 +32,9 @@ class TestUpsertWorker:
         """Set up test fixtures."""
         self.mock_qdrant_manager = Mock()
         self.mock_qdrant_manager.upsert_points = AsyncMock()
+        self.mock_qdrant_manager.build_point_vector = Mock(
+            side_effect=lambda embedding, _text: embedding
+        )
         self.mock_shutdown_event = Mock(spec=asyncio.Event)
         self.mock_shutdown_event.is_set.return_value = False
 

@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from qdrant_client.http import models
-
 from qdrant_loader_mcp_server.search.components.vector_search_service import (
     VectorSearchService,
 )
@@ -38,9 +37,7 @@ async def test_vector_search_uses_qdrant_hybrid_fusion_when_sparse_available():
         "metadata": {},
         "source_type": "git",
     }
-    qdrant_client.query_points = AsyncMock(
-        return_value=SimpleNamespace(points=[hit])
-    )
+    qdrant_client.query_points = AsyncMock(return_value=SimpleNamespace(points=[hit]))
 
     svc = VectorSearchService(
         qdrant_client=qdrant_client,

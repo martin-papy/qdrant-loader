@@ -11,6 +11,9 @@ class _Vector:
     def used_qdrant_hybrid_last_query(self):
         return False
 
+    async def supports_qdrant_hybrid(self):
+        return False
+
 
 class _Keyword:
     async def search(self, query, limit, project_ids):
@@ -21,6 +24,9 @@ class _Keyword:
 
 class _VectorHybrid(_Vector):
     def used_qdrant_hybrid_last_query(self):
+        return True
+
+    async def supports_qdrant_hybrid(self):
         return True
 
 

@@ -1,11 +1,11 @@
 """Tests for QdrantManager."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from qdrant_client.http import models
 from qdrant_client.http.models import Distance, VectorParams
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
 
@@ -459,6 +459,44 @@ class TestQdrantManager:
                 "collection_name": "test_collection",
                 "vectors_config": VectorParams(size=1536, distance=Distance.COSINE),
             }
+
+    def test_capabilities_not_cached_on_inspection_failure(
+        self, mock_settings, mock_qdrant_client, mock_global_config
+    ):
+        """A transient get_collection failure must not poison the cap cache.
+
+        Regression guard: previously a single transient error pinned the manager
+        to dense-only payload shape for its lifetime, corrupting subsequent
+        upserts against a hybrid collection.
+        """
+        sparse_params = SimpleNamespace(
+            vectors={"dense": object()}, sparse_vectors={"sparse": object()}
+        )
+        mock_qdrant_client.get_collection.side_effect = [
+            Exception("transient qdrant outage"),
+            SimpleNamespace(config=SimpleNamespace(params=sparse_params)),
+        ]
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+
+            first = manager._get_collection_vector_capabilities()
+            assert first.has_named_dense is False
+            assert first.has_sparse is False
+
+            second = manager._get_collection_vector_capabilities()
+            assert second.has_named_dense is True
+            assert second.has_sparse is True
+            assert mock_qdrant_client.get_collection.call_count == 2
 
     @pytest.mark.asyncio
     async def test_upsert_points_success(self, mock_settings, mock_qdrant_client):

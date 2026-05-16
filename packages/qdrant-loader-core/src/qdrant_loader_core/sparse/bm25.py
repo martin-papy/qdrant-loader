@@ -79,6 +79,14 @@ class BM25SparseEncoder:
         return index + 1
 
     def _encode_with_weights(self, text: str, *, query_mode: bool) -> SparseVectorData:
+        # Document mode applies BM25 TF saturation without the IDF term:
+        # standard BM25 is IDF * (tf * (k1 + 1)) / (tf + k1); this encoder uses
+        # only (tf * (k1 + 1)) / (tf + k1) because no corpus statistics are
+        # available at encode time (hashed token IDs, single-document context).
+        # Qdrant computes the sparse dot product server-side, so omitting IDF
+        # keeps encoding deterministic and stateless at the cost of not
+        # down-weighting common terms — acceptable since query-side weighting
+        # (1 + log tf) and dense retrieval compensate in the hybrid pipeline.
         tokens = self._tokenize(text)
         if not tokens:
             return SparseVectorData(indices=[], values=[])

@@ -22,6 +22,16 @@ class VectorSearcherAdapter(VectorSearcher):
                 return False
         return False
 
+    async def supports_qdrant_hybrid(self) -> bool:
+        """Forward the service's pre-flight capability check to the pipeline."""
+        check = getattr(self._service, "supports_qdrant_hybrid", None)
+        if not callable(check):
+            return False
+        try:
+            return bool(await check())
+        except Exception:
+            return False
+
 
 class KeywordSearcherAdapter(KeywordSearcher):
     def __init__(self, service: KeywordSearchService):

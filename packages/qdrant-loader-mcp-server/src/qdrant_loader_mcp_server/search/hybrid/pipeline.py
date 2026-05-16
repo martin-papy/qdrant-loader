@@ -4,6 +4,8 @@ Hybrid search pipeline.
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 from dataclasses import dataclass
 
 from ..components.search_result_models import HybridSearchResult
@@ -11,6 +13,24 @@ from .components.boosting import ResultBooster
 from .components.deduplication import ResultDeduplicator
 from .components.normalization import ScoreNormalizer
 from .interfaces import KeywordSearcher, Reranker, ResultCombinerLike, VectorSearcher
+
+
+async def _supports_qdrant_hybrid(vector_searcher: VectorSearcher) -> bool:
+    """Best-effort probe for whether the vector searcher will fuse dense+sparse server-side.
+
+    Tolerant of both sync and async implementations and of searchers that don't
+    expose the hook at all (legacy / test doubles).
+    """
+    probe = getattr(vector_searcher, "supports_qdrant_hybrid", None)
+    if not callable(probe):
+        return False
+    try:
+        result = probe()
+        if inspect.isawaitable(result):
+            result = await result
+        return bool(result)
+    except Exception:
+        return False
 
 
 @dataclass
@@ -51,24 +71,26 @@ class HybridPipeline:
         """
         effective_vector_query = vector_query if vector_query is not None else query
         effective_keyword_query = keyword_query if keyword_query is not None else query
-        vector_results = await self.vector_searcher.search(
-            effective_vector_query, limit * 3, project_ids
-        )
-        used_qdrant_hybrid = False
-        hybrid_flag_getter = getattr(
-            self.vector_searcher, "used_qdrant_hybrid_last_query", None
-        )
-        if callable(hybrid_flag_getter):
-            try:
-                used_qdrant_hybrid = bool(hybrid_flag_getter())
-            except Exception:
-                used_qdrant_hybrid = False
 
-        if used_qdrant_hybrid:
+        # Pre-flight: if the vector searcher will use Qdrant fusion (dense+sparse
+        # already covered server-side), skip the keyword path entirely. Otherwise
+        # run both branches in parallel — issuing them sequentially would double
+        # query latency in the dense-only path.
+        will_use_qdrant_hybrid = await _supports_qdrant_hybrid(self.vector_searcher)
+
+        if will_use_qdrant_hybrid:
+            vector_results = await self.vector_searcher.search(
+                effective_vector_query, limit * 3, project_ids
+            )
             keyword_results = []
         else:
-            keyword_results = await self.keyword_searcher.search(
-                effective_keyword_query, limit * 3, project_ids
+            vector_results, keyword_results = await asyncio.gather(
+                self.vector_searcher.search(
+                    effective_vector_query, limit * 3, project_ids
+                ),
+                self.keyword_searcher.search(
+                    effective_keyword_query, limit * 3, project_ids
+                ),
             )
         results = await self.result_combiner.combine_results(
             vector_results,

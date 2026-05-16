@@ -7,6 +7,7 @@ import hashlib
 import os
 import time
 from asyncio import Lock
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -17,6 +18,13 @@ if TYPE_CHECKING:
 from ...utils.logging import LoggingConfig
 from ..sparse_config import load_sparse_runtime_config
 from .field_query_parser import FieldQueryParser
+
+# Task-local flag set by vector_search when Qdrant fusion is used for the
+# current query. ContextVar isolates concurrent searches that share the same
+# VectorSearchService instance.
+_used_qdrant_hybrid_ctx: ContextVar[bool] = ContextVar(
+    "vector_search_used_qdrant_hybrid", default=False
+)
 
 
 @dataclass
@@ -86,7 +94,6 @@ class VectorSearchService:
         self.sparse_auto_fallback = sparse_runtime.auto_fallback
         self._collection_capabilities: dict[str, Any] | None = None
         self._capabilities_lock: Lock = Lock()
-        self._last_query_used_qdrant_hybrid = False
         self._sparse_encoder: Any | None = None
 
         # Qdrant search parameters
@@ -175,37 +182,48 @@ class VectorSearchService:
                 info = await self.qdrant_client.get_collection(
                     collection_name=self.collection_name
                 )
-                params = getattr(getattr(info, "config", None), "params", None)
-                vectors = getattr(params, "vectors", None)
-                sparse_vectors = getattr(params, "sparse_vectors", None)
-
-                has_named_dense = False
-                if isinstance(vectors, dict):
-                    has_named_dense = self.dense_vector_name in vectors
-                else:
-                    vectors_dict = self._model_to_dict(vectors)
-                    has_named_dense = self.dense_vector_name in vectors_dict
-
-                sparse_dict = self._model_to_dict(sparse_vectors)
-                has_sparse = self.sparse_vector_name in sparse_dict
-                hybrid_ready = (
-                    self.use_qdrant_hybrid and self.sparse_enabled and has_sparse
-                )
-
-                self._collection_capabilities = {
-                    "has_named_dense": has_named_dense,
-                    "has_sparse": has_sparse,
-                    "dense_using": self.dense_vector_name if has_named_dense else None,
-                    "hybrid_ready": hybrid_ready and has_named_dense,
-                }
             except Exception as e:
+                # Don't cache transient inspection failures: a network blip would
+                # otherwise pin the service to dense-only fallback for its lifetime.
                 self.logger.warning(
-                    "Unable to inspect collection vector schema; using dense fallback",
+                    "Unable to inspect collection vector schema; using dense fallback for this query",
                     collection=self.collection_name,
                     error=str(e),
                 )
-                self._collection_capabilities = default_caps
+                return default_caps
+
+            params = getattr(getattr(info, "config", None), "params", None)
+            vectors = getattr(params, "vectors", None)
+            sparse_vectors = getattr(params, "sparse_vectors", None)
+
+            has_named_dense = False
+            if isinstance(vectors, dict):
+                has_named_dense = self.dense_vector_name in vectors
+            else:
+                vectors_dict = self._model_to_dict(vectors)
+                has_named_dense = self.dense_vector_name in vectors_dict
+
+            sparse_dict = self._model_to_dict(sparse_vectors)
+            has_sparse = self.sparse_vector_name in sparse_dict
+            hybrid_ready = self.use_qdrant_hybrid and self.sparse_enabled and has_sparse
+
+            self._collection_capabilities = {
+                "has_named_dense": has_named_dense,
+                "has_sparse": has_sparse,
+                "dense_using": self.dense_vector_name if has_named_dense else None,
+                "hybrid_ready": hybrid_ready and has_named_dense,
+            }
         return self._collection_capabilities
+
+    async def supports_qdrant_hybrid(self) -> bool:
+        """Return True if the collection is configured for Qdrant dense+sparse fusion.
+
+        Used by HybridPipeline to decide whether to skip the separate keyword
+        search; calling this lets the pipeline preserve parallelism in the
+        dense-only path.
+        """
+        caps = await self._get_collection_capabilities()
+        return bool(caps.get("hybrid_ready"))
 
     def _get_sparse_encoder(self):
         if self._sparse_encoder is not None:
@@ -225,7 +243,12 @@ class VectorSearchService:
         return models.SparseVector(indices=sparse.indices, values=sparse.values)
 
     def used_qdrant_hybrid_last_query(self) -> bool:
-        return self._last_query_used_qdrant_hybrid
+        """Return whether the most recent vector_search in this task used Qdrant fusion.
+
+        Backed by a ContextVar so concurrent searches across tasks (e.g. multiple
+        MCP requests sharing this service) don't clobber each other.
+        """
+        return _used_qdrant_hybrid_ctx.get()
 
     async def get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using OpenAI client when available, else provider.
@@ -319,7 +342,7 @@ class VectorSearchService:
             cache_hits=self._cache_hits,
             cache_misses=self._cache_misses,
         )
-        self._last_query_used_qdrant_hybrid = False
+        _used_qdrant_hybrid_ctx.set(False)
 
         # ✅ Parse query for field-specific filters
         parsed_query = self.field_parser.parse_query(query)
@@ -355,7 +378,6 @@ class VectorSearchService:
 
             search_query = parsed_query.text_query if parsed_query.text_query else query
             query_embedding = await self.get_embedding(search_query)
-            self._last_query_used_qdrant_hybrid = False
 
             search_params = models.SearchParams(
                 hnsw_ef=self.hnsw_ef, exact=bool(self.use_exact_search)
@@ -377,7 +399,7 @@ class VectorSearchService:
                             "Sparse query generation returned empty vector"
                         )
 
-                    prefetch_limit = max(limit * 3, limit)
+                    prefetch_limit = limit * 3
                     query_response = await self.qdrant_client.query_points(
                         collection_name=self.collection_name,
                         prefetch=[
@@ -399,7 +421,7 @@ class VectorSearchService:
                         limit=limit,
                         with_payload=True,
                     )
-                    self._last_query_used_qdrant_hybrid = True
+                    _used_qdrant_hybrid_ctx.set(True)
                     results = query_response.points
                 except Exception as hybrid_error:
                     self.logger.warning(

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 TRUE_VALUES = {"1", "true", "t", "yes", "y", "on"}
 FALSE_VALUES = {"0", "false", "f", "no", "n", "off"}
@@ -45,14 +48,17 @@ def _load_llm_config_from_mcp_config(mcp_config_path: str | None) -> dict[str, A
     try:
         with path.open(encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to parse MCP config at %s: %s", path, e)
         return {}
     global_section = data.get("global") if isinstance(data, dict) else {}
     llm = (global_section or {}).get("llm") if isinstance(global_section, dict) else {}
     return llm if isinstance(llm, dict) else {}
 
 
-def load_sparse_runtime_config(mcp_config_path: str | None = None) -> SparseRuntimeConfig:
+def load_sparse_runtime_config(
+    mcp_config_path: str | None = None,
+) -> SparseRuntimeConfig:
     cfg = SparseRuntimeConfig()
     llm = _load_llm_config_from_mcp_config(mcp_config_path or os.getenv("MCP_CONFIG"))
 
