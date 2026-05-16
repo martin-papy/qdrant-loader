@@ -144,12 +144,16 @@ global:
       vector_size: ${VECTOR_SIZE}
       # MUST match model output dimension
       # OpenAI: text-embedding-3-small → 1536
+    # Hybrid retrieval config. The `sparse` key name reflects that this block
+    # is only consulted when sparse vectors are in play — once `enabled: true`,
+    # Qdrant requires every vector slot in the collection to be named, so the
+    # dense vector also needs a name here. In dense-only mode (enabled: false)
+    # both names are ignored and the loader uses Qdrant's unnamed vector slot.
     sparse:
       enabled: true                  # Enable dense+sparse collection schema and sparse upserts
       model: "bm25"                  # Sparse model family (default: bm25)
-      dense_vector_name: "dense"     # Named dense vector key in Qdrant
+      dense_vector_name: "dense"     # Named dense vector key in Qdrant (only used when enabled=true)
       sparse_vector_name: "sparse"   # Named sparse vector key in Qdrant
-      auto_fallback: true            # Fall back to dense-only when sparse features are unavailable
     retrieval:
       use_qdrant_hybrid: true        # MCP retrieval: use Qdrant fusion (dense+sparse) when available
     # Optional provider-specific options
