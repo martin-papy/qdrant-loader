@@ -30,7 +30,6 @@ def test_defaults_match_model_when_no_global_config() -> None:
     assert cfg.model == "bm25"
     assert cfg.dense_vector_name == "dense"
     assert cfg.sparse_vector_name == "sparse"
-    assert cfg.auto_fallback is True
     assert cfg.use_qdrant_hybrid is True
 
 
@@ -50,7 +49,6 @@ def test_yaml_overrides_defaults() -> None:
                     "model": "bm25_lite",
                     "dense_vector_name": "vec",
                     "sparse_vector_name": "bow",
-                    "auto_fallback": False,
                 },
                 "retrieval": {"use_qdrant_hybrid": False},
             }
@@ -60,7 +58,6 @@ def test_yaml_overrides_defaults() -> None:
     assert cfg.model == "bm25_lite"
     assert cfg.dense_vector_name == "vec"
     assert cfg.sparse_vector_name == "bow"
-    assert cfg.auto_fallback is False
     assert cfg.use_qdrant_hybrid is False
 
 
@@ -68,13 +65,12 @@ def test_yaml_accepts_true_false_strings_case_insensitive() -> None:
     cfg = SparseRuntimeConfig.from_global_config(
         {
             "llm": {
-                "sparse": {"enabled": "TRUE", "auto_fallback": "False"},
+                "sparse": {"enabled": "TRUE"},
                 "retrieval": {"use_qdrant_hybrid": "true"},
             }
         }
     )
     assert cfg.enabled is True
-    assert cfg.auto_fallback is False
     assert cfg.use_qdrant_hybrid is True
 
 

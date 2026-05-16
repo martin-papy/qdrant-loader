@@ -441,15 +441,42 @@ class TestQdrantManager:
             with pytest.raises(Exception, match="Collection error"):
                 manager.create_collection()
 
-    def test_create_collection_sparse_fallback_to_dense(
+    def test_create_collection_sparse_failure_propagates(
         self, mock_settings, mock_qdrant_client, mock_global_config
     ):
-        """Test fallback to dense-only schema when sparse collection creation fails."""
+        """sparse.enabled=true is a strict declaration: failures propagate.
+
+        Operators on Qdrant servers that don't support sparse vectors must
+        set sparse.enabled=false in config; the code does not silently fall
+        back to dense-only.
+        """
         mock_qdrant_client.get_collections.return_value = Mock(collections=[])
-        mock_qdrant_client.create_collection.side_effect = [
-            Exception("Sparse not supported"),
-            None,
-        ]
+        mock_qdrant_client.create_collection.side_effect = Exception(
+            "Sparse not supported"
+        )
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+            with pytest.raises(Exception, match="Sparse not supported"):
+                manager.create_collection()
+            # Only the hybrid attempt was made; no silent dense retry.
+            assert mock_qdrant_client.create_collection.call_count == 1
+
+    def test_create_collection_dense_only_when_sparse_disabled(
+        self, mock_settings, mock_qdrant_client, mock_global_config
+    ):
+        """sparse.enabled=false produces a dense-only collection in one call."""
+        mock_qdrant_client.get_collections.return_value = Mock(collections=[])
+        mock_global_config.llm = {"sparse": {"enabled": False}}
 
         with (
             patch(
@@ -464,9 +491,9 @@ class TestQdrantManager:
             manager = QdrantManager(mock_settings)
             manager.create_collection()
 
-            assert mock_qdrant_client.create_collection.call_count == 2
-            fallback_call = mock_qdrant_client.create_collection.call_args_list[1]
-            assert fallback_call.kwargs == {
+            assert mock_qdrant_client.create_collection.call_count == 1
+            call = mock_qdrant_client.create_collection.call_args_list[0]
+            assert call.kwargs == {
                 "collection_name": "test_collection",
                 "vectors_config": VectorParams(size=1536, distance=Distance.COSINE),
             }

@@ -5,6 +5,7 @@ import math
 import re
 from collections import Counter
 from dataclasses import dataclass
+from functools import cache
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]{2,}")
 _DEFAULT_HASH_MOD = 2_147_483_647
@@ -113,3 +114,13 @@ class BM25SparseEncoder:
 
     def encode_query(self, text: str) -> SparseVectorData:
         return self._encode_with_weights(text, query_mode=True)
+
+
+@cache
+def get_sparse_encoder(model: str) -> BM25SparseEncoder:
+    """Return a process-wide :class:`BM25SparseEncoder` for ``model``.
+
+    Encoders are deterministic and hold no mutable state, so a single instance
+    per model name is safe to share across the loader and the MCP server.
+    """
+    return BM25SparseEncoder(model=model)

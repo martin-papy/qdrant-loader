@@ -28,7 +28,13 @@ class SparseRuntimeConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     enabled: bool = Field(
-        default=True, description="Enable sparse vectors for ingest and retrieval."
+        default=True,
+        description=(
+            "Declare whether collections are created with dense+sparse vectors. "
+            "True means new collections always include a sparse vector; failures "
+            "propagate. False means dense-only — set this explicitly when "
+            "targeting Qdrant servers that do not support sparse vectors."
+        ),
     )
     model: str = Field(
         default="bm25",
@@ -45,16 +51,12 @@ class SparseRuntimeConfig(BaseModel):
         min_length=1,
         description="Named-vector key for the sparse embedding in Qdrant.",
     )
-    auto_fallback: bool = Field(
-        default=True,
-        description="Fall back to dense-only behaviour when sparse is unavailable.",
-    )
     use_qdrant_hybrid: bool = Field(
         default=True,
         description="Use Qdrant server-side fusion for retrieval (MCP server only).",
     )
 
-    @field_validator("enabled", "auto_fallback", "use_qdrant_hybrid", mode="before")
+    @field_validator("enabled", "use_qdrant_hybrid", mode="before")
     @classmethod
     def _strict_bool(cls, v: Any) -> bool:
         """Accept only ``bool`` or the strings ``"true"`` / ``"false"`` (case-insensitive).

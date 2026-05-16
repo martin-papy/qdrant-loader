@@ -13,6 +13,7 @@ from qdrant_loader_core.config import (
     SparseRuntimeConfig,
     parse_collection_capabilities,
 )
+from qdrant_loader_core.sparse import get_sparse_encoder
 
 from ..config import Settings, get_global_config, get_settings
 from ..utils.logging import LoggingConfig
@@ -45,7 +46,6 @@ class QdrantManager:
         self.logger = LoggingConfig.get_logger(__name__)
         self.batch_size = get_global_config().embedding.batch_size
         self.sparse_runtime = self._resolve_sparse_runtime_config()
-        self._sparse_encoder: Any | None = None
         self._collection_vector_capabilities: CollectionVectorCapabilities | None = None
         self._sparse_fallback_warning_emitted = False
         self.connect()
@@ -77,16 +77,15 @@ class QdrantManager:
         if self._collection_vector_capabilities is not None:
             return self._collection_vector_capabilities
 
+        client = self._ensure_client_connected()
         try:
-            client = self._ensure_client_connected()
             info = client.get_collection(collection_name=self.collection_name)
         except Exception as e:
-            # Don't cache transient inspection failures: a brief network blip
-            # would otherwise pin every subsequent upsert to dense-only payload
-            # shape even after Qdrant becomes reachable again, mismatching the
-            # collection's named-vector schema and failing every write.
+            # Don't cache: a transient outage would otherwise pin every
+            # subsequent upsert to dense-only payload shape even after Qdrant
+            # becomes reachable again, mismatching a hybrid collection schema.
             self.logger.warning(
-                "Failed to inspect collection vector schema; falling back to dense-only for this call",
+                "Failed to inspect Qdrant collection schema; assuming dense-only",
                 collection=self.collection_name,
                 error=str(e),
             )
@@ -121,14 +120,6 @@ class QdrantManager:
             self._sparse_fallback_warning_emitted = True
         return False
 
-    def _get_sparse_encoder(self):
-        if self._sparse_encoder is not None:
-            return self._sparse_encoder
-        from qdrant_loader_core.sparse import BM25SparseEncoder
-
-        self._sparse_encoder = BM25SparseEncoder(model=self.sparse_runtime.model)
-        return self._sparse_encoder
-
     def build_point_vector(self, dense_embedding: list[float], text: str) -> object:
         """Build the point vector payload for upsert.
 
@@ -150,7 +141,7 @@ class QdrantManager:
     def _build_hybrid_payload(self, dense_embedding: list[float], text: str) -> object:
         """Return dense+sparse payload, with a dense-only fallback on encode failure."""
         try:
-            sparse = self._get_sparse_encoder().encode_document(text)
+            sparse = get_sparse_encoder(self.sparse_runtime.model).encode_document(text)
         except Exception as e:
             self.logger.warning(
                 "Failed to generate sparse vectors; falling back to dense-only upsert",
@@ -255,51 +246,37 @@ class QdrantManager:
                 )
                 vector_size = 1024
 
-            created_with_sparse = False
+            # sparse.enabled is a strict declaration. If True, the collection
+            # is created with a sparse vector; failures propagate. If False,
+            # dense-only. Operators on Qdrant servers that don't support sparse
+            # vectors must set sparse.enabled=false explicitly.
+            dense_params = VectorParams(size=vector_size, distance=Distance.COSINE)
             if self.sparse_runtime.enabled:
-                try:
-                    client.create_collection(
-                        collection_name=self.collection_name,
-                        vectors_config={
-                            self.sparse_runtime.dense_vector_name: VectorParams(
-                                size=vector_size, distance=Distance.COSINE
-                            )
-                        },
-                        sparse_vectors_config={
-                            self.sparse_runtime.sparse_vector_name: (
-                                models.SparseVectorParams()
-                            )
-                        },
-                    )
-                    created_with_sparse = True
-                    self.logger.info(
-                        "Created collection with dense+sparse vector schema",
-                        collection=self.collection_name,
-                        dense_vector_name=self.sparse_runtime.dense_vector_name,
-                        sparse_vector_name=self.sparse_runtime.sparse_vector_name,
-                        sparse_model=self.sparse_runtime.model,
-                    )
-                except Exception as sparse_error:
-                    if not self.sparse_runtime.auto_fallback:
-                        raise
-                    self.logger.warning(
-                        "Sparse collection creation failed; falling back to dense-only schema",
-                        collection=self.collection_name,
-                        error=str(sparse_error),
-                    )
-
-            if not created_with_sparse:
-                # Create collection with basic dense-only configuration
                 client.create_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=vector_size, distance=Distance.COSINE
-                    ),
+                    vectors_config={
+                        self.sparse_runtime.dense_vector_name: dense_params
+                    },
+                    sparse_vectors_config={
+                        self.sparse_runtime.sparse_vector_name: models.SparseVectorParams()
+                    },
+                )
+                self.logger.info(
+                    "Created Qdrant collection with dense+sparse vectors",
+                    collection=self.collection_name,
+                    dense_vector_name=self.sparse_runtime.dense_vector_name,
+                    sparse_vector_name=self.sparse_runtime.sparse_vector_name,
+                    sparse_model=self.sparse_runtime.model,
+                )
+            else:
+                client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=dense_params,
                 )
 
             self._collection_vector_capabilities = CollectionVectorCapabilities(
-                has_named_dense=created_with_sparse,
-                has_sparse=created_with_sparse,
+                has_named_dense=self.sparse_runtime.enabled,
+                has_sparse=self.sparse_runtime.enabled,
             )
 
             # Create payload indexes for optimal search performance

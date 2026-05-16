@@ -113,26 +113,15 @@ class UpsertWorker(BaseWorker):
 
         try:
             with prometheus_metrics.UPSERT_DURATION.time():
-                build_point_vector = getattr(
-                    self.qdrant_manager, "build_point_vector", None
-                )
-
-                def _resolve_vector(chunk: Any, embedding: list[float]) -> object:
-                    if callable(build_point_vector):
-                        try:
-                            return build_point_vector(embedding, chunk.content)
-                        except Exception as e:
-                            logger.warning(
-                                "Failed to build sparse+ dense vector payload, using dense-only embedding",
-                                error=str(e),
-                                chunk_id=getattr(chunk, "id", "unknown"),
-                            )
-                    return embedding
-
+                # QdrantManager.build_point_vector owns the dense / dense+sparse
+                # decision and has its own dense-only fallback on encode failure,
+                # so no defensive wrapper is needed here.
                 points = [
                     models.PointStruct(
                         id=chunk.id,
-                        vector=_resolve_vector(chunk, embedding),
+                        vector=self.qdrant_manager.build_point_vector(
+                            embedding, chunk.content
+                        ),
                         payload={
                             "content": chunk.content,
                             "contextual_content": chunk.contextual_content,

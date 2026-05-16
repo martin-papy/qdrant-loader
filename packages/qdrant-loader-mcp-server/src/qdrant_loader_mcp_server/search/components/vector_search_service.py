@@ -19,6 +19,7 @@ from qdrant_loader_core.config import (
     CollectionVectorCapabilities,
     parse_collection_capabilities,
 )
+from qdrant_loader_core.sparse import get_sparse_encoder
 
 from ...utils.logging import LoggingConfig
 from ..sparse_config import load_sparse_runtime_config
@@ -93,7 +94,6 @@ class VectorSearchService:
         self.sparse_runtime = load_sparse_runtime_config()
         self._collection_capabilities: CollectionVectorCapabilities | None = None
         self._capabilities_lock: Lock = Lock()
-        self._sparse_encoder: Any | None = None
 
         # Qdrant search parameters
         self.hnsw_ef = hnsw_ef
@@ -162,13 +162,15 @@ class VectorSearchService:
                     collection_name=self.collection_name
                 )
             except Exception as e:
+                # Don't cache: a transient outage would otherwise pin every
+                # subsequent query to the dense fallback path for this
+                # service's lifetime.
                 self.logger.warning(
-                    "Unable to inspect collection vector schema; using dense fallback for this query",
+                    "Failed to inspect Qdrant collection schema; assuming dense-only",
                     collection=self.collection_name,
                     error=str(e),
                 )
                 return CollectionVectorCapabilities()
-
             self._collection_capabilities = parse_collection_capabilities(
                 info, self.sparse_runtime
             )
@@ -196,17 +198,8 @@ class VectorSearchService:
         caps = await self._get_collection_capabilities()
         return self._hybrid_query_active(caps)
 
-    def _get_sparse_encoder(self):
-        if self._sparse_encoder is not None:
-            return self._sparse_encoder
-        from qdrant_loader_core.sparse import BM25SparseEncoder
-
-        self._sparse_encoder = BM25SparseEncoder(model=self.sparse_runtime.model)
-        return self._sparse_encoder
-
     def _encode_sparse_query(self, text: str):
-        encoder = self._get_sparse_encoder()
-        sparse = encoder.encode_query(text)
+        sparse = get_sparse_encoder(self.sparse_runtime.model).encode_query(text)
         if sparse.is_empty():
             return None
         return models.SparseVector(indices=sparse.indices, values=sparse.values)
@@ -389,26 +382,20 @@ class VectorSearchService:
         query_filter = self.field_parser.create_qdrant_filter(
             parsed_query.field_queries, project_ids
         )
+        # Routing is fully determined by the probed collection schema and the
+        # runtime config — no silent fallback. If the collection supports
+        # hybrid retrieval, we use hybrid; otherwise dense. Hybrid query
+        # failures propagate so operators see them instead of degraded results.
         caps = await self._get_collection_capabilities()
-
         if self._hybrid_query_active(caps):
-            try:
-                return await self._run_qdrant_hybrid_query(
-                    query_embedding,
-                    search_query,
-                    query_filter,
-                    search_params,
-                    caps,
-                    limit,
-                )
-            except Exception as hybrid_error:
-                self.logger.warning(
-                    "Qdrant hybrid query failed; using dense fallback",
-                    error=str(hybrid_error),
-                    collection=self.collection_name,
-                )
-                if not self.sparse_runtime.auto_fallback:
-                    raise
+            return await self._run_qdrant_hybrid_query(
+                query_embedding,
+                search_query,
+                query_filter,
+                search_params,
+                caps,
+                limit,
+            )
         return await self._run_dense_query(
             query_embedding, query_filter, search_params, caps, limit
         )

@@ -1,9 +1,8 @@
 """Qdrant collection vector-schema capabilities.
 
-A small Pydantic model + parser shared by both packages so they describe the
-same collection facts the same way. Callers retain control of the actual
-``client.get_collection`` I/O (and the no-cache-on-failure policy that goes
-with it) — this module only inspects an already-fetched ``CollectionInfo``.
+A Pydantic model describing what a live Qdrant collection supports, plus a
+parser that converts a fetched ``CollectionInfo`` into that model. I/O is the
+caller's responsibility — we don't wrap ``client.get_collection`` here.
 """
 
 from __future__ import annotations
