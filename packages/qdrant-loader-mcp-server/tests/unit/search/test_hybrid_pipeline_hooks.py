@@ -5,14 +5,23 @@ from qdrant_loader_mcp_server.search.hybrid.pipeline import HybridPipeline
 
 
 class _Vector:
+    """Fake vector searcher parameterised by hybrid support.
+
+    ``supports_hybrid=True`` mimics a service backed by a hybrid-ready
+    collection — the pipeline should then skip the keyword branch entirely.
+    """
+
+    def __init__(self, *, supports_hybrid: bool = False):
+        self._supports_hybrid = supports_hybrid
+
     async def search(self, query, limit, project_ids):
         return [{"score": 1.0, "text": "a", "metadata": {}, "source_type": "git"}]
 
     def used_qdrant_hybrid_last_query(self):
-        return False
+        return self._supports_hybrid
 
     async def supports_qdrant_hybrid(self):
-        return False
+        return self._supports_hybrid
 
 
 class _Keyword:
@@ -20,14 +29,6 @@ class _Keyword:
         return [
             {"score": 0.5, "text": "b", "metadata": {}, "source_type": "confluence"}
         ]
-
-
-class _VectorHybrid(_Vector):
-    def used_qdrant_hybrid_last_query(self):
-        return True
-
-    async def supports_qdrant_hybrid(self):
-        return True
 
 
 class _KeywordShouldNotRun:
@@ -75,7 +76,7 @@ class _Dedup:
 @pytest.mark.asyncio
 async def test_pipeline_optional_hooks_applied_in_order():
     pipe = HybridPipeline(
-        vector_searcher=_Vector(),
+        vector_searcher=_Vector(supports_hybrid=False),
         keyword_searcher=_Keyword(),
         result_combiner=_Combiner(),
         booster=_Booster(),
@@ -93,7 +94,7 @@ async def test_pipeline_optional_hooks_applied_in_order():
 @pytest.mark.asyncio
 async def test_pipeline_skips_keyword_branch_when_qdrant_hybrid_used():
     pipe = HybridPipeline(
-        vector_searcher=_VectorHybrid(),
+        vector_searcher=_Vector(supports_hybrid=True),
         keyword_searcher=_KeywordShouldNotRun(),
         result_combiner=_Combiner(),
         booster=None,

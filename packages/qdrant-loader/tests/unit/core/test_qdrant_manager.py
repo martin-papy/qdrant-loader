@@ -10,6 +10,17 @@ from qdrant_loader.config import Settings
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
 
 
+def _collection_info(
+    *, vectors: dict | None, sparse_vectors: dict | None
+) -> SimpleNamespace:
+    """Build the minimal ``CollectionInfo`` shape the capability probe inspects."""
+    return SimpleNamespace(
+        config=SimpleNamespace(
+            params=SimpleNamespace(vectors=vectors, sparse_vectors=sparse_vectors)
+        )
+    )
+
+
 class TestQdrantConnectionError:
     """Test cases for QdrantConnectionError."""
 
@@ -469,12 +480,11 @@ class TestQdrantManager:
         to dense-only payload shape for its lifetime, corrupting subsequent
         upserts against a hybrid collection.
         """
-        sparse_params = SimpleNamespace(
-            vectors={"dense": object()}, sparse_vectors={"sparse": object()}
-        )
         mock_qdrant_client.get_collection.side_effect = [
             Exception("transient qdrant outage"),
-            SimpleNamespace(config=SimpleNamespace(params=sparse_params)),
+            _collection_info(
+                vectors={"dense": object()}, sparse_vectors={"sparse": object()}
+            ),
         ]
 
         with (

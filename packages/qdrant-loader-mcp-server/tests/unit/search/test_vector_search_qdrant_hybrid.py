@@ -18,16 +18,21 @@ class _Provider:
         return _EmbeddingsClient()
 
 
+def _collection_info(*, vectors: dict, sparse_vectors: dict) -> SimpleNamespace:
+    """Build the minimal ``CollectionInfo`` shape the capability probe inspects."""
+    return SimpleNamespace(
+        config=SimpleNamespace(
+            params=SimpleNamespace(vectors=vectors, sparse_vectors=sparse_vectors)
+        )
+    )
+
+
 @pytest.mark.asyncio
 async def test_vector_search_uses_qdrant_hybrid_fusion_when_sparse_available():
     qdrant_client = MagicMock()
     qdrant_client.get_collection = AsyncMock(
-        return_value=SimpleNamespace(
-            config=SimpleNamespace(
-                params=SimpleNamespace(
-                    vectors={"dense": {"size": 3}}, sparse_vectors={"sparse": {}}
-                )
-            )
+        return_value=_collection_info(
+            vectors={"dense": {"size": 3}}, sparse_vectors={"sparse": {}}
         )
     )
     hit = MagicMock()
