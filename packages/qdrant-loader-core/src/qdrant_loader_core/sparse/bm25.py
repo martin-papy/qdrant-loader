@@ -9,7 +9,7 @@ from functools import cache
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]{2,}")
 _DEFAULT_HASH_MOD = 2_147_483_647
-_DEFAULT_STOP_WORDS = {
+_DEFAULT_STOP_WORDS: frozenset[str] = frozenset({
     "a",
     "an",
     "and",
@@ -35,7 +35,7 @@ _DEFAULT_STOP_WORDS = {
     "were",
     "will",
     "with",
-}
+})
 
 
 @dataclass(frozen=True)
@@ -57,11 +57,14 @@ class BM25SparseEncoder:
         model: str = "bm25",
         *,
         hash_mod: int = _DEFAULT_HASH_MOD,
-        stop_words: set[str] | None = None,
+        stop_words: set[str] | frozenset[str] | None = None,
     ):
         self.model = (model or "bm25").strip().lower()
         self.hash_mod = max(10_000, int(hash_mod))
-        self.stop_words = stop_words if stop_words is not None else _DEFAULT_STOP_WORDS
+        # Snapshot into a frozenset so callers can't mutate the cached encoder's
+        # behavior after construction, and normalize casing for safety.
+        source = stop_words if stop_words is not None else _DEFAULT_STOP_WORDS
+        self.stop_words: frozenset[str] = frozenset(s.lower().strip() for s in source)
 
         if self.model in {"bm25_lite", "bm25-lite"}:
             self.k1 = 0.9
@@ -117,10 +120,17 @@ class BM25SparseEncoder:
 
 
 @cache
+def _get_sparse_encoder_cached(normalized_model: str) -> BM25SparseEncoder:
+    return BM25SparseEncoder(model=normalized_model)
+
+
 def get_sparse_encoder(model: str) -> BM25SparseEncoder:
     """Return a process-wide :class:`BM25SparseEncoder` for ``model``.
 
     Encoders are deterministic and hold no mutable state, so a single instance
     per model name is safe to share across the loader and the MCP server.
+    The model name is normalized (stripped, lower-cased) before caching so
+    equivalent inputs like ``"BM25"`` and ``" bm25 "`` collapse to one entry.
     """
-    return BM25SparseEncoder(model=model)
+    normalized = (model or "bm25").strip().lower()
+    return _get_sparse_encoder_cached(normalized)

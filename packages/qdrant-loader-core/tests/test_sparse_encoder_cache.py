@@ -22,3 +22,10 @@ def test_get_sparse_encoder_differs_across_model_names() -> None:
     b = get_sparse_encoder("bm25_lite")
     assert a is not b
     assert b.model == "bm25_lite"
+
+
+def test_get_sparse_encoder_collapses_equivalent_model_names() -> None:
+    canonical = get_sparse_encoder("bm25")
+    for variant in ("BM25", " bm25 ", "Bm25"):
+        assert get_sparse_encoder(variant) is canonical
+    assert canonical.model == "bm25"

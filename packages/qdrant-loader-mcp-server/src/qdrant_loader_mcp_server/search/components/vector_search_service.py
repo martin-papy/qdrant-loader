@@ -270,12 +270,15 @@ class VectorSearchService:
         Returns:
             List of search results with scores, text, metadata, and source_type
         """
+        # Reset before the cache lookup so used_qdrant_hybrid_last_query()
+        # reflects this call rather than the previous task-local value, even
+        # when we return a cached result.
+        _used_qdrant_hybrid_ctx.set(False)
         cache_key = self._generate_cache_key(query, limit, project_ids)
         cached = await self._cache_get_if_valid(cache_key, query)
         if cached is not None:
             return cached
 
-        _used_qdrant_hybrid_ctx.set(False)
         parsed_query = self.field_parser.parse_query(query)
         self.logger.debug(
             f"Parsed query: {len(parsed_query.field_queries)} field queries, "
