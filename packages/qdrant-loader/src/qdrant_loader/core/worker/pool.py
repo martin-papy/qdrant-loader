@@ -52,9 +52,10 @@ class QueueWorkerPool:
 
                 payload, error_message = self._decode_payload(job.payload_json)
                 if error_message is not None:
-                    await self._queue.mark_failed(
-                        job.id, error_message, claim_attempt=job.attempts
-                    )
+                    async with self._queue_io_guard:
+                        await self._queue.mark_failed(
+                            job.id, error_message, claim_attempt=job.attempts
+                        )
                     async with processed_count_guard:
                         processed_count += 1
                     continue
