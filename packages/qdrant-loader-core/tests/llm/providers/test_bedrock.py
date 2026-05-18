@@ -5,6 +5,7 @@ import json
 import sys
 import types
 from importlib import import_module
+from typing import Any
 
 import pytest
 
@@ -48,6 +49,18 @@ class _FakeBotocoreClientError(Exception):
 
 class _FakeNoCredentialsError(Exception):
     pass
+
+
+class _RecordingBedrockClient:
+    def __init__(self):
+        self.calls: list[dict[str, Any]] = []
+
+    def invoke_model(self, **kwargs):
+        self.calls.append(kwargs)
+        body = json.loads(kwargs["body"])
+        text = body["inputText"]
+        vector = [1.0] * 1024 if text == "hello" else [2.0] * 1024
+        return {"body": io.BytesIO(json.dumps({"embeddings": [vector]}).encode("utf-8"))}
 
 
 class _FakeEndpointConnectionError(Exception):
@@ -140,9 +153,7 @@ def test_bedrock_provider_invalid_model_id(monkeypatch):
 async def test_bedrock_provider_embed_multiple_inputs(monkeypatch):
     vector1 = [1.0] * 1024
     vector2 = [2.0] * 1024
-    response_body = json.dumps({"embeddings": [vector1, vector2]}).encode("utf-8")
-
-    client = _FakeBedrockClient(response_body=response_body)
+    client = _RecordingBedrockClient()
     mod = _reload_bedrock_module(monkeypatch, client)
 
     settings = _make_llm_settings()
@@ -150,6 +161,13 @@ async def test_bedrock_provider_embed_multiple_inputs(monkeypatch):
     vectors = await provider.embeddings().embed(["hello", "world"])
 
     assert vectors == [vector1, vector2]
+    assert len(client.calls) == 2
+    assert {json.loads(call["body"])["inputText"] for call in client.calls} == {"hello", "world"}
+    for call in client.calls:
+        assert call["modelId"] == "amazon.titan-embed-text-v2:0"
+        payload = json.loads(call["body"])
+        assert payload["inputText"] in {"hello", "world"}
+        assert payload == {"inputText": payload["inputText"]}
 
 
 def test_bedrock_extract_embeddings_payload_variants():
@@ -163,6 +181,9 @@ def test_bedrock_extract_embeddings_payload_variants():
 
     with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError):
         mod._extract_embeddings({"unknown": "payload"})
+
+    with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError, match="Invalid embedding element from Bedrock"):
+        mod._extract_embeddings({"embedding": [1.0, None]})
 
 
 @pytest.mark.asyncio

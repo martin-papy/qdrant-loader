@@ -138,18 +138,28 @@ def _extract_embeddings(response_payload: Any) -> list[list[float]]:
                 "Bedrock embedding payload must be a list of floats"
             )
 
-        normalized.append([
-            float(value)
-            for value in vector
-        ])
+        try:
+            normalized.append([
+                float(value)
+                for value in vector
+            ])
+        except (TypeError, ValueError) as exc:
+            raise InvalidRequestError(
+                f"Invalid embedding element from Bedrock: {exc}"
+            ) from exc
 
     return normalized
 
 
 class BedrockTokenizer(TokenCounter):
     def count(self, text: str) -> int:
+        # TODO:
+        # Replace with a proper tokenizer for Bedrock models
+        # (for example Anthropic tokenizer or HuggingFace AutoTokenizer
+        # for Titan models). Current implementation matches the same
+        # fallback behavior used in the OpenAI provider and counts
+        # characters only, not actual model tokens.
         return len(text)
-
 
 class BedrockEmbeddings(EmbeddingsClient):
     MAX_BATCH_SIZE = 1000
@@ -162,26 +172,19 @@ class BedrockEmbeddings(EmbeddingsClient):
         *,
         provisioned_throughput_arn: str | None = None,
         provider_label: str = "bedrock",
+        concurrency: int = 8,
     ):
         self._client = client
         self._model_id = model_id
         self._expected_vector_size = expected_vector_size
         self._provisioned_throughput_arn = provisioned_throughput_arn
         self._provider_label = provider_label
+        self._concurrency = concurrency
 
-    async def embed(self, inputs: list[str]) -> list[list[float]]:
-        if self._client is None:
-            raise NotImplementedError("Bedrock client not available")
-
-        if len(inputs) > self.MAX_BATCH_SIZE:
-            raise InvalidRequestError(
-                f"Bedrock embedding batch size cannot exceed {self.MAX_BATCH_SIZE}"
-            )
-
-        if len(inputs) == 1:
-            payload_body = {"inputText": inputs[0]}
-        else:
-            payload_body = {"inputText": inputs}
+    async def _invoke_single(self, text: str) -> list[float]:
+        payload_body = {
+            "inputText": text
+        }
 
         invoke_kwargs: dict[str, Any] = {
             "modelId": self._model_id,
@@ -196,9 +199,17 @@ class BedrockEmbeddings(EmbeddingsClient):
             )
 
         started = datetime.now(UTC)
+
         try:
-            response = await asyncio.to_thread(self._client.invoke_model, **invoke_kwargs)
-            duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
+            response = await asyncio.to_thread(
+                self._client.invoke_model,
+                **invoke_kwargs,
+            )
+
+            duration_ms = int(
+                (datetime.now(UTC) - started).total_seconds() * 1000
+            )
+
             try:
                 logger.info(
                     "LLM request",
@@ -206,14 +217,21 @@ class BedrockEmbeddings(EmbeddingsClient):
                     operation="embeddings",
                     model=self._model_id,
                     latency_ms=duration_ms,
-                    inputs=len(inputs),
+                    inputs=1,
                 )
             except Exception:
                 pass
 
-            body_data = response.get("body") if isinstance(response, dict) else getattr(response, "body", None)
+            body_data = (
+                response.get("body")
+                if isinstance(response, dict)
+                else getattr(response, "body", None)
+            )
+
             if body_data is None:
-                raise ServerError("Bedrock response body missing")
+                raise ServerError(
+                    "Bedrock response body missing"
+                )
 
             if hasattr(body_data, "read"):
                 body_bytes = body_data.read()
@@ -225,23 +243,36 @@ class BedrockEmbeddings(EmbeddingsClient):
             elif isinstance(body_bytes, str):
                 raw_text = body_bytes
             else:
-                raise ServerError("Bedrock response body is not bytes or string")
+                raise ServerError(
+                    "Bedrock response body is not bytes or string"
+                )
 
             payload = json.loads(raw_text)
             embeddings = _extract_embeddings(payload)
 
-            if self._expected_vector_size is not None:
-                for vector in embeddings:
-                    if len(vector) != self._expected_vector_size:
-                        raise ServerError(
-                            "Bedrock returned embedding vector with unexpected dimension"
-                        )
+            if len(embeddings) != 1:
+                raise ServerError(
+                    "Bedrock single request must return exactly one embedding"
+                )
 
-            return embeddings
+            vector = embeddings[0]
+
+            if (
+                self._expected_vector_size is not None
+                and len(vector) != self._expected_vector_size
+            ):
+                raise ServerError(
+                    "Bedrock returned embedding vector with unexpected dimension"
+                )
+
+            return vector
+
         except LLMError:
             raise
+
         except Exception as exc:
             mapped = _map_bedrock_exception(exc)
+
             try:
                 logger.warning(
                     "LLM error",
@@ -252,8 +283,34 @@ class BedrockEmbeddings(EmbeddingsClient):
                 )
             except Exception:
                 pass
+
             raise mapped from exc
 
+    async def embed(self, inputs: list[str]) -> list[list[float]]:
+        if self._client is None:
+            raise NotImplementedError(
+                "Bedrock client not available"
+            )
+
+        if not inputs:
+            return []
+
+        if len(inputs) > self.MAX_BATCH_SIZE:
+            raise InvalidRequestError(
+                f"Bedrock embedding batch size cannot exceed {self.MAX_BATCH_SIZE}"
+            )
+
+        semaphore = asyncio.Semaphore(
+            self._concurrency
+        )
+
+        async def _one(text: str) -> list[float]:
+            async with semaphore:
+                return await self._invoke_single(text)
+
+        return await asyncio.gather(
+            *[_one(text) for text in inputs]
+        )
 
 class _BedrockChat(ChatClient):
     async def chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
@@ -261,26 +318,67 @@ class _BedrockChat(ChatClient):
 
 
 class BedrockProvider(LLMProvider):
-    def __init__(self, settings: LLMSettings):
+    SUPPORTED_MODELS = frozenset({
+        "amazon.titan-embed-text-v2:0",
+        "amazon.titan-embed-text-v1",
+        # "cohere.embed-english-v3",
+    })
+
+    def __init__(
+        self,
+        settings: LLMSettings,
+        *,
+        client: Any = None,
+    ):
         self._settings = settings
         provider_options = settings.provider_options or {}
-        model_id = provider_options.get("model_id") or settings.models.get("embeddings")
-        self._model_id = str(model_id) if model_id is not None else ""
-        self._aws_region = provider_options.get("aws_region")
-        self._provisioned_throughput_arn = provider_options.get("provisioned_throughput_arn")
+
+        model_id = (
+            provider_options.get("model_id")
+            or settings.models.get("embeddings")
+        )
+
+        self._model_id = (
+            str(model_id)
+            if model_id is not None
+            else ""
+        )
+
+        self._aws_region = provider_options.get(
+            "aws_region"
+        )
+
+        self._provisioned_throughput_arn = provider_options.get(
+            "provisioned_throughput_arn"
+        )
+
+        self._concurrency = int(
+            provider_options.get("concurrency", 8)
+        )
 
         if not self._model_id:
             raise InvalidRequestError(
-                "Bedrock provider requires 'model_id' in llm.provider_options or llm.models.embeddings"
-            )
-        if self._model_id != "amazon.titan-embed-text-v2:0":
-            raise InvalidRequestError(
-                "Bedrock provider only supports amazon.titan-embed-text-v2:0"
+                "Bedrock provider requires 'model_id' in "
+                "llm.provider_options or llm.models.embeddings"
             )
 
-        self._vector_size = settings.embeddings.vector_size or 1024
-        self._client = (
-            boto3.client("bedrock-runtime", region_name=self._aws_region)
+        if self._model_id not in self.SUPPORTED_MODELS:
+            raise InvalidRequestError(
+                "Bedrock provider only supports "
+                f"{sorted(self.SUPPORTED_MODELS)}, "
+                f"got {self._model_id!r}"
+            )
+
+        self._vector_size = (
+            settings.embeddings.vector_size
+            or 1024
+        )
+
+        self._client = client or (
+            boto3.client(
+                "bedrock-runtime",
+                region_name=self._aws_region,
+            )
             if boto3 is not None
             else None
         )
@@ -292,10 +390,13 @@ class BedrockProvider(LLMProvider):
             self._vector_size,
             provisioned_throughput_arn=self._provisioned_throughput_arn,
             provider_label="bedrock",
+            concurrency=self._concurrency,
         )
 
     def chat(self) -> ChatClient:
-        return _BedrockChat()
+        raise NotImplementedError(
+            "Bedrock provider does not support chat()"
+        )
 
     def tokenizer(self) -> TokenCounter:
         return BedrockTokenizer()
