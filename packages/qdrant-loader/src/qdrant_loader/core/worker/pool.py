@@ -22,16 +22,24 @@ class QueueWorkerPool:
         handler: JobHandler,
         worker_count: int = 4,
         lease_seconds: int = 60,
+        max_attempts: int = 1,
+        retry_backoff_base_seconds: int = 0,
     ) -> None:
         if worker_count < 1:
             raise ValueError("worker_count must be >= 1")
         if lease_seconds < 1:
             raise ValueError("lease_seconds must be >= 1")
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be >= 1")
+        if retry_backoff_base_seconds < 0:
+            raise ValueError("retry_backoff_base_seconds must be >= 0")
 
         self._queue = queue
         self._handler = handler
         self._worker_count = worker_count
         self._lease_seconds = lease_seconds
+        self._max_attempts = max_attempts
+        self._retry_backoff_base_seconds = retry_backoff_base_seconds
         self._source_locks: dict[str, asyncio.Lock] = {}
         self._source_locks_guard = asyncio.Lock()
         self._queue_io_guard = asyncio.Lock()
@@ -46,7 +54,9 @@ class QueueWorkerPool:
 
             while True:
                 async with self._queue_io_guard:
-                    job = await self._queue.claim_next(lease_seconds=self._lease_seconds)
+                    job = await self._queue.claim_next(
+                        lease_seconds=self._lease_seconds
+                    )
                 if job is None:
                     return
 
@@ -68,9 +78,23 @@ class QueueWorkerPool:
                         await self._handler(job.type, payload)
                     except Exception as exc:
                         async with self._queue_io_guard:
-                            await self._queue.mark_failed(
-                                job.id, str(exc), claim_attempt=job.attempts
-                            )
+                            if job.attempts < self._max_attempts:
+                                retry_after_seconds = 0
+                                if self._retry_backoff_base_seconds > 0:
+                                    retry_after_seconds = (
+                                        self._retry_backoff_base_seconds
+                                        * (2 ** (job.attempts - 1))
+                                    )
+                                await self._queue.release_for_retry(
+                                    job.id,
+                                    str(exc),
+                                    claim_attempt=job.attempts,
+                                    retry_after_seconds=retry_after_seconds,
+                                )
+                            else:
+                                await self._queue.mark_failed(
+                                    job.id, str(exc), claim_attempt=job.attempts
+                                )
                     else:
                         async with self._queue_io_guard:
                             await self._queue.mark_done(

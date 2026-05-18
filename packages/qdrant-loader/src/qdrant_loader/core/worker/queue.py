@@ -27,6 +27,15 @@ class JobQueue(Protocol):
     ) -> bool:
         """Mark a claimed job as failed if claim ownership still matches."""
 
+    async def release_for_retry(
+        self,
+        job_id: int,
+        error_message: str,
+        claim_attempt: int,
+        retry_after_seconds: int = 0,
+    ) -> bool:
+        """Release a claimed job back to pending for a later retry."""
+
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         """List jobs with optional status filter."""
 
@@ -68,7 +77,8 @@ class SQLiteJobQueue:
         now = datetime.now(UTC)
         visibility_deadline = now + timedelta(seconds=lease_seconds)
         claimable_filter = or_(
-            Job.status == self.PENDING,
+            (Job.status == self.PENDING)
+            & ((Job.visibility_deadline.is_(None)) | (Job.visibility_deadline <= now)),
             (Job.status == self.RUNNING) & (Job.visibility_deadline <= now),
         )
 
@@ -144,6 +154,45 @@ class SQLiteJobQueue:
                     status=self.FAILED,
                     finished_at=now,
                     visibility_deadline=None,
+                    last_error=error_message,
+                )
+                .returning(Job.id)
+            )
+            result = await session.execute(stmt)
+            updated_job_id = result.scalar_one_or_none()
+            await session.commit()
+            return updated_job_id is not None
+
+    async def release_for_retry(
+        self,
+        job_id: int,
+        error_message: str,
+        claim_attempt: int,
+        retry_after_seconds: int = 0,
+    ) -> bool:
+        if retry_after_seconds < 0:
+            raise ValueError("retry_after_seconds must be non-negative")
+
+        now = datetime.now(UTC)
+        retry_deadline = (
+            now + timedelta(seconds=retry_after_seconds)
+            if retry_after_seconds > 0
+            else None
+        )
+
+        async with self._session_factory() as session:
+            stmt = (
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status == self.RUNNING,
+                    Job.attempts == claim_attempt,
+                )
+                .values(
+                    status=self.PENDING,
+                    started_at=None,
+                    finished_at=None,
+                    visibility_deadline=retry_deadline,
                     last_error=error_message,
                 )
                 .returning(Job.id)

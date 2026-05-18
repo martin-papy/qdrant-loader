@@ -166,3 +166,54 @@ async def test_mark_done_rejects_stale_claim_attempt(sqlite_job_queue: SQLiteJob
         job.id, claim_attempt=second_claim.attempts
     )
     assert fresh_update is True
+
+
+@pytest.mark.asyncio
+async def test_release_for_retry_requeues_without_incrementing_attempts(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+
+    first_claim = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert first_claim is not None
+    assert first_claim.id == job.id
+    assert first_claim.attempts == 1
+
+    released = await sqlite_job_queue.release_for_retry(
+        job.id,
+        "transient network error",
+        claim_attempt=first_claim.attempts,
+    )
+    assert released is True
+
+    second_claim = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert second_claim is not None
+    assert second_claim.id == job.id
+    assert second_claim.attempts == 2
+
+
+@pytest.mark.asyncio
+async def test_release_for_retry_with_delay_hides_pending_job_until_due(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+
+    claimed = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert claimed is not None
+    assert claimed.id == job.id
+
+    released = await sqlite_job_queue.release_for_retry(
+        job.id,
+        "transient timeout",
+        claim_attempt=claimed.attempts,
+        retry_after_seconds=1,
+    )
+    assert released is True
+
+    hidden = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert hidden is None
+
+    await asyncio.sleep(1.05)
+    due = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert due is not None
+    assert due.id == job.id

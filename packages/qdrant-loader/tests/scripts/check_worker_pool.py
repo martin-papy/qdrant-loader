@@ -17,6 +17,7 @@ from qdrant_loader.core.worker.queue import SQLiteJobQueue
 
 LOG = logging.getLogger("qa.worker.pool")
 
+
 async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", default="qa_worker_pool.db")
@@ -68,7 +69,11 @@ async def main() -> None:
 
         LOG.info(
             "START job_type=%s source=%s seq=%s active_total=%s active_source=%s",
-            job_type, source, seq, active_total, active_by_source[source]
+            job_type,
+            source,
+            seq,
+            active_total,
+            active_by_source[source],
         )
 
         try:
@@ -97,8 +102,13 @@ async def main() -> None:
     failed = await queue.list(status=SQLiteJobQueue.FAILED, limit=100000)
     running = await queue.list(status=SQLiteJobQueue.RUNNING, limit=100000)
 
-    LOG.info("SUMMARY processed=%s done=%s failed=%s running=%s",
-             processed, len(done), len(failed), len(running))
+    LOG.info(
+        "SUMMARY processed=%s done=%s failed=%s running=%s",
+        processed,
+        len(done),
+        len(failed),
+        len(running),
+    )
     LOG.info("SUMMARY max_active_total=%s", max_active_total)
 
     # Print per-source max concurrency for QA evidence
@@ -106,6 +116,7 @@ async def main() -> None:
         LOG.info("SUMMARY source=%s max_active=%s", src, max_by_source[src])
 
     await dispose_engine(engine)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
