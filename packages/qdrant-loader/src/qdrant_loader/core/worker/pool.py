@@ -25,6 +25,8 @@ class QueueWorkerPool:
     ) -> None:
         if worker_count < 1:
             raise ValueError("worker_count must be >= 1")
+        if lease_seconds < 1:
+            raise ValueError("lease_seconds must be >= 1")
 
         self._queue = queue
         self._handler = handler
@@ -105,5 +107,5 @@ class QueueWorkerPool:
         for field_name in ("source_lock", "source", "source_name", "project_source"):
             value = payload.get(field_name)
             if isinstance(value, str) and value.strip():
-                return value
+                return value.strip()
         return cls.DEFAULT_SOURCE_KEY

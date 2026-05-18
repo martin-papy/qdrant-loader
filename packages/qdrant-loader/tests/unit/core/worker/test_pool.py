@@ -65,8 +65,9 @@ async def test_worker_pool_processes_queue_with_four_workers(sqlite_job_queue: S
 @pytest.mark.asyncio
 async def test_worker_pool_uses_per_source_lock(sqlite_job_queue: SQLiteJobQueue):
     total_jobs = 20
-    for _ in range(total_jobs):
-        await sqlite_job_queue.enqueue("BULK_INGEST", {"source": "jira-main"})
+    sources = ("jira-main", "confluence-main")
+    for i in range(total_jobs):
+        await sqlite_job_queue.enqueue("BULK_INGEST", {"source": sources[i % 2]})
 
     active_by_source: dict[str, int] = {}
     max_by_source: dict[str, int] = {}
@@ -93,3 +94,18 @@ async def test_worker_pool_uses_per_source_lock(sqlite_job_queue: SQLiteJobQueue
     assert processed == total_jobs
     assert len(done_jobs) == total_jobs
     assert max_by_source["jira-main"] == 1
+    assert max_by_source["confluence-main"] == 1
+
+
+@pytest.mark.asyncio
+async def test_worker_pool_rejects_invalid_lease_seconds(sqlite_job_queue: SQLiteJobQueue):
+    async def handler(_job_type: str, _payload: dict[str, str]) -> None:
+        return None
+
+    with pytest.raises(ValueError, match="lease_seconds must be >= 1"):
+        QueueWorkerPool(sqlite_job_queue, handler=handler, lease_seconds=0)
+
+
+def test_extract_source_key_trims_whitespace():
+    key = QueueWorkerPool._extract_source_key({"source": "  jira-main  "})
+    assert key == "jira-main"
