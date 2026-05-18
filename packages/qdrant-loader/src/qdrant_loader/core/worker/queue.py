@@ -67,16 +67,15 @@ class SQLiteJobQueue:
             raise ValueError("lease_seconds must be non-negative")
         now = datetime.now(UTC)
         visibility_deadline = now + timedelta(seconds=lease_seconds)
+        claimable_filter = or_(
+            Job.status == self.PENDING,
+            (Job.status == self.RUNNING) & (Job.visibility_deadline <= now),
+        )
 
         async with self._session_factory() as session:
             next_job_id = (
                 select(Job.id)
-                .where(
-                    or_(
-                        Job.status == self.PENDING,
-                        (Job.status == self.RUNNING) & (Job.visibility_deadline <= now),
-                    ),
-                )
+                .where(claimable_filter)
                 .order_by(Job.enqueued_at.asc(), Job.id.asc())
                 .limit(1)
                 .scalar_subquery()
@@ -84,7 +83,7 @@ class SQLiteJobQueue:
 
             stmt = (
                 update(Job)
-                .where(Job.id == next_job_id)
+                .where(Job.id == next_job_id, claimable_filter)
                 .values(
                     status=self.RUNNING,
                     started_at=now,
