@@ -249,9 +249,17 @@ class BedrockProvider(LLMProvider):
             "provisioned_throughput_arn"
         )
 
-        self._concurrency = int(
-            provider_options.get("concurrency", 8)
-        )
+        try:
+            self._concurrency = int(provider_options.get("concurrency", 8))
+        except (TypeError, ValueError) as exc:
+            raise InvalidRequestError(
+                "Bedrock provider 'concurrency' must be a positive integer"
+            ) from exc
+
+        if self._concurrency < 1:
+            raise InvalidRequestError(
+                "Bedrock provider 'concurrency' must be a positive integer"
+            )
 
         if not self._model_id:
             raise InvalidRequestError(
