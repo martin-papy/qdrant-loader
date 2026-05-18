@@ -150,12 +150,12 @@ global:
     # dense vector also needs a name here. In dense-only mode (enabled: false)
     # both names are ignored and the loader uses Qdrant's unnamed vector slot.
     sparse:
-      enabled: true                  # Enable dense+sparse collection schema and sparse upserts
+      enabled: false                 # Opt-in: enable dense+sparse collection schema and sparse upserts to turn on hybrid retrieval
       model: "bm25"                  # Sparse model family (default: bm25)
-      dense_vector_name: "dense"     # Named dense vector key in Qdrant (only used when enabled=true)
-      sparse_vector_name: "sparse"   # Named sparse vector key in Qdrant
+      dense_vector_name: "dense"     # Named dense vector key in Qdrant (only consulted when sparse.enabled=true)
+      sparse_vector_name: "sparse"   # Named sparse vector key in Qdrant (only consulted when sparse.enabled=true)
     retrieval:
-      use_qdrant_hybrid: true        # MCP retrieval: use Qdrant fusion (dense+sparse) when available
+      use_qdrant_hybrid: false       # MCP retrieval: requires sparse.enabled=true; set to true to use Qdrant fusion (dense+sparse)
     # Optional provider-specific options
     provider_options:
       # For Azure: set azure_endpoint explicitly if different from base_url
