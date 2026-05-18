@@ -71,17 +71,18 @@ async def main() -> None:
             job_type, source, seq, active_total, active_by_source[source]
         )
 
-        await asyncio.sleep(0.05)
+        try:
+            await asyncio.sleep(0.05)
 
-        if args.fail_every > 0 and seq % args.fail_every == 0:
-            raise RuntimeError(f"forced failure for seq={seq}")
+            if args.fail_every > 0 and seq % args.fail_every == 0:
+                raise RuntimeError(f"forced failure for seq={seq}")
 
-        elapsed_ms = int((time.perf_counter() - start) * 1000)
-        LOG.info("END   source=%s seq=%s elapsed_ms=%s", source, seq, elapsed_ms)
-
-        async with guard:
-            active_total -= 1
-            active_by_source[source] -= 1
+            elapsed_ms = int((time.perf_counter() - start) * 1000)
+            LOG.info("END   source=%s seq=%s elapsed_ms=%s", source, seq, elapsed_ms)
+        finally:
+            async with guard:
+                active_total -= 1
+                active_by_source[source] -= 1
 
     # 2) Configure worker_count here
     pool = QueueWorkerPool(
