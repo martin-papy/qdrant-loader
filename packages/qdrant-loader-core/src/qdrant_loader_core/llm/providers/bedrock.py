@@ -18,10 +18,24 @@ from ..errors import (
 )
 from ..settings import LLMSettings
 from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
+
+# Re-exported exception types are intentionally kept here.
+#
+# They are used by:
+# 1. Runtime exception mapping in _map_bedrock_exception()
+# 2. Import fallback behavior when boto3 / botocore is unavailable
+# 3. Unit tests that verify the module still exposes these symbols
+#
+# Do not remove these imports even if they appear unused, as they are
+# part of the module contract and support graceful degradation.
 from .bedrock_utils import (
     BedrockTokenizer,
     _extract_embeddings,
     _map_bedrock_exception,
+    BotoCoreError,
+    ClientError,
+    EndpointConnectionError,
+    NoCredentialsError,
 )
 
 logger = LoggingConfig.get_logger(__name__)
