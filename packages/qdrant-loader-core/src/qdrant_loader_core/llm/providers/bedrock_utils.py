@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 try:
@@ -73,6 +74,10 @@ def _map_bedrock_exception(exc: Exception) -> LLMError:
     ):
         return InvalidRequestError(str(exc))
     if isinstance(exc, ClientError):
+        if status_code == 429:
+            return RateLimitedError(str(exc))
+        if status_code in (401, 403):
+            return AuthError(str(exc))
         if isinstance(status_code, int) and status_code >= 500:
             return ServerError(str(exc))
         if isinstance(status_code, int) and status_code >= 400:
@@ -134,14 +139,19 @@ def _extract_embeddings(response_payload: Any) -> list[list[float]]:
             )
 
         try:
-            normalized.append([
+            parsed_vector = [
                 float(value)
                 for value in vector
-            ])
+            ]
         except (TypeError, ValueError) as exc:
             raise InvalidRequestError(
                 f"Invalid embedding element from Bedrock: {exc}"
             ) from exc
+        if not all(math.isfinite(value) for value in parsed_vector):
+            raise InvalidRequestError(
+                "Invalid embedding element from Bedrock: non-finite value"
+            )
+        normalized.append(parsed_vector)
 
     return normalized
 

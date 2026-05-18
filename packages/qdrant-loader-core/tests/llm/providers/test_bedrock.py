@@ -150,6 +150,82 @@ def test_bedrock_provider_invalid_model_id(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_bedrock_provider_titan_v1_default_vector_size(monkeypatch):
+    settings_mod = import_module("qdrant_loader_core.llm.settings")
+    settings = settings_mod.LLMSettings(
+        provider="bedrock",
+        base_url=None,
+        api_key=None,
+        api_version=None,
+        headers=None,
+        models={"embeddings": "amazon.titan-embed-text-v1", "chat": ""},
+        tokenizer="none",
+        request=settings_mod.RequestPolicy(),
+        rate_limits=settings_mod.RateLimitPolicy(),
+        embeddings=settings_mod.EmbeddingPolicy(vector_size=None),
+        provider_options={
+            "aws_region": "us-east-1",
+            "model_id": "amazon.titan-embed-text-v1",
+        },
+    )
+
+    vector = [1.0] * 1536
+    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode("utf-8")
+    client = _FakeBedrockClient(response_body=response_body)
+    mod = _reload_bedrock_module(monkeypatch, client)
+
+    provider = mod.BedrockProvider(settings)
+    assert provider._vector_size == 1536
+
+    vectors = await provider.embeddings().embed(["hello"])
+    assert len(vectors[0]) == 1536
+
+
+@pytest.mark.asyncio
+async def test_bedrock_provider_v2_custom_dimensions_sent(monkeypatch):
+    settings_mod = import_module("qdrant_loader_core.llm.settings")
+    settings = settings_mod.LLMSettings(
+        provider="bedrock",
+        base_url=None,
+        api_key=None,
+        api_version=None,
+        headers=None,
+        models={"embeddings": "amazon.titan-embed-text-v2:0", "chat": ""},
+        tokenizer="none",
+        request=settings_mod.RequestPolicy(),
+        rate_limits=settings_mod.RateLimitPolicy(),
+        embeddings=settings_mod.EmbeddingPolicy(vector_size=512),
+        provider_options={
+            "aws_region": "us-east-1",
+            "model_id": "amazon.titan-embed-text-v2:0",
+        },
+    )
+
+    class _DimensionCheckingBedrockClient:
+        def __init__(self):
+            self.calls: list[dict[str, Any]] = []
+
+        def invoke_model(self, **kwargs):
+            self.calls.append(kwargs)
+            payload = json.loads(kwargs["body"])
+            assert payload["inputText"] == "hello"
+            assert payload["dimensions"] == 512
+            vector = [1.0] * 512
+            return {"body": io.BytesIO(json.dumps({"embeddings": [vector]}).encode("utf-8"))}
+
+    client = _DimensionCheckingBedrockClient()
+    mod = _reload_bedrock_module(monkeypatch, client)
+
+    provider = mod.BedrockProvider(settings)
+    vectors = await provider.embeddings().embed(["hello"])
+
+    assert len(vectors) == 1
+    assert len(vectors[0]) == 512
+    assert len(client.calls) == 1
+    assert client.calls[0]["modelId"] == "amazon.titan-embed-text-v2:0"
+
+
+@pytest.mark.asyncio
 async def test_bedrock_provider_embed_multiple_inputs(monkeypatch):
     vector1 = [1.0] * 1024
     vector2 = [2.0] * 1024

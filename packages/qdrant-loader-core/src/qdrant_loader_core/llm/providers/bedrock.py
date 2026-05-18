@@ -40,6 +40,11 @@ from .bedrock_utils import (
 
 logger = LoggingConfig.get_logger(__name__)
 
+DEFAULT_VECTOR_SIZES: dict[str, int] = {
+    "amazon.titan-embed-text-v2:0": 1024,
+    "amazon.titan-embed-text-v1": 1536,
+}
+
 
 class BedrockEmbeddings(EmbeddingsClient):
     """Embeddings client for Bedrock Titan models, invoking one API call per input."""
@@ -61,23 +66,27 @@ class BedrockEmbeddings(EmbeddingsClient):
         self._provisioned_throughput_arn = provisioned_throughput_arn
         self._provider_label = provider_label
         self._concurrency = concurrency
+        if self._concurrency < 1:
+            raise InvalidRequestError(
+                "Bedrock embeddings 'concurrency' must be a positive integer"
+            )
+        self._semaphore = asyncio.Semaphore(self._concurrency)
 
     def _build_invoke_kwargs(self, text: str) -> dict[str, Any]:
         payload_body = {
             "inputText": text
         }
 
+        if self._model_id.startswith("amazon.titan-embed-text-v2") and self._expected_vector_size is not None:
+            if self._expected_vector_size != DEFAULT_VECTOR_SIZES["amazon.titan-embed-text-v2:0"]:
+                payload_body["dimensions"] = self._expected_vector_size
+
         invoke_kwargs: dict[str, Any] = {
-            "modelId": self._model_id,
+            "modelId": self._provisioned_throughput_arn or self._model_id,
             "contentType": "application/json",
             "accept": "application/json",
             "body": json.dumps(payload_body),
         }
-
-        if self._provisioned_throughput_arn:
-            invoke_kwargs["provisionedThroughputArn"] = (
-                self._provisioned_throughput_arn
-            )
 
         return invoke_kwargs
 
@@ -206,12 +215,8 @@ class BedrockEmbeddings(EmbeddingsClient):
                 f"Bedrock embedding batch size cannot exceed {self.MAX_BATCH_SIZE}"
             )
 
-        semaphore = asyncio.Semaphore(
-            self._concurrency
-        )
-
         async def _one(text: str) -> list[float]:
-            async with semaphore:
+            async with self._semaphore:
                 return await self._invoke_single(text)
 
         return await asyncio.gather(
@@ -286,7 +291,8 @@ class BedrockProvider(LLMProvider):
 
         self._vector_size = (
             settings.embeddings.vector_size
-            or 1024
+            if settings.embeddings.vector_size is not None
+            else DEFAULT_VECTOR_SIZES.get(self._model_id, 1024)
         )
 
         self._client = client or (
