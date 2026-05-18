@@ -43,6 +43,7 @@ from ..types import TokenCounter
 
 
 def _map_bedrock_exception(exc: Exception) -> LLMError:
+    """Map a botocore/boto3 exception into a qdrant_loader_core LLMError."""
     if isinstance(exc, NoCredentialsError):
         return AuthError(str(exc))
 
@@ -88,6 +89,7 @@ def _map_bedrock_exception(exc: Exception) -> LLMError:
 
 
 def _extract_embeddings(response_payload: Any) -> list[list[float]]:
+    """Normalize Bedrock embedding response payloads into a list of float vectors."""
     if not isinstance(response_payload, (dict, list)):
         raise InvalidRequestError(
             "Bedrock response has unexpected format"
@@ -145,6 +147,7 @@ def _extract_embeddings(response_payload: Any) -> list[list[float]]:
 
 
 class BedrockTokenizer(TokenCounter):
+    """Fallback tokenizer that approximates token count by character length."""
     def count(self, text: str) -> int:
         # TODO:
         # Replace with a proper tokenizer for Bedrock models

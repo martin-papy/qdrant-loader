@@ -12,10 +12,8 @@ except ImportError:
 
 from ...logging import LoggingConfig
 from ..errors import (
-    AuthError,
     InvalidRequestError,
     LLMError,
-    RateLimitedError,
     ServerError,
 )
 from ..settings import LLMSettings
@@ -24,16 +22,13 @@ from .bedrock_utils import (
     BedrockTokenizer,
     _extract_embeddings,
     _map_bedrock_exception,
-    BotoCoreError,
-    ClientError,
-    EndpointConnectionError,
-    NoCredentialsError,
 )
 
 logger = LoggingConfig.get_logger(__name__)
 
 
 class BedrockEmbeddings(EmbeddingsClient):
+    """Embeddings client for Bedrock Titan models, invoking one API call per input."""
     MAX_BATCH_SIZE = 1000
 
     def __init__(
@@ -215,6 +210,7 @@ class _BedrockChat(ChatClient):
 
 
 class BedrockProvider(LLMProvider):
+    """LLM provider wrapper for AWS Bedrock Titan embedding models."""
     SUPPORTED_MODELS = frozenset({
         "amazon.titan-embed-text-v2:0",
         "amazon.titan-embed-text-v1",
