@@ -181,7 +181,7 @@ class BedrockEmbeddings(EmbeddingsClient):
         self._provider_label = provider_label
         self._concurrency = concurrency
 
-    async def _invoke_single(self, text: str) -> list[float]:
+    def _build_invoke_kwargs(self, text: str) -> dict[str, Any]:
         payload_body = {
             "inputText": text
         }
@@ -198,6 +198,70 @@ class BedrockEmbeddings(EmbeddingsClient):
                 self._provisioned_throughput_arn
             )
 
+        return invoke_kwargs
+
+
+    def _read_response_body(self, response: Any) -> str:
+        body_data = (
+            response.get("body")
+            if isinstance(response, dict)
+            else getattr(response, "body", None)
+        )
+
+        if body_data is None:
+            raise ServerError(
+                "Bedrock response body missing"
+            )
+
+        if hasattr(body_data, "read"):
+            body_bytes = body_data.read()
+        else:
+            body_bytes = body_data
+
+        if isinstance(body_bytes, bytes):
+            return body_bytes.decode("utf-8")
+
+        if isinstance(body_bytes, str):
+            return body_bytes
+
+        raise ServerError(
+            "Bedrock response body is not bytes or string"
+        )
+
+
+    def _parse_single_embedding(
+        self,
+        raw_text: str,
+    ) -> list[float]:
+        payload = json.loads(raw_text)
+        embeddings = _extract_embeddings(payload)
+
+        if len(embeddings) != 1:
+            raise ServerError(
+                "Bedrock single request must return exactly one embedding"
+            )
+
+        return embeddings[0]
+
+
+    def _validate_vector(
+        self,
+        vector: list[float],
+    ) -> None:
+        if (
+            self._expected_vector_size is not None
+            and len(vector) != self._expected_vector_size
+        ):
+            raise ServerError(
+                "Bedrock returned embedding vector with unexpected dimension"
+            )
+
+
+    async def _invoke_single(
+        self,
+        text: str,
+    ) -> list[float]:
+        invoke_kwargs = self._build_invoke_kwargs(text)
         started = datetime.now(UTC)
 
         try:
@@ -222,48 +286,9 @@ class BedrockEmbeddings(EmbeddingsClient):
             except Exception:
                 pass
 
-            body_data = (
-                response.get("body")
-                if isinstance(response, dict)
-                else getattr(response, "body", None)
-            )
-
-            if body_data is None:
-                raise ServerError(
-                    "Bedrock response body missing"
-                )
-
-            if hasattr(body_data, "read"):
-                body_bytes = body_data.read()
-            else:
-                body_bytes = body_data
-
-            if isinstance(body_bytes, bytes):
-                raw_text = body_bytes.decode("utf-8")
-            elif isinstance(body_bytes, str):
-                raw_text = body_bytes
-            else:
-                raise ServerError(
-                    "Bedrock response body is not bytes or string"
-                )
-
-            payload = json.loads(raw_text)
-            embeddings = _extract_embeddings(payload)
-
-            if len(embeddings) != 1:
-                raise ServerError(
-                    "Bedrock single request must return exactly one embedding"
-                )
-
-            vector = embeddings[0]
-
-            if (
-                self._expected_vector_size is not None
-                and len(vector) != self._expected_vector_size
-            ):
-                raise ServerError(
-                    "Bedrock returned embedding vector with unexpected dimension"
-                )
+            raw_text = self._read_response_body(response)
+            vector = self._parse_single_embedding(raw_text)
+            self._validate_vector(vector)
 
             return vector
 
