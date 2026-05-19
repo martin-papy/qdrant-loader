@@ -71,11 +71,14 @@ def _map_bedrock_exception(exc: Exception) -> LLMError:
         "ValidationException",
         "InvalidParameterException",
         "ResourceNotFoundException",
-        "ModelError",
         "UnsupportedOperationException",
     ):
         return InvalidRequestError(str(exc))
+    if error_code in ("ModelErrorException", "ModelTimeoutException"):
+        return ServerError(str(exc))
     if isinstance(exc, ClientError):
+        if status_code in (408, 424):
+            return ServerError(str(exc))
         if status_code == 429:
             return RateLimitedError(str(exc))
         if status_code in (401, 403):

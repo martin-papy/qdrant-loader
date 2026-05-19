@@ -327,6 +327,14 @@ async def test_bedrock_provider_oversize_batch(monkeypatch):
 
 
 def test_factory_returns_bedrock_provider(monkeypatch):
+    client = _FakeBedrockClient(
+        response_body=json.dumps({"embeddings": [[1.0] * 1024]}).encode("utf-8")
+    )
+    monkeypatch.setitem(sys.modules, "boto3", _make_boto3_stub(client))
+    botocore_stub, exceptions_stub = _make_botocore_stub()
+    monkeypatch.setitem(sys.modules, "botocore", botocore_stub)
+    monkeypatch.setitem(sys.modules, "botocore.exceptions", exceptions_stub)
+
     factory = import_module("qdrant_loader_core.llm.factory")
     settings = _make_llm_settings()
     provider = factory.create_provider(settings)
