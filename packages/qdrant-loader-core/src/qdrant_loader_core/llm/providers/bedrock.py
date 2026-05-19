@@ -143,7 +143,8 @@ class BedrockEmbeddings(EmbeddingsClient):
             and len(vector) != self._expected_vector_size
         ):
             raise ServerError(
-                "Bedrock returned embedding vector with unexpected dimension"
+                f"Bedrock returned embedding vector with unexpected dimension: "
+                f"expected {self._expected_vector_size}, got {len(vector)}"
             )
 
 
@@ -164,17 +165,14 @@ class BedrockEmbeddings(EmbeddingsClient):
                 (datetime.now(UTC) - started).total_seconds() * 1000
             )
 
-            try:
-                logger.info(
-                    "LLM request",
-                    provider=self._provider_label,
-                    operation="embeddings",
-                    model=self._model_id,
-                    latency_ms=duration_ms,
-                    inputs=1,
-                )
-            except Exception:
-                pass
+            logger.info(
+                "LLM request",
+                provider=self._provider_label,
+                operation="embeddings",
+                model=self._model_id,
+                latency_ms=duration_ms,
+                inputs=1,
+            )
 
             raw_text = self._read_response_body(response)
             vector = self._parse_single_embedding(raw_text)
@@ -188,16 +186,13 @@ class BedrockEmbeddings(EmbeddingsClient):
         except Exception as exc:
             mapped = _map_bedrock_exception(exc)
 
-            try:
-                logger.warning(
-                    "LLM error",
-                    provider=self._provider_label,
-                    operation="embeddings",
-                    model=self._model_id,
-                    error=type(exc).__name__,
-                )
-            except Exception:
-                pass
+            logger.warning(
+                "LLM error",
+                provider=self._provider_label,
+                operation="embeddings",
+                model=self._model_id,
+                error=type(exc).__name__,
+            )
 
             raise mapped from exc
 
@@ -321,3 +316,4 @@ class BedrockProvider(LLMProvider):
 
     def tokenizer(self) -> TokenCounter:
         return BedrockTokenizer()
+    
