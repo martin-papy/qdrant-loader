@@ -19,6 +19,11 @@
 #   2. Set OPENAI_API_KEY in your .env file
 #   3. Define your sources below
 #   4. Run: qdrant-loader init && qdrant-loader ingest
+#
+# For Bedrock, use:
+#   LLM_PROVIDER=bedrock
+#   LLM_EMBEDDING_MODEL=amazon.titan-embed-text-v2:0
+#   VECTOR_SIZE=1024
 
 # Define your data sources directly (no 'global' or 'projects' wrapper needed):
 sources:
