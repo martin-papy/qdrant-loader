@@ -106,7 +106,8 @@ class SQLiteJobQueue:
             )
 
             result = await session.execute(stmt)
-            claimed_job_id = result.scalar_one_or_none()
+            rows = result.fetchall()
+            claimed_job_id = rows[0][0] if rows else None
             await session.commit()
 
             if claimed_job_id is None:
@@ -134,7 +135,8 @@ class SQLiteJobQueue:
                 .returning(Job.id)
             )
             result = await session.execute(stmt)
-            updated_job_id = result.scalar_one_or_none()
+            rows = result.fetchall()
+            updated_job_id = rows[0][0] if rows else None
             await session.commit()
             return updated_job_id is not None
 
@@ -159,7 +161,8 @@ class SQLiteJobQueue:
                 .returning(Job.id)
             )
             result = await session.execute(stmt)
-            updated_job_id = result.scalar_one_or_none()
+            rows = result.fetchall()
+            updated_job_id = rows[0][0] if rows else None
             await session.commit()
             return updated_job_id is not None
 
@@ -198,7 +201,8 @@ class SQLiteJobQueue:
                 .returning(Job.id)
             )
             result = await session.execute(stmt)
-            updated_job_id = result.scalar_one_or_none()
+            rows = result.fetchall()
+            updated_job_id = rows[0][0] if rows else None
             await session.commit()
             return updated_job_id is not None
 
