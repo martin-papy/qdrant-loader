@@ -271,7 +271,9 @@ class TestWebsiteBuildIntegration:
                     ).exists(), "Robots.txt should be created"
 
                     # Check that files have content
-                    index_content = (site_dir / "index.html").read_text(encoding="utf-8")
+                    index_content = (site_dir / "index.html").read_text(
+                        encoding="utf-8"
+                    )
                     assert (
                         len(index_content) > 100
                     ), "Index page should have substantial content"

@@ -9,6 +9,7 @@ This document provides comprehensive reference for developing with the QDrant Lo
 - [Configuration](#-configuration)
 - [Exit Codes](#exit-codes)
 - [Development Patterns](#-development-patterns)
+- [Database Migrations](#-database-migrations)
 - [Testing](#-testing)
 
 ## 🚀 Main CLI Commands
@@ -366,6 +367,63 @@ qdrant-loader config --workspace . --format json
 qdrant-loader config --workspace .
 # Run ingestion with debug logging and profiling
 qdrant-loader --log-level DEBUG --workspace . ingest --profile
+```
+
+## 🗄️ Database Migrations
+
+QDrant Loader uses Alembic to manage SQLite schema migrations. Always run migrations through the provided wrapper script so the correct database path is resolved automatically from Settings (workspace/config/env aware).
+
+> **Important**: Do **not** run `python -m alembic -c alembic.ini ...` directly unless you manually export `STATE_DB_PATH` first. The direct command uses the fallback path in `alembic.ini`, which may not match your actual configured database.
+
+### Upgrade to Latest Schema
+
+```bash
+# Workspace mode (recommended)
+python scripts/alembic_with_settings.py --workspace . -- upgrade head
+
+# Non-workspace mode (uses config.yaml in current directory)
+python scripts/alembic_with_settings.py -- upgrade head
+
+# Non-workspace mode with explicit config and env files
+python scripts/alembic_with_settings.py --config path/to/config.yaml --env path/to/.env -- upgrade head
+```
+
+### Check Current Migration Revision
+
+```bash
+# Workspace mode
+python scripts/alembic_with_settings.py --workspace . -- current
+
+# Non-workspace mode
+python scripts/alembic_with_settings.py -- current
+```
+
+### How It Works
+
+The wrapper (`scripts/alembic_with_settings.py`):
+
+1. Loads Settings using the same mode/config/env as the app (`initialize_config` / `initialize_config_with_workspace`).
+2. Reads the resolved `database_path` from `settings.global_config.state_management.database_path`.
+3. Sets `STATE_DB_PATH` for the child Alembic process.
+4. Runs Alembic with the correct database path.
+
+| Mode | Resolved DB Path |
+|------|------------------|
+| Workspace (`--workspace .`) | `<workspace>/data/qdrant-loader.db` |
+| Non-workspace, config sets path directly | value from `global.state_management.database_path` in `config.yaml` |
+| Non-workspace, config uses `${STATE_DB_PATH}` | value of `STATE_DB_PATH` env var |
+| Non-workspace, no config/env | `./state.db` (default) |
+
+### Migration Script Options
+
+```bash
+python scripts/alembic_with_settings.py [OPTIONS] -- [ALEMBIC_ARGS]
+
+Options:
+  --workspace PATH     Workspace directory containing config.yaml and optional .env
+  --config PATH        Path to config.yaml (non-workspace mode)
+  --env PATH           Path to .env file (non-workspace mode)
+  --alembic-config     Path to alembic.ini (default: packages/qdrant-loader/alembic.ini)
 ```
 
 ## 🧪 Testing

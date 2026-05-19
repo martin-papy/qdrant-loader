@@ -105,7 +105,7 @@ class JiraCloudConnector(BaseJiraConnector):
 
             for issue in issues:
                 try:
-                    parsed_issue = self._parse_issue(issue)
+                    parsed_issue = self._parse_issue(issue, self.config.extra_fields)
                     yield parsed_issue
                     processed_count += 1
 

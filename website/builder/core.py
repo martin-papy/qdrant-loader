@@ -380,9 +380,13 @@ class WebsiteBuilder:
                     from datetime import datetime
 
                     # Use stable template mtime fallback instead of build date.
-                    privacy_last_updated = datetime.fromtimestamp(
-                        privacy_template_path.stat().st_mtime, tz=UTC
-                    ).date().isoformat()
+                    privacy_last_updated = (
+                        datetime.fromtimestamp(
+                            privacy_template_path.stat().st_mtime, tz=UTC
+                        )
+                        .date()
+                        .isoformat()
+                    )
 
                 self.build_page(
                     "base.html",

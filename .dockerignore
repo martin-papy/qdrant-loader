@@ -1,0 +1,56 @@
+# Python - Every level
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+**/*.egg-info/
+**/.eggs/
+**/*.egg/
+**/*.pyc
+**/.ruff_cache/
+
+# Virtual environments - Every level
+**/venv/
+**/env/
+**/ENV/
+**/.venv/
+
+# IDE - Every level
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+
+# Testing - Every level
+**/.pytest_cache/
+**/.tox/
+**/tests/
+**/htmlcov/
+**/.coverage
+**/coverage.xml
+
+# Observability - Every level
+**/metrics/
+
+# Logging - Every level
+**/*.log
+
+# Environment - Every level
+**/.env
+**/.env.example
+
+# Git
+**/.git/
+**/.gitignore
+
+# Docker
+**/Dockerfile*
+**/docker-compose*
+**/.dockerignore
+
+# Documentation
+**/docs/
+
+# Config
+**/conf/

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-05-12
+
+### Changed
+
+#### Documentation
+
+- Updated contributing guide for external contributors [#273]
+
 ## [1.0.1] - 2026-04-23
 
 ### Fixed
@@ -622,6 +630,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change detection for incremental updates [#21]
 - Signal handling for graceful shutdown [#21]
 
+[1.0.2]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.1...qdrant-loader-v1.0.2
 [1.0.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.0...qdrant-loader-v1.0.1
 [1.0.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.9.0...qdrant-loader-v1.0.0
 [0.9.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.8.1...qdrant-loader-v0.9.0

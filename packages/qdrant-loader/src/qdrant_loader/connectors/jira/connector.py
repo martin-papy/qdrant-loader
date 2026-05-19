@@ -15,7 +15,11 @@ from qdrant_loader.connectors.jira.auth import (
     auto_detect_deployment_type as _auto_detect_type,
 )
 from qdrant_loader.connectors.jira.auth import setup_authentication as _setup_auth
-from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
+from qdrant_loader.connectors.jira.config import (
+    JiraDeploymentType,
+    JiraExtraField,
+    JiraProjectConfig,
+)
 from qdrant_loader.connectors.jira.mappers import (
     parse_attachment as _parse_attachment_helper,
 )
@@ -403,9 +407,11 @@ class BaseJiraConnector(BaseConnector):
         """Get all issues from Jira."""
         ...
 
-    def _parse_issue(self, raw_issue: dict) -> JiraIssue:
+    def _parse_issue(
+        self, raw_issue: dict, extra_fields: list[JiraExtraField] | None = None
+    ) -> JiraIssue:
         """Parse a raw issue from the Jira response into a JiraIssue object."""
-        return _parse_issue_helper(raw_issue)
+        return _parse_issue_helper(raw_issue, extra_fields)
 
     def _parse_user(
         self, raw_user: dict | None, required: bool = False
@@ -468,7 +474,53 @@ class BaseJiraConnector(BaseConnector):
                 content_parts.append(comment.body)
 
             content = "\n\n".join(content_parts)
-
+            metadata = {
+                "project": self.config.project_key,
+                "issue_type": issue.issue_type,
+                "status": issue.status,
+                "key": issue.key,
+                "priority": issue.priority,
+                "labels": issue.labels,
+                "reporter": issue.reporter.display_name if issue.reporter else None,
+                "assignee": issue.assignee.display_name if issue.assignee else None,
+                "created": issue.created.isoformat(),
+                "updated": issue.updated.isoformat(),
+                "parent_key": issue.parent_key,
+                "subtasks": issue.subtasks,
+                "linked_issues": issue.linked_issues,
+                "comments": [
+                    {
+                        "id": comment.id,
+                        "body": comment.body,
+                        "created": comment.created.isoformat(),
+                        "updated": (
+                            comment.updated.isoformat() if comment.updated else None
+                        ),
+                        "author": (
+                            comment.author.display_name if comment.author else None
+                        ),
+                    }
+                    for comment in issue.comments
+                ],
+                "attachments": (
+                    [
+                        {
+                            "id": att.id,
+                            "filename": att.filename,
+                            "size": att.size,
+                            "mime_type": att.mime_type,
+                            "created": att.created.isoformat(),
+                            "author": (att.author.display_name if att.author else None),
+                        }
+                        for att in issue.attachments
+                    ]
+                    if issue.attachments
+                    else []
+                ),
+            }
+            if self.config.extra_fields:
+                for field in self.config.extra_fields:
+                    metadata[field.name] = getattr(issue, field.name)
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,
@@ -481,52 +533,7 @@ class BaseJiraConnector(BaseConnector):
                 title=issue.summary,
                 updated_at=issue.updated,
                 is_deleted=False,
-                metadata={
-                    "project": self.config.project_key,
-                    "issue_type": issue.issue_type,
-                    "status": issue.status,
-                    "key": issue.key,
-                    "priority": issue.priority,
-                    "labels": issue.labels,
-                    "reporter": issue.reporter.display_name if issue.reporter else None,
-                    "assignee": issue.assignee.display_name if issue.assignee else None,
-                    "created": issue.created.isoformat(),
-                    "updated": issue.updated.isoformat(),
-                    "parent_key": issue.parent_key,
-                    "subtasks": issue.subtasks,
-                    "linked_issues": issue.linked_issues,
-                    "comments": [
-                        {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "created": comment.created.isoformat(),
-                            "updated": (
-                                comment.updated.isoformat() if comment.updated else None
-                            ),
-                            "author": (
-                                comment.author.display_name if comment.author else None
-                            ),
-                        }
-                        for comment in issue.comments
-                    ],
-                    "attachments": (
-                        [
-                            {
-                                "id": att.id,
-                                "filename": att.filename,
-                                "size": att.size,
-                                "mime_type": att.mime_type,
-                                "created": att.created.isoformat(),
-                                "author": (
-                                    att.author.display_name if att.author else None
-                                ),
-                            }
-                            for att in issue.attachments
-                        ]
-                        if issue.attachments
-                        else []
-                    ),
-                },
+                metadata=metadata,
             )
             documents.append(document)
             logger.debug(
