@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 import math
 from typing import Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from botocore.exceptions import (
@@ -39,7 +42,6 @@ from ..errors import (
     RateLimitedError,
     ServerError,
 )
-from ..types import TokenCounter
 from ..types import TokenCounter
 
 
@@ -157,12 +159,20 @@ def _extract_embeddings(response_payload: Any) -> list[list[float]]:
 
 
 class BedrockTokenizer(TokenCounter):
-    """Fallback tokenizer that approximates token count by character length."""
+    """
+    Temporary fallback tokenizer for Bedrock providers.
+
+    This implementation approximates token counts using character length
+    and is NOT model-accurate. Counts may differ significantly from
+    actual Bedrock model token usage.
+    """
+
+    def __init__(self) -> None:
+        logger.warning(
+            "BedrockTokenizer is using a character-count fallback. "
+            "Token counts are approximate and may not match actual "
+            "Bedrock model tokenization."
+        )
+
     def count(self, text: str) -> int:
-        # TODO:
-        # Replace with a proper tokenizer for Bedrock models
-        # (for example Anthropic tokenizer or HuggingFace AutoTokenizer
-        # for Titan models). Current implementation matches the same
-        # fallback behavior used in the OpenAI provider and counts
-        # characters only, not actual model tokens.
         return len(text)
