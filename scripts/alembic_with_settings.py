@@ -17,16 +17,16 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "alembic_args",
         nargs=argparse.REMAINDER,
-        help=(
-            "Arguments passed to Alembic, e.g.: upgrade head, current, history"
-        ),
+        help=("Arguments passed to Alembic, e.g.: upgrade head, current, history"),
     )
     parser.add_argument(
         "--workspace",
         type=Path,
         help="Workspace directory containing config.yaml and optional .env",
     )
-    parser.add_argument("--config", dest="config_path", type=Path, help="Path to config.yaml")
+    parser.add_argument(
+        "--config", dest="config_path", type=Path, help="Path to config.yaml"
+    )
     parser.add_argument("--env", dest="env_path", type=Path, help="Path to .env file")
     parser.add_argument(
         "--alembic-config",
@@ -38,7 +38,9 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _resolve_state_db_path(workspace: Path | None, config_path: Path | None, env_path: Path | None) -> str:
+def _resolve_state_db_path(
+    workspace: Path | None, config_path: Path | None, env_path: Path | None
+) -> str:
     repo_root = Path(__file__).resolve().parent.parent
     package_root = repo_root / "packages" / "qdrant-loader"
     src_path = package_root / "src"
@@ -46,8 +48,17 @@ def _resolve_state_db_path(workspace: Path | None, config_path: Path | None, env
     if str(src_path) not in sys.path:
         sys.path.insert(0, str(src_path))
 
-    from qdrant_loader.cli.config_loader import load_config_with_workspace, setup_workspace
-    from qdrant_loader.config import get_settings
+    try:
+        from qdrant_loader.cli.config_loader import (
+            load_config_with_workspace,
+            setup_workspace,
+        )
+        from qdrant_loader.config import get_settings
+    except (ImportError, ModuleNotFoundError) as exc:
+        raise RuntimeError(
+            "Failed to import qdrant_loader settings modules; "
+            f"check package installation and sys.path (expected source path: {src_path})"
+        ) from exc
 
     workspace_config = setup_workspace(workspace) if workspace else None
 
@@ -70,7 +81,12 @@ def _resolve_state_db_path(workspace: Path | None, config_path: Path | None, env
     )
 
     settings = get_settings()
-    return settings.global_config.state_management.database_path
+    try:
+        return settings.global_config.state_management.database_path
+    except (AttributeError, TypeError) as exc:
+        raise RuntimeError(
+            "Invalid settings structure: missing global_config.state_management.database_path"
+        ) from exc
 
 
 def main() -> int:
@@ -84,6 +100,8 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     package_root = repo_root / "packages" / "qdrant-loader"
     alembic_config = args.alembic_config.resolve()
+    if not alembic_config.exists() or not alembic_config.is_file():
+        raise SystemExit(f"Alembic config file not found: {alembic_config}")
 
     if args.workspace and (args.config_path or args.env_path):
         parser.error("Cannot combine --workspace with --config/--env")
