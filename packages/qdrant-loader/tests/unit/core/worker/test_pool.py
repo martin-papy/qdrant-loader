@@ -39,7 +39,9 @@ async def test_worker_pool_processes_queue_with_four_workers(
 ):
     total_jobs = 100
     for i in range(total_jobs):
-        await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": f"source-{i}"})
+        await sqlite_job_queue.enqueue(
+            "INCREMENTAL_PULL", {"source_lock": f"source-{i}"}
+        )
 
     in_flight = 0
     max_in_flight = 0
@@ -73,14 +75,14 @@ async def test_worker_pool_uses_per_source_lock(sqlite_job_queue: SQLiteJobQueue
     total_jobs = 20
     sources = ("jira-main", "confluence-main")
     for i in range(total_jobs):
-        await sqlite_job_queue.enqueue("BULK_INGEST", {"source": sources[i % 2]})
+        await sqlite_job_queue.enqueue("BULK_INGEST", {"source_lock": sources[i % 2]})
 
     active_by_source: dict[str, int] = {}
     max_by_source: dict[str, int] = {}
     guard = asyncio.Lock()
 
     async def handler(_job_type: str, payload: dict[str, str]) -> None:
-        source = payload["source"]
+        source = payload["source_lock"]
 
         async with guard:
             active_now = active_by_source.get(source, 0) + 1
@@ -118,7 +120,7 @@ async def test_worker_pool_rejects_invalid_lease_seconds(
 async def test_worker_pool_retries_transient_errors_until_success(
     sqlite_job_queue: SQLiteJobQueue,
 ):
-    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "jira-main"})
+    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source_lock": "jira-main"})
 
     attempts = 0
 
@@ -150,7 +152,7 @@ async def test_worker_pool_retries_transient_errors_until_success(
 async def test_worker_pool_marks_failed_after_max_attempts_exhausted(
     sqlite_job_queue: SQLiteJobQueue,
 ):
-    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "jira-main"})
+    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source_lock": "jira-main"})
 
     async def handler(_job_type: str, _payload: dict[str, str]) -> None:
         raise RuntimeError("always failing")
@@ -194,7 +196,9 @@ async def test_worker_pool_reclaims_job_after_visibility_timeout(
     container that died) with an already-expired visibility_deadline.
     The pool must reclaim and complete it without manual intervention.
     """
-    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "jira-main"})
+    job = await sqlite_job_queue.enqueue(
+        "INCREMENTAL_PULL", {"source_lock": "jira-main"}
+    )
 
     # Simulate a previous container that claimed the job but never finished:
     # set status=RUNNING with a visibility_deadline in the past.
@@ -215,7 +219,7 @@ async def test_worker_pool_reclaims_job_after_visibility_timeout(
     completed = []
 
     async def handler(job_type: str, payload: dict) -> None:
-        completed.append(payload["source"])
+        completed.append(payload["source_lock"])
 
     pool = QueueWorkerPool(sqlite_job_queue, handler=handler, worker_count=2)
     processed = await pool.run_until_empty()
@@ -232,5 +236,28 @@ async def test_worker_pool_reclaims_job_after_visibility_timeout(
 
 
 def test_extract_source_key_trims_whitespace():
-    key = QueueWorkerPool._extract_source_key({"source": "  jira-main  "})
+    key = QueueWorkerPool._extract_source_key({"source_lock": "  jira-main  "})
     assert key == "jira-main"
+
+
+@pytest.mark.asyncio
+async def test_worker_pool_marks_failed_for_missing_source_lock(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """A job payload without source_lock must be marked FAILED immediately;
+    the pool must not crash or fall back to a global serialization key."""
+    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "jira-main"})
+
+    async def handler(_job_type: str, _payload: dict) -> None:  # pragma: no cover
+        pass
+
+    pool = QueueWorkerPool(sqlite_job_queue, handler=handler, worker_count=1)
+    processed = await pool.run_until_empty()
+
+    done_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.DONE)
+    failed_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.FAILED)
+
+    assert processed == 1
+    assert len(done_jobs) == 0
+    assert len(failed_jobs) == 1
+    assert "source_lock" in failed_jobs[0].last_error

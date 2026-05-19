@@ -70,7 +70,16 @@ class QueueWorkerPool:
                         processed_count += 1
                     continue
 
-                source_key = self._extract_source_key(payload)
+                try:
+                    source_key = self._extract_source_key(payload)
+                except KeyError as exc:
+                    async with self._queue_io_guard:
+                        await self._queue.mark_failed(
+                            job.id, str(exc), claim_attempt=job.attempts
+                        )
+                    async with processed_count_guard:
+                        processed_count += 1
+                    continue
                 source_lock = await self._get_source_lock(source_key)
 
                 async with source_lock:
@@ -128,9 +137,20 @@ class QueueWorkerPool:
 
     @classmethod
     def _extract_source_key(cls, payload: dict[str, Any]) -> str:
-        # Prefer explicit source lock key if provided by scheduler/producer.
-        for field_name in ("source_lock", "source", "source_name", "project_source"):
-            value = payload.get(field_name)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-        return cls.DEFAULT_SOURCE_KEY
+        """Return the per-source concurrency key from the job payload.
+
+        Producers *must* set ``source_lock`` to a non-empty string.  This is
+        the explicit contract: the pool will never silently fall back to a
+        global key, because that would serialize the entire pool and hide a
+        missing-field bug until production load.
+
+        Raises:
+            KeyError: if ``source_lock`` is absent or blank.
+        """
+        value = payload.get("source_lock")
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        raise KeyError(
+            "job payload is missing a non-empty 'source_lock' field — "
+            "all producers must set it explicitly"
+        )
