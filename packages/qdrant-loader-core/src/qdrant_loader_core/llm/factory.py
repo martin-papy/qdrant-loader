@@ -95,6 +95,14 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
         except Exception:
             return _NoopProvider()
 
+    if provider_name == "bedrock":
+
+        try:
+            from .providers.bedrock import BedrockProvider
+            return BedrockProvider(settings)
+        except ImportError:
+            return _NoopProvider()
+
     if provider_name == "ollama" or (base_host in ("localhost", "127.0.0.1")):
         from .providers.ollama import OllamaProvider
 
