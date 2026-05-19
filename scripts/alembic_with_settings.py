@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -89,6 +90,59 @@ def _resolve_state_db_path(
         ) from exc
 
 
+def _is_special_sqlite_form(raw_path: str) -> bool:
+    raw_path_lower = raw_path.lower()
+    if raw_path == ":memory:":
+        return True
+    return raw_path_lower.startswith("file:") and (
+        "mode=memory" in raw_path_lower or "memory" in raw_path_lower
+    )
+
+
+def _to_sqlalchemy_database_url(database_value: str) -> str:
+    """Convert configured database value into a SQLAlchemy URL.
+
+    Accepts either a full DSN (e.g. postgresql+asyncpg://...) or a SQLite
+    filesystem path (existing behavior).
+    """
+    raw_value = database_value.strip()
+    if not raw_value:
+        raise RuntimeError("Resolved empty database value from settings")
+
+    if "://" in raw_value:
+        return raw_value
+
+    if _is_special_sqlite_form(raw_value):
+        return f"sqlite:///{raw_value}"
+
+    candidate = Path(raw_value).expanduser()
+    return f"sqlite:///{candidate.resolve().as_posix()}"
+
+
+def _redact_database_url(database_url: str) -> str:
+    """Redact credentials in DSN-style database URLs before logging."""
+    try:
+        parts = urlsplit(database_url)
+    except ValueError:
+        return database_url
+
+    if not parts.scheme or not parts.netloc:
+        return database_url
+
+    if "@" not in parts.netloc:
+        return database_url
+
+    userinfo, hostinfo = parts.netloc.rsplit("@", 1)
+    if ":" not in userinfo:
+        return database_url
+
+    username, _password = userinfo.split(":", 1)
+    redacted_netloc = f"{username}:***@{hostinfo}"
+    return urlunsplit(
+        (parts.scheme, redacted_netloc, parts.path, parts.query, parts.fragment)
+    )
+
+
 def main() -> int:
     parser = _build_parser()
     args = parser.parse_args()
@@ -106,13 +160,16 @@ def main() -> int:
     if args.workspace and (args.config_path or args.env_path):
         parser.error("Cannot combine --workspace with --config/--env")
 
-    db_path = _resolve_state_db_path(args.workspace, args.config_path, args.env_path)
+    database_value = _resolve_state_db_path(
+        args.workspace, args.config_path, args.env_path
+    )
+    database_url = _to_sqlalchemy_database_url(database_value)
 
     child_env = os.environ.copy()
-    child_env["STATE_DB_PATH"] = db_path
+    child_env["STATE_DB_URL"] = database_url
 
     cmd = [sys.executable, "-m", "alembic", "-c", str(alembic_config), *alembic_args]
-    print(f"Resolved STATE_DB_PATH={db_path}")
+    print(f"Resolved STATE_DB_URL={_redact_database_url(database_url)}")
     print("Running:", " ".join(cmd))
 
     result = subprocess.run(cmd, cwd=package_root, env=child_env)

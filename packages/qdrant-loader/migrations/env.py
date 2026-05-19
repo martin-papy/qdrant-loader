@@ -30,8 +30,16 @@ def _is_special_sqlite_form(raw_path: str) -> bool:
 
 def _deterministic_sqlalchemy_url() -> str:
     """Resolve DB URL consistently regardless of current working directory."""
+    state_db_url = os.getenv("STATE_DB_URL")
+    if state_db_url:
+        return state_db_url
+
     state_db_path = os.getenv("STATE_DB_PATH")
     if state_db_path:
+        # Backward compatibility: allow either legacy path values or full DSNs.
+        if "://" in state_db_path:
+            return state_db_path
+
         if _is_special_sqlite_form(state_db_path):
             return f"sqlite:///{state_db_path}"
 
