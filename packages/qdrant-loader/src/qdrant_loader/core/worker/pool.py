@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import Awaitable, Callable
 from json import JSONDecodeError
 from typing import Any
 
 from qdrant_loader.core.worker.queue import JobQueue
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 JobHandler = Callable[[str, dict[str, Any]], Awaitable[None]]
 
@@ -82,10 +86,27 @@ class QueueWorkerPool:
                     continue
                 source_lock = await self._get_source_lock(source_key)
 
+                logger.info(
+                    "job.claimed",
+                    job_id=job.id,
+                    job_type=job.type,
+                    source_key=source_key,
+                    attempt=job.attempts,
+                )
+
                 async with source_lock:
+                    logger.info(
+                        "job.handler_started",
+                        job_id=job.id,
+                        job_type=job.type,
+                        source_key=source_key,
+                        attempt=job.attempts,
+                    )
+                    t0 = time.monotonic()
                     try:
                         await self._handler(job.type, payload)
                     except Exception as exc:
+                        duration_ms = round((time.monotonic() - t0) * 1000)
                         async with self._queue_io_guard:
                             if job.attempts < self._max_attempts:
                                 retry_after_seconds = 0
@@ -100,15 +121,45 @@ class QueueWorkerPool:
                                     claim_attempt=job.attempts,
                                     retry_after_seconds=retry_after_seconds,
                                 )
+                                logger.info(
+                                    "job.retry_scheduled",
+                                    job_id=job.id,
+                                    job_type=job.type,
+                                    source_key=source_key,
+                                    attempt=job.attempts,
+                                    max_attempts=self._max_attempts,
+                                    retry_after_seconds=retry_after_seconds,
+                                    duration_ms=duration_ms,
+                                    error=str(exc),
+                                )
                             else:
                                 await self._queue.mark_failed(
                                     job.id, str(exc), claim_attempt=job.attempts
                                 )
+                                logger.info(
+                                    "job.failed",
+                                    job_id=job.id,
+                                    job_type=job.type,
+                                    source_key=source_key,
+                                    attempt=job.attempts,
+                                    max_attempts=self._max_attempts,
+                                    duration_ms=duration_ms,
+                                    error=str(exc),
+                                )
                     else:
+                        duration_ms = round((time.monotonic() - t0) * 1000)
                         async with self._queue_io_guard:
                             await self._queue.mark_done(
                                 job.id, claim_attempt=job.attempts
                             )
+                        logger.info(
+                            "job.done",
+                            job_id=job.id,
+                            job_type=job.type,
+                            source_key=source_key,
+                            attempt=job.attempts,
+                            duration_ms=duration_ms,
+                        )
 
                 async with processed_count_guard:
                     processed_count += 1
