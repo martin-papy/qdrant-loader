@@ -9,7 +9,7 @@ def get_version_query() -> str:
 
 
 def set_version_query() -> str:
-    return """  
+    return """
     MERGE (s:_SchemaVersion {id: "schema"})
     SET s.version = $version
     """

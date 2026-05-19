@@ -19,6 +19,7 @@ VALID_EDGE_TYPES = {
     "HAS_LABEL",
     "LINKS_TO",
     "PART_OF",
+    "HAS_CHUNK",
 }
 
 
