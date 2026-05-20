@@ -1,6 +1,7 @@
 """Main orchestrator for the ingestion pipeline."""
 
 import traceback
+from datetime import datetime
 
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.base import ConnectorConfigurationError
@@ -57,6 +58,7 @@ class PipelineOrchestrator:
         source: str | None = None,
         project_id: str | None = None,
         force: bool = False,
+        since: datetime | None = None,
     ) -> list[Document]:
         """Main entry point for document processing.
 
@@ -66,6 +68,10 @@ class PipelineOrchestrator:
             source: Filter by specific source name
             project_id: Process documents for a specific project
             force: Force processing of all documents, bypassing change detection
+            since: Only collect documents updated after this timestamp (connector-level
+                filtering). Connectors that do not yet support time-based filtering will
+                fall back to fetching all documents and relying on hash-based change
+                detection.
 
         Returns:
             List of processed documents
@@ -113,7 +119,7 @@ class PipelineOrchestrator:
                     )
 
                 logger.debug("Processing all projects")
-                return await self._process_all_projects(source_type, source, force)
+                return await self._process_all_projects(source_type, source, force, since)
 
             # Check if filtered config is empty
             if source_type and not any(
@@ -129,7 +135,7 @@ class PipelineOrchestrator:
 
             # Collect documents from all sources
             documents = await self._collect_documents_from_sources(
-                filtered_config, current_project_id
+                filtered_config, current_project_id, since
             )
 
             if not documents:
@@ -179,6 +185,7 @@ class PipelineOrchestrator:
         source_type: str | None = None,
         source: str | None = None,
         force: bool = False,
+        since: datetime | None = None,
     ) -> list[Document]:
         """Process documents from all configured projects."""
         if not self.project_manager:
@@ -199,6 +206,7 @@ class PipelineOrchestrator:
                     source_type=source_type,
                     source=source,
                     force=force,
+                    since=since,
                 )
                 project_result = self.last_pipeline_result
                 all_documents.extend(project_documents)
@@ -276,9 +284,18 @@ class PipelineOrchestrator:
         return all_documents
 
     async def _collect_documents_from_sources(
-        self, filtered_config: SourcesConfig, project_id: str | None = None
+        self,
+        filtered_config: SourcesConfig,
+        project_id: str | None = None,
+        since: datetime | None = None,
     ) -> list[Document]:
         """Collect documents from all configured sources."""
+        if since is not None:
+            logger.warning(
+                "since parameter is set but connector-level time filtering is not yet "
+                "implemented; falling back to full fetch with hash-based change detection",
+                since=since.isoformat(),
+            )
         documents = []
 
         # Process each source type with project context

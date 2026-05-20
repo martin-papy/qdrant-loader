@@ -3,12 +3,44 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+from qdrant_loader.core.state.transitions import get_last_ingestion
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
+
+AsyncSessionFactory = Callable[[], Awaitable[Any]]
+
+
+# ---------------------------------------------------------------------------
+# Exceptions (defined first — used by classes below)
+# ---------------------------------------------------------------------------
+
+
+class JobHandlerError(Exception):
+    """Base exception for job handler errors."""
+
+    pass
+
+
+class TransientJobError(JobHandlerError):
+    """Transient error (may succeed on retry)."""
+
+    pass
+
+
+class PermanentJobError(JobHandlerError):
+    """Permanent error (will not succeed on retry)."""
+
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Protocol / Abstract base
+# ---------------------------------------------------------------------------
 
 
 class JobHandler(Protocol):
@@ -49,6 +81,11 @@ class BaseJobHandler(ABC):
         return last_ingestion - timedelta(minutes=5)
 
 
+# ---------------------------------------------------------------------------
+# Registry
+# ---------------------------------------------------------------------------
+
+
 class HandlerRegistry:
     """Registry for mapping job types to handler implementations."""
 
@@ -75,19 +112,65 @@ class HandlerRegistry:
         return {jt: h.__class__.__name__ for jt, h in self._handlers.items()}
 
 
-class JobHandlerError(Exception):
-    """Base exception for job handler errors."""
-
-    pass
-
-
-class TransientJobError(JobHandlerError):
-    """Transient error (may succeed on retry)."""
-
-    pass
+# ---------------------------------------------------------------------------
+# Concrete handler
+# ---------------------------------------------------------------------------
 
 
-class PermanentJobError(JobHandlerError):
-    """Permanent error (will not succeed on retry)."""
+class IngestionJobHandler(BaseJobHandler):
+    """Concrete handler for BULK_INGEST and INCREMENTAL_PULL jobs.
 
-    pass
+    Delegates to PipelineOrchestrator for document processing.
+    """
+
+    def __init__(
+        self,
+        orchestrator: Any,
+        session_factory: AsyncSessionFactory,
+    ) -> None:
+        self._orchestrator = orchestrator
+        self._session_factory = session_factory
+
+    async def handle_bulk_ingest(self, payload: dict[str, Any]) -> None:
+        """Run a full ingestion for the source, bypassing change detection."""
+        try:
+            await self._orchestrator.process_documents(
+                source_type=payload.get("source_type"),
+                source=payload.get("source"),
+                project_id=payload.get("project_id"),
+                force=True,
+            )
+        except PermanentJobError:
+            raise
+        except Exception as exc:
+            raise TransientJobError(str(exc)) from exc
+
+    async def handle_incremental_pull(self, payload: dict[str, Any]) -> None:
+        """Run an incremental ingestion since last_ingestion - 5 min."""
+        try:
+            last = await get_last_ingestion(
+                self._session_factory,
+                source_type=payload["source_type"],
+                source=payload["source"],
+                project_id=payload.get("project_id"),
+            )
+            since = self._calculate_since_timestamp(
+                last.last_successful_ingestion if last else None
+            )
+            logger.info(
+                "incremental_pull.since",
+                source_type=payload.get("source_type"),
+                source=payload.get("source"),
+                since=since.isoformat() if since else None,
+            )
+            await self._orchestrator.process_documents(
+                source_type=payload.get("source_type"),
+                source=payload.get("source"),
+                project_id=payload.get("project_id"),
+                force=False,
+                since=since,
+            )
+        except PermanentJobError:
+            raise
+        except Exception as exc:
+            raise TransientJobError(str(exc)) from exc
