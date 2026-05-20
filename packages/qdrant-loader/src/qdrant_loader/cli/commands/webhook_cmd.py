@@ -9,8 +9,8 @@ from qdrant_loader.cli.config_loader import (
     load_config_with_workspace,
     setup_workspace,
 )
+from qdrant_loader.cli.logging_utils import setup_logging
 from qdrant_loader.config.workspace import validate_workspace_flags
-from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.webhooks.server import app
 
 
@@ -39,7 +39,7 @@ async def run_webhook_command(
     validate_workspace_flags(workspace, config, env)
     workspace_config = setup_workspace(workspace) if workspace else None
 
-    _setup_logging(log_level, workspace_config)
+    setup_logging(log_level, workspace_config)
 
     try:
         load_config_with_workspace(workspace_config, config, env)

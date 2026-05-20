@@ -397,42 +397,19 @@ class PipelineOrchestrator:
             )
             await self.components.state_manager.initialize()
 
-        document_ids: list[str] = []
-        state_errors: list[Exception] = []
-        for document in deleted_documents:
-            try:
-                await self.components.state_manager.mark_document_deleted(
-                    document.source_type,
-                    document.source,
-                    document.id,
-                    project_id,
-                )
-                document_ids.append(document.id)
-                logger.debug(f"Marked document deleted in state: {document.id}")
-            except Exception as e:
-                logger.error(
-                    f"Failed to mark document deleted for {document.id}: {sanitize_exception_message(e)}",
-                    error_type=type(e).__name__,
-                )
-                state_errors.append(e)
-
-        if document_ids:
-            try:
-                await self.components.qdrant_manager.delete_points_by_document_id(
-                    document_ids
-                )
-                logger.info(
-                    f"Deleted {len(document_ids)} document points from Qdrant"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to delete document points from Qdrant: {sanitize_exception_message(e)}",
-                    error_type=type(e).__name__,
-                )
-                raise
-
-        if state_errors:
-            raise state_errors[0]
+        # Use an atomic operation that marks state and deletes points together.
+        try:
+            deleted_ids = await self.components.state_manager.mark_documents_deleted_atomic(
+                deleted_documents, self.components.qdrant_manager, project_id
+            )
+            if deleted_ids:
+                logger.info(f"Deleted {len(deleted_ids)} document points from Qdrant and updated state")
+        except Exception as e:
+            logger.error(
+                f"Failed to process deleted documents atomically: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+            )
+            raise
 
     async def _update_document_states(
         self,

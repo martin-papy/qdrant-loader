@@ -48,7 +48,12 @@ async def process_webhook_event(
     payload: Any,
     force: bool = False,
 ) -> None:
-    """Handle webhook event by invoking the ingestion pipeline for a configured source."""
+    """Handle webhook event by invoking the ingestion pipeline for a configured source.
+
+    NOTE: The current webhook implementation logs the payload and triggers a full
+    ingestion for the given source. The payload is not currently used for
+    event filtering, deduplication, or priority routing.
+    """
     normalized_source_type = normalize_source_type(source_type)
     settings = get_settings()
     qdrant_manager = QdrantManager(settings)

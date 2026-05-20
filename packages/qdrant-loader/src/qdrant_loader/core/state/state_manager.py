@@ -2,7 +2,7 @@
 State management service for tracking document ingestion state.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
@@ -263,6 +263,79 @@ class StateManager:
                 exc_info=True,
             )
             raise
+
+    async def mark_documents_deleted_atomic(
+        self,
+        deleted_documents: list["Document"],
+        qdrant_manager,
+        project_id: str | None = None,
+    ) -> list[str]:
+        """Atomically mark documents as deleted in state and delete their points in Qdrant.
+
+        This method starts a DB transaction, marks existing document state records
+        as deleted (but does not commit), then calls `qdrant_manager.delete_points_by_document_id`
+        to remove vectors. If the Qdrant deletion succeeds, the DB transaction is
+        committed. If it fails, the DB transaction is rolled back so no partial
+        state changes remain.
+
+        Returns the list of document IDs that were marked and deleted.
+        """
+        if not self._initialized:
+            raise RuntimeError("StateManager not initialized. Call initialize() first.")
+
+        session_factory = getattr(self, "_session_factory", None)
+        if session_factory is None:
+            raise RuntimeError("State manager session factory is not available")
+
+        async with session_factory() as session:  # type: ignore
+            tx = await session.begin()
+            try:
+                now = datetime.now(UTC)
+                document_ids_to_delete: list[str] = []
+                for doc in deleted_documents:
+                    query = select(DocumentStateRecord).filter(
+                        DocumentStateRecord.source_type == doc.source_type,
+                        DocumentStateRecord.source == doc.source,
+                        DocumentStateRecord.document_id == doc.id,
+                    )
+                    if project_id is not None:
+                        query = query.filter(DocumentStateRecord.project_id == project_id)
+                    result = await session.execute(query)
+                    state = result.scalar_one_or_none()
+                    if state:
+                        state.is_deleted = True  # type: ignore
+                        state.updated_at = now  # type: ignore
+                        document_ids_to_delete.append(doc.id)
+
+                # Flush but do not commit yet
+                await session.flush()
+
+                if document_ids_to_delete:
+                    # Call Qdrant to delete points; if this fails we'll rollback
+                    await qdrant_manager.delete_points_by_document_id(document_ids_to_delete)
+                    await tx.commit()
+                    self.logger.info(
+                        f"Atomically deleted {len(document_ids_to_delete)} documents and their points"
+                    )
+                else:
+                    # Nothing to delete; just commit/close transaction
+                    await tx.commit()
+
+                return document_ids_to_delete
+            except Exception as e:
+                # Rollback transaction to avoid partial state changes
+                try:
+                    await tx.rollback()
+                except Exception as rb_err:
+                    self.logger.error(
+                        f"Failed to rollback transaction after error: {rb_err}",
+                        exc_info=True,
+                    )
+                self.logger.error(
+                    f"Atomic delete failed: {str(e)}",
+                    exc_info=True,
+                )
+                raise
 
     async def get_document_state_record(
         self,
