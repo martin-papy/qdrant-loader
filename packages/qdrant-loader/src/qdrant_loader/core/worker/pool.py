@@ -3,16 +3,14 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from collections.abc import Awaitable, Callable
 from json import JSONDecodeError
 from typing import Any
 
+from qdrant_loader.core.worker.handlers import JobHandler
 from qdrant_loader.core.worker.queue import JobQueue
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
-
-JobHandler = Callable[[str, dict[str, Any]], Awaitable[None]]
 
 
 class QueueWorkerPool:
