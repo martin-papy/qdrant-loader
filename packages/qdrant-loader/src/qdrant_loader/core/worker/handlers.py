@@ -29,7 +29,7 @@ class BaseJobHandler(ABC):
         elif job_type == "INCREMENTAL_PULL":
             return await self.handle_incremental_pull(payload)
         else:
-            raise ValueError(f"Unknown job type: {job_type}")
+            raise PermanentJobError(f"Unknown job type: {job_type}")
 
     @abstractmethod
     async def handle_bulk_ingest(self, payload: dict[str, Any]) -> None:
@@ -66,7 +66,7 @@ class HandlerRegistry:
     async def handle(self, job_type: str, payload: dict[str, Any]) -> None:
         """Execute a job by dispatching to the registered handler."""
         if job_type not in self._handlers:
-            raise ValueError(f"No handler registered for job type: {job_type}")
+            raise PermanentJobError(f"Unknown job type: {job_type}")
         handler = self._handlers[job_type]
         await handler(job_type, payload)
 
