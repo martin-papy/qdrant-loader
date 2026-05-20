@@ -3,6 +3,7 @@
 from qdrant_loader.core.worker.handlers import (
     BaseJobHandler,
     HandlerRegistry,
+    IngestionJobHandler,
     JobHandler,
     PermanentJobError,
     TransientJobError,
@@ -19,6 +20,7 @@ __all__ = [
     # Handlers
     "JobHandler",
     "BaseJobHandler",
+    "IngestionJobHandler",
     "HandlerRegistry",
     "TransientJobError",
     "PermanentJobError",
