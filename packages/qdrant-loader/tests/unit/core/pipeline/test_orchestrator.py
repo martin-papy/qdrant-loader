@@ -258,6 +258,7 @@ class TestPipelineOrchestrator:
         # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
         self.orchestrator._collect_documents_from_sources = AsyncMock(return_value=[])
+        self.orchestrator._detect_document_changes = AsyncMock(return_value=[])
 
         # Execute
         result = await self.orchestrator.process_documents(
@@ -492,8 +493,31 @@ class TestPipelineOrchestrator:
     @pytest.mark.asyncio
     async def test_detect_document_changes_empty_documents(self):
         """Test document change detection with empty document list."""
-        result = await self.orchestrator._detect_document_changes([], Mock(), None)
+        filtered_config = Mock(spec=SourcesConfig)
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.detect_changes.return_value = {
+            "new": [],
+            "updated": [],
+            "deleted": [],
+        }
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector"
+        ) as mock_detector_class:
+            mock_detector_class.return_value.__aenter__.return_value = (
+                mock_change_detector
+            )
+
+            result = await self.orchestrator._detect_document_changes(
+                [], filtered_config, None
+            )
+
         assert result == []
+
+        mock_change_detector.detect_changes.assert_called_once_with(
+            [], filtered_config
+        )
 
     @pytest.mark.asyncio
     async def test_detect_document_changes_state_manager_initialized(self):

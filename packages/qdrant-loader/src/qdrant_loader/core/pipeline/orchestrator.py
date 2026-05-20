@@ -135,7 +135,13 @@ class PipelineOrchestrator:
                 filtered_config, current_project_id
             )
 
-            if not documents:
+            # In force mode we bypass change detection entirely,
+            # so an empty snapshot means there is nothing to process.
+            #
+            # In normal mode we MUST continue into change detection,
+            # because an empty snapshot may indicate that previously
+            # indexed documents were deleted from the source.
+            if not documents and force:
                 logger.info("✅ No documents found from sources")
                 return []
 
@@ -149,7 +155,7 @@ class PipelineOrchestrator:
                     documents, filtered_config, current_project_id
                 )
 
-                if not documents and force:
+                if not documents:
                     logger.info("✅ No new or updated documents to process")
                     return []
 
@@ -353,21 +359,31 @@ class PipelineOrchestrator:
                     documents, filtered_config
                 )
 
-                logger.info(
-                    f"🔍 Change detection: {len(changes['new'])} new, "
-                    f"{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
+            new_documents = list(changes.get("new") or [])
+            updated_documents = list(changes.get("updated") or [])
+            deleted_documents = list(changes.get("deleted") or [])
+
+            logger.info(
+                f"🔍 Change detection: {len(new_documents)} new, "
+                f"{len(updated_documents)} updated, "
+                f"{len(deleted_documents)} deleted"
+            )
+
+            if deleted_documents:
+                await self._process_deleted_documents(
+                    deleted_documents,
+                    project_id,
                 )
 
-                if changes["deleted"]:
-                    await self._process_deleted_documents(changes["deleted"], project_id)
+            documents_to_process = new_documents + updated_documents
 
-                documents_to_process = changes["new"] + changes["updated"]
-                if not documents_to_process and changes["deleted"]:
-                    logger.info(
-                        "No new or updated documents to process, but deleted documents were handled"
-                    )
+            if not documents_to_process and deleted_documents:
+                logger.info(
+                    "No new or updated documents to process, "
+                    "but deleted documents were handled"
+                )
 
-                return documents_to_process
+            return documents_to_process
 
         except Exception as e:
             logger.error(
