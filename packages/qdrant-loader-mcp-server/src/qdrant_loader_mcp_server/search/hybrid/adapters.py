@@ -13,6 +13,25 @@ class VectorSearcherAdapter(VectorSearcher):
     async def search(self, query: str, limit: int, project_ids: list[str] | None):  # type: ignore[override]
         return await self._service.vector_search(query, limit, project_ids)
 
+    def used_qdrant_hybrid_last_query(self) -> bool:
+        getter = getattr(self._service, "used_qdrant_hybrid_last_query", None)
+        if callable(getter):
+            try:
+                return bool(getter())
+            except Exception:
+                return False
+        return False
+
+    async def supports_qdrant_hybrid(self) -> bool:
+        """Forward the service's pre-flight capability check to the pipeline."""
+        check = getattr(self._service, "supports_qdrant_hybrid", None)
+        if not callable(check):
+            return False
+        try:
+            return bool(await check())
+        except Exception:
+            return False
+
 
 class KeywordSearcherAdapter(KeywordSearcher):
     def __init__(self, service: KeywordSearchService):
