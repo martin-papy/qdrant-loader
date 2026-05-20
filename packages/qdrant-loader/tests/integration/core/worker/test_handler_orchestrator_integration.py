@@ -11,37 +11,33 @@ import pytest
 from qdrant_loader.core.worker.handlers import IngestionJobHandler
 
 
-def _setup_qdrant_loader_core_stubs():
+def _setup_qdrant_loader_core_stubs(monkeypatch: pytest.MonkeyPatch):
     """Ensure qdrant_loader_core and its submodules are importable in all environments."""
     workspace_root = Path(__file__).resolve().parents[6]
     core_src = workspace_root / "packages" / "qdrant-loader-core" / "src"
-    if str(core_src) not in sys.path:
-        sys.path.insert(0, str(core_src))
+    monkeypatch.syspath_prepend(str(core_src))
 
-    if "qdrant_loader_core" not in sys.modules:
-        pkg = types.ModuleType("qdrant_loader_core")
-        pkg.__path__ = []
-        sys.modules["qdrant_loader_core"] = pkg
+    pkg = types.ModuleType("qdrant_loader_core")
+    pkg.__path__ = []
+    monkeypatch.setitem(sys.modules, "qdrant_loader_core", pkg)
 
-    if "qdrant_loader_core.config" not in sys.modules:
-        config_mod = types.ModuleType("qdrant_loader_core.config")
-        config_mod.CollectionVectorCapabilities = object
-        config_mod.SparseRuntimeConfig = object
+    config_mod = types.ModuleType("qdrant_loader_core.config")
+    config_mod.CollectionVectorCapabilities = object
+    config_mod.SparseRuntimeConfig = object
 
-        def _parse_collection_capabilities(*_args, **_kwargs):
-            return None
+    def _parse_collection_capabilities(*_args, **_kwargs):
+        return None
 
-        config_mod.parse_collection_capabilities = _parse_collection_capabilities
-        sys.modules["qdrant_loader_core.config"] = config_mod
+    config_mod.parse_collection_capabilities = _parse_collection_capabilities
+    monkeypatch.setitem(sys.modules, "qdrant_loader_core.config", config_mod)
 
-    if "qdrant_loader_core.sparse" not in sys.modules:
-        sparse_mod = types.ModuleType("qdrant_loader_core.sparse")
+    sparse_mod = types.ModuleType("qdrant_loader_core.sparse")
 
-        def _get_sparse_encoder(*_args, **_kwargs):
-            return None
+    def _get_sparse_encoder(*_args, **_kwargs):
+        return None
 
-        sparse_mod.get_sparse_encoder = _get_sparse_encoder
-        sys.modules["qdrant_loader_core.sparse"] = sparse_mod
+    sparse_mod.get_sparse_encoder = _get_sparse_encoder
+    monkeypatch.setitem(sys.modules, "qdrant_loader_core.sparse", sparse_mod)
 
 
 @pytest.mark.asyncio
@@ -53,7 +49,7 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
     The orchestrator logs a warning (connectors not yet filtering by time) but does not
     raise.
     """
-    _setup_qdrant_loader_core_stubs()
+    _setup_qdrant_loader_core_stubs(monkeypatch)
 
     from qdrant_loader.core.pipeline.orchestrator import PipelineOrchestrator
 

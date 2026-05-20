@@ -131,13 +131,34 @@ class IngestionJobHandler(BaseJobHandler):
         self._orchestrator = orchestrator
         self._session_factory = session_factory
 
+    @staticmethod
+    def _validated_required_fields(payload: dict[str, Any]) -> tuple[str, str, str]:
+        """Validate required payload fields and return normalized values."""
+        required_fields = ("source_type", "source", "project_id")
+        missing_or_invalid = [
+            field
+            for field in required_fields
+            if not isinstance(payload.get(field), str) or not payload.get(field).strip()
+        ]
+        if missing_or_invalid:
+            fields = ", ".join(missing_or_invalid)
+            raise PermanentJobError(
+                f"Invalid job payload: missing or invalid required field(s): {fields}"
+            )
+
+        source_type = payload["source_type"].strip()
+        source = payload["source"].strip()
+        project_id = payload["project_id"].strip()
+        return source_type, source, project_id
+
     async def handle_bulk_ingest(self, payload: dict[str, Any]) -> None:
         """Run a full ingestion for the source, bypassing change detection."""
         try:
+            source_type, source, project_id = self._validated_required_fields(payload)
             await self._orchestrator.process_documents(
-                source_type=payload.get("source_type"),
-                source=payload.get("source"),
-                project_id=payload.get("project_id"),
+                source_type=source_type,
+                source=source,
+                project_id=project_id,
                 force=True,
             )
         except PermanentJobError:
@@ -148,25 +169,26 @@ class IngestionJobHandler(BaseJobHandler):
     async def handle_incremental_pull(self, payload: dict[str, Any]) -> None:
         """Run an incremental ingestion since last_ingestion - 5 min."""
         try:
+            source_type, source, project_id = self._validated_required_fields(payload)
             last = await get_last_ingestion(
                 self._session_factory,
-                source_type=payload["source_type"],
-                source=payload["source"],
-                project_id=payload.get("project_id"),
+                source_type=source_type,
+                source=source,
+                project_id=project_id,
             )
             since = self._calculate_since_timestamp(
                 last.last_successful_ingestion if last else None
             )
             logger.info(
                 "incremental_pull.since",
-                source_type=payload.get("source_type"),
-                source=payload.get("source"),
+                source_type=source_type,
+                source=source,
                 since=since.isoformat() if since else None,
             )
             await self._orchestrator.process_documents(
-                source_type=payload.get("source_type"),
-                source=payload.get("source"),
-                project_id=payload.get("project_id"),
+                source_type=source_type,
+                source=source,
+                project_id=project_id,
                 force=False,
                 since=since,
             )

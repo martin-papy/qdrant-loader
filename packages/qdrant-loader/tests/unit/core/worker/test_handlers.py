@@ -121,21 +121,17 @@ async def test_ingestion_handler_bulk_ingest_calls_orchestrator_with_force_true(
 
 
 @pytest.mark.asyncio
-async def test_ingestion_handler_bulk_ingest_without_project_id():
+async def test_ingestion_handler_bulk_ingest_without_project_id_raises_permanent_error():
     orchestrator = MagicMock()
     orchestrator.process_documents = AsyncMock()
     handler = IngestionJobHandler(orchestrator, MagicMock())
 
-    await handler.handle_bulk_ingest(
-        {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
-    )
+    with pytest.raises(PermanentJobError, match="project_id"):
+        await handler.handle_bulk_ingest(
+            {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
+        )
 
-    orchestrator.process_documents.assert_awaited_once_with(
-        source_type="git",
-        source="repo",
-        project_id=None,
-        force=True,
-    )
+    orchestrator.process_documents.assert_not_awaited()
 
 
 # ---------------------------------------------------------------------------
@@ -196,16 +192,67 @@ async def test_ingestion_handler_incremental_pull_no_history_passes_since_none(
 
     handler = IngestionJobHandler(orchestrator, MagicMock())
     await handler.handle_incremental_pull(
-        {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
+        {
+            "source_lock": "git:repo",
+            "source_type": "git",
+            "source": "repo",
+            "project_id": "proj-1",
+        }
     )
 
     orchestrator.process_documents.assert_awaited_once_with(
         source_type="git",
         source="repo",
-        project_id=None,
+        project_id="proj-1",
         force=False,
         since=None,
     )
+
+
+@pytest.mark.asyncio
+async def test_bulk_ingest_invalid_required_fields_raise_permanent_error():
+    orchestrator = MagicMock()
+    orchestrator.process_documents = AsyncMock()
+    handler = IngestionJobHandler(orchestrator, MagicMock())
+
+    with pytest.raises(
+        PermanentJobError,
+        match=r"missing or invalid required field\(s\): source",
+    ):
+        await handler.handle_bulk_ingest(
+            {
+                "source_lock": "git:repo",
+                "source_type": "git",
+                "source": "   ",
+                "project_id": "proj-1",
+            }
+        )
+
+    orchestrator.process_documents.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_incremental_pull_invalid_required_fields_raise_permanent_error(monkeypatch):
+    orchestrator = MagicMock()
+    orchestrator.process_documents = AsyncMock()
+
+    import qdrant_loader.core.worker.handlers as handlers_module
+
+    monkeypatch.setattr(
+        handlers_module, "get_last_ingestion", AsyncMock(return_value=None)
+    )
+
+    handler = IngestionJobHandler(orchestrator, MagicMock())
+    with pytest.raises(PermanentJobError, match="source_type"):
+        await handler.handle_incremental_pull(
+            {
+                "source_lock": "git:repo",
+                "source": "repo",
+                "project_id": "proj-1",
+            }
+        )
+
+    orchestrator.process_documents.assert_not_awaited()
 
 
 # ---------------------------------------------------------------------------
@@ -266,7 +313,12 @@ async def test_bulk_ingest_wraps_orchestrator_exception_as_transient(monkeypatch
 
     with pytest.raises(TransientJobError, match="network blip"):
         await handler.handle_bulk_ingest(
-            {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
+            {
+                "source_lock": "git:repo",
+                "source_type": "git",
+                "source": "repo",
+                "project_id": "proj-1",
+            }
         )
 
 
@@ -281,7 +333,12 @@ async def test_bulk_ingest_reraises_permanent_error_unchanged():
 
     with pytest.raises(PermanentJobError, match="bad config"):
         await handler.handle_bulk_ingest(
-            {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
+            {
+                "source_lock": "git:repo",
+                "source_type": "git",
+                "source": "repo",
+                "project_id": "proj-1",
+            }
         )
 
 
@@ -300,5 +357,10 @@ async def test_incremental_pull_wraps_orchestrator_exception_as_transient(monkey
     handler = IngestionJobHandler(orchestrator, MagicMock())
     with pytest.raises(TransientJobError, match="timeout"):
         await handler.handle_incremental_pull(
-            {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
+            {
+                "source_lock": "git:repo",
+                "source_type": "git",
+                "source": "repo",
+                "project_id": "proj-1",
+            }
         )
