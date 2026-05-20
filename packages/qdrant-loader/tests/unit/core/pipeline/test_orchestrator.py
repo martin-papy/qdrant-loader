@@ -462,8 +462,6 @@ class TestPipelineOrchestrator:
             self.state_manager._initialized = True
 
         self.state_manager.initialize.side_effect = _initialize_side_effect
-        self.state_manager.mark_document_deleted = AsyncMock()
-        self.qdrant_manager.delete_points_by_document_id = AsyncMock()
 
         mock_change_detector = AsyncMock()
         mock_change_detector.detect_changes.return_value = {
@@ -471,6 +469,7 @@ class TestPipelineOrchestrator:
             "updated": [],
             "deleted": [deleted_document],
         }
+        self.orchestrator._process_deleted_documents = AsyncMock()
 
         with patch(
             "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector"
@@ -485,11 +484,9 @@ class TestPipelineOrchestrator:
 
         assert result == mock_documents
         self.state_manager.initialize.assert_called_once()
-        self.state_manager.mark_document_deleted.assert_awaited_once_with(
-            "jira", "my-jira", "deleted-doc", None
-        )
-        self.qdrant_manager.delete_points_by_document_id.assert_awaited_once_with(
-            ["deleted-doc"]
+
+        self.orchestrator._process_deleted_documents.assert_awaited_once_with(
+            [deleted_document], None
         )
 
     @pytest.mark.asyncio
