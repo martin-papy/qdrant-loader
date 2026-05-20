@@ -127,7 +127,7 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, None, None
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None
+            filtered_config, None, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
             mock_documents, filtered_config, None
@@ -208,7 +208,7 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, "git", "my-repo"
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None
+            filtered_config, None, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
             mock_documents, filtered_config, None
@@ -261,7 +261,7 @@ class TestPipelineOrchestrator:
         # Verify
         assert result == []
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None
+            filtered_config, None, None
         )
 
     @pytest.mark.asyncio
