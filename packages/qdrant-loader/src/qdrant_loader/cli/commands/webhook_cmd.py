@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from qdrant_loader_core.logging import LoggingConfig
 
 import uvicorn
 from click.exceptions import ClickException
