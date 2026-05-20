@@ -34,6 +34,8 @@ async def main() -> None:
     )
 
     db_path = Path(args.db).resolve()
+    if db_path.exists():
+        db_path.unlink()
     cfg = StateManagementConfig(database_path=str(db_path))
     engine, session_factory = initialize_engine_and_session(cfg)
     await create_tables(engine)
