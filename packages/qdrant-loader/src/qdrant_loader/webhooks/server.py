@@ -22,6 +22,10 @@ logger = LoggingConfig.get_logger(__name__)
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
+    if not os.getenv(WEBHOOK_SECRET_ENV_VAR):
+        raise RuntimeError(
+            f"{WEBHOOK_SECRET_ENV_VAR} must be set before starting the webhook server."
+        )
     app.state.ingestion_semaphore = threading.BoundedSemaphore(
         WEBHOOK_MAX_CONCURRENT_INGESTIONS
     )

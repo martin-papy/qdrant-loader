@@ -149,7 +149,7 @@ class PipelineOrchestrator:
                     documents, filtered_config, current_project_id
                 )
 
-                if not documents:
+                if not documents and force:
                     logger.info("✅ No new or updated documents to process")
                     return []
 
@@ -337,8 +337,6 @@ class PipelineOrchestrator:
         project_id: str | None = None,
     ) -> list[Document]:
         """Detect changes in documents and return only new/updated ones."""
-        if not documents:
-            return []
 
         logger.debug(f"Starting change detection for {len(documents)} documents")
 

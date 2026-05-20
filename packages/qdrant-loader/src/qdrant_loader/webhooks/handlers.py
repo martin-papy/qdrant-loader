@@ -58,14 +58,17 @@ async def process_webhook_event(
     settings = get_settings()
     qdrant_manager = QdrantManager(settings)
 
-    payload_summary = summarize_payload(payload)
+    payload_summary = {
+        "type": type(payload).__name__,
+        "keys": sorted(payload.keys())[:20] if isinstance(payload, dict) else None,
+    }
     logger.info(
         "Received webhook event",
         project_id=project_id,
         source_type=normalized_source_type,
         source=source,
         force=force,
-        payload=payload_summary,
+        payload_meta=payload_summary,
     )
 
     await run_pipeline_ingestion(
