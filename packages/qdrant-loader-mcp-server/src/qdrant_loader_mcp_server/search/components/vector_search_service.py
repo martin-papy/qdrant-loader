@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import time
 from asyncio import Lock
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -13,8 +14,23 @@ if TYPE_CHECKING:
     from qdrant_client import AsyncQdrantClient
     from qdrant_client.http import models as qdrant_models
 
+from qdrant_client.http import models
+from qdrant_loader_core.config import (
+    CollectionVectorCapabilities,
+    parse_collection_capabilities,
+)
+from qdrant_loader_core.sparse import get_sparse_encoder
+
 from ...utils.logging import LoggingConfig
+from ..sparse_config import load_sparse_runtime_config
 from .field_query_parser import FieldQueryParser
+
+# Task-local flag set by vector_search when Qdrant fusion is used for the
+# current query. ContextVar isolates concurrent searches that share the same
+# VectorSearchService instance.
+_used_qdrant_hybrid_ctx: ContextVar[bool] = ContextVar(
+    "vector_search_used_qdrant_hybrid", default=False
+)
 
 
 @dataclass
@@ -75,6 +91,10 @@ class VectorSearchService:
 
         self.logger = LoggingConfig.get_logger(__name__)
 
+        self.sparse_runtime = load_sparse_runtime_config()
+        self._collection_capabilities: CollectionVectorCapabilities | None = None
+        self._capabilities_lock: Lock = Lock()
+
         # Qdrant search parameters
         self.hnsw_ef = hnsw_ef
         self.use_exact_search = use_exact_search
@@ -123,6 +143,74 @@ class VectorSearchService:
             items_to_remove = len(self._search_cache) - self.cache_max_size
             for key, _ in sorted_items[:items_to_remove]:
                 del self._search_cache[key]
+
+    async def _get_collection_capabilities(self) -> CollectionVectorCapabilities:
+        """Probe the collection for named-dense and sparse vector support.
+
+        Transient ``get_collection`` failures are logged and returned as
+        empty capabilities for the current call only — they are never cached,
+        so the next call retries.
+        """
+        if self._collection_capabilities is not None:
+            return self._collection_capabilities
+
+        async with self._capabilities_lock:
+            if self._collection_capabilities is not None:
+                return self._collection_capabilities
+            try:
+                info = await self.qdrant_client.get_collection(
+                    collection_name=self.collection_name
+                )
+            except Exception as e:
+                # Don't cache: a transient outage would otherwise pin every
+                # subsequent query to the dense fallback path for this
+                # service's lifetime.
+                self.logger.warning(
+                    "Failed to inspect Qdrant collection schema; assuming dense-only",
+                    collection=self.collection_name,
+                    error=str(e),
+                )
+                return CollectionVectorCapabilities()
+            self._collection_capabilities = parse_collection_capabilities(
+                info, self.sparse_runtime
+            )
+        return self._collection_capabilities
+
+    def _dense_using(self, caps: CollectionVectorCapabilities) -> str | None:
+        """Return the named-dense vector key, or None for legacy unnamed collections."""
+        return self.sparse_runtime.dense_vector_name if caps.has_named_dense else None
+
+    def _hybrid_query_active(self, caps: CollectionVectorCapabilities) -> bool:
+        """Combine collection schema with runtime config to decide on server-side fusion."""
+        return (
+            caps.hybrid_ready
+            and self.sparse_runtime.enabled
+            and self.sparse_runtime.use_qdrant_hybrid
+        )
+
+    async def supports_qdrant_hybrid(self) -> bool:
+        """Return True if the collection is configured for Qdrant dense+sparse fusion.
+
+        Used by HybridPipeline to decide whether to skip the separate keyword
+        search; calling this lets the pipeline preserve parallelism in the
+        dense-only path.
+        """
+        caps = await self._get_collection_capabilities()
+        return self._hybrid_query_active(caps)
+
+    def _encode_sparse_query(self, text: str):
+        sparse = get_sparse_encoder(self.sparse_runtime.model).encode_query(text)
+        if sparse.is_empty():
+            return None
+        return models.SparseVector(indices=sparse.indices, values=sparse.values)
+
+    def used_qdrant_hybrid_last_query(self) -> bool:
+        """Return whether the most recent vector_search in this task used Qdrant fusion.
+
+        Backed by a ContextVar so concurrent searches across tasks (e.g. multiple
+        MCP requests sharing this service) don't clobber each other.
+        """
+        return _used_qdrant_hybrid_ctx.get()
 
     async def get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using OpenAI client when available, else provider.
@@ -182,140 +270,224 @@ class VectorSearchService:
         Returns:
             List of search results with scores, text, metadata, and source_type
         """
-        # Generate cache key and check cache first
+        # Reset before the cache lookup so used_qdrant_hybrid_last_query()
+        # reflects this call rather than the previous task-local value, even
+        # when we return a cached result.
+        _used_qdrant_hybrid_ctx.set(False)
         cache_key = self._generate_cache_key(query, limit, project_ids)
+        cached = await self._cache_get_if_valid(cache_key, query)
+        if cached is not None:
+            return cached
 
+        parsed_query = self.field_parser.parse_query(query)
+        self.logger.debug(
+            f"Parsed query: {len(parsed_query.field_queries)} field queries, "
+            f"text: '{parsed_query.text_query}'"
+        )
+
+        if self.field_parser.should_use_filter_only(parsed_query):
+            results = await self._run_filter_only_search(
+                parsed_query, project_ids, limit
+            )
+        else:
+            results = await self._run_vector_search(
+                parsed_query, project_ids, query, limit
+            )
+
+        extracted = self._extract_hits(results)
+        await self._cache_put(cache_key, extracted, query)
+        return extracted
+
+    async def _cache_get_if_valid(
+        self, cache_key: str, query: str
+    ) -> list[dict[str, Any]] | None:
+        """Return cached results if present and not expired; otherwise increment the miss counter."""
         if self.cache_enabled:
-            # Guard cache reads/cleanup with the async lock
             async with self._cache_lock:
                 self._cleanup_expired_cache()
-
-                # Check cache for existing results
                 cached_entry = self._search_cache.get(cache_key)
-                if cached_entry is not None:
-                    current_time = time.time()
+                if (
+                    cached_entry is not None
+                    and time.time() - cached_entry["timestamp"] <= self.cache_ttl
+                ):
+                    self._cache_hits += 1
+                    self.logger.debug(
+                        "Search cache hit",
+                        query=query[:50],
+                        cache_hits=self._cache_hits,
+                        cache_misses=self._cache_misses,
+                        hit_rate=(
+                            f"{self._cache_hits / (self._cache_hits + self._cache_misses) * 100:.1f}%"
+                        ),
+                    )
+                    return cached_entry["results"]
 
-                    # Verify cache entry is still valid
-                    if current_time - cached_entry["timestamp"] <= self.cache_ttl:
-                        self._cache_hits += 1
-                        self.logger.debug(
-                            "Search cache hit",
-                            query=query[:50],  # Truncate for logging
-                            cache_hits=self._cache_hits,
-                            cache_misses=self._cache_misses,
-                            hit_rate=f"{self._cache_hits / (self._cache_hits + self._cache_misses) * 100:.1f}%",
-                        )
-                        return cached_entry["results"]
-
-        # Cache miss - perform actual search
         self._cache_misses += 1
-
         self.logger.debug(
             "Search cache miss - performing QDrant search",
-            query=query[:50],  # Truncate for logging
+            query=query[:50],
             cache_hits=self._cache_hits,
             cache_misses=self._cache_misses,
         )
+        return None
 
-        # ✅ Parse query for field-specific filters
-        parsed_query = self.field_parser.parse_query(query)
-        self.logger.debug(
-            f"Parsed query: {len(parsed_query.field_queries)} field queries, text: '{parsed_query.text_query}'"
+    async def _cache_put(
+        self, cache_key: str, results: list[dict[str, Any]], query: str
+    ) -> None:
+        """Store ``results`` under ``cache_key`` when caching is enabled."""
+        if not self.cache_enabled:
+            return
+        async with self._cache_lock:
+            self._search_cache[cache_key] = {
+                "results": results,
+                "timestamp": time.time(),
+            }
+            self.logger.debug(
+                "Cached search results",
+                query=query[:50],
+                results_count=len(results),
+                cache_size=len(self._search_cache),
+            )
+
+    async def _run_filter_only_search(
+        self,
+        parsed_query,
+        project_ids: list[str] | None,
+        limit: int,
+    ) -> list[FilterResult]:
+        """Scroll-based exact-match path used when the query contains only field filters."""
+        self.logger.debug("Using filter-only search for exact field matching")
+        query_filter = self.field_parser.create_qdrant_filter(
+            parsed_query.field_queries, project_ids
+        )
+        scroll_results = await self.qdrant_client.scroll(
+            collection_name=self.collection_name,
+            limit=limit,
+            scroll_filter=query_filter,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return [FilterResult(1.0, point.payload) for point in scroll_results[0]]
+
+    async def _run_vector_search(
+        self,
+        parsed_query,
+        project_ids: list[str] | None,
+        original_query: str,
+        limit: int,
+    ) -> list:
+        """Dispatch to either the Qdrant hybrid query or the dense-only query."""
+        search_query = parsed_query.text_query or original_query
+        query_embedding = await self.get_embedding(search_query)
+        search_params = models.SearchParams(
+            hnsw_ef=self.hnsw_ef, exact=bool(self.use_exact_search)
+        )
+        query_filter = self.field_parser.create_qdrant_filter(
+            parsed_query.field_queries, project_ids
+        )
+        # Routing is fully determined by the probed collection schema and the
+        # runtime config — no silent fallback. If the collection supports
+        # hybrid retrieval, we use hybrid; otherwise dense. Hybrid query
+        # failures propagate so operators see them instead of degraded results.
+        caps = await self._get_collection_capabilities()
+        if self._hybrid_query_active(caps):
+            return await self._run_qdrant_hybrid_query(
+                query_embedding,
+                search_query,
+                query_filter,
+                search_params,
+                caps,
+                limit,
+            )
+        return await self._run_dense_query(
+            query_embedding, query_filter, search_params, caps, limit
         )
 
-        # Determine search strategy based on parsed query
-        if self.field_parser.should_use_filter_only(parsed_query):
-            # Filter-only search (exact field matching)
-            self.logger.debug("Using filter-only search for exact field matching")
-            query_filter = self.field_parser.create_qdrant_filter(
-                parsed_query.field_queries, project_ids
-            )
+    async def _run_qdrant_hybrid_query(
+        self,
+        query_embedding: list[float],
+        search_query: str,
+        query_filter,
+        search_params,
+        caps: CollectionVectorCapabilities,
+        limit: int,
+    ) -> list:
+        """Issue a server-side RRF fusion query over the dense + sparse prefetches."""
+        sparse_query = self._encode_sparse_query(search_query)
+        if sparse_query is None:
+            raise ValueError("Sparse query generation returned empty vector")
 
-            # For filter-only searches, use scroll with filter instead of vector search
-            scroll_results = await self.qdrant_client.scroll(
-                collection_name=self.collection_name,
-                limit=limit,
-                scroll_filter=query_filter,
-                with_payload=True,
-                with_vectors=False,
-            )
+        prefetch_limit = limit * 3
+        query_response = await self.qdrant_client.query_points(
+            collection_name=self.collection_name,
+            prefetch=[
+                models.Prefetch(
+                    query=query_embedding,
+                    using=self._dense_using(caps),
+                    filter=query_filter,
+                    params=search_params,
+                    limit=prefetch_limit,
+                ),
+                models.Prefetch(
+                    query=sparse_query,
+                    using=self.sparse_runtime.sparse_vector_name,
+                    filter=query_filter,
+                    limit=prefetch_limit,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            limit=limit,
+            with_payload=True,
+        )
+        _used_qdrant_hybrid_ctx.set(True)
+        return query_response.points
 
-            results = []
-            for point in scroll_results[
-                0
-            ]:  # scroll_results is (points, next_page_offset)
-                results.append(FilterResult(1.0, point.payload))
-        else:
-            # Hybrid search (vector search + field filters)
-            from qdrant_client.http import models
+    async def _run_dense_query(
+        self,
+        query_embedding: list[float],
+        query_filter,
+        search_params,
+        caps: CollectionVectorCapabilities,
+        limit: int,
+    ) -> list:
+        """Plain dense vector search — used when hybrid isn't available or has failed."""
+        query_kwargs: dict[str, Any] = {
+            "collection_name": self.collection_name,
+            "query": query_embedding,
+            "limit": limit,
+            "score_threshold": self.min_score,
+            "search_params": search_params,
+            "query_filter": query_filter,
+            "with_payload": True,
+        }
+        using = self._dense_using(caps)
+        if using:
+            query_kwargs["using"] = using
+        query_response = await self.qdrant_client.query_points(**query_kwargs)
+        return query_response.points
 
-            search_query = parsed_query.text_query if parsed_query.text_query else query
-            query_embedding = await self.get_embedding(search_query)
-
-            search_params = models.SearchParams(
-                hnsw_ef=self.hnsw_ef, exact=bool(self.use_exact_search)
-            )
-
-            # Combine field filters with project filters
-            query_filter = self.field_parser.create_qdrant_filter(
-                parsed_query.field_queries, project_ids
-            )
-
-            # Use query_points API (qdrant-client 1.10+)
-            query_response = await self.qdrant_client.query_points(
-                collection_name=self.collection_name,
-                query=query_embedding,
-                limit=limit,
-                score_threshold=self.min_score,
-                search_params=search_params,
-                query_filter=query_filter,
-                with_payload=True,  # 🔧 CRITICAL: Explicitly request payload data
-            )
-            results = query_response.points
-
-        extracted_results = []
+    @staticmethod
+    def _extract_hits(results: list) -> list[dict[str, Any]]:
+        """Project Qdrant scored points to the dict shape consumed downstream."""
+        extracted: list[dict[str, Any]] = []
         for hit in results:
-            extracted = {
-                "score": hit.score,
-                "text": hit.payload.get("content", "") if hit.payload else "",
-                "metadata": hit.payload.get("metadata", {}) if hit.payload else {},
-                "source_type": (
-                    hit.payload.get("source_type", "unknown")
-                    if hit.payload
-                    else "unknown"
-                ),
-                # Extract fields directly from Qdrant payload
-                "title": hit.payload.get("title", "") if hit.payload else "",
-                "url": hit.payload.get("url", "") if hit.payload else "",
-                "document_id": (
-                    hit.payload.get("document_id", "") if hit.payload else ""
-                ),
-                "source": hit.payload.get("source", "") if hit.payload else "",
-                "created_at": hit.payload.get("created_at", "") if hit.payload else "",
-                "updated_at": hit.payload.get("updated_at", "") if hit.payload else "",
-                "contextual_content": (
-                    hit.payload.get("contextual_content", "") if hit.payload else ""
-                ),
-            }
-
-            extracted_results.append(extracted)
-
-        # Store results in cache if caching is enabled
-        if self.cache_enabled:
-            async with self._cache_lock:
-                self._search_cache[cache_key] = {
-                    "results": extracted_results,
-                    "timestamp": time.time(),
+            payload = getattr(hit, "payload", None) or {}
+            extracted.append(
+                {
+                    "score": hit.score,
+                    "text": payload.get("content", ""),
+                    "metadata": payload.get("metadata", {}),
+                    "source_type": payload.get("source_type", "unknown"),
+                    "title": payload.get("title", ""),
+                    "url": payload.get("url", ""),
+                    "document_id": payload.get("document_id", ""),
+                    "source": payload.get("source", ""),
+                    "created_at": payload.get("created_at", ""),
+                    "updated_at": payload.get("updated_at", ""),
+                    "contextual_content": payload.get("contextual_content", ""),
                 }
-
-                self.logger.debug(
-                    "Cached search results",
-                    query=query[:50],
-                    results_count=len(extracted_results),
-                    cache_size=len(self._search_cache),
-                )
-
-        return extracted_results
+            )
+        return extracted
 
     def get_cache_stats(self) -> dict[str, Any]:
         """Get cache performance statistics.
@@ -355,8 +527,6 @@ class VectorSearchService:
             Qdrant Filter object or None
         """
         if project_ids:
-            from qdrant_client.http import models
-
             return models.Filter(
                 must=[
                     models.FieldCondition(
@@ -365,8 +535,6 @@ class VectorSearchService:
                 ]
             )
         return None
-
-    # Note: _build_filter method added back for backward compatibility - prefer FieldQueryParser.create_qdrant_filter()
 
     def build_filter(
         self, project_ids: list[str] | None = None

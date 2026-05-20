@@ -21,6 +21,7 @@ from ...utils.logging import LoggingConfig
 from ..components.search_result_models import HybridSearchResult
 from ..enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 from ..hybrid_search import HybridSearchEngine
+from ..sparse_config import load_sparse_runtime_config
 from .faceted import FacetedSearchOperations
 from .intelligence import IntelligenceOperations
 from .search import SearchOperations
@@ -165,6 +166,9 @@ class SearchEngine:
             ):
                 # Determine vector size from env or config file; avoid hardcoded default when possible
                 vector_size = None
+                # load_sparse_runtime_config reads MCP_CONFIG from the environment
+                # itself when called without an argument.
+                sparse_runtime = load_sparse_runtime_config()
                 # 1) From env variable if provided
                 try:
                     env_size = os.getenv("LLM_VECTOR_SIZE")
@@ -209,13 +213,33 @@ class SearchEngine:
                     except Exception:
                         pass
 
-                await self.client.create_collection(
-                    collection_name=config.collection_name,
-                    vectors_config=models.VectorParams(
-                        size=vector_size,
-                        distance=models.Distance.COSINE,
-                    ),
+                # sparse.enabled is a strict declaration. If True, the collection
+                # is created with a sparse vector; failures propagate. If False,
+                # dense-only. Operators on Qdrant servers that don't support
+                # sparse vectors must set sparse.enabled=false explicitly.
+                dense_params = models.VectorParams(
+                    size=vector_size, distance=models.Distance.COSINE
                 )
+                if sparse_runtime.enabled:
+                    await self.client.create_collection(
+                        collection_name=config.collection_name,
+                        vectors_config={sparse_runtime.dense_vector_name: dense_params},
+                        sparse_vectors_config={
+                            sparse_runtime.sparse_vector_name: models.SparseVectorParams()
+                        },
+                    )
+                    self.logger.info(
+                        "Created Qdrant collection with dense+sparse vectors",
+                        collection=config.collection_name,
+                        dense_vector_name=sparse_runtime.dense_vector_name,
+                        sparse_vector_name=sparse_runtime.sparse_vector_name,
+                        sparse_model=sparse_runtime.model,
+                    )
+                else:
+                    await self.client.create_collection(
+                        collection_name=config.collection_name,
+                        vectors_config=dense_params,
+                    )
 
             # Initialize hybrid search (single path; pass through search_config which may be None)
             if self.client:

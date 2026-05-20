@@ -9,3 +9,8 @@ def test_openai_provider_importable():
 def test_ollama_provider_importable():
     mod = importlib.import_module("qdrant_loader_core.llm.providers.ollama")
     assert hasattr(mod, "OllamaProvider")
+
+
+def test_bedrock_provider_importable():
+    mod = importlib.import_module("qdrant_loader_core.llm.providers.bedrock")
+    assert hasattr(mod, "BedrockProvider")
