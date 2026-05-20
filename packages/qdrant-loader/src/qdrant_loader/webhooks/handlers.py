@@ -71,3 +71,39 @@ async def process_webhook_event(
         source=source,
         force=force,
     )
+
+
+async def process_ingest_request(
+    project_id: str | None,
+    source_type: str | None,
+    source: str | None,
+    force: bool = False,
+) -> None:
+    """Handle a direct HTTP ingest request by invoking the ingestion pipeline."""
+    if source is not None and source_type is None:
+        raise ValueError(
+            "source_type must be provided when source is specified."
+        )
+
+    normalized_source_type = (
+        normalize_source_type(source_type) if source_type is not None else None
+    )
+    settings = get_settings()
+    qdrant_manager = QdrantManager(settings)
+
+    logger.info(
+        "Received direct ingest request",
+        project_id=project_id,
+        source_type=normalized_source_type,
+        source=source,
+        force=force,
+    )
+
+    await run_pipeline_ingestion(
+        settings,
+        qdrant_manager,
+        project=project_id,
+        source_type=normalized_source_type,
+        source=source,
+        force=force,
+    )

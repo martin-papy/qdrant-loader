@@ -7,7 +7,12 @@ from fastapi.responses import JSONResponse
 
 from qdrant_loader.utils.logging import LoggingConfig
 
-from .handlers import SUPPORTED_SOURCE_TYPES, normalize_source_type, process_webhook_event
+from qdrant_loader.webhooks.handlers import (
+    SUPPORTED_SOURCE_TYPES,
+    normalize_source_type,
+    process_webhook_event,
+    process_ingest_request,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -142,6 +147,11 @@ async def webhook_source_route(
         )
     except HTTPException:
         raise
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
     except Exception as exc:
         logger.error(
             "Webhook processing failed",
@@ -159,6 +169,65 @@ async def webhook_source_route(
         content={
             "status": "accepted",
             "source_type": normalized_source_type,
+            "source": source,
+            "force": force,
+        },
+    )
+
+
+@app.post(
+    "/ingest",
+    dependencies=[Depends(verify_webhook_token)],
+)
+async def ingest_route(
+    project_id: str | None = Query(None),
+    source_type: str | None = Query(None),
+    source: str | None = Query(None),
+    force: bool = False,
+) -> JSONResponse:
+    """Receive a direct HTTP request to run ingestion on demand."""
+    try:
+        await process_ingest_request(
+            project_id=project_id,
+            source_type=source_type,
+            source=source,
+            force=force,
+        )
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        logger.warning(
+            "Direct ingest request validation failed",
+            project_id=project_id,
+            source_type=source_type,
+            source=source,
+            force=force,
+            error=str(exc),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        logger.error(
+            "Direct ingest request failed",
+            project_id=project_id,
+            source_type=source_type,
+            source=source,
+            force=force,
+            error=str(exc),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Direct ingest request failed.",
+        ) from exc
+
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "status": "accepted",
+            "project_id": project_id,
+            "source_type": source_type,
             "source": source,
             "force": force,
         },
