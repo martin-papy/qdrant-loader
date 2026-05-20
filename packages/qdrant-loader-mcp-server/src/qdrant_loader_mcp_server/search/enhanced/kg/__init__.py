@@ -1,12 +1,17 @@
 """Knowledge Graph package with complete modular architecture."""
 
+from qdrant_loader_core.graph.models import (
+    GraphEdge,
+    GraphNode,
+)
+
 from .builder import GraphBuilder
 from .document_graph import DocumentKnowledgeGraph
 from .graph import KnowledgeGraph
 from .models import (
-    GraphEdge,
-    GraphNode,
-    NodeType,
+    EnrichedEdge,
+    EnrichedNode,
+    NodeLabel,
     RelationshipType,
     TraversalResult,
     TraversalStrategy,
@@ -14,7 +19,6 @@ from .models import (
 from .traverser import GraphTraverser
 
 __all__ = [
-    "NodeType",
     "RelationshipType",
     "GraphNode",
     "GraphEdge",
@@ -24,4 +28,7 @@ __all__ = [
     "GraphBuilder",
     "KnowledgeGraph",
     "DocumentKnowledgeGraph",
+    "EnrichedNode",
+    "EnrichedEdge",
+    "NodeLabel",
 ]

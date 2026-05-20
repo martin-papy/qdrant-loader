@@ -1,38 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from typing import Any
 
-# =========================
-# Data Models
-# =========================
-
-
-@dataclass
-class GraphNode:
-    id: str
-    label: str
-    properties: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class GraphEdge:
-    source: str
-    target: str
-    type: str
-    properties: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class SubGraph:
-    nodes: list[GraphNode]
-    edges: list[GraphEdge]
-
-
-# =========================
-# Interface
-# =========================
+from .models import GraphEdge, GraphNode, SubGraph
 
 
 class GraphStore(ABC):

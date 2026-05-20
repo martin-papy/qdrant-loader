@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
 
-from ..store import GraphEdge, GraphNode, SubGraph
+from ..models import CoreEdgeType, GraphEdge, GraphNode, SubGraph
 
 
 # ------------------------
@@ -51,14 +51,7 @@ class BaseEntityExtractor(EntityExtractor):
         - Chunk
     """
 
-    VALID_EDGE_TYPES = {
-        "AUTHORED_BY",
-        "BELONGS_TO",
-        "HAS_LABEL",
-        "LINKS_TO",
-        "PART_OF",
-        "HAS_CHUNK",
-    }
+    VALID_EDGE_TYPES = list(CoreEdgeType)
 
     def __init__(self):
         self._nodes: dict[str, GraphNode] = {}

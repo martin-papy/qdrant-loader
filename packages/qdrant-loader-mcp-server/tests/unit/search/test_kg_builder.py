@@ -1,6 +1,6 @@
 """Tests for Knowledge Graph Builder."""
 
-from qdrant_loader_mcp_server.search.enhanced.kg import GraphBuilder, NodeType
+from qdrant_loader_mcp_server.search.enhanced.kg import GraphBuilder, NodeLabel
 
 
 def test_graph_builder_import():
@@ -73,5 +73,5 @@ def test_graph_builder_document_nodes_creation():
     document_nodes = builder._create_document_nodes(mock_results)
 
     assert len(document_nodes) == 2  # One document node, one section node
-    assert any(node.node_type == NodeType.DOCUMENT for node in document_nodes)
-    assert any(node.node_type == NodeType.SECTION for node in document_nodes)
+    assert any(node.node_type == NodeLabel.DOCUMENT for node in document_nodes)
+    assert any(node.node_type == NodeLabel.SECTION for node in document_nodes)

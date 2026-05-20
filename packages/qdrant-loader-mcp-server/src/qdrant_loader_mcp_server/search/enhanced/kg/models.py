@@ -1,12 +1,11 @@
-from __future__ import annotations
-
-import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from qdrant_loader_core.graph.models import CoreNodeLabel, GraphEdge, GraphNode
 
-class NodeType(Enum):
+
+class NodeLabel(Enum):
     DOCUMENT = "document"
     SECTION = "section"
     ENTITY = "entity"
@@ -30,46 +29,166 @@ class RelationshipType(Enum):
     CATEGORIZED_AS = "categorized_as"
 
 
-@dataclass
-class GraphNode:
-    node_type: NodeType
-    title: str
-    id: str | None = None
-    content: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+@dataclass(init=False)
+class EnrichedNode:
+    """
+    Semantic wrapper around Core GraphNode.
+    Adds query-time enrichment (scores, NLP features, etc.)
+    """
 
+    core: GraphNode  # composition (NOT duplication)
+
+    # -------- Basic derived --------
+    title: str | None = None
+    content: str | None = None
+
+    # -------- Ranking / Graph analytics --------
     centrality_score: float = 0.0
     authority_score: float = 0.0
     hub_score: float = 0.0
 
+    # -------- NLP enrichment --------
     entities: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
     concepts: list[str] = field(default_factory=list)
     keywords: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
-        if self.id is None or self.id == "":
-            # Deterministic UUIDv5 id derived from stable inputs (node_type + title)
-            # Fixed namespace ensures stable generation across runs/processes
-            node_namespace = uuid.UUID("8f5b3e78-9b8c-4f07-b54e-27f7ac1d5a11")
-            name = f"{self.node_type.value}::{self.title}"
-            deterministic_uuid = uuid.uuid5(node_namespace, name)
-            self.id = f"{self.node_type.value}_{deterministic_uuid}"
-
-
-@dataclass
-class GraphEdge:
-    source_id: str
-    target_id: str
-    relationship_type: RelationshipType
-    weight: float = 1.0
+    # -------- Extra metadata --------
     metadata: dict[str, Any] = field(default_factory=dict)
-    evidence: list[str] = field(default_factory=list)
+
+    def __init__(
+        self,
+        core: GraphNode = None,
+        *,
+        id: str = None,
+        node_type: NodeLabel = None,
+        title: str | None = None,
+        content: str | None = None,
+        properties: dict | None = None,
+        metadata: dict | None = None,
+        entities: list[str] | None = None,
+        topics: list[str] | None = None,
+        concepts: list[str] | None = None,
+        keywords: list[str] | None = None,
+        centrality_score: float = 0.0,
+        authority_score: float = 0.0,
+        hub_score: float = 0.0,
+    ):
+        """
+        Supports both:
+        - EnrichedNode(core=GraphNode(...))
+        - EnrichedNode(id=..., node_type=...)
+        """
+
+        # Case 1: build core from id + node_type (legacy path)
+        if core is None:
+            if id is None or node_type is None:
+                raise ValueError("Must provide either core OR (id + node_type)")
+
+            core_label = map_mcp_to_core_label(node_type)
+
+            core = GraphNode(
+                id=id,
+                label=core_label,
+                properties=properties or {},
+            )
+
+            # Assign core
+            self.core = core
+
+            # Assign simple fields
+            self.title = title
+            self.content = content
+
+            self.centrality_score = centrality_score
+            self.authority_score = authority_score
+            self.hub_score = hub_score
+
+            # Lists (safe default)
+            self.entities = entities or []
+            self.topics = topics or []
+            self.concepts = concepts or []
+            self.keywords = keywords or []
+
+            # Metadata
+            self.metadata = metadata or {}
+
+            # Preserve semantic type
+            if node_type:
+                self.metadata["node_type"] = node_type
+
+        # ---------------------------------
+        # Helper properties
+        # ---------------------------------
+
+    @property
+    def id(self) -> str:
+        return self.core.id
+
+    @property
+    def label(self):
+        return self.core.label
+
+    @property
+    def properties(self):
+        return self.core.properties
+
+    @property
+    def node_type(self) -> NodeLabel | None:
+        return self.metadata.get("node_type")
+
+
+@dataclass(init=False)
+class EnrichedEdge:
+    core: GraphEdge
+
+    weight: float = 1.0
     confidence: float = 1.0
 
-    def __post_init__(self):
-        self.weight = max(0.0, min(1.0, self.weight))
-        self.confidence = max(0.0, min(1.0, self.confidence))
+    metadata: dict[str, Any] = field(default_factory=dict)
+    evidence: list[str] = field(default_factory=list)
+
+    def __init__(
+        self,
+        core: GraphEdge = None,
+        *,
+        source_id: str = None,
+        target_id: str = None,
+        relationship_type=None,
+        weight: float = 1.0,
+        confidence: float = 1.0,
+        metadata: dict | None = None,
+        evidence: list[str] | None = None,
+    ):
+        if core is None:
+            if source_id is None or target_id is None or relationship_type is None:
+                raise ValueError(
+                    "Must provide core OR (source_id + target_id + relationship_type)"
+                )
+
+            core = GraphEdge(
+                source=source_id,
+                target=target_id,
+                edge_type=relationship_type,
+            )
+
+        self.core = core
+        self.weight = weight
+        self.confidence = confidence
+        self.metadata = metadata or {}
+        self.evidence = evidence or []
+
+    @property
+    def source_id(self):
+        return self.core.source
+
+    @property
+    def target_id(self):
+        return self.core.target
+
+    @property
+    def relationship_type(self):
+        return self.core.edge_type
 
 
 class TraversalStrategy(Enum):
@@ -84,9 +203,27 @@ class TraversalStrategy(Enum):
 @dataclass
 class TraversalResult:
     path: list[str]
-    nodes: list[GraphNode]
-    edges: list[GraphEdge]
+    nodes: list[EnrichedNode]
+    edges: list[EnrichedEdge]
     total_weight: float
     semantic_score: float
     hop_count: int
     reasoning_path: list[str]
+
+
+def map_mcp_to_core_label(node_label: NodeLabel) -> CoreNodeLabel:
+    """
+    Map semantic (MCP) node label -> core graph label
+    """
+
+    mapping = {
+        NodeLabel.DOCUMENT: CoreNodeLabel.DOCUMENT,
+        NodeLabel.CONCEPT: CoreNodeLabel.CONCEPT,
+        # Semantic -> generic mapping
+        NodeLabel.SECTION: CoreNodeLabel.CONTAINER,
+        NodeLabel.ENTITY: CoreNodeLabel.CONCEPT,
+        NodeLabel.TOPIC: CoreNodeLabel.CONCEPT,
+    }
+    if node_label not in mapping:
+        raise ValueError(f"Unsupported NodeLabel: {node_label}")
+    return mapping[node_label]

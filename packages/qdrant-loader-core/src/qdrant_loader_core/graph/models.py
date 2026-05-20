@@ -1,0 +1,44 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import StrEnum
+from typing import Any
+
+
+class CoreNodeLabel(StrEnum):
+    DOCUMENT = "Document"
+    PERSON = "Person"
+    CONTAINER = "Container"
+    LABEL = "Label"
+    CONCEPT = "Concept"
+    CHUNK = "Chunk"
+
+
+class CoreEdgeType(StrEnum):
+    AUTHORED_BY = "AUTHORED_BY"
+    BELONGS_TO = "BELONGS_TO"
+    HAS_LABEL = "HAS_LABEL"
+    LINKS_TO = "LINKS_TO"
+    PART_OF = "PART_OF"
+    HAS_CHUNK = "HAS_CHUNK"
+
+
+@dataclass
+class GraphNode:
+    id: str
+    label: CoreNodeLabel
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class GraphEdge:
+    source: str
+    target: str
+    edge_type: CoreEdgeType
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SubGraph:
+    nodes: list[GraphNode] = field(default_factory=list)
+    edges: list[GraphEdge] = field(default_factory=list)

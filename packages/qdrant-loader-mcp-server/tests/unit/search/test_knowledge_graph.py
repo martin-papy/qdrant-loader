@@ -8,12 +8,12 @@ from qdrant_loader_mcp_server.search.components.search_result_models import (
 )
 from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
     DocumentKnowledgeGraph,
+    EnrichedEdge,
+    EnrichedNode,
     GraphBuilder,
-    GraphEdge,
-    GraphNode,
     GraphTraverser,
     KnowledgeGraph,
-    NodeType,
+    NodeLabel,
     RelationshipType,
     TraversalStrategy,
 )
@@ -31,26 +31,26 @@ class TestKnowledgeGraph:
         self.graph = KnowledgeGraph()
 
         # Sample nodes
-        self.doc_node = GraphNode(
+        self.doc_node = EnrichedNode(
             id="doc_1",
-            node_type=NodeType.DOCUMENT,
+            node_type=NodeLabel.DOCUMENT,
             title="Test Document",
             entities=["Entity1", "Entity2"],
             topics=["Topic1", "Topic2"],
             keywords=["keyword1", "keyword2"],
         )
 
-        self.section_node = GraphNode(
+        self.section_node = EnrichedNode(
             id="section_1",
-            node_type=NodeType.SECTION,
+            node_type=NodeLabel.SECTION,
             title="Test Section",
             entities=["Entity1"],
             topics=["Topic1"],
             keywords=["keyword1"],
         )
 
-        self.entity_node = GraphNode(
-            id="entity_1", node_type=NodeType.ENTITY, title="Entity1"
+        self.entity_node = EnrichedNode(
+            id="entity_1", node_type=NodeLabel.ENTITY, title="Entity1"
         )
 
     def test_graph_initialization(self):
@@ -65,7 +65,7 @@ class TestKnowledgeGraph:
         result = self.graph.add_node(self.doc_node)
         assert result is True
         assert self.doc_node.id in self.graph.nodes
-        assert self.doc_node.id in self.graph.node_type_index[NodeType.DOCUMENT]
+        assert self.doc_node.id in self.graph.node_type_index[NodeLabel.DOCUMENT]
 
         # Test entity indexing
         assert "entity1" in self.graph.entity_index
@@ -81,7 +81,7 @@ class TestKnowledgeGraph:
         self.graph.add_node(self.doc_node)
         self.graph.add_node(self.section_node)
 
-        edge = GraphEdge(
+        edge = EnrichedEdge(
             source_id=self.doc_node.id,
             target_id=self.section_node.id,
             relationship_type=RelationshipType.CONTAINS,
@@ -100,7 +100,7 @@ class TestKnowledgeGraph:
         assert edge_key in self.graph.edges
 
         # Test edge with missing nodes
-        invalid_edge = GraphEdge(
+        invalid_edge = EnrichedEdge(
             source_id="nonexistent",
             target_id=self.section_node.id,
             relationship_type=RelationshipType.MENTIONS,
@@ -116,14 +116,14 @@ class TestKnowledgeGraph:
         self.graph.add_node(self.section_node)
         self.graph.add_node(self.entity_node)
 
-        doc_nodes = self.graph.find_nodes_by_type(NodeType.DOCUMENT)
+        doc_nodes = self.graph.find_nodes_by_type(NodeLabel.DOCUMENT)
         assert len(doc_nodes) == 1
         assert doc_nodes[0].id == self.doc_node.id
 
-        section_nodes = self.graph.find_nodes_by_type(NodeType.SECTION)
+        section_nodes = self.graph.find_nodes_by_type(NodeLabel.SECTION)
         assert len(section_nodes) == 1
 
-        topic_nodes = self.graph.find_nodes_by_type(NodeType.TOPIC)
+        topic_nodes = self.graph.find_nodes_by_type(NodeLabel.TOPIC)
         assert len(topic_nodes) == 0
 
     def test_find_nodes_by_entity(self):
@@ -164,12 +164,12 @@ class TestKnowledgeGraph:
         self.graph.add_node(self.entity_node)
 
         # Add edges
-        edge1 = GraphEdge(
+        edge1 = EnrichedEdge(
             source_id=self.doc_node.id,
             target_id=self.section_node.id,
             relationship_type=RelationshipType.CONTAINS,
         )
-        edge2 = GraphEdge(
+        edge2 = EnrichedEdge(
             source_id=self.section_node.id,
             target_id=self.entity_node.id,
             relationship_type=RelationshipType.MENTIONS,
@@ -193,7 +193,7 @@ class TestKnowledgeGraph:
         self.graph.add_node(self.doc_node)
         self.graph.add_node(self.section_node)
 
-        edge = GraphEdge(
+        edge = EnrichedEdge(
             source_id=self.doc_node.id,
             target_id=self.section_node.id,
             relationship_type=RelationshipType.CONTAINS,
@@ -221,7 +221,7 @@ class TestKnowledgeGraph:
         self.graph.add_node(self.doc_node)
         self.graph.add_node(self.section_node)
 
-        edge = GraphEdge(
+        edge = EnrichedEdge(
             source_id=self.doc_node.id,
             target_id=self.section_node.id,
             relationship_type=RelationshipType.CONTAINS,
@@ -232,8 +232,8 @@ class TestKnowledgeGraph:
 
         assert stats["total_nodes"] == 2
         assert stats["total_edges"] == 1
-        assert stats["node_types"][NodeType.DOCUMENT.value] == 1
-        assert stats["node_types"][NodeType.SECTION.value] == 1
+        assert stats["node_types"][NodeLabel.DOCUMENT.value] == 1
+        assert stats["node_types"][NodeLabel.SECTION.value] == 1
         assert stats["relationship_types"][RelationshipType.CONTAINS.value] == 1
         assert "connected_components" in stats
         assert "avg_degree" in stats
@@ -250,24 +250,24 @@ class TestGraphTraverser:
 
         # Create a test graph: doc -> section1 -> entity1
         #                           -> section2 -> entity2
-        self.doc_node = GraphNode(
-            id="doc_1", node_type=NodeType.DOCUMENT, title="Test Document"
+        self.doc_node = EnrichedNode(
+            id="doc_1", node_type=NodeLabel.DOCUMENT, title="Test Document"
         )
 
-        self.section1_node = GraphNode(
-            id="section_1", node_type=NodeType.SECTION, title="Section 1"
+        self.section1_node = EnrichedNode(
+            id="section_1", node_type=NodeLabel.SECTION, title="Section 1"
         )
 
-        self.section2_node = GraphNode(
-            id="section_2", node_type=NodeType.SECTION, title="Section 2"
+        self.section2_node = EnrichedNode(
+            id="section_2", node_type=NodeLabel.SECTION, title="Section 2"
         )
 
-        self.entity1_node = GraphNode(
-            id="entity_1", node_type=NodeType.ENTITY, title="Entity 1"
+        self.entity1_node = EnrichedNode(
+            id="entity_1", node_type=NodeLabel.ENTITY, title="Entity 1"
         )
 
-        self.entity2_node = GraphNode(
-            id="entity_2", node_type=NodeType.ENTITY, title="Entity 2"
+        self.entity2_node = EnrichedNode(
+            id="entity_2", node_type=NodeLabel.ENTITY, title="Entity 2"
         )
 
         # Add nodes to graph
@@ -282,25 +282,25 @@ class TestGraphTraverser:
 
         # Add edges
         edges = [
-            GraphEdge(
+            EnrichedEdge(
                 source_id="doc_1",
                 target_id="section_1",
                 relationship_type=RelationshipType.CONTAINS,
                 weight=1.0,
             ),
-            GraphEdge(
+            EnrichedEdge(
                 source_id="doc_1",
                 target_id="section_2",
                 relationship_type=RelationshipType.CONTAINS,
                 weight=1.0,
             ),
-            GraphEdge(
+            EnrichedEdge(
                 source_id="section_1",
                 target_id="entity_1",
                 relationship_type=RelationshipType.MENTIONS,
                 weight=0.8,
             ),
-            GraphEdge(
+            EnrichedEdge(
                 source_id="section_2",
                 target_id="entity_2",
                 relationship_type=RelationshipType.MENTIONS,
@@ -507,15 +507,15 @@ class TestGraphBuilder:
         assert len(graph.nodes) > 0
 
         # Should have document nodes
-        doc_nodes = graph.find_nodes_by_type(NodeType.DOCUMENT)
+        doc_nodes = graph.find_nodes_by_type(NodeLabel.DOCUMENT)
         assert len(doc_nodes) > 0
 
         # Should have section nodes
-        section_nodes = graph.find_nodes_by_type(NodeType.SECTION)
+        section_nodes = graph.find_nodes_by_type(NodeLabel.SECTION)
         assert len(section_nodes) == 2  # One per search result
 
         # Should have entity nodes for frequent entities (from titles)
-        entity_nodes = graph.find_nodes_by_type(NodeType.ENTITY)
+        entity_nodes = graph.find_nodes_by_type(NodeLabel.ENTITY)
         # Should have entities based on titles that appear in multiple documents
         if len(entity_nodes) > 0:
             # At least some entities should be extracted
@@ -530,10 +530,10 @@ class TestGraphBuilder:
 
         # Check node types
         doc_type_nodes = [
-            node for node in doc_nodes if node.node_type == NodeType.DOCUMENT
+            node for node in doc_nodes if node.node_type == NodeLabel.DOCUMENT
         ]
         section_type_nodes = [
-            node for node in doc_nodes if node.node_type == NodeType.SECTION
+            node for node in doc_nodes if node.node_type == NodeLabel.SECTION
         ]
 
         assert len(doc_type_nodes) == 2
@@ -541,7 +541,7 @@ class TestGraphBuilder:
 
         # Check that entities and topics are extracted
         for node in doc_nodes:
-            if node.node_type == NodeType.SECTION:
+            if node.node_type == NodeLabel.SECTION:
                 assert len(node.entities) > 0
                 assert len(node.topics) > 0
 

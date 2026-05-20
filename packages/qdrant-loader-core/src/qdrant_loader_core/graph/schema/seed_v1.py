@@ -1,4 +1,4 @@
-from ..store import GraphEdge, GraphNode
+from ..models import GraphEdge, GraphNode
 
 
 async def apply(graph_store):
@@ -24,7 +24,7 @@ async def apply(graph_store):
         GraphEdge(
             source="doc_1",
             target="person_1",
-            type="AUTHORED_BY",
+            edge_type="AUTHORED_BY",
             properties={"role": "author"},
         ),
     ]

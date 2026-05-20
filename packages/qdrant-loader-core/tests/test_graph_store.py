@@ -34,7 +34,7 @@ async def test_upsert_edge_idempotent(store):
     edge = GraphEdge(
         source="doc_1",
         target="person_1",
-        type="AUTHORED_BY",
+        edge_type="AUTHORED_BY",
         properties={"role": "author"},
     )
 

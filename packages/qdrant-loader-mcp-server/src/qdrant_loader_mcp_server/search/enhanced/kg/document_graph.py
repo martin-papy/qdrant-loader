@@ -25,7 +25,7 @@ else:
 from ....utils.logging import LoggingConfig
 from .builder import GraphBuilder
 from .graph import KnowledgeGraph
-from .models import NodeType, TraversalResult, TraversalStrategy
+from .models import NodeLabel, TraversalResult, TraversalStrategy
 from .traverser import GraphTraverser
 
 logger = LoggingConfig.get_logger(__name__)
@@ -140,7 +140,7 @@ class DocumentKnowledgeGraph:
 
         # If no entity/topic matches, use high-centrality document nodes
         if not start_nodes:
-            doc_nodes = self.knowledge_graph.find_nodes_by_type(NodeType.DOCUMENT)
+            doc_nodes = self.knowledge_graph.find_nodes_by_type(NodeLabel.DOCUMENT)
             # Sort by centrality and take top 3
             doc_nodes.sort(key=lambda n: n.centrality_score, reverse=True)
             start_nodes = [node.id for node in doc_nodes[:3]]

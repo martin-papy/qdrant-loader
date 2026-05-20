@@ -1,10 +1,10 @@
 """Tests for Knowledge Graph Core Implementation."""
 
 from qdrant_loader_mcp_server.search.enhanced.kg import (
-    GraphEdge,
-    GraphNode,
+    EnrichedEdge,
+    EnrichedNode,
     KnowledgeGraph,
-    NodeType,
+    NodeLabel,
     RelationshipType,
 )
 
@@ -30,9 +30,9 @@ def test_knowledge_graph_add_node():
     """Test adding a node to the knowledge graph."""
     kg = KnowledgeGraph()
 
-    node = GraphNode(
+    node = EnrichedNode(
         id="test_node",
-        node_type=NodeType.DOCUMENT,
+        node_type=NodeLabel.DOCUMENT,
         title="Test Document",
         content="Test content",
     )
@@ -49,14 +49,14 @@ def test_knowledge_graph_add_edge():
     kg = KnowledgeGraph()
 
     # Create two nodes
-    node1 = GraphNode(id="node1", node_type=NodeType.DOCUMENT, title="Doc 1")
-    node2 = GraphNode(id="node2", node_type=NodeType.SECTION, title="Section 1")
+    node1 = EnrichedNode(id="node1", node_type=NodeLabel.DOCUMENT, title="Doc 1")
+    node2 = EnrichedNode(id="node2", node_type=NodeLabel.SECTION, title="Section 1")
 
     kg.add_node(node1)
     kg.add_node(node2)
 
     # Create edge
-    edge = GraphEdge(
+    edge = EnrichedEdge(
         source_id="node1",
         target_id="node2",
         relationship_type=RelationshipType.CONTAINS,
@@ -72,14 +72,16 @@ def test_knowledge_graph_find_nodes_by_type():
     """Test finding nodes by type."""
     kg = KnowledgeGraph()
 
-    doc_node = GraphNode(id="doc", node_type=NodeType.DOCUMENT, title="Document")
-    section_node = GraphNode(id="section", node_type=NodeType.SECTION, title="Section")
+    doc_node = EnrichedNode(id="doc", node_type=NodeLabel.DOCUMENT, title="Document")
+    section_node = EnrichedNode(
+        id="section", node_type=NodeLabel.SECTION, title="Section"
+    )
 
     kg.add_node(doc_node)
     kg.add_node(section_node)
 
-    doc_nodes = kg.find_nodes_by_type(NodeType.DOCUMENT)
-    section_nodes = kg.find_nodes_by_type(NodeType.SECTION)
+    doc_nodes = kg.find_nodes_by_type(NodeLabel.DOCUMENT)
+    section_nodes = kg.find_nodes_by_type(NodeLabel.SECTION)
 
     assert len(doc_nodes) == 1
     assert len(section_nodes) == 1
@@ -92,8 +94,8 @@ def test_knowledge_graph_statistics():
     kg = KnowledgeGraph()
 
     # Add some nodes
-    node1 = GraphNode(id="n1", node_type=NodeType.DOCUMENT, title="Doc")
-    node2 = GraphNode(id="n2", node_type=NodeType.SECTION, title="Section")
+    node1 = EnrichedNode(id="n1", node_type=NodeLabel.DOCUMENT, title="Doc")
+    node2 = EnrichedNode(id="n2", node_type=NodeLabel.SECTION, title="Section")
 
     kg.add_node(node1)
     kg.add_node(node2)
@@ -102,5 +104,5 @@ def test_knowledge_graph_statistics():
 
     assert stats["total_nodes"] == 2
     assert stats["total_edges"] == 0
-    assert NodeType.DOCUMENT.value in stats["node_types"]
-    assert NodeType.SECTION.value in stats["node_types"]
+    assert NodeLabel.DOCUMENT.value in stats["node_types"]
+    assert NodeLabel.SECTION.value in stats["node_types"]

@@ -4,23 +4,18 @@ from typing import Any
 
 from falkordb import FalkorDB
 
-from .store import (
+from .models import (
+    CoreEdgeType,
+    CoreNodeLabel,
     GraphEdge,
     GraphNode,
-    GraphStore,
     SubGraph,
 )
+from .store import GraphStore
 
-VALID_NODE_LABELS = {"Document", "Person", "Container", "Label", "Concept", "Chunk"}
+VALID_NODE_LABELS = list(CoreNodeLabel)
 
-VALID_EDGE_TYPES = {
-    "AUTHORED_BY",
-    "BELONGS_TO",
-    "HAS_LABEL",
-    "LINKS_TO",
-    "PART_OF",
-    "HAS_CHUNK",
-}
+VALID_EDGE_TYPES = list(CoreEdgeType)
 
 
 class FalkorGraphStore(GraphStore):
@@ -37,8 +32,8 @@ class FalkorGraphStore(GraphStore):
             raise ValueError(f"Invalid node label: {node.label}")
 
     def _validate_edge(self, edge: GraphEdge):
-        if edge.type not in VALID_EDGE_TYPES:
-            raise ValueError(f"Invalid edge type: {edge.type}")
+        if edge.edge_type not in VALID_EDGE_TYPES:
+            raise ValueError(f"Invalid edge type: {edge.edge_type}")
 
     # ------------------------
     # Node
@@ -89,7 +84,7 @@ class FalkorGraphStore(GraphStore):
         query = f"""
         MATCH (a {{id: $source}})
         MATCH (b {{id: $target}})
-        MERGE (a)-[r:{edge.type}]->(b)
+        MERGE (a)-[r:{edge.edge_type}]->(b)
         SET r += $props
         """
 

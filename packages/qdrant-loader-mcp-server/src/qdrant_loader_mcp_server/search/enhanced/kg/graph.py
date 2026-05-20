@@ -17,7 +17,7 @@ from typing import Any
 import networkx as nx
 
 from ....utils.logging import LoggingConfig
-from .models import GraphEdge, GraphNode, NodeType, RelationshipType
+from .models import EnrichedEdge, EnrichedNode, NodeLabel, RelationshipType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -28,17 +28,17 @@ class KnowledgeGraph:
     def __init__(self):
         """Initialize the knowledge graph."""
         self.graph = nx.MultiDiGraph()  # Allow multiple edges between nodes
-        self.nodes: dict[str, GraphNode] = {}
-        self.edges: dict[tuple[str, str, str], GraphEdge] = (
+        self.nodes: dict[str, EnrichedNode] = {}
+        self.edges: dict[tuple[str, str, str], EnrichedEdge] = (
             {}
         )  # (source, target, relationship)
-        self.node_type_index: dict[NodeType, set[str]] = defaultdict(set)
+        self.node_type_index: dict[NodeLabel, set[str]] = defaultdict(set)
         self.entity_index: dict[str, set[str]] = defaultdict(set)  # entity -> node_ids
         self.topic_index: dict[str, set[str]] = defaultdict(set)  # topic -> node_ids
 
         logger.info("Initialized empty knowledge graph")
 
-    def add_node(self, node: GraphNode) -> bool:
+    def add_node(self, node: EnrichedNode) -> bool:
         """Add a node to the graph."""
         try:
             if node.id in self.nodes:
@@ -87,7 +87,7 @@ class KnowledgeGraph:
             logger.error(f"Failed to add node {node.id}: {e}")
             return False
 
-    def add_edge(self, edge: GraphEdge) -> bool:
+    def add_edge(self, edge: EnrichedEdge) -> bool:
         """Add an edge to the graph."""
         try:
             if edge.source_id not in self.nodes or edge.target_id not in self.nodes:
@@ -120,16 +120,16 @@ class KnowledgeGraph:
             )
             return False
 
-    def find_nodes_by_type(self, node_type: NodeType) -> list[GraphNode]:
+    def find_nodes_by_type(self, node_type: NodeLabel) -> list[EnrichedNode]:
         """Find all nodes of a specific type."""
         return [self.nodes[node_id] for node_id in self.node_type_index[node_type]]
 
-    def find_nodes_by_entity(self, entity: str) -> list[GraphNode]:
+    def find_nodes_by_entity(self, entity: str) -> list[EnrichedNode]:
         """Find all nodes containing a specific entity."""
         node_ids = self.entity_index.get(entity.lower(), set())
         return [self.nodes[node_id] for node_id in node_ids]
 
-    def find_nodes_by_topic(self, topic: str) -> list[GraphNode]:
+    def find_nodes_by_topic(self, topic: str) -> list[EnrichedNode]:
         """Find all nodes discussing a specific topic."""
         node_ids = self.topic_index.get(topic.lower(), set())
         return [self.nodes[node_id] for node_id in node_ids]
@@ -172,7 +172,7 @@ class KnowledgeGraph:
 
     def get_neighbors(
         self, node_id: str, relationship_types: list[RelationshipType] | None = None
-    ) -> list[tuple[str, GraphEdge]]:
+    ) -> list[tuple[str, EnrichedEdge]]:
         """Get neighboring nodes with their connecting edges."""
         neighbors = []
 

@@ -24,7 +24,7 @@ from .extractors import (
     extract_keywords_from_result,
     extract_topics_from_result,
 )
-from .models import GraphEdge, GraphNode, NodeType, RelationshipType
+from .models import EnrichedEdge, EnrichedNode, NodeLabel, RelationshipType
 from .utils import SIMILARITY_EDGE_THRESHOLD, calculate_node_similarity
 
 logger = LoggingConfig.get_logger(__name__)
@@ -110,7 +110,7 @@ class GraphBuilder:
 
     def _create_document_nodes(
         self, search_results: list[SearchResult]
-    ) -> list[GraphNode]:
+    ) -> list[EnrichedNode]:
         """Create document and section nodes from search results."""
 
         nodes = []
@@ -123,9 +123,9 @@ class GraphBuilder:
             if doc_id not in seen_documents:
                 seen_documents.add(doc_id)
 
-                doc_node = GraphNode(
+                doc_node = EnrichedNode(
                     id=doc_id,
-                    node_type=NodeType.DOCUMENT,
+                    node_type=NodeLabel.DOCUMENT,
                     title=result.source_title or f"Document from {result.source_type}",
                     content=result.text[:500],  # First 500 chars as summary
                     metadata={
@@ -149,9 +149,9 @@ class GraphBuilder:
             _safe_title = (
                 _raw_title if isinstance(_raw_title, str) else str(_raw_title or "")
             )
-            section_node = GraphNode(
+            section_node = EnrichedNode(
                 id=section_id,
-                node_type=NodeType.SECTION,
+                node_type=NodeLabel.SECTION,
                 title=(_safe_title or "")[-50:],  # Last 50 chars
                 content=result.text,
                 metadata={
@@ -172,7 +172,7 @@ class GraphBuilder:
 
     def _create_concept_nodes(
         self, search_results: list[SearchResult]
-    ) -> tuple[list[GraphNode], list[GraphNode]]:
+    ) -> tuple[list[EnrichedNode], list[EnrichedNode]]:
         """Create entity and topic nodes from extracted metadata."""
 
         # Collect all entities and topics
@@ -195,9 +195,9 @@ class GraphBuilder:
         # Entities mentioned in at least 2 documents
         for entity, count in entity_counts.items():
             if count >= 2:
-                entity_node = GraphNode(
+                entity_node = EnrichedNode(
                     id=_build_stable_id("entity", entity),
-                    node_type=NodeType.ENTITY,
+                    node_type=NodeLabel.ENTITY,
                     title=entity,
                     metadata={"mention_count": count, "entity_type": "extracted"},
                 )
@@ -206,9 +206,9 @@ class GraphBuilder:
         # Topics mentioned in at least 2 documents
         for topic, count in topic_counts.items():
             if count >= 2:
-                topic_node = GraphNode(
+                topic_node = EnrichedNode(
                     id=_build_stable_id("topic", topic),
-                    node_type=NodeType.TOPIC,
+                    node_type=NodeLabel.TOPIC,
                     title=topic,
                     metadata={"mention_count": count, "topic_type": "extracted"},
                 )
@@ -220,7 +220,7 @@ class GraphBuilder:
         self,
         search_results: list[SearchResult],
         graph: Any,  # KnowledgeGraph - avoiding circular import
-    ) -> list[GraphEdge]:
+    ) -> list[EnrichedEdge]:
         """Create relationships between graph nodes."""
 
         edges = []
@@ -231,7 +231,7 @@ class GraphBuilder:
             section_id = _section_id_from_result(result)
 
             if doc_id in graph.nodes and section_id in graph.nodes:
-                edge = GraphEdge(
+                edge = EnrichedEdge(
                     source_id=doc_id,
                     target_id=section_id,
                     relationship_type=RelationshipType.CONTAINS,
@@ -259,7 +259,7 @@ class GraphBuilder:
         self,
         search_results: list[SearchResult],
         graph: Any,  # KnowledgeGraph - avoiding circular import
-    ) -> list[GraphEdge]:
+    ) -> list[EnrichedEdge]:
         """Create entity-related relationships."""
 
         edges = []
@@ -273,7 +273,7 @@ class GraphBuilder:
                 entity_nodes = graph.find_nodes_by_entity(entity)
                 for entity_node in entity_nodes:
                     if section_id in graph.nodes:
-                        edge = GraphEdge(
+                        edge = EnrichedEdge(
                             source_id=section_id,
                             target_id=entity_node.id,
                             relationship_type=RelationshipType.MENTIONS,
@@ -293,7 +293,7 @@ class GraphBuilder:
         self,
         search_results: list[SearchResult],
         graph: Any,  # KnowledgeGraph - avoiding circular import
-    ) -> list[GraphEdge]:
+    ) -> list[EnrichedEdge]:
         """Create topic-related relationships."""
 
         edges = []
@@ -307,7 +307,7 @@ class GraphBuilder:
                 topic_nodes = graph.find_nodes_by_topic(topic)
                 for topic_node in topic_nodes:
                     if section_id in graph.nodes:
-                        edge = GraphEdge(
+                        edge = EnrichedEdge(
                             source_id=section_id,
                             target_id=topic_node.id,
                             relationship_type=RelationshipType.DISCUSSES,
@@ -323,7 +323,7 @@ class GraphBuilder:
         self,
         search_results: list[SearchResult],
         graph: Any,  # KnowledgeGraph - avoiding circular import
-    ) -> list[GraphEdge]:
+    ) -> list[EnrichedEdge]:
         """Create entity co-occurrence relationships."""
 
         edges = []
@@ -346,7 +346,7 @@ class GraphBuilder:
                 for node1 in entity1_nodes:
                     for node2 in entity2_nodes:
                         weight = min(1.0, count / 5.0)  # Normalize to max 1.0
-                        edge = GraphEdge(
+                        edge = EnrichedEdge(
                             source_id=node1.id,
                             target_id=node2.id,
                             relationship_type=RelationshipType.CO_OCCURS,
@@ -361,13 +361,13 @@ class GraphBuilder:
     def _create_similarity_relationships(
         self,
         graph: Any,  # KnowledgeGraph - avoiding circular import
-    ) -> list[GraphEdge]:
+    ) -> list[EnrichedEdge]:
         """Create semantic similarity relationships between nodes."""
 
         edges = []
 
         # Calculate similarity between section nodes
-        section_nodes = graph.find_nodes_by_type(NodeType.SECTION)
+        section_nodes = graph.find_nodes_by_type(NodeLabel.SECTION)
 
         for i, node1 in enumerate(section_nodes):
             for node2 in section_nodes[i + 1 :]:
@@ -376,7 +376,7 @@ class GraphBuilder:
                 if (
                     similarity > SIMILARITY_EDGE_THRESHOLD
                 ):  # Threshold for meaningful similarity
-                    edge = GraphEdge(
+                    edge = EnrichedEdge(
                         source_id=node1.id,
                         target_id=node2.id,
                         relationship_type=RelationshipType.SIMILAR_TO,
@@ -388,7 +388,9 @@ class GraphBuilder:
 
         return edges
 
-    def _calculate_node_similarity(self, node1: GraphNode, node2: GraphNode) -> float:
+    def _calculate_node_similarity(
+        self, node1: EnrichedNode, node2: EnrichedNode
+    ) -> float:
         """Calculate similarity between two nodes."""
         return calculate_node_similarity(node1, node2)
 
