@@ -113,7 +113,7 @@ class BaseEntityExtractor(EntityExtractor):
 
         node = GraphNode(
             id=node_id,
-            type="Document",
+            label="Document",
             properties={
                 "url": url,
                 "updated_at": updated_at,
@@ -156,7 +156,7 @@ class BaseEntityExtractor(EntityExtractor):
         if node_id not in self._nodes:
             self._nodes[node_id] = GraphNode(
                 id=node_id,
-                type="Person",
+                label="Person",
                 properties={
                     "id": canonical_id,
                     "display_name": display_name,
@@ -197,7 +197,7 @@ class BaseEntityExtractor(EntityExtractor):
         if node_id not in self._nodes:
             self._nodes[node_id] = GraphNode(
                 id=node_id,
-                type="Container",
+                label="Container",
                 properties={
                     "id": node_id,
                     "kind": kind,
@@ -235,7 +235,7 @@ class BaseEntityExtractor(EntityExtractor):
         if node_id not in self._nodes:
             self._nodes[node_id] = GraphNode(
                 id=node_id,
-                type="Label",
+                label="Label",
                 properties={
                     "id": normalized,
                     "name": name,  # keep original display form
@@ -265,7 +265,7 @@ class BaseEntityExtractor(EntityExtractor):
         if node_id not in self._nodes:
             self._nodes[node_id] = GraphNode(
                 id=node_id,
-                type="Concept",
+                label="Concept",
                 properties={
                     "id": node_id,
                     "kind": kind,
@@ -309,7 +309,7 @@ class BaseEntityExtractor(EntityExtractor):
         if node_id not in self._nodes:
             self._nodes[node_id] = GraphNode(
                 id=node_id,
-                type="Chunk",
+                label="Chunk",
                 properties={
                     "id": chunk_id,
                     "document_id": document.id,
@@ -355,7 +355,7 @@ class BaseEntityExtractor(EntityExtractor):
         edge = GraphEdge(
             source=source.id,
             target=target.id,
-            type=edge_type,
+            edge_type=edge_type,
             properties=properties or {},
         )
 
