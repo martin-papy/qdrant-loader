@@ -82,11 +82,23 @@ def _resolve_state_db_path(
 
     settings = get_settings()
     try:
-        return settings.global_config.state_management.database_path
+        raw_db_path = settings.global_config.state_management.database_path
     except (AttributeError, TypeError) as exc:
         raise RuntimeError(
             "Invalid settings structure: missing global_config.state_management.database_path"
         ) from exc
+
+    # Normalize file path to absolute path anchored at repository root.
+    # This prevents cwd-dependent behavior for values like "./state.db".
+    if raw_db_path in (":memory:", "sqlite:///:memory:", "sqlite://:memory:"):
+        return raw_db_path
+    if raw_db_path.startswith("sqlite://"):
+        return raw_db_path
+
+    expanded = Path(os.path.expanduser(os.path.expandvars(raw_db_path)))
+    if expanded.is_absolute():
+        return str(expanded)
+    return str((repo_root / expanded).resolve())
 
 
 def main() -> int:
@@ -108,12 +120,19 @@ def main() -> int:
 
     db_path = _resolve_state_db_path(args.workspace, args.config_path, args.env_path)
 
+    # Check if db_path comes from config or is default
+    config_source = (
+        "config file"
+        if any([args.workspace, args.config_path, args.env_path])
+        else "default (repo root)"
+    )
+    print(f"[INFO] Using database path from {config_source}: {db_path}")
+
     child_env = os.environ.copy()
     child_env["STATE_DB_PATH"] = db_path
 
     cmd = [sys.executable, "-m", "alembic", "-c", str(alembic_config), *alembic_args]
-    print(f"Resolved STATE_DB_PATH={db_path}")
-    print("Running:", " ".join(cmd))
+    print(f"Running: {' '.join(cmd)}")
 
     result = subprocess.run(cmd, cwd=package_root, env=child_env)
     return result.returncode
