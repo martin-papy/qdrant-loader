@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+import community as community_louvain
+import networkx as nx
+from qdrant_loader_core.graph import get_graph_store
+
 from qdrant_loader.core.state.transitions import get_last_ingestion
+from qdrant_loader.core.worker.session import get_rds_session
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -196,3 +202,77 @@ class IngestionJobHandler(BaseJobHandler):
             raise
         except Exception as exc:
             raise TransientJobError(str(exc)) from exc
+
+
+async def handle_cluster_recompute(
+    graph_store=None,
+    session_factory=None,
+):
+    if graph_store is None:
+        graph_store = await get_graph_store()
+
+    # -------------------------
+    # 1. Load graph
+    # -------------------------
+    nodes, edges = await graph_store.export_graph()
+
+    if not nodes:
+        return
+
+    # -------------------------
+    # 2. Build graph (NetworkX)
+    # -------------------------
+    G = nx.Graph()
+
+    # add nodes
+    G.add_nodes_from([node["id"] for node in nodes])
+
+    # add edges
+    G.add_edges_from([(edge["source"], edge["target"]) for edge in edges])
+
+    # -------------------------
+    # 3. Run Louvain
+    # -------------------------
+    partition = community_louvain.best_partition(G)
+    # {node_id: cluster_id}
+
+    # -------------------------
+    # 4. Group clusters
+    # -------------------------
+    clusters = defaultdict(list)
+
+    for node_id, cluster_id in partition.items():
+        clusters[cluster_id].append(node_id)
+
+    # -------------------------
+    # 5. Batch update graph (IMPORTANT)
+    # -------------------------
+    updates = [
+        {"id": node_id, "cluster_id": cluster_id}
+        for node_id, cluster_id in partition.items()
+    ]
+
+    await graph_store.update_clusters_batch(updates)
+
+    # -------------------------
+    # 6. Persist summary (RDS)
+    # -------------------------
+
+    if session_factory is None:
+        session_factory = get_rds_session()
+
+    async with session_factory() as session:
+        for cluster_id, members in clusters.items():
+            await session.execute(
+                """
+                INSERT INTO graph_clusters (cluster_id, size, created_at)
+                VALUES (:cluster_id, :size, :created_at)
+                """,
+                {
+                    "cluster_id": cluster_id,
+                    "size": len(members),
+                    "created_at": datetime.now(),
+                },
+            )
+
+        await session.commit()

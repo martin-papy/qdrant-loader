@@ -11,6 +11,7 @@ from qdrant_loader.core.worker.handlers import (
     IngestionJobHandler,
     PermanentJobError,
     TransientJobError,
+    handle_cluster_recompute,
 )
 
 # ---------------------------------------------------------------------------
@@ -364,3 +365,130 @@ async def test_incremental_pull_wraps_orchestrator_exception_as_transient(monkey
                 "project_id": "proj-1",
             }
         )
+
+@pytest.mark.asyncio
+async def test_cluster_recompute():
+    # -------------------------
+    # Mock GraphStore
+    # -------------------------
+    class MockGraphStore:
+        def __init__(self):
+            self.updated = None
+
+        async def export_graph(self):
+            return (
+                [{"id": "A"}, {"id": "B"}, {"id": "C"}],
+                [
+                    {"source": "A", "target": "B"},
+                    {"source": "B", "target": "C"},
+                ],
+            )
+
+        async def update_clusters_batch(self, updates):
+            self.updated = updates
+
+    # -------------------------
+    # Mock DB session
+    # -------------------------
+    class MockSession:
+        def __init__(self):
+            self.queries = []
+            self.committed = False
+
+        async def execute(self, query, params):
+            self.queries.append(params)
+
+        async def commit(self):
+            self.committed = True
+
+    class MockSessionCtx:
+        async def __aenter__(self):
+            self.session = MockSession()
+            return self.session
+
+        async def __aexit__(self, *args):
+            pass
+
+    def session_factory():
+        return MockSessionCtx()
+
+    # -------------------------
+    # Run
+    # -------------------------
+    graph_store = MockGraphStore()
+
+    await handle_cluster_recompute(
+        graph_store=graph_store,
+        session_factory=session_factory
+    )
+
+    # -------------------------
+    # Assertions
+    # -------------------------
+    assert graph_store.updated is not None
+    assert len(graph_store.updated) == 3
+
+    for u in graph_store.updated:
+        assert "cluster_id" in u
+
+@pytest.mark.asyncio
+async def test_cluster_empty():
+    class MockGraphStore:
+        async def export_graph(self):
+            return [], []
+
+    def session_factory():
+        raise AssertionError("Should not call DB")
+
+    await handle_cluster_recompute(
+        graph_store=MockGraphStore(),
+        session_factory=session_factory
+    )
+
+@pytest.mark.asyncio
+async def test_cluster_deterministic(monkeypatch):
+    class MockGraphStore:
+        async def export_graph(self):
+            return (
+                [{"id": "A"}, {"id": "B"}],
+                [{"source": "A", "target": "B"}],
+            )
+
+        async def update_clusters_batch(self, updates):
+            self.updates = updates
+
+    # fake louvain
+    def fake_partition(G):
+        return {"A": 0, "B": 0}
+
+    import community
+
+    monkeypatch.setattr(
+        community,
+        "best_partition",
+        fake_partition
+    )
+
+    class DummySession:
+        async def execute(self, *a, **k): pass
+        async def commit(self): pass
+
+    class Ctx:
+        async def __aenter__(self):
+            return DummySession()
+
+        async def __aexit__(self, *a):
+            pass
+
+    def session_factory():
+        return Ctx()
+
+
+    store = MockGraphStore()
+
+    await handle_cluster_recompute(
+        graph_store=store,
+        session_factory=session_factory
+    )
+
+    assert store.updates[0]["cluster_id"] == 0

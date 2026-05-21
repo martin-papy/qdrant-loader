@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from falkordb import FalkorDB
@@ -171,3 +172,49 @@ class FalkorGraphStore(GraphStore):
     ) -> list[dict[str, Any]]:
         result = self._graph.query(cypher, params)
         return result.result_set
+
+    # -------------------------
+    # Export graph for clustering
+    # -------------------------
+    async def export_graph(self) -> tuple[list[dict], list[dict]]:
+        """
+        Returns:
+            nodes = [{"id": str}]
+            edges = [{"source": str, "target": str}]
+        """
+
+        node_query = """
+        MATCH (n:Document)
+        RETURN n.id
+        """
+
+        edge_query = """
+        MATCH (a:Document)-[:LINKS_TO]->(b:Document)
+        RETURN a.id, b.id
+        """
+
+        node_result = self._graph.query(node_query)
+        edge_result = self._graph.query(edge_query)
+
+        nodes = [{"id": row[0]} for row in node_result.result_set]
+
+        edges = [{"source": row[0], "target": row[1]} for row in edge_result.result_set]
+
+        return nodes, edges
+
+    # -------------------------
+    # Batch update cluster_id
+    # -------------------------
+    async def update_clusters_batch(self, updates: list[dict]):
+        async def _run(row):
+            query = """
+            MATCH (n:Document {id: $id})
+            SET n.cluster_id = $cluster_id
+            """
+            await asyncio.to_thread(
+                self._graph.query,
+                query,
+                {"id": row["id"], "cluster_id": row["cluster_id"]},
+            )
+
+        await asyncio.gather(*[_run(row) for row in updates])
