@@ -44,6 +44,7 @@ except ImportError:
     EndpointConnectionError = _BedrockEndpointConnectionError
     NoCredentialsError = _BedrockNoCredentialsError
 
+
 def _map_bedrock_exception(exc: Exception) -> LLMError:
     """Map a botocore/boto3 exception into a qdrant_loader_core LLMError."""
     if isinstance(exc, NoCredentialsError):

@@ -90,12 +90,15 @@ def _resolve_state_db_path(
 
     # Normalize file path to absolute path anchored at repository root.
     # This prevents cwd-dependent behavior for values like "./state.db".
+    # Always return a filesystem path or ':memory:' (never a sqlite:// URI).
     if raw_db_path in (":memory:", "sqlite:///:memory:", "sqlite://:memory:"):
-        return raw_db_path
-    if raw_db_path.startswith("sqlite://"):
-        return raw_db_path
+        return ":memory:"
+    # Remove any leading 'sqlite://', 'sqlite:///', or 'sqlite:'
+    import re
 
-    expanded = Path(os.path.expanduser(os.path.expandvars(raw_db_path)))
+    # Regex: match 'sqlite:' with any number of slashes after
+    path = re.sub(r"^sqlite:(//+)?", "", raw_db_path)
+    expanded = Path(os.path.expanduser(os.path.expandvars(path)))
     if expanded.is_absolute():
         return str(expanded)
     return str((repo_root / expanded).resolve())
