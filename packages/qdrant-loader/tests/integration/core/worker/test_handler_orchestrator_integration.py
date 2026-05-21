@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from qdrant_loader.core.worker.handlers import IngestionJobHandler
 
 
@@ -89,4 +88,6 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
     passed_since = call_kwargs.kwargs.get("since") or (
         call_kwargs.args[2] if len(call_kwargs.args) > 2 else None
     )
-    assert passed_since is not None, "since was not forwarded to _collect_documents_from_sources"
+    assert (
+        passed_since is not None
+    ), "since was not forwarded to _collect_documents_from_sources"

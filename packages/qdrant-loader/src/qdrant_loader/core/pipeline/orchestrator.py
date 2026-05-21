@@ -119,7 +119,9 @@ class PipelineOrchestrator:
                     )
 
                 logger.debug("Processing all projects")
-                return await self._process_all_projects(source_type, source, force, since)
+                return await self._process_all_projects(
+                    source_type, source, force, since
+                )
 
             # Check if filtered config is empty
             if source_type and not any(
