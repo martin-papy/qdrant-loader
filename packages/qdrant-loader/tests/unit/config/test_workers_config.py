@@ -40,3 +40,38 @@ def test_workers_config_defaults_incremental_pull_disabled():
     cfg = WorkersConfig()
     assert cfg.schedules.incremental_pull.enabled is False
     assert cfg.schedules.incremental_pull.interval_seconds == 300
+
+
+def test_payload_defaults_accepts_json_like_values():
+    cfg = IncrementalPullScheduleConfig(
+        enabled=True,
+        interval=300,
+        payload_defaults={
+            "force": False,
+            "attempt": 1,
+            "threshold": 0.5,
+            "tag": "nightly",
+            "extra": {"a": 1, "b": ["x", None, True]},
+        },
+    )
+
+    assert cfg.payload_defaults["force"] is False
+    assert cfg.payload_defaults["extra"]["b"][1] is None
+
+
+def test_payload_defaults_rejects_unsupported_types():
+    with pytest.raises(ValueError, match="unsupported type"):
+        IncrementalPullScheduleConfig(
+            enabled=True,
+            interval=300,
+            payload_defaults={"bad": object()},
+        )
+
+
+def test_payload_defaults_rejects_non_string_nested_dict_keys():
+    with pytest.raises(ValueError, match="keys must be strings"):
+        IncrementalPullScheduleConfig(
+            enabled=True,
+            interval=300,
+            payload_defaults={"bad": {1: "x"}},
+        )

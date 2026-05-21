@@ -117,6 +117,42 @@ class IncrementalPullScheduleConfig(BaseConfig):
             raise ValueError("dedup_statuses cannot be empty")
         return normalized
 
+    @field_validator("payload_defaults")
+    @classmethod
+    def validate_payload_defaults(cls, value: dict[str, Any]) -> dict[str, Any]:
+        def _validate_json_like(v: Any, path: str) -> Any:
+            if v is None or isinstance(v, (str, int, float, bool)):
+                return v
+
+            if isinstance(v, list):
+                return [
+                    _validate_json_like(item, f"{path}[{idx}]")
+                    for idx, item in enumerate(v)
+                ]
+
+            if isinstance(v, dict):
+                cleaned: dict[str, Any] = {}
+                for key, item in v.items():
+                    if not isinstance(key, str):
+                        raise ValueError(f"{path} keys must be strings")
+                    cleaned[key] = _validate_json_like(item, f"{path}.{key}")
+                return cleaned
+
+            raise ValueError(
+                f"{path} contains unsupported type {type(v).__name__}; "
+                "allowed types are str, int, float, bool, None, list, dict"
+            )
+
+        if not isinstance(value, dict):
+            raise ValueError("payload_defaults must be a dictionary")
+
+        cleaned: dict[str, Any] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError("payload_defaults keys must be strings")
+            cleaned[key] = _validate_json_like(item, f"payload_defaults.{key}")
+        return cleaned
+
 
 class WorkerSchedulesConfig(BaseConfig):
     """Container for worker schedule definitions."""

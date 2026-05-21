@@ -106,3 +106,35 @@ async def test_scheduler_dedups_against_pending_and_running():
 
     assert created == 0
     assert queue.enqueued == []
+
+
+@pytest.mark.asyncio
+async def test_scheduler_keeps_canonical_identity_over_payload_defaults():
+    queue = _FakeQueue()
+    schedule = IncrementalPullScheduleConfig(
+        enabled=True,
+        interval=300,
+        payload_defaults={
+            "project_id": "wrong",
+            "source_type": "wrong",
+            "source": "wrong",
+            "source_lock": "wrong:lock",
+            "force": True,
+            "custom": "ok",
+        },
+    )
+    scheduler = IncrementalPullScheduler(queue, _projects_config(), schedule)
+
+    created = await scheduler.run_once()
+
+    assert created == 2
+    first_payload = queue.enqueued[0][1]
+    assert first_payload["project_id"] == "demo"
+    assert first_payload["source_type"] in {"git", "jira"}
+    assert first_payload["source"] in {"repo-a", "jira-a"}
+    assert first_payload["source_lock"] in {
+        "demo:git:repo-a",
+        "demo:jira:jira-a",
+    }
+    assert first_payload["force"] is False
+    assert first_payload["custom"] == "ok"

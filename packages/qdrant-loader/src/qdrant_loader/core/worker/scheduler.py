@@ -74,14 +74,16 @@ class IncrementalPullScheduler:
             if dedup_key in dedup_keys:
                 continue
 
-            payload = {
-                "project_id": project_id,
-                "source_type": source_type,
-                "source": source_name,
-                "source_lock": f"{project_id}:{source_type}:{source_name}",
-                "force": False,
-            }
-            payload.update(self._schedule.payload_defaults)
+            payload = dict(self._schedule.payload_defaults)
+            payload.update(
+                {
+                    "project_id": project_id,
+                    "source_type": source_type,
+                    "source": source_name,
+                    "source_lock": f"{project_id}:{source_type}:{source_name}",
+                    "force": False,
+                }
+            )
 
             await self._queue.enqueue("INCREMENTAL_PULL", payload)
             dedup_keys.add(dedup_key)
