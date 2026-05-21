@@ -30,9 +30,20 @@ from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 # part of the module contract and support graceful degradation.
 from .bedrock_utils import (
     BedrockTokenizer,
+    BotoCoreError,  # re-export: keep for import-fallback contract/tests
+    ClientError,  # re-export: keep for import-fallback contract/tests
+    EndpointConnectionError,  # re-export: keep for import-fallback contract/tests
+    NoCredentialsError,  # re-export: keep for import-fallback contract/tests
     _extract_embeddings,
     _map_bedrock_exception,
 )
+
+__all__ = [
+    "BotoCoreError",
+    "ClientError",
+    "EndpointConnectionError",
+    "NoCredentialsError",
+]
 
 logger = LoggingConfig.get_logger(__name__)
 
