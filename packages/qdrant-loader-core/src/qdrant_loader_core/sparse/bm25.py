@@ -9,33 +9,35 @@ from functools import cache
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]{2,}")
 _DEFAULT_HASH_MOD = 2_147_483_647
-_DEFAULT_STOP_WORDS: frozenset[str] = frozenset({
-    "a",
-    "an",
-    "and",
-    "are",
-    "as",
-    "at",
-    "be",
-    "by",
-    "for",
-    "from",
-    "has",
-    "he",
-    "in",
-    "is",
-    "it",
-    "its",
-    "of",
-    "on",
-    "that",
-    "the",
-    "to",
-    "was",
-    "were",
-    "will",
-    "with",
-})
+_DEFAULT_STOP_WORDS: frozenset[str] = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "for",
+        "from",
+        "has",
+        "he",
+        "in",
+        "is",
+        "it",
+        "its",
+        "of",
+        "on",
+        "that",
+        "the",
+        "to",
+        "was",
+        "were",
+        "will",
+        "with",
+    }
+)
 
 
 @dataclass(frozen=True)

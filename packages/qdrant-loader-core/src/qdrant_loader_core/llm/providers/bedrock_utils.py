@@ -1,9 +1,17 @@
 from __future__ import annotations
 
-import json
+import logging
 import math
 from typing import Any
-import logging
+
+from ..errors import (
+    AuthError,
+    InvalidRequestError,
+    LLMError,
+    RateLimitedError,
+    ServerError,
+)
+from ..types import TokenCounter
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +23,7 @@ try:
         NoCredentialsError,
     )
 except ImportError:
+
     class _BedrockBaseError(Exception):
         pass
 
@@ -34,16 +43,6 @@ except ImportError:
     ClientError = _BedrockClientError
     EndpointConnectionError = _BedrockEndpointConnectionError
     NoCredentialsError = _BedrockNoCredentialsError
-
-from ..errors import (
-    AuthError,
-    InvalidRequestError,
-    LLMError,
-    RateLimitedError,
-    ServerError,
-)
-from ..types import TokenCounter
-
 
 def _map_bedrock_exception(exc: Exception) -> LLMError:
     """Map a botocore/boto3 exception into a qdrant_loader_core LLMError."""
@@ -101,9 +100,7 @@ def _map_bedrock_exception(exc: Exception) -> LLMError:
 def _extract_embeddings(response_payload: Any) -> list[list[float]]:
     """Normalize Bedrock embedding response payloads into a list of float vectors."""
     if not isinstance(response_payload, (dict, list)):
-        raise InvalidRequestError(
-            "Bedrock response has unexpected format"
-        )
+        raise InvalidRequestError("Bedrock response has unexpected format")
 
     raw_embeddings: list[Any]
 
@@ -116,21 +113,14 @@ def _extract_embeddings(response_payload: Any) -> list[list[float]]:
     elif "embeddings" in response_payload:
         raw_embeddings = response_payload["embeddings"]
 
-    elif (
-        "data" in response_payload
-        and isinstance(response_payload["data"], list)
-    ):
+    elif "data" in response_payload and isinstance(response_payload["data"], list):
         raw_embeddings = [
-            item.get("embedding", item)
-            if isinstance(item, dict)
-            else item
+            item.get("embedding", item) if isinstance(item, dict) else item
             for item in response_payload["data"]
         ]
 
     else:
-        raise InvalidRequestError(
-            "Bedrock response did not contain embeddings"
-        )
+        raise InvalidRequestError("Bedrock response did not contain embeddings")
 
     normalized: list[list[float]] = []
 
@@ -144,10 +134,7 @@ def _extract_embeddings(response_payload: Any) -> list[list[float]]:
             )
 
         try:
-            parsed_vector = [
-                float(value)
-                for value in vector
-            ]
+            parsed_vector = [float(value) for value in vector]
         except (TypeError, ValueError) as exc:
             raise InvalidRequestError(
                 f"Invalid embedding element from Bedrock: {exc}"

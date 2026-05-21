@@ -6,8 +6,6 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import update
-
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.core.state.models import Job
 from qdrant_loader.core.state.session import (
@@ -17,6 +15,7 @@ from qdrant_loader.core.state.session import (
 )
 from qdrant_loader.core.worker.pool import QueueWorkerPool
 from qdrant_loader.core.worker.queue import SQLiteJobQueue
+from sqlalchemy import update
 
 
 @pytest_asyncio.fixture
