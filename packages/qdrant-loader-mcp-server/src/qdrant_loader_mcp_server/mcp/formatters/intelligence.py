@@ -11,6 +11,18 @@ from typing import Any
 
 class IntelligenceResultFormatters:
     """Handles intelligence analysis result formatting operations."""
+    @staticmethod
+    def _safe_get(obj, key):
+        if hasattr(obj, "properties"):
+            return obj.properties.get(key)
+        return None
+
+    @staticmethod
+    def _get_label(node):
+        try:
+            return node.labels[0] if hasattr(node, "labels") else "Unknown"
+        except Exception:
+            return "Unknown"
 
     @staticmethod
     def format_relationship_analysis(analysis: dict[str, Any]) -> str:
@@ -404,3 +416,60 @@ class IntelligenceResultFormatters:
             formatted += f"• Original Query: {original_query}\n"
 
         return formatted
+
+    @staticmethod
+    def format_graph(result):
+
+        """
+        Normalize graph query output into:
+        {
+            "nodes": [...],
+            "edges": [...]
+        }
+        """
+
+        safe_get = IntelligenceResultFormatters._safe_get
+        get_label = IntelligenceResultFormatters._get_label
+
+
+        nodes = {}
+        edges = []
+
+        for row in result:
+            if not row:
+                continue
+
+            path_nodes = row[0] if len(row) > 0 else []
+            path_edges = row[1] if len(row) > 1 else []
+
+            # -------------------------
+            # Nodes
+            # -------------------------
+            for n in path_nodes:
+                node_id = safe_get(n, "id")
+
+                if not node_id:
+                    continue
+
+                if node_id not in nodes:
+                    nodes[node_id] = {
+                        "id": node_id,
+                        "type": get_label(n),
+                        "properties": dict(n.properties) if hasattr(n, "properties") else {},
+                    }
+
+            # -------------------------
+            # Edges
+            # -------------------------
+            for r in path_edges:
+                edges.append({
+                    "source": safe_get(r.src_node, "id"),
+                    "target": safe_get(r.dest_node, "id"),
+                    "type": r.type,
+                    "properties": dict(r.properties) if hasattr(r, "properties") else {},
+                })
+
+        return {
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }

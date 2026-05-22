@@ -14,6 +14,9 @@ from unittest.mock import Mock
 
 import pytest
 from qdrant_loader_mcp_server.mcp.formatters import MCPFormatters
+from qdrant_loader_mcp_server.mcp.formatters.intelligence import (
+    IntelligenceResultFormatters,
+)
 from qdrant_loader_mcp_server.search.components.search_result_models import (
     HybridSearchResult,
 )
@@ -864,3 +867,141 @@ class TestMCPFormatters:
         # Should not crash and should handle missing fields gracefully
         assert "conflicts_detected" in lightweight
         assert len(lightweight["conflicts_detected"]) == 1
+
+    def test_format_graph_basic(self):
+        n1 = MockNode("A")
+        n2 = MockNode("B")
+
+        e = MockEdge(n1, n2, "LINKS_TO", {"kind": "blocks"})
+
+        result = IntelligenceResultFormatters.format_graph([
+            [[n1, n2], [e]]
+        ])
+
+        assert len(result["nodes"]) == 2
+        assert len(result["edges"]) == 1
+
+        edge = result["edges"][0]
+
+        assert edge["source"] == "A"
+        assert edge["target"] == "B"
+        assert edge["type"] == "LINKS_TO"
+        assert edge["properties"]["kind"] == "blocks"
+
+    def test_format_graph_dedup_edges(self):
+        n1 = MockNode("A")
+        n2 = MockNode("B")
+
+        e = MockEdge(n1, n2)
+
+        result = IntelligenceResultFormatters.format_graph([
+            [[n1, n2], [e]],
+            [[n1, n2], [e]],
+        ])
+
+        assert len(result["edges"]) == 2
+
+    def test_safe_get_success(self):
+        node = MockNode("A")
+        result = IntelligenceResultFormatters._safe_get(node, "id")
+
+        assert result == "A"
+
+
+    def test_safe_get_no_properties(self):
+        class Obj:
+            pass
+
+        obj = Obj()
+
+        result = IntelligenceResultFormatters._safe_get(obj, "id")
+
+        assert result is None
+
+    def test_get_label_success(self):
+        node = MockNode("A", label="Document")
+
+        result = IntelligenceResultFormatters._get_label(node)
+
+        assert result == "Document"
+
+
+    def test_get_label_missing(self):
+        class Node:
+            properties = {"id": "A"}
+
+        node = Node()
+
+        result = IntelligenceResultFormatters._get_label(node)
+
+        assert result == "Unknown"
+
+    def test_format_graph_missing_id(self):
+        class BadNode:
+            properties = {}
+
+        bad_node = BadNode()
+
+        result = IntelligenceResultFormatters.format_graph([
+            [[bad_node], []]
+        ])
+
+        assert len(result["nodes"]) == 0
+
+    def test_format_graph_empty(self):
+        result = IntelligenceResultFormatters.format_graph([])
+
+        assert result["nodes"] == []
+        assert result["edges"] == []
+
+    def test_format_graph_multiple_rows(self):
+        n1 = MockNode("A")
+        n2 = MockNode("B")
+        n3 = MockNode("C")
+
+        e1 = MockEdge(n1, n2)
+        e2 = MockEdge(n2, n3)
+
+        result = IntelligenceResultFormatters.format_graph([
+            [[n1, n2], [e1]],
+            [[n2, n3], [e2]],
+        ])
+
+        assert len(result["nodes"]) == 3
+        assert len(result["edges"]) == 2
+
+    def test_snapshot(self):
+        n1 = MockNode("A")
+        n2 = MockNode("B")
+        e = MockEdge(n1, n2)
+
+        result = IntelligenceResultFormatters.format_graph([
+            [[n1, n2], [e]]
+        ])
+
+        assert result == {
+            "nodes": [
+                {"id": "A", "type": "Document", "properties": {"id": "A"}},
+                {"id": "B", "type": "Document", "properties": {"id": "B"}},
+            ],
+            "edges": [
+                {
+                    "source": "A",
+                    "target": "B",
+                    "type": "LINKS_TO",
+                    "properties": {},
+                }
+            ],
+        }
+class MockNode:
+    def __init__(self, node_id, label="Document", props=None):
+        self.properties = {"id": node_id, **(props or {})}
+        self.labels = [label]
+
+
+class MockEdge:
+    def __init__(self, source, target, edge_type="LINKS_TO", props=None):
+        self.src_node = source
+        self.dest_node = target
+        self.type = edge_type
+        self.properties = props or {}

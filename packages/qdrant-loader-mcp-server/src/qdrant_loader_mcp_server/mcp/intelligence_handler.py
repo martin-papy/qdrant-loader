@@ -5,6 +5,8 @@ import time
 import uuid
 from typing import Any
 
+from qdrant_loader_core.graph import get_graph_store
+
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
@@ -30,6 +32,7 @@ class IntelligenceHandler:
         self._ttl = 300
         self._max_sessions = 500
         self._lock = asyncio.Lock()
+        self._graph_store = None
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
@@ -948,3 +951,102 @@ class IntelligenceHandler:
             overflow = len(self._cluster_store) - self._max_sessions
             for k, _ in sorted_items[:overflow]:
                 self._cluster_store.pop(k, None)
+
+    async def _get_graph_store(self):
+        if self._graph_store is None:
+            self._graph_store = await get_graph_store()
+        return self._graph_store
+
+    async def _run_graph_query(
+        self,
+        cypher: str,
+        params: dict | None = None,
+    ):
+        store = await self._get_graph_store()
+        return await store.query_cypher(cypher, params or {})
+
+    async def find_ticket_dependencies(
+        self,
+        ticket_key: str,
+        depth: int = 2,
+    ):
+        """
+        Traverse Jira blocking dependencies
+        """
+
+        query = f"""
+        MATCH path = (start:Document {{id: $id}})
+        -[:LINKS_TO*1..{depth}]->(target:Document)
+        WHERE ALL(r IN relationships(path) WHERE r.kind = "blocks")
+        RETURN nodes(path), relationships(path)
+        """
+
+        result = await self._run_graph_query(
+            query,
+            {"id": f"jira:{ticket_key}"}
+        )
+
+        return self.formatters.format_graph(result)
+
+    async def get_epic_tree(self, epic_key: str):
+        """
+        Get full epic hierarchy (stories + subtasks)
+        """
+
+        query = """
+        MATCH path = (epic:Document {id: $id})
+        <-[:PART_OF*]-(child:Document)
+        RETURN nodes(path), relationships(path)
+        """
+
+        result = await self._run_graph_query(
+            query,
+            {"id": f"jira:{epic_key}"}
+        )
+
+        return self.formatters.format_graph(result)
+
+    async def find_related_documents(
+        self,
+        document_id: str,
+        relationship_types: list[str] | None = None,
+        depth: int = 2,
+    ):
+        """
+        Generic multi-hop traversal
+        """
+
+        rel_clause = ""
+        if relationship_types:
+            rel_clause = ":" + "|".join(relationship_types)
+
+        query = f"""
+        MATCH path = (start:Document {{id: $id}})
+        -[{rel_clause}*1..{depth}]-(related:Document)
+        RETURN nodes(path), relationships(path)
+        """
+
+        result = await self._run_graph_query(
+            query,
+            {"id": document_id}
+        )
+
+        return self.formatters.format_graph(result)
+
+    async def query_knowledge_graph(
+        self,
+        cypher: str,
+        params: dict | None = None,
+    ):
+        """
+        Raw Cypher query (power users)
+        """
+
+        # basic safety check
+        forbidden = ["DELETE", "DETACH", "DROP"]
+        if any(word in cypher.upper() for word in forbidden):
+            raise ValueError("Dangerous query detected")
+
+        result = await self._run_graph_query(cypher, params)
+
+        return self.formatters.format_graph(result)

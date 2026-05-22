@@ -170,8 +170,15 @@ class FalkorGraphStore(GraphStore):
         cypher: str,
         params: dict[str, Any],
     ) -> list[dict[str, Any]]:
-        result = self._graph.query(cypher, params)
+
+        result = await asyncio.to_thread(
+            self._graph.query,
+            cypher,
+            params or {},
+        )
+
         return result.result_set
+
 
     # -------------------------
     # Export graph for clustering

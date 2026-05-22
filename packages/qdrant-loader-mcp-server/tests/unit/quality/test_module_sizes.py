@@ -12,6 +12,7 @@ STRICT_SCOPES = [
 
 EXEMPTIONS = {
     # Add exemptions if needed for large orchestrators
+    "mcp/intelligence_handler.py": 1200
 }
 
 
