@@ -60,7 +60,9 @@ class _RecordingBedrockClient:
         body = json.loads(kwargs["body"])
         text = body["inputText"]
         vector = [1.0] * 1024 if text == "hello" else [2.0] * 1024
-        return {"body": io.BytesIO(json.dumps({"embeddings": [vector]}).encode("utf-8"))}
+        return {
+            "body": io.BytesIO(json.dumps({"embeddings": [vector]}).encode("utf-8"))
+        }
 
 
 class _FakeEndpointConnectionError(Exception):
@@ -108,7 +110,9 @@ def _reload_bedrock_module(monkeypatch, client: _FakeBedrockClient):
 @pytest.mark.asyncio
 async def test_bedrock_provider_embed_success(monkeypatch):
     vector = [1.0] * 1024
-    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode("utf-8")
+    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode(
+        "utf-8"
+    )
 
     client = _FakeBedrockClient(response_body=response_body)
     mod = _reload_bedrock_module(monkeypatch, client)
@@ -145,7 +149,9 @@ def test_bedrock_provider_invalid_model_id(monkeypatch):
     client = _FakeBedrockClient(response_body=b"{}")
     mod = _reload_bedrock_module(monkeypatch, client)
 
-    with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError):
+    with pytest.raises(
+        import_module("qdrant_loader_core.llm.errors").InvalidRequestError
+    ):
         mod.BedrockProvider(_make_llm_settings(model_id="bad-model"))
 
 
@@ -170,7 +176,9 @@ async def test_bedrock_provider_titan_v1_default_vector_size(monkeypatch):
     )
 
     vector = [1.0] * 1536
-    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode("utf-8")
+    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode(
+        "utf-8"
+    )
     client = _FakeBedrockClient(response_body=response_body)
     mod = _reload_bedrock_module(monkeypatch, client)
 
@@ -211,7 +219,9 @@ async def test_bedrock_provider_v2_custom_dimensions_sent(monkeypatch):
             assert payload["inputText"] == "hello"
             assert payload["dimensions"] == 512
             vector = [1.0] * 512
-            return {"body": io.BytesIO(json.dumps({"embeddings": [vector]}).encode("utf-8"))}
+            return {
+                "body": io.BytesIO(json.dumps({"embeddings": [vector]}).encode("utf-8"))
+            }
 
     client = _DimensionCheckingBedrockClient()
     mod = _reload_bedrock_module(monkeypatch, client)
@@ -238,7 +248,10 @@ async def test_bedrock_provider_embed_multiple_inputs(monkeypatch):
 
     assert vectors == [vector1, vector2]
     assert len(client.calls) == 2
-    assert {json.loads(call["body"])["inputText"] for call in client.calls} == {"hello", "world"}
+    assert {json.loads(call["body"])["inputText"] for call in client.calls} == {
+        "hello",
+        "world",
+    }
     for call in client.calls:
         assert call["modelId"] == "amazon.titan-embed-text-v2:0"
         payload = json.loads(call["body"])
@@ -253,12 +266,20 @@ def test_bedrock_extract_embeddings_payload_variants():
     assert mod._extract_embeddings([vector]) == [vector]
     assert mod._extract_embeddings({"embedding": vector}) == [vector]
     assert mod._extract_embeddings({"embeddings": [vector]}) == [vector]
-    assert mod._extract_embeddings({"data": [{"embedding": vector}, vector]}) == [vector, vector]
+    assert mod._extract_embeddings({"data": [{"embedding": vector}, vector]}) == [
+        vector,
+        vector,
+    ]
 
-    with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError):
+    with pytest.raises(
+        import_module("qdrant_loader_core.llm.errors").InvalidRequestError
+    ):
         mod._extract_embeddings({"unknown": "payload"})
 
-    with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError, match="Invalid embedding element from Bedrock"):
+    with pytest.raises(
+        import_module("qdrant_loader_core.llm.errors").InvalidRequestError,
+        match="Invalid embedding element from Bedrock",
+    ):
         mod._extract_embeddings({"embedding": [1.0, None]})
 
 
@@ -315,15 +336,21 @@ def test_bedrock_import_fallback_with_missing_boto3(monkeypatch):
 @pytest.mark.asyncio
 async def test_bedrock_provider_oversize_batch(monkeypatch):
     vector = [1.0] * 1024
-    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode("utf-8")
+    response_body = ("{" + f'"embeddings": [{json.dumps(vector)}]' + "}").encode(
+        "utf-8"
+    )
     client = _FakeBedrockClient(response_body=response_body)
     mod = _reload_bedrock_module(monkeypatch, client)
 
     settings = _make_llm_settings()
     provider = mod.BedrockProvider(settings)
 
-    with pytest.raises(import_module("qdrant_loader_core.llm.errors").InvalidRequestError):
-        await provider.embeddings().embed(["hello"] * (mod.BedrockEmbeddings.MAX_BATCH_SIZE + 1))
+    with pytest.raises(
+        import_module("qdrant_loader_core.llm.errors").InvalidRequestError
+    ):
+        await provider.embeddings().embed(
+            ["hello"] * (mod.BedrockEmbeddings.MAX_BATCH_SIZE + 1)
+        )
 
 
 def test_factory_returns_bedrock_provider(monkeypatch):

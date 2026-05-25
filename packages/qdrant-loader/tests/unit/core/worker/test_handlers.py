@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from qdrant_loader.core.worker.handlers import (
     BaseJobHandler,
     HandlerRegistry,
@@ -233,7 +232,9 @@ async def test_bulk_ingest_invalid_required_fields_raise_permanent_error():
 
 
 @pytest.mark.asyncio
-async def test_incremental_pull_invalid_required_fields_raise_permanent_error(monkeypatch):
+async def test_incremental_pull_invalid_required_fields_raise_permanent_error(
+    monkeypatch,
+):
     orchestrator = MagicMock()
     orchestrator.process_documents = AsyncMock()
 
