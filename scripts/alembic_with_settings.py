@@ -123,12 +123,13 @@ def main() -> int:
 
     db_path = _resolve_state_db_path(args.workspace, args.config_path, args.env_path)
 
-    # Check if db_path comes from config or is default
-    config_source = (
-        "config file"
-        if any([args.workspace, args.config_path, args.env_path])
-        else "default (repo root)"
-    )
+    # Report invocation mode for DB path resolution.
+    if args.workspace:
+        config_source = "workspace"
+    elif args.config_path or args.env_path:
+        config_source = "config/env flags"
+    else:
+        config_source = "default (repo root)"
     print(f"[INFO] Using database path from {config_source}: {db_path}")
 
     child_env = os.environ.copy()

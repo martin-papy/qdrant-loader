@@ -14,6 +14,7 @@ from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
+from qdrant_loader.config.workers import WorkersConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig
 
 
@@ -55,6 +56,10 @@ class GlobalConfig(BaseConfig):
     )
     qdrant: QdrantConfig = Field(
         default_factory=QdrantConfig, description="Qdrant configuration"
+    )
+    workers: WorkersConfig = Field(
+        default_factory=WorkersConfig,
+        description="Worker scheduling and runtime configuration",
     )
 
     def __init__(self, **data):
@@ -98,4 +103,5 @@ class GlobalConfig(BaseConfig):
                 },
             },
             "qdrant": self.qdrant.to_dict(),
+            "workers": self.workers.to_dict(),
         }
