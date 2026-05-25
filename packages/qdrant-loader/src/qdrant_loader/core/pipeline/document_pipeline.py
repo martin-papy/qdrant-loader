@@ -67,6 +67,65 @@ class DocumentPipeline:
                 result.errors = ["Pipeline timed out after 1 hour"]
                 return result
 
+            # Optional: Graph extraction & upsert (graph is optional; failures must not fail ingestion)
+            try:
+                # Check config for graph.enabled (be resilient if config doesn't define graph)
+                try:
+                    from qdrant_loader.config import get_settings
+
+                    settings = get_settings()
+                    graph_cfg = getattr(settings.global_config, "graph", None)
+                    graph_enabled = bool(getattr(graph_cfg, "enabled", False)) if graph_cfg is not None else False
+                except Exception:
+                    graph_enabled = False
+
+                if graph_enabled:
+                    # Ensure extractor registry is imported (registers available extractors)
+                    import qdrant_loader_core.graph.registry as _registry  # noqa: F401
+
+                    from qdrant_loader_core.graph.extractor.base_extractor import (
+                        EntityExtractor,
+                    )
+                    from qdrant_loader_core.graph import get_graph_store
+
+                    nodes_batch: list = []
+                    edges_batch: list = []
+
+                    for doc in documents:
+                        try:
+                            extractor = EntityExtractor.for_source(doc.source_type)
+                            subgraph = extractor.extract(doc.to_dict())
+
+                            if getattr(subgraph, "nodes", None):
+                                nodes_batch.extend(subgraph.nodes)
+                            if getattr(subgraph, "edges", None):
+                                edges_batch.extend(subgraph.edges)
+                        except Exception as e:
+                            logger.error(
+                                "⚠️ Graph extraction failed for document %s: %s",
+                                getattr(doc, "id", "<unknown>"),
+                                e,
+                                exc_info=True,
+                            )
+
+                    if nodes_batch or edges_batch:
+                        try:
+                            graph_store = await get_graph_store()
+                            logger.info("graph_store: ", graph_store)
+                            if nodes_batch:
+                                await graph_store.upsert_nodes_batch(nodes_batch)
+                            if edges_batch:
+                                await graph_store.upsert_edges_batch(edges_batch)
+                            logger.info("🔄 Add graph store successfully...")
+                        except Exception as e:
+                            logger.error(
+                                "⚠️ Graph upsert failed (non-fatal): %s",
+                                e,
+                                exc_info=True,
+                            )
+            except Exception:
+                logger.exception("Unexpected error during optional graph processing")
+
             total_duration = time.time() - start_time
             embedding_duration = time.time() - embedding_start
 
