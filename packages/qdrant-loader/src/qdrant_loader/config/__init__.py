@@ -399,6 +399,35 @@ class Settings(BaseSettings):
             return [Settings._substitute_env_vars(item) for item in data]
         return data
 
+    @staticmethod
+    def _validate_env_substitution(data: Any) -> None:
+        """Validate that all environment variables in config have been substituted.
+        
+        Raises:
+            ValueError: If any ${VAR_NAME} pattern remains in the configuration.
+        """
+        pattern = r"\$\{([^}]+)\}"
+        
+        def check_value(value: Any, path: str = "") -> None:
+            if isinstance(value, str):
+                matches = re.finditer(pattern, value)
+                for match in matches:
+                    var_name = match.group(1)
+                    location = f" at {path}" if path else ""
+                    raise ValueError(
+                        f"Environment variable {var_name!r} not found{location}. "
+                        f"Please set {var_name} in your environment or .env file, "
+                        f"or comment out the configuration line that references it."
+                    )
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    check_value(v, f"{path}.{k}" if path else k)
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    check_value(item, f"{path}[{i}]")
+        
+        check_value(data)
+
     @classmethod
     def from_yaml(
         cls,
@@ -439,6 +468,9 @@ class Settings(BaseSettings):
             # Step 3: Process all environment variables in config using substitution
             _get_logger().debug("Processing environment variables in configuration")
             config_data = cls._substitute_env_vars(config_data)
+
+            # Step 3.5: Validate that all required environment variables were substituted
+            cls._validate_env_substitution(config_data)
 
             # Step 4: Use multi-project parser to parse configuration
             validator = ConfigValidator()
