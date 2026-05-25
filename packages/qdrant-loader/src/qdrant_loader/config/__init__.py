@@ -469,8 +469,11 @@ class Settings(BaseSettings):
             _get_logger().debug("Processing environment variables in configuration")
             config_data = cls._substitute_env_vars(config_data)
 
-            # Step 3.5: Validate that all required environment variables were substituted
-            cls._validate_env_substitution(config_data)
+            # Step 3.5: In strict mode, fail fast if placeholders remain unresolved.
+            # Tests and template flows often use skip_validation=True and should keep
+            # legacy behavior where unresolved placeholders can remain in config.
+            if not skip_validation:
+                cls._validate_env_substitution(config_data)
 
             # Step 4: Use multi-project parser to parse configuration
             validator = ConfigValidator()
