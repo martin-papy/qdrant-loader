@@ -272,13 +272,17 @@ class StateManager:
     ) -> list[str]:
         """Atomically mark documents as deleted in state and delete their points in Qdrant.
 
-        This method starts a DB transaction, marks existing document state records
-        as deleted (but does not commit), then calls `qdrant_manager.delete_points_by_document_id`
-        to remove vectors. If the Qdrant deletion succeeds, the DB transaction is
-        committed. If it fails, the DB transaction is rolled back so no partial
-        state changes remain.
+        Transaction ordering:
+        1. Mark state records as is_deleted=True and COMMIT to DB immediately
+        2. Delete points from Qdrant (separate operation, outside DB transaction)
+        3. If Qdrant delete fails, vectors remain orphaned but state is correctly marked
+           (orphan vectors are recoverable by re-running delete; orphan state is silent corruption)
 
         Returns the list of document IDs that were marked and deleted.
+        
+        WS-3 DESIGN NOTE: Current design prefers orphan vectors (safe, recoverable) over orphan
+        state (dangerous, silent). If Qdrant fails to delete, the operation should be re-enqueued
+        for retry as an idempotent operation.
         """
         if not self._initialized:
             raise RuntimeError("StateManager not initialized. Call initialize() first.")
@@ -287,11 +291,13 @@ class StateManager:
         if session_factory is None:
             raise RuntimeError("State manager session factory is not available")
 
+        document_ids_to_delete: list[str] = []
+        
+        # STEP 1: Commit state changes to DB first
         async with session_factory() as session:  # type: ignore
             tx = await session.begin()
             try:
                 now = datetime.now(UTC)
-                document_ids_to_delete: list[str] = []
                 for doc in deleted_documents:
                     query = select(DocumentStateRecord).filter(
                         DocumentStateRecord.source_type == doc.source_type,
@@ -307,23 +313,13 @@ class StateManager:
                         state.updated_at = now  # type: ignore
                         document_ids_to_delete.append(doc.id)
 
-                # Flush but do not commit yet
-                await session.flush()
-
-                if document_ids_to_delete:
-                    # Call Qdrant to delete points; if this fails we'll rollback
-                    await qdrant_manager.delete_points_by_document_id(document_ids_to_delete)
-                    await tx.commit()
-                    self.logger.info(
-                        f"Atomically deleted {len(document_ids_to_delete)} documents and their points"
-                    )
-                else:
-                    # Nothing to delete; just commit/close transaction
-                    await tx.commit()
-
-                return document_ids_to_delete
+                # Commit state changes immediately
+                await tx.commit()
+                self.logger.info(
+                    f"Marked {len(document_ids_to_delete)} documents as deleted in state DB"
+                )
             except Exception as e:
-                # Rollback transaction to avoid partial state changes
+                # Rollback on any DB error
                 try:
                     await tx.rollback()
                 except Exception as rb_err:
@@ -332,10 +328,30 @@ class StateManager:
                         exc_info=True,
                     )
                 self.logger.error(
-                    f"Atomic delete failed: {str(e)}",
+                    f"Failed to mark documents deleted in DB: {str(e)}",
                     exc_info=True,
                 )
                 raise
+
+        # STEP 2: Delete from Qdrant (separate operation, after state is committed)
+        # If this fails, vectors remain but state is correctly marked as deleted
+        if document_ids_to_delete:
+            try:
+                await qdrant_manager.delete_points_by_document_id(document_ids_to_delete)
+                self.logger.info(
+                    f"Deleted {len(document_ids_to_delete)} documents' points from Qdrant"
+                )
+            except Exception as e:
+                # Qdrant delete failed, but state is already committed
+                # Log the failure; the operation should be re-enqueued for retry (idempotent)
+                self.logger.error(
+                    f"Failed to delete points from Qdrant (state still marked as deleted): {str(e)}",
+                    exc_info=True,
+                )
+                # Re-raise to signal caller that cleanup should be retried
+                raise
+
+        return document_ids_to_delete
 
     async def get_document_state_record(
         self,

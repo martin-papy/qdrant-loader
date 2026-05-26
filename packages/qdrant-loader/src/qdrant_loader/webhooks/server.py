@@ -36,6 +36,20 @@ WEBHOOK_RATE_LIMIT_REQUESTS_PER_WINDOW = int(
     os.getenv("WEBHOOK_RATE_LIMIT_REQUESTS_PER_WINDOW", "10")
 )
 
+# In-memory rate limit state (process-local).
+#
+# IMPORTANT: This is NOT a substitute for infrastructure-level rate limiting.
+# 
+# LIMITATION: Each uvicorn worker, container, or ECS task has its own dict instance.
+# Multiple instances → each enforces limits independently → effective limit = N × configured.
+# Example: 2 workers with limit=10 → actual limit ≈ 20 req/min.
+#
+# DESIGN INTENT (WS-6): Primary rate-limiting should live at the ALB/WAF layer:
+# "rate-limit per IP to 1000 req/min". This app-level check is a safety net.
+#
+# SECURITY NOTE: get_client_ip() relies on X-Forwarded-For header when running
+# behind a trusted proxy. In untrusted environments, set WEBHOOK_TRUSTED_PROXY_IPS
+# or similar to validate the header origin.
 _request_timestamps: dict[str, list[float]] = {}
 
 
@@ -90,6 +104,11 @@ def _cleanup_old_timestamps(client_key: str) -> None:
 
 
 def _enforce_rate_limit(request: Request) -> None:
+    """Check rate limit for this request and reject if exceeded.
+    
+    This is a process-local safety net. For true DDoS protection, rely on ALB/WAF.
+    See _request_timestamps docstring for design details.
+    """
     client_key = get_client_ip(request)
     _cleanup_old_timestamps(client_key)
     timestamps = _request_timestamps.setdefault(client_key, [])
@@ -125,8 +144,10 @@ async def _handle_webhook(
     request: Request,
     force: bool = False,
 ) -> JSONResponse:
-    payload = await _parse_json_request(request)
+    # Check rate limit BEFORE parsing to avoid wasting CPU on flooded requests
     _enforce_rate_limit(request)
+    
+    payload = await _parse_json_request(request)
 
     try:
         normalized_source_type = normalize_source_type(source_type)
@@ -178,6 +199,48 @@ async def health_check() -> dict[str, object]:
         },
         "queue": "sqlite",
     }
+
+
+@app.get("/healthz")
+async def healthz() -> dict[str, object]:
+    """Kubernetes-compliant health check endpoint.
+    
+    Returns 200 OK if the webhook server process is running.
+    No probing of dependencies (see /readyz for that).
+    """
+    return {"status": "ok"}
+
+
+@app.get("/readyz")
+async def readyz() -> dict[str, object]:
+    """Kubernetes-compliant readiness check endpoint.
+    
+    Returns 200 OK if the server is ready to accept requests:
+    - Worker process is running
+    - Queue backend is initialized
+    
+    Note: Currently does not probe Qdrant or DB connectivity;
+    those would be probed by ALB/WAF health checks or monitored separately.
+    """
+    worker_task = getattr(app.state, "worker_task", None)
+    
+    if worker_task is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Worker task not initialized",
+        )
+    
+    if worker_task.done():
+        # If task is done, check if it errored
+        try:
+            worker_task.result()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Worker task failed: {str(e)}",
+            )
+    
+    return {"status": "ready"}
 
 
 @app.get("/status", dependencies=[Depends(verify_cognito_token)])

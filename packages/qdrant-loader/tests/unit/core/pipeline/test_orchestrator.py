@@ -850,3 +850,38 @@ class TestPipelineOrchestrator:
         assert "error_type=RuntimeError" in error_entry
         assert "message=project-level failure" in error_entry
         assert "traceback=" in error_entry
+
+    @pytest.mark.asyncio
+    async def test_process_documents_empty_snapshot_warning(self):
+        """Test that empty snapshot in non-force mode logs a warning (WS-3 safety check)."""
+        filtered_config = Mock(spec=SourcesConfig)
+        filtered_config.git = ["git_source"]
+        filtered_config.confluence = None
+        filtered_config.jira = None
+        filtered_config.publicdocs = None
+        filtered_config.localfile = None
+
+        # Setup mocks
+        self.source_filter.filter_sources.return_value = filtered_config
+        self.orchestrator._collect_documents_from_sources = AsyncMock(return_value=[])
+        
+        # Mock change detection to simulate what would happen with empty docs
+        self.orchestrator._detect_document_changes = AsyncMock(return_value=[])
+
+        with patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_logger:
+            # Execute
+            result = await self.orchestrator.process_documents(
+                sources_config=self.mock_sources_config
+            )
+
+            # Verify warning was logged about empty snapshot
+            mock_logger.warning.assert_called()
+            warning_calls = [call for call in mock_logger.warning.call_args_list 
+                            if "EMPTY SNAPSHOT" in str(call)]
+            assert len(warning_calls) > 0, "Expected warning about empty snapshot"
+            
+            # Verify that change detection was still called (not skipped)
+            self.orchestrator._detect_document_changes.assert_called_once()
+            
+            # Verify empty result
+            assert result == []

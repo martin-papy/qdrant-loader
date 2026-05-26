@@ -143,12 +143,33 @@ class PipelineOrchestrator:
                 filtered_config, current_project_id, since
             )
 
+            # SAFETY CHECK: Empty-snapshot deletion protection (WS-3 territory)
+            #
             # In force mode we bypass change detection entirely,
             # so an empty snapshot means there is nothing to process.
             #
             # In normal mode we MUST continue into change detection,
             # because an empty snapshot may indicate that previously
             # indexed documents were deleted from the source.
+            #
+            # HOWEVER: Without an explicit signal from the connector that the
+            # snapshot is complete (vs. partial failure / API outage), an empty
+            # list could trigger mass deletion. Example: Jira API outage returns []
+            # → change detection classifies all 115k indexed docs as deleted.
+            #
+            # TEMPORARY FIX: Log a warning if snapshot is empty and we're about to
+            # proceed to change detection. This is safe but noisy.
+            #
+            # PERMANENT FIX (WS-3): Require connector contract to include
+            # `snapshot_is_complete: bool` or add per-source `enable_deletion_detection` flag.
+            if not documents and not force:
+                logger.warning(
+                    "⚠️ EMPTY SNAPSHOT in non-force mode. About to enter change detection "
+                    "which may classify existing corpus as deleted if source API returned partial/null results. "
+                    "This is a known risk (WS-3: add explicit snapshot_is_complete signal or per-source enable_deletion_detection). "
+                    "Proceeding carefully."
+                )
+
             if not documents and force:
                 logger.info("✅ No documents found from sources")
                 return []
