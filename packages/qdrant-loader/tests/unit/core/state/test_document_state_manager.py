@@ -27,6 +27,7 @@ def document_state_manager(mock_logger):
 def sample_document_state():
     """Create a sample DocumentState."""
     return DocumentState(
+        document_id="doc_123",
         uri="https://example.com/doc1",
         content_hash="abc123def456",
         updated_at=datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC),
@@ -388,6 +389,7 @@ class TestIntegration:
             (
                 "doc_1",
                 DocumentState(
+                    document_id="doc_1",
                     uri="https://example.com/doc1",
                     content_hash="hash1",
                     updated_at=datetime(2024, 1, 1, tzinfo=UTC),
@@ -396,6 +398,7 @@ class TestIntegration:
             (
                 "doc_2",
                 DocumentState(
+                    document_id="doc_2",
                     uri="https://example.com/doc2",
                     content_hash="hash2",
                     updated_at=datetime(2024, 1, 2, tzinfo=UTC),
@@ -404,6 +407,7 @@ class TestIntegration:
             (
                 "doc_3",
                 DocumentState(
+                    document_id="doc_3",
                     uri="https://example.com/doc3",
                     content_hash="hash3",
                     updated_at=datetime(2024, 1, 3, tzinfo=UTC),
