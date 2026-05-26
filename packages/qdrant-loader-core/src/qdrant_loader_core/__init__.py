@@ -1,5 +1,10 @@
 # qdrant-loader-core package root
 
+from .config import (
+    CollectionVectorCapabilities,
+    SparseRuntimeConfig,
+    parse_collection_capabilities,
+)
 from .llm import (
     ChatClient,
     EmbeddingPolicy,
@@ -11,6 +16,7 @@ from .llm import (
     TokenCounter,
     create_provider,
 )
+from .sparse import BM25SparseEncoder, SparseVectorData
 
 __all__ = [
     "EmbeddingsClient",
@@ -22,4 +28,9 @@ __all__ = [
     "RateLimitPolicy",
     "EmbeddingPolicy",
     "create_provider",
+    "BM25SparseEncoder",
+    "SparseVectorData",
+    "SparseRuntimeConfig",
+    "CollectionVectorCapabilities",
+    "parse_collection_capabilities",
 ]

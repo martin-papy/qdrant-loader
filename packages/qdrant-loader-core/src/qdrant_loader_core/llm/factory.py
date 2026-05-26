@@ -99,6 +99,7 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
 
         try:
             from .providers.bedrock import BedrockProvider
+
             return BedrockProvider(settings)
         except ImportError:
             return _NoopProvider()

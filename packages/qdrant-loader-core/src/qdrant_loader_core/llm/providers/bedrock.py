@@ -30,13 +30,20 @@ from ..types import ChatClient, EmbeddingsClient, LLMProvider, TokenCounter
 # part of the module contract and support graceful degradation.
 from .bedrock_utils import (
     BedrockTokenizer,
+    BotoCoreError,  # re-export: keep for import-fallback contract/tests
+    ClientError,  # re-export: keep for import-fallback contract/tests
+    EndpointConnectionError,  # re-export: keep for import-fallback contract/tests
+    NoCredentialsError,  # re-export: keep for import-fallback contract/tests
     _extract_embeddings,
     _map_bedrock_exception,
-    BotoCoreError,
-    ClientError,
-    EndpointConnectionError,
-    NoCredentialsError,
 )
+
+__all__ = [
+    "BotoCoreError",
+    "ClientError",
+    "EndpointConnectionError",
+    "NoCredentialsError",
+]
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -48,6 +55,7 @@ DEFAULT_VECTOR_SIZES: dict[str, int] = {
 
 class BedrockEmbeddings(EmbeddingsClient):
     """Embeddings client for Bedrock Titan models, invoking one API call per input."""
+
     MAX_BATCH_SIZE = 1000
 
     def __init__(
@@ -73,12 +81,16 @@ class BedrockEmbeddings(EmbeddingsClient):
         self._semaphore = asyncio.Semaphore(self._concurrency)
 
     def _build_invoke_kwargs(self, text: str) -> dict[str, Any]:
-        payload_body = {
-            "inputText": text
-        }
+        payload_body = {"inputText": text}
 
-        if self._model_id.startswith("amazon.titan-embed-text-v2") and self._expected_vector_size is not None:
-            if self._expected_vector_size != DEFAULT_VECTOR_SIZES["amazon.titan-embed-text-v2:0"]:
+        if (
+            self._model_id.startswith("amazon.titan-embed-text-v2")
+            and self._expected_vector_size is not None
+        ):
+            if (
+                self._expected_vector_size
+                != DEFAULT_VECTOR_SIZES["amazon.titan-embed-text-v2:0"]
+            ):
                 payload_body["dimensions"] = self._expected_vector_size
 
         invoke_kwargs: dict[str, Any] = {
@@ -90,7 +102,6 @@ class BedrockEmbeddings(EmbeddingsClient):
 
         return invoke_kwargs
 
-
     def _read_response_body(self, response: Any) -> str:
         body_data = (
             response.get("body")
@@ -99,9 +110,7 @@ class BedrockEmbeddings(EmbeddingsClient):
         )
 
         if body_data is None:
-            raise ServerError(
-                "Bedrock response body missing"
-            )
+            raise ServerError("Bedrock response body missing")
 
         if hasattr(body_data, "read"):
             body_bytes = body_data.read()
@@ -114,10 +123,7 @@ class BedrockEmbeddings(EmbeddingsClient):
         if isinstance(body_bytes, str):
             return body_bytes
 
-        raise ServerError(
-            "Bedrock response body is not bytes or string"
-        )
-
+        raise ServerError("Bedrock response body is not bytes or string")
 
     def _parse_single_embedding(
         self,
@@ -133,7 +139,6 @@ class BedrockEmbeddings(EmbeddingsClient):
 
         return embeddings[0]
 
-
     def _validate_vector(
         self,
         vector: list[float],
@@ -146,7 +151,6 @@ class BedrockEmbeddings(EmbeddingsClient):
                 f"Bedrock returned embedding vector with unexpected dimension: "
                 f"expected {self._expected_vector_size}, got {len(vector)}"
             )
-
 
     async def _invoke_single(
         self,
@@ -161,9 +165,7 @@ class BedrockEmbeddings(EmbeddingsClient):
                 **invoke_kwargs,
             )
 
-            duration_ms = int(
-                (datetime.now(UTC) - started).total_seconds() * 1000
-            )
+            duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
 
             logger.info(
                 "LLM request",
@@ -198,9 +200,7 @@ class BedrockEmbeddings(EmbeddingsClient):
 
     async def embed(self, inputs: list[str]) -> list[list[float]]:
         if self._client is None:
-            raise NotImplementedError(
-                "Bedrock client not available"
-            )
+            raise NotImplementedError("Bedrock client not available")
 
         if not inputs:
             return []
@@ -214,22 +214,26 @@ class BedrockEmbeddings(EmbeddingsClient):
             async with self._semaphore:
                 return await self._invoke_single(text)
 
-        return await asyncio.gather(
-            *[_one(text) for text in inputs]
-        )
+        return await asyncio.gather(*[_one(text) for text in inputs])
+
 
 class _BedrockChat(ChatClient):
-    async def chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
+    async def chat(
+        self, messages: list[dict[str, Any]], **kwargs: Any
+    ) -> dict[str, Any]:
         raise NotImplementedError("Bedrock chat is not implemented")
 
 
 class BedrockProvider(LLMProvider):
     """LLM provider wrapper for AWS Bedrock Titan embedding models."""
-    SUPPORTED_MODELS = frozenset({
-        "amazon.titan-embed-text-v2:0",
-        "amazon.titan-embed-text-v1",
-        # "cohere.embed-english-v3",
-    })
+
+    SUPPORTED_MODELS = frozenset(
+        {
+            "amazon.titan-embed-text-v2:0",
+            "amazon.titan-embed-text-v1",
+            # "cohere.embed-english-v3",
+        }
+    )
 
     def __init__(
         self,
@@ -240,20 +244,11 @@ class BedrockProvider(LLMProvider):
         self._settings = settings
         provider_options = settings.provider_options or {}
 
-        model_id = (
-            provider_options.get("model_id")
-            or settings.models.get("embeddings")
-        )
+        model_id = provider_options.get("model_id") or settings.models.get("embeddings")
 
-        self._model_id = (
-            str(model_id)
-            if model_id is not None
-            else ""
-        )
+        self._model_id = str(model_id) if model_id is not None else ""
 
-        self._aws_region = provider_options.get(
-            "aws_region"
-        )
+        self._aws_region = provider_options.get("aws_region")
 
         self._provisioned_throughput_arn = provider_options.get(
             "provisioned_throughput_arn"
@@ -290,13 +285,17 @@ class BedrockProvider(LLMProvider):
             else DEFAULT_VECTOR_SIZES.get(self._model_id, 1024)
         )
 
-        self._client = client if client is not None else (
-            boto3.client(
-                "bedrock-runtime",
-                region_name=self._aws_region,
+        self._client = (
+            client
+            if client is not None
+            else (
+                boto3.client(
+                    "bedrock-runtime",
+                    region_name=self._aws_region,
+                )
+                if boto3 is not None
+                else None
             )
-            if boto3 is not None
-            else None
         )
 
     def embeddings(self) -> EmbeddingsClient:
@@ -310,10 +309,7 @@ class BedrockProvider(LLMProvider):
         )
 
     def chat(self) -> ChatClient:
-        raise NotImplementedError(
-            "Bedrock provider does not support chat()"
-        )
+        raise NotImplementedError("Bedrock provider does not support chat()")
 
     def tokenizer(self) -> TokenCounter:
         return BedrockTokenizer()
-    
