@@ -1,69 +1,87 @@
+import asyncio
+
 import pytest
-from qdrant_loader.webhooks.handlers import normalize_source_type, process_webhook_event
+
+from qdrant_loader.webhooks.handlers import (
+    enqueue_webhook_event,
+    normalize_source_type,
+)
+from qdrant_loader.webhooks.queue_backend import (
+    FULL_SCAN,
+    SINGLE_UPSERT,
+    ChangeEvent,
+    QueueBackendManager,
+)
 
 
-class DummySettings:
-    pass
+class FakeQueueBackend:
+    def __init__(self) -> None:
+        self.events: list[ChangeEvent] = []
+
+    async def enqueue(self, event: ChangeEvent) -> str:
+        self.events.append(event)
+        return "1"
+
+    async def close(self) -> None:
+        return None
 
 
-def test_normalize_source_type_accepts_known_values():
+@pytest.fixture
+def fake_queue():
+    backend = FakeQueueBackend()
+    QueueBackendManager.set_backend(backend)
+    yield backend
+    QueueBackendManager.reset()
+
+
+def test_normalize_source_type_accepts_jira():
     assert normalize_source_type("Jira") == "jira"
-    assert normalize_source_type("confluence") == "confluence"
-    assert normalize_source_type("PublicDocs") == "publicdocs"
+    assert normalize_source_type("jira") == "jira"
 
 
-def test_normalize_source_type_rejects_unknown_value():
+def test_normalize_source_type_rejects_non_jira_sources():
     with pytest.raises(ValueError, match="Unsupported source type"):
-        normalize_source_type("unknown")
+        normalize_source_type("confluence")
+    with pytest.raises(ValueError, match="Unsupported source type"):
+        normalize_source_type("git")
 
-@pytest.mark.asyncio
-async def test_process_webhook_event_calls_ingestion(monkeypatch):
-    called = {}
 
-    async def fake_run_pipeline_ingestion(
-        settings,
-        qdrant_manager,
-        project,
-        source_type,
-        source,
-        force,
-        metrics_dir=None,
-    ):
-        called["args"] = {
-            "settings": settings,
-            "project": project,
-            "source_type": source_type,
-            "source": source,
-            "force": force,
-        }
-
-    class DummyQdrantManager:
-        def __init__(self, settings):
-            self.settings = settings
-
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.handlers.get_settings",
-        lambda: DummySettings(),
-    )
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.handlers.QdrantManager",
-        DummyQdrantManager,
-    )
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.handlers.run_pipeline_ingestion",
-        fake_run_pipeline_ingestion,
-    )
-
-    await process_webhook_event(
+def test_enqueue_single_upsert_for_jira_webhook(fake_queue):
+    result = asyncio.run(enqueue_webhook_event(
         project_id="project1",
         source_type="jira",
-        source="my-jira-source",
-        payload={"event": "issue_updated"},
-        force=True,
-    )
+        source="my-jira",
+        payload={
+            "webhookEvent": "jira:issue_created",
+            "issue": {"key": "ABC-1", "id": "1"},
+        },
+    ))
 
-    assert "args" in called, "run_pipeline_ingestion was never called"
-    assert called["args"]["project"] == "project1"
-    assert called["args"]["source_type"] == "jira"
-    assert called["args"]["source"] == "my-jira-source"
-    assert called["args"]["force"] is True
+    assert result["operation"] == SINGLE_UPSERT
+    assert result["entity_id"] == "ABC-1"
+    assert len(fake_queue.events) == 1
+    assert fake_queue.events[0].operation == SINGLE_UPSERT
+
+
+def test_enqueue_full_scan_when_force(fake_queue):
+    result = asyncio.run(enqueue_webhook_event(
+        project_id="project1",
+        source_type="jira",
+        source="my-jira",
+        payload={},
+        force=True,
+    ))
+
+    assert result["operation"] == FULL_SCAN
+    assert fake_queue.events[0].force is True
+
+
+def test_enqueue_full_scan_when_unparseable(fake_queue):
+    result = asyncio.run(enqueue_webhook_event(
+        project_id=None,
+        source_type="jira",
+        source="my-jira",
+        payload={"unknown": True},
+    ))
+
+    assert result["operation"] == FULL_SCAN

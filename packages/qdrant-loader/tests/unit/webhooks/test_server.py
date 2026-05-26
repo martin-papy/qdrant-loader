@@ -1,203 +1,158 @@
-from fastapi.testclient import TestClient
+from __future__ import annotations
+
+import asyncio
+from unittest.mock import AsyncMock
+
 import pytest
+from fastapi.testclient import TestClient
 
-from qdrant_loader.webhooks import server
+from qdrant_loader.webhooks.queue_backend import ChangeEvent, QueueBackendManager
 from qdrant_loader.webhooks.server import app
-from qdrant_loader.webhooks.handlers import process_ingest_request
 
 
-class DummySettings:
-    pass
+class FakeQueueBackend:
+    def __init__(self) -> None:
+        self.events: list[ChangeEvent] = []
+
+    async def enqueue(self, event: ChangeEvent) -> str:
+        self.events.append(event)
+        return str(len(self.events))
+
+    async def close(self) -> None:
+        return None
 
 
-@pytest.mark.asyncio
-async def test_process_ingest_request_calls_run_pipeline_ingestion(monkeypatch):
-    called = {}
+@pytest.fixture
+def mock_queue_backend(monkeypatch):
+    backend = FakeQueueBackend()
 
-    async def fake_run_pipeline_ingestion(
-        settings,
-        qdrant_manager,
-        project,
-        source_type,
-        source,
-        force,
-        metrics_dir=None,
-    ):
-        called["args"] = {
-            "settings": settings,
-            "qdrant_manager": qdrant_manager,
-            "project": project,
-            "source_type": source_type,
-            "source": source,
-            "force": force,
-        }
+    async def fake_initialize():
+        QueueBackendManager.set_backend(backend)
+        return backend
 
-    class DummyQdrantManager:
-        def __init__(self, settings):
-            self.settings = settings
+    async def fake_shutdown():
+        QueueBackendManager.reset()
 
+    async def fake_worker(stop_event: asyncio.Event):
+        stop_event.set()
+
+    monkeypatch.setattr(QueueBackendManager, "initialize", fake_initialize)
+    monkeypatch.setattr(QueueBackendManager, "shutdown", fake_shutdown)
     monkeypatch.setattr(
-        "qdrant_loader.webhooks.handlers.get_settings",
-        lambda: DummySettings(),
+        "qdrant_loader.webhooks.server.run_webhook_worker",
+        fake_worker,
     )
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.handlers.QdrantManager",
-        DummyQdrantManager,
-    )
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.handlers.run_pipeline_ingestion",
-        fake_run_pipeline_ingestion,
-    )
-
-    await process_ingest_request(
-        project_id="project1",
-        source_type="jira",
-        source="my-jira-source",
-        force=True,
-    )
-
-    assert called["args"]["project"] == "project1"
-    assert called["args"]["source_type"] == "jira"
-    assert called["args"]["source"] == "my-jira-source"
-    assert called["args"]["force"] is True
+    return backend
 
 
-def test_ingest_route_calls_process_ingest_request(monkeypatch):
-    called = {}
-
-    async def fake_process_ingest_request(
-        project_id,
-        source_type,
-        source,
-        force=False,
-    ):
-        called["args"] = {
-            "project_id": project_id,
-            "source_type": source_type,
-            "source": source,
-            "force": force,
-        }
-
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.server.process_ingest_request",
-        fake_process_ingest_request,
-    )
+def test_webhook_project_route_enqueues_single_event(mock_queue_backend, monkeypatch):
     monkeypatch.setenv("WEBHOOK_SECRET", "secret")
 
     with TestClient(app) as client:
         response = client.post(
-            "/ingest?project_id=project1&source_type=jira&source=my-jira-source&force=true&token=secret"
+            "/webhooks/projects/project1/jira/my-jira-source?token=secret",
+            json={
+                "webhookEvent": "jira:issue_updated",
+                "issue": {"key": "TEST-1", "id": "10001"},
+            },
         )
 
     assert response.status_code == 202
-    assert response.json()["status"] == "accepted"
-    assert called["args"]["project_id"] == "project1"
-    assert called["args"]["source_type"] == "jira"
-    assert called["args"]["source"] == "my-jira-source"
-    assert called["args"]["force"] is True
+    body = response.json()
+    assert body["status"] == "accepted"
+    assert body["operation"] == "SINGLE_UPSERT"
+    assert body["entity_id"] == "TEST-1"
+    assert len(mock_queue_backend.events) == 1
+    assert mock_queue_backend.events[0].project_id == "project1"
 
 
-def test_ingest_route_accepts_authorization_header(monkeypatch):
-    called = {}
-
-    async def fake_process_ingest_request(
-        project_id,
-        source_type,
-        source,
-        force=False,
-    ):
-        called["args"] = {
-            "project_id": project_id,
-            "source_type": source_type,
-            "source": source,
-            "force": force,
-        }
-
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.server.process_ingest_request",
-        fake_process_ingest_request,
-    )
+def test_webhook_source_route_enqueues_event(mock_queue_backend, monkeypatch):
     monkeypatch.setenv("WEBHOOK_SECRET", "secret")
 
     with TestClient(app) as client:
         response = client.post(
-            "/ingest?project_id=project1&source_type=jira&source=my-jira-source&force=true",
+            "/webhooks/jira/my-jira-source?token=secret",
+            json={
+                "webhookEvent": "jira:issue_deleted",
+                "issue": {"key": "TEST-2", "id": "10002"},
+            },
+        )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body["operation"] == "SINGLE_DELETE"
+    assert mock_queue_backend.events[0].project_id is None
+
+
+def test_webhook_requires_auth(monkeypatch):
+    monkeypatch.setenv("WEBHOOK_SECRET", "secret")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/webhooks/jira/my-jira-source?token=wrong-secret",
+            json={},
+        )
+
+    assert response.status_code == 401
+    assert "Invalid or missing webhook token" in response.json()["detail"]
+
+
+def test_webhook_rejects_non_jira_source(mock_queue_backend, monkeypatch):
+    monkeypatch.setenv("WEBHOOK_SECRET", "secret")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/webhooks/confluence/my-source?token=secret",
+            json={},
+        )
+
+    assert response.status_code == 400
+    assert "Unsupported source type" in response.json()["detail"]
+
+
+def test_ingest_route_enqueues_full_scan(mock_queue_backend, monkeypatch):
+    monkeypatch.setenv("WEBHOOK_SECRET", "secret")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/ingest?project_id=project1&source_type=jira&source=my-source&force=true&token=secret",
+        )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body["status"] == "accepted"
+    assert body["operation"] == "FULL_SCAN"
+    assert body["force"] is True
+    assert len(mock_queue_backend.events) == 1
+    event = mock_queue_backend.events[0]
+    assert event.project_id == "project1"
+    assert event.source_type == "jira"
+    assert event.source == "my-source"
+    assert event.force is True
+
+
+def test_ingest_route_accepts_bearer_auth(mock_queue_backend, monkeypatch):
+    monkeypatch.setenv("WEBHOOK_SECRET", "secret")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/ingest?project_id=project1&source_type=jira&source=my-source",
             headers={"Authorization": "Bearer secret"},
         )
 
     assert response.status_code == 202
-    assert response.json()["status"] == "accepted"
-    assert called["args"]["project_id"] == "project1"
-    assert called["args"]["source_type"] == "jira"
-    assert called["args"]["source"] == "my-jira-source"
-    assert called["args"]["force"] is True
+    assert response.json()["queued"] is True
 
 
-def test_ingest_route_runs_in_background(monkeypatch):
-    called = {}
-
-    async def fake_process_ingest_request(
-        project_id,
-        source_type,
-        source,
-        force=False,
-    ):
-        called["ran"] = True
-
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.server.process_ingest_request",
-        fake_process_ingest_request,
-    )
+def test_ingest_route_rejects_missing_source_type(mock_queue_backend, monkeypatch):
     monkeypatch.setenv("WEBHOOK_SECRET", "secret")
 
     with TestClient(app) as client:
         response = client.post(
-            "/ingest?project_id=project1&source_type=jira&source=my-jira-source&force=true&token=secret"
+            "/ingest?project_id=test-project&source=my-source&token=secret",
         )
-        assert response.status_code == 202
-
-    assert called.get("ran") is True
-
-
-def test_rate_limit_exceeded(monkeypatch):
-    called = {}
-
-    async def fake_process_ingest_request(
-        project_id,
-        source_type,
-        source,
-        force=False,
-    ):
-        called["ran"] = True
-
-    monkeypatch.setenv("WEBHOOK_SECRET", "secret")
-    monkeypatch.setattr(server, "WEBHOOK_RATE_LIMIT_REQUESTS_PER_WINDOW", 1)
-    monkeypatch.setattr(
-        "qdrant_loader.webhooks.server.process_ingest_request",
-        fake_process_ingest_request,
-    )
-    server._request_timestamps.clear()
-
-    with TestClient(app) as client:
-        response = client.post(
-            "/ingest?project_id=project1&source_type=jira&source=my-jira-source&force=true&token=secret"
-        )
-        assert response.status_code == 202
-        response = client.post(
-            "/ingest?project_id=project1&source_type=jira&source=my-jira-source&force=true&token=secret"
-        )
-
-    assert response.status_code == 429
-    assert response.json()["detail"] == "Rate limit exceeded. Try again later."
-
-
-def test_ingest_route_rejects_invalid_source_parameters(monkeypatch):
-    monkeypatch.setenv("WEBHOOK_SECRET", "secret")
-
-    client = TestClient(app)
-    response = client.post(
-        "/ingest?project_id=test-project&source=my-source&force=true&token=secret"
-    )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "source_type must be provided when source is specified."
+    assert response.json()["detail"] == (
+        "source_type must be provided when source is specified."
+    )

@@ -446,27 +446,38 @@ class BaseJiraConnector(BaseConnector):
 
         return attachment_metadata
 
-    async def get_documents(self) -> list[Document]:
-        """Fetch and process documents from Jira.
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single Jira issue by key or numeric ID."""
+        try:
+            raw_issue = await self._make_request("GET", f"issue/{entity_id}")
+        except Exception as exc:
+            logger.error(
+                "Failed to fetch Jira issue by id",
+                entity_id=entity_id,
+                error=str(exc),
+            )
+            return None
 
-        Returns:
-            List[Document]: List of processed documents
-        """
-        documents = []
+        issue = self._parse_issue(raw_issue, self.config.extra_fields)
+        documents = await self._issues_to_documents([issue])
+        return documents[0] if documents else None
 
-        # Collect all issues
-        issues = []
+    async def list_entity_ids(self) -> list[str]:
+        """List all issue keys in the configured project."""
+        entity_ids: list[str] = []
         async for issue in self.get_issues():
-            issues.append(issue)
+            entity_ids.append(issue.key)
+        return entity_ids
 
-        # Convert issues to documents
+    async def _issues_to_documents(self, issues: list[JiraIssue]) -> list[Document]:
+        """Convert Jira issues to Document objects (including attachments)."""
+        documents: list[Document] = []
+
         for issue in issues:
-            # Build content including comments
             content_parts = [issue.summary]
             if issue.description:
                 content_parts.append(issue.description)
 
-            # Add comments to content
             for comment in issue.comments:
                 content_parts.append(
                     f"\nComment by {comment.author.display_name} on {comment.created.strftime('%Y-%m-%d %H:%M')}:"
@@ -544,7 +555,6 @@ class BaseJiraConnector(BaseConnector):
                 title=document.title,
             )
 
-            # Process attachments if enabled
             if self.config.download_attachments and self.attachment_reader:
                 attachment_metadata = self._get_issue_attachments(issue)
                 if attachment_metadata:
@@ -568,3 +578,14 @@ class BaseJiraConnector(BaseConnector):
                     )
 
         return documents
+
+    async def get_documents(self) -> list[Document]:
+        """Fetch and process documents from Jira.
+
+        Returns:
+            List[Document]: List of processed documents
+        """
+        issues = []
+        async for issue in self.get_issues():
+            issues.append(issue)
+        return await self._issues_to_documents(issues)

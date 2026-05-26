@@ -400,46 +400,20 @@ async def ingest(
     )
 
 
-@cli.command()
-@option(
-    "--workspace",
-    type=ClickPath(path_type=Path),
-    help="Workspace directory containing config.yaml and .env files. All output will be stored here.",
-)
-@option(
-    "--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file."
-)
-@option("--env", type=ClickPath(exists=True, path_type=Path), help="Path to .env file.")
-@option(
-    "--host",
-    type=str,
-    default="127.0.0.1",
-    show_default=True,
-    help="Host address for the webhook server. Use 0.0.0.0 to bind to all interfaces.")
-@option(
-    "--port",
-    type=int,
-    default=8080,
-    help="Port for the webhook server.",
-)
-@option(
-    "--log-level",
-    type=Choice(
-        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
-    ),
-    default="INFO",
-    help="Set the logging level.",
-)
-@async_command
-async def webhook(
+
+
+async def _start_webhook_server(
     workspace: Path | None,
     config: Path | None,
     env: Path | None,
     host: str,
     port: int,
     log_level: str,
-):
-    """Run the webhook server to receive connector events and trigger ingestion."""
+) -> None:
+    """Start webhook server for receiving connector events and triggering ingestion.
+    
+    Internal function called by the future `serve` command. Not exposed as a user CLI command in v1.1.
+    """
     from qdrant_loader.cli.commands.webhook_cmd import run_webhook_command
 
     await run_webhook_command(workspace, config, env, host, port, log_level)
