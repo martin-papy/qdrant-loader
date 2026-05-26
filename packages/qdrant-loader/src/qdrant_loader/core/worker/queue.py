@@ -108,12 +108,13 @@ class SQLiteJobQueue:
             result = await session.execute(stmt)
             rows = result.fetchall()
             claimed_job_id = rows[0][0] if rows else None
-            await session.commit()
 
             if claimed_job_id is None:
+                await session.commit()
                 return None
 
             claimed_job = await session.get(Job, claimed_job_id)
+            await session.commit()
             return claimed_job
 
     async def mark_done(self, job_id: int, claim_attempt: int) -> bool:
