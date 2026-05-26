@@ -104,6 +104,28 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
         except ImportError:
             return _NoopProvider()
 
+    is_gemini = (
+        "gemini" in provider_name
+        or provider_name in ("google", "google_genai", "vertex", "vertexai")
+        or (
+            base_host is not None
+            and (
+                base_host == "generativelanguage.googleapis.com"
+                or base_host.endswith(".googleapis.com")
+                and "generativelanguage" in base_host
+            )
+        )
+    )
+    if is_gemini:
+        try:
+            from .providers.gemini import GeminiProvider
+
+            return GeminiProvider(settings)
+        except ImportError:
+            return _NoopProvider()
+        except Exception:
+            return _NoopProvider()
+
     if provider_name == "ollama" or (base_host in ("localhost", "127.0.0.1")):
         from .providers.ollama import OllamaProvider
 
