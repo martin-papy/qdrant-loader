@@ -46,3 +46,21 @@ class BaseConnector(ABC):
     @abstractmethod
     async def get_documents(self) -> list[Document]:
         """Get documents from the source."""
+
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single entity by ID (WS-1 connector contract).
+
+        Connectors that support single-event ingestion must override this method.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support fetch_by_id"
+        )
+
+    async def list_entity_ids(self) -> list[str]:
+        """List all entity IDs for reconciliation (WS-1 connector contract).
+
+        Connectors that support single-event ingestion must override this method.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support list_entity_ids"
+        )
