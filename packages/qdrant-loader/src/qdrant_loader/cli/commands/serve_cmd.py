@@ -180,19 +180,42 @@ async def _serve_main(
             await worker_pool.run_until_empty()
             await asyncio.sleep(1)
 
-    tasks = [
-        asyncio.create_task(scheduler_task()),
-        asyncio.create_task(worker_pool_task()),
-    ]
-
+    scheduler_runner = None
+    worker_runner = None
+    stop_waiter = None
     try:
-        await stop_event.wait()
+        scheduler_runner = asyncio.create_task(scheduler_task())
+        worker_runner = asyncio.create_task(worker_pool_task())
+        stop_waiter = asyncio.create_task(stop_event.wait())
+
+        done, _ = await asyncio.wait(
+            {scheduler_runner, worker_runner, stop_waiter},
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+
+        # Check for background task failures
+        for task in (scheduler_runner, worker_runner):
+            if task in done and (exc := task.exception()) is not None:
+                logger.error(
+                    "serve.background_task_failed",
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                )
+                raise exc
     except Exception as exc:
         logger.error("serve.loop_error", error=str(exc))
     finally:
         logger.info("serve.shutting_down")
-        for t in tasks:
-            t.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        for task in (scheduler_runner, worker_runner, stop_waiter):
+            if task is not None:
+                task.cancel()
+        await asyncio.gather(
+            *(
+                t
+                for t in (scheduler_runner, worker_runner, stop_waiter)
+                if t is not None
+            ),
+            return_exceptions=True,
+        )
         await state_manager.dispose()
         logger.info("serve.shutdown_complete")

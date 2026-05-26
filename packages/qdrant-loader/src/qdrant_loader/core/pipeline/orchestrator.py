@@ -189,7 +189,10 @@ class PipelineOrchestrator:
                     return []
 
             # Drop documents with empty content to avoid no-op embedding runs
-            documents = [doc for doc in documents if doc.content.strip()]
+            documents = [
+                doc for doc in documents 
+                if getattr(doc, "content", "").strip()
+            ]
             if not documents:
                 logger.info("✅ No documents with content to process after filtering")
                 return []

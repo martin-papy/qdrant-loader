@@ -93,8 +93,8 @@ class TestPipelineOrchestrator:
         mock_documents = cast(
             list[Document],
             [
-                Mock(spec=Document, id="doc1"),
-                Mock(spec=Document, id="doc2"),
+                Mock(spec=Document, id="doc1", content="content1"),
+                Mock(spec=Document, id="doc2", content="content2"),
             ],
         )
 
@@ -148,7 +148,7 @@ class TestPipelineOrchestrator:
         """Test document processing with custom sources config."""
         custom_sources_config = Mock(spec=SourcesConfig)
         filtered_config = Mock(spec=SourcesConfig)
-        mock_documents = [Mock(spec=Document, id="doc1")]
+        mock_documents = [Mock(spec=Document, id="doc1", content="content1")]
 
         # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
@@ -186,7 +186,7 @@ class TestPipelineOrchestrator:
         filtered_config.publicdocs = None
         filtered_config.localfile = None
 
-        mock_documents = [Mock(spec=Document, id="doc1")]
+        mock_documents = [Mock(spec=Document, id="doc1", content="content1")]
 
         # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
@@ -274,7 +274,7 @@ class TestPipelineOrchestrator:
     @pytest.mark.asyncio
     async def test_process_documents_no_changes_detected(self):
         """Test document processing when no changes are detected."""
-        mock_documents = [Mock(spec=Document, id="doc1")]
+        mock_documents = [Mock(spec=Document, id="doc1", content="content1")]
         filtered_config = Mock(spec=SourcesConfig)
 
         # Setup mocks
@@ -407,8 +407,8 @@ class TestPipelineOrchestrator:
         mock_documents = cast(
             list[Document],
             [
-                Mock(spec=Document, id="doc1"),
-                Mock(spec=Document, id="doc2"),
+                Mock(spec=Document, id="doc1", content="content1"),
+                Mock(spec=Document, id="doc2", content="content2"),
             ],
         )
         filtered_config = Mock(spec=SourcesConfig)

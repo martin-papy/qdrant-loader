@@ -23,7 +23,14 @@ def _init_queue(workspace: Path | None, config: Path | None, env: Path | None):
         setup_workspace,
     )
     from qdrant_loader.config import get_global_config
+    from qdrant_loader.config.workspace import validate_workspace_flags
     from qdrant_loader.core.state.state_manager import StateManager
+
+    # Validate mutually exclusive flags early
+    try:
+        validate_workspace_flags(workspace, config, env)
+    except ValueError as e:
+        raise ClickException(str(e))
 
     if workspace:
         ws_config = setup_workspace(workspace)
@@ -108,7 +115,13 @@ def _common_options(fn):
     default=None,
     help="Filter by job status.",
 )
-@click.option("--limit", default=50, show_default=True, help="Max rows to return.")
+@click.option(
+    "--limit",
+    type=click.IntRange(min=1, max=1000),
+    default=50,
+    show_default=True,
+    help="Max rows to return.",
+)
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON.")
 @_common_options
 def jobs_list(status, limit, output_json, workspace, config_path, env_path):
