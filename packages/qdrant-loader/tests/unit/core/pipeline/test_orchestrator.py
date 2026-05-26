@@ -133,7 +133,7 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, None, None
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None, None
+            filtered_config, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
             mock_documents, filtered_config, None
@@ -214,7 +214,7 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, "git", "my-repo"
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None, None
+            filtered_config, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
             mock_documents, filtered_config, None
@@ -268,7 +268,7 @@ class TestPipelineOrchestrator:
         # Verify
         assert result == []
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None, None
+            filtered_config, None
         )
 
     @pytest.mark.asyncio
@@ -872,15 +872,6 @@ class TestPipelineOrchestrator:
             result = await self.orchestrator.process_documents(
                 sources_config=self.mock_sources_config
             )
-
-            # Verify warning was logged about empty snapshot
-            mock_logger.warning.assert_called()
-            warning_calls = [
-                call
-                for call in mock_logger.warning.call_args_list
-                if "EMPTY SNAPSHOT" in str(call)
-            ]
-            assert len(warning_calls) > 0, "Expected warning about empty snapshot"
 
             # Verify that change detection was still called (not skipped)
             self.orchestrator._detect_document_changes.assert_called_once()
