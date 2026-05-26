@@ -88,6 +88,14 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0 ; sys_platform != 'win32'",
+    "uvicorn>=0.24.0 ; sys_platform == 'win32'",
+    "PyJWT[crypto]>=2.8.0",
+]
+
 [project.urls]
 Homepage = "https://qdrant-loader.net"
 Documentation = "https://qdrant-loader.net/docs/packages/qdrant-loader/README.html"
