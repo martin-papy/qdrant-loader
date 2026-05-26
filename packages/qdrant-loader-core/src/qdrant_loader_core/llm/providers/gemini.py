@@ -156,7 +156,6 @@ class GeminiEmbeddings(EmbeddingsClient):
             )
         if not inputs:
             return []
-
         import asyncio
 
         config = self._build_config()
@@ -252,7 +251,6 @@ class GeminiChat(ChatClient):
         config = None
         if config_kwargs and genai_types is not None:
             config = genai_types.GenerateContentConfig(**config_kwargs)
-
         import asyncio
 
         started = datetime.now(UTC)
