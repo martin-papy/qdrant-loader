@@ -243,7 +243,7 @@ async def readyz() -> dict[str, object]:
     return {"status": "ready"}
 
 
-@app.get("/status", dependencies=[Depends(verify_cognito_token)])
+@app.get("/status")
 async def status_route(
     claims: dict[str, Any] = Depends(verify_cognito_token),
 ) -> dict[str, object]:
