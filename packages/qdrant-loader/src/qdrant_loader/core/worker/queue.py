@@ -39,6 +39,12 @@ class JobQueue(Protocol):
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         """List jobs with optional status filter."""
 
+    async def reset_to_pending(self, job_id: int) -> bool:
+        """Reset a failed or done job back to pending so it can be retried."""
+
+    async def cancel(self, job_id: int) -> bool:
+        """Cancel a pending or running job (sets status to failed with 'cancelled' error)."""
+
 
 class SQLiteJobQueue:
     """SQLite-backed job queue implementation using SQLAlchemy async sessions."""
@@ -215,3 +221,50 @@ class SQLiteJobQueue:
 
             result = await session.execute(stmt)
             return list(result.scalars().all())
+
+    async def reset_to_pending(self, job_id: int) -> bool:
+        """Reset a failed/done job back to pending for retry."""
+        async with self._session_factory() as session:
+            stmt = (
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status.in_([self.FAILED, self.DONE]),
+                )
+                .values(
+                    status=self.PENDING,
+                    started_at=None,
+                    finished_at=None,
+                    visibility_deadline=None,
+                    last_error=None,
+                    attempts=0,
+                )
+                .returning(Job.id)
+            )
+            result = await session.execute(stmt)
+            rows = result.fetchall()
+            await session.commit()
+            return bool(rows)
+
+    async def cancel(self, job_id: int) -> bool:
+        """Cancel a pending or running job."""
+        now = datetime.now(UTC)
+        async with self._session_factory() as session:
+            stmt = (
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status.in_([self.PENDING, self.RUNNING]),
+                )
+                .values(
+                    status=self.FAILED,
+                    finished_at=now,
+                    visibility_deadline=None,
+                    last_error="cancelled by operator",
+                )
+                .returning(Job.id)
+            )
+            result = await session.execute(stmt)
+            rows = result.fetchall()
+            await session.commit()
+            return bool(rows)

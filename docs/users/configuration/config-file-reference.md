@@ -515,6 +515,35 @@ global:
       llm_api_key: "${OPENAI_API_KEY}"
 ```
 
+#### Worker Scheduling Configuration
+
+```yaml
+global:
+  workers:
+    schedules:
+      incremental_pull:
+        # Required for scheduler mode: false by default
+        enabled: true
+        # Interval supports integer seconds or duration strings:
+        # "5s", "5m", "1h30m", "PT5M"
+        interval: 5s
+        # Optional: statuses considered active for dedup
+        # Default: ["pending", "running"]
+        dedup_statuses:
+          - pending
+          - running
+        # Optional: additional payload fields merged into scheduled jobs
+        payload_defaults: {}
+```
+
+**Worker Scheduling Notes:**
+
+- `enabled`: Must be `true` to let `qdrant-loader serve` create periodic `INCREMENTAL_PULL` jobs.
+- `interval`: Parsed into seconds; minimum is 1 second.
+- `dedup_statuses`: Prevents duplicate schedule jobs for the same source identity while active jobs exist.
+- `payload_defaults`: Adds extra JSON-compatible fields into each scheduled job payload.
+- Scheduler only runs in `serve` mode; one-shot `ingest` ignores `workers.schedules`.
+
 ### Project Configuration (`projects`)
 
 #### Project Structure
@@ -596,9 +625,9 @@ sources:
           field_type: simple
 
         - param_name: customfield_12001
-          name: affected_versions   # Metadata key under which the extracted value will be stored in Qdrant
-          field_type: array_object  # Use for fields that return a list of JIRA objects, e.g. [<JIRA Version: name='1.0.2', id='3900'>]
-          attr_name: name           # Attribute to extract from each object in the list
+          name: affected_versions # Metadata key under which the extracted value will be stored in Qdrant
+          field_type: array_object # Use for fields that return a list of JIRA objects, e.g. [<JIRA Version: name='1.0.2', id='3900'>]
+          attr_name: name # Attribute to extract from each object in the list
       issue_types:
         - "Bug"
         - "Story"
@@ -920,7 +949,7 @@ projects:
 
 ## 📝 Configuration Checklist
 
-- [ ] **Global configuration** completed (qdrant, llm, state_management)
+- [ ] **Global configuration** completed (qdrant, llm, state_management, workers)
 - [ ] **Environment variables** configured in `.env` file
 - [ ] **Project definitions** created with unique project IDs
 - [ ] **Data source credentials** configured for your sources

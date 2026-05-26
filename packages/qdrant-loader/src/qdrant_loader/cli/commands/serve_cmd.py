@@ -16,7 +16,9 @@ from click.types import Path as ClickPath
 from qdrant_loader.config.workspace import validate_workspace_flags
 
 
-@click.command("serve", help="Run the qdrant-loader service (scheduler, workers, HTTP server)")
+@click.command(
+    "serve", help="Run the qdrant-loader service (scheduler, workers, HTTP server)"
+)
 @click.option(
     "--workspace",
     type=ClickPath(path_type=Path),
@@ -34,7 +36,9 @@ from qdrant_loader.config.workspace import validate_workspace_flags
 )
 @click.option(
     "--log-level",
-    type=Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
+    type=Choice(
+        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+    ),
     default="INFO",
     help="Set the logging level.",
 )
@@ -54,18 +58,21 @@ async def _serve_main(
     env: Path | None,
     log_level: str,
 ):
-    from qdrant_loader.cli.config_loader import load_config_with_workspace, setup_workspace
+    from qdrant_loader.cli.config_loader import (
+        load_config_with_workspace,
+        setup_workspace,
+    )
     from qdrant_loader.config import get_global_config, get_settings
-    from qdrant_loader.core.state.state_manager import StateManager
-    from qdrant_loader.core.worker.queue import SQLiteJobQueue
-    from qdrant_loader.core.worker.handlers import IngestionJobHandler
-    from qdrant_loader.core.worker.pool import QueueWorkerPool
-    from qdrant_loader.core.worker.scheduler import IncrementalPullScheduler
-    from qdrant_loader.core.pipeline.factory import PipelineComponentsFactory
     from qdrant_loader.core.pipeline.config import PipelineConfig
+    from qdrant_loader.core.pipeline.factory import PipelineComponentsFactory
     from qdrant_loader.core.pipeline.orchestrator import PipelineOrchestrator
     from qdrant_loader.core.project_manager import ProjectManager
     from qdrant_loader.core.qdrant_manager import QdrantManager
+    from qdrant_loader.core.state.state_manager import StateManager
+    from qdrant_loader.core.worker.handlers import IngestionJobHandler
+    from qdrant_loader.core.worker.pool import QueueWorkerPool
+    from qdrant_loader.core.worker.queue import SQLiteJobQueue
+    from qdrant_loader.core.worker.scheduler import IncrementalPullScheduler
     from qdrant_loader.utils.logging import LoggingConfig
 
     # Validate flag combinations
@@ -76,7 +83,9 @@ async def _serve_main(
     if workspace:
         workspace_config = setup_workspace(workspace)
 
-    log_file = str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+    log_file = (
+        str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+    )
     LoggingConfig.setup(level=log_level, format="console", file=log_file)
     logger = LoggingConfig.get_logger(__name__)
 
@@ -131,6 +140,7 @@ async def _serve_main(
     orchestrator = PipelineOrchestrator(settings, pipeline_components, project_manager)
 
     logger.info("serve.handler_init")
+
     def _session_context_factory():
         session_factory = state_manager._session_factory
         if session_factory is None:
@@ -161,6 +171,7 @@ async def _serve_main(
     )
 
     logger.info("serve.starting")
+
     async def scheduler_task():
         await scheduler.run(stop_event)
 
