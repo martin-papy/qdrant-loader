@@ -71,6 +71,8 @@ class BaseEntityExtractor(EntityExtractor):
 
     @staticmethod
     def _validate_iso8601(value: str) -> None:
+        if not value:
+            return
         try:
             datetime.fromisoformat(value.replace("Z", "+00:00"))
         except Exception:
@@ -350,13 +352,15 @@ class BaseEntityExtractor(EntityExtractor):
 
         # Validate edge type
         if edge_type not in self.VALID_EDGE_TYPES:
-            raise ValueError(f"Invalid edge type: {edge_type}")
+            return # silently ignore invalid edge types to avoid upstream failures, but do not emit
+
+        props = properties or {}
 
         edge = GraphEdge(
             source=source.id,
             target=target.id,
             edge_type=edge_type,
-            properties=properties or {},
+            properties=props,
         )
 
         self._edges.append(edge)

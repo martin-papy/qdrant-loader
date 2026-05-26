@@ -10,16 +10,24 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
         path = raw.get("path")
         if not path:
             return
+    
+        created_at = raw.get("created_at")
+        updated_at = raw.get("updated_at")
 
+        properties = {
+            "url": path,
+            "created_at": created_at,
+            "updated_at": updated_at,
+        }
         doc = self.build_document(
             source_type=self.SOURCE_TYPE,
             native_id=path,
             title=path.split("/")[-1],
             url=path,
-            created_at=raw.get("created_at"),
-            updated_at=raw.get("updated_at"),
+            created_at=created_at,
+            updated_at=updated_at,
             qdrant_point_ids=[],
-            properties={},
+            properties=properties,
         )
 
         # Directory as container

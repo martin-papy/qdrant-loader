@@ -12,6 +12,9 @@ from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.utils.sensitive import sanitize_exception_message
+from qdrant_loader_core.graph import get_graph_store
+from qdrant_loader_core.graph.extractor.base_extractor import EntityExtractor
+import qdrant_loader_core.graph.registry as _registry  # noqa: F401
 
 from .document_pipeline import DocumentPipeline
 from .source_filter import SourceFilter
@@ -158,6 +161,99 @@ class PipelineOrchestrator:
                     logger.info("✅ No new or updated documents to process")
                     return []
 
+            logger.info("Start store in graph db ...")
+            # Optional: Graph extraction & upsert (graph is optional; failures must not fail ingestion)
+            try:
+                # Check config for graph.enabled (be resilient if config doesn't define graph)
+                logger.info("Check config for graph.enabled (be resilient if config doesn't define graph)")
+                try:
+                    graph_cfg = getattr(self.settings.global_config, "graph", None)
+                    graph_enabled = bool(getattr(graph_cfg, "enabled", False)) if graph_cfg is not None else False
+                except Exception:
+                    graph_enabled = False
+
+                if graph_enabled:
+                    # Ensure extractor registry is imported (registers available extractors)
+                    logger.info("Ensure extractor registry is imported (registers available extractors)")
+                    
+                    # Use dict to deduplicate nodes and edges by ID
+                    nodes_dict: dict[str, any] = {}  # node_id -> node
+                    edges_dict: dict[str, any] = {}  # (source, target, edge_type) -> edge
+
+                    for doc in documents:
+                        try:
+                            extractor = EntityExtractor.for_source(doc.source_type)
+                            logger.info(f"Using extractor: {extractor}")
+                            
+                            raw = {
+                                "id": doc.id,
+                                "content": getattr(doc, "content", None),
+                                "path": getattr(doc, "path", None)
+                                    or getattr(doc, "source", None)
+                                    or getattr(doc, "title", None),  # fallback
+                                "metadata": getattr(doc, "metadata", {}),
+                                "source_type": doc.source_type,
+                            }
+                            logger.info({
+                                "doc_id": doc.id,
+                                "source_type": doc.source_type,
+                                "path": getattr(doc, "path", None),
+                                "metadata": getattr(doc, "metadata", {}),
+                                "content_len": len(getattr(doc, "content", "") or "")
+                            })
+
+                            subgraph = extractor.extract(raw)
+                            
+                            logger.info(f"RAW KEYS: {raw.keys()}")
+                            logger.info(f"CONTENT LEN: {len(raw.get('content') or '')}")
+
+                            # Deduplicate nodes by ID
+                            if getattr(subgraph, "nodes", None):
+                                for node in subgraph.nodes:
+                                    nodes_dict[node.id] = node
+                            
+                            # Deduplicate edges by (source, target, edge_type)
+                            if getattr(subgraph, "edges", None):
+                                for edge in subgraph.edges:
+                                    edge_key = (edge.source, edge.target, edge.edge_type)
+                                    edges_dict[edge_key] = edge
+                        except Exception as e:
+                            logger.error(
+                                "⚠️ Graph extraction failed for document %s: %s",
+                                getattr(doc, "id", "<unknown>"),
+                                e,
+                                exc_info=True,
+                            )
+                    
+                    # Convert deduplicated dicts back to lists
+                    nodes_batch = list(nodes_dict.values())
+                    edges_batch = list(edges_dict.values())
+                    
+                    if nodes_batch or edges_batch:
+                        try:
+                            graph_store = await get_graph_store()
+                            logger.info("graph_store: %s", graph_store)
+                            if nodes_batch:
+                                await graph_store.upsert_nodes_batch(nodes_batch)
+                            if edges_batch:
+                                await graph_store.upsert_edges_batch(edges_batch)
+                            logger.info("🔄 Add graph store successfully...")
+                        except Exception as e:
+                            logger.error(
+                                "⚠️ Graph upsert failed (non-fatal): %s",
+                                e,
+                                exc_info=True,
+                            )
+                    logger.info(
+                        f"Graph batch size: nodes={len(nodes_batch)}, edges={len(edges_batch)}"
+                    )
+                    for node in nodes_batch:
+                        logger.info(f"[NODE] id={node.id}, type={node.label}, props={node.properties}")
+                    for edge in edges_batch:
+                        logger.info(
+                            f"[EDGE] {edge.source} -[{edge.edge_type}]-> {edge.target}, props={edge.properties}")
+            except Exception:
+                logger.exception("Unexpected error during optional graph processing")
             # Process documents through the pipeline
             result = await self.components.document_pipeline.process_documents(
                 documents

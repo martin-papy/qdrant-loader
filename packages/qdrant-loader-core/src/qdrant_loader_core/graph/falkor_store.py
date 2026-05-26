@@ -21,7 +21,7 @@ VALID_EDGE_TYPES = list(CoreEdgeType)
 
 class FalkorGraphStore(GraphStore):
 
-    def __init__(self, host="localhost", port=6379, graph_name="default"):
+    def __init__(self, host="localhost", port=6379, graph_name="default_graph"):
         self._db = FalkorDB(host=host, port=port)
         self._graph = self._db.select_graph(graph_name)
 
@@ -63,6 +63,7 @@ class FalkorGraphStore(GraphStore):
         if any(n.label != label for n in nodes):
             # fallback if mixed label
             for n in nodes:
+                n.properties = self._clean_props(n.properties)
                 await self.upsert_node(n)
             return
 
@@ -100,6 +101,7 @@ class FalkorGraphStore(GraphStore):
 
     async def upsert_edges_batch(self, edges: list[GraphEdge]) -> None:
         for e in edges:
+            e.properties = self._clean_props(e.properties)
             await self.upsert_edge(e)
 
     # ------------------------
@@ -225,3 +227,22 @@ class FalkorGraphStore(GraphStore):
             )
 
         await asyncio.gather(*[_run(row) for row in updates])
+
+    def _clean_props(self, props: dict) -> dict:
+        clean = {}
+
+        for k, v in props.items():
+            if v is None:
+                continue  # ❌ loại bỏ None
+
+            if isinstance(v, (str, int, float, bool)):
+                clean[k] = v
+            elif isinstance(v, list):
+                clean[k] = [
+                    x for x in v if isinstance(x, (str, int, float, bool))
+                ]
+            else:
+                clean[k] = str(v)  # fallback
+
+        return clean
+    
