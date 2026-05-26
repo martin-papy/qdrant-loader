@@ -10,10 +10,21 @@ def __getattr__(name: str):
         from .ingest import run_pipeline_ingestion
 
         return run_pipeline_ingestion
+
+    if name == "serve_cmd":
+        from .serve_cmd import serve_cmd
+
+        return serve_cmd
+    if name == "jobs_cmd":
+        from .jobs_cmd import jobs_cmd
+
+        return jobs_cmd
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [
     "run_init",
     "run_pipeline_ingestion",
+    "serve_cmd",
+    "jobs_cmd",
 ]
