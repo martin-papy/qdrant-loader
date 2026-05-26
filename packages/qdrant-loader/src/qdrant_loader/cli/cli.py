@@ -400,8 +400,6 @@ async def ingest(
     )
 
 
-
-
 async def _start_webhook_server(
     workspace: Path | None,
     config: Path | None,
@@ -411,7 +409,7 @@ async def _start_webhook_server(
     log_level: str,
 ) -> None:
     """Start webhook server for receiving connector events and triggering ingestion.
-    
+
     Internal function called by the future `serve` command. Not exposed as a user CLI command in v1.1.
     """
     from qdrant_loader.cli.commands.webhook_cmd import run_webhook_command

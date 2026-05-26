@@ -83,7 +83,9 @@ class _GeminiTokenCounter(TokenCounter):
         return len(text)
 
 
-def _messages_to_contents(messages: list[dict[str, Any]]) -> tuple[str | None, list[Any]]:
+def _messages_to_contents(
+    messages: list[dict[str, Any]],
+) -> tuple[str | None, list[Any]]:
     """Convert OpenAI-style messages to (system_instruction, contents) for Gemini."""
     system_parts: list[str] = []
     contents: list[Any] = []

@@ -1,7 +1,6 @@
 """Main orchestrator for the ingestion pipeline."""
 
 import traceback
-from datetime import datetime
 
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.base import ConnectorConfigurationError
@@ -61,7 +60,6 @@ class PipelineOrchestrator:
         source: str | None = None,
         project_id: str | None = None,
         force: bool = False,
-        since: datetime | None = None,
     ) -> list[Document]:
         """Main entry point for document processing.
 
@@ -71,10 +69,6 @@ class PipelineOrchestrator:
             source: Filter by specific source name
             project_id: Process documents for a specific project
             force: Force processing of all documents, bypassing change detection
-            since: Only collect documents updated after this timestamp (connector-level
-                filtering). Connectors that do not yet support time-based filtering will
-                fall back to fetching all documents and relying on hash-based change
-                detection.
 
         Returns:
             List of processed documents
@@ -122,9 +116,7 @@ class PipelineOrchestrator:
                     )
 
                 logger.debug("Processing all projects")
-                return await self._process_all_projects(
-                    source_type, source, force, since
-                )
+                return await self._process_all_projects(source_type, source, force)
 
             # Check if filtered config is empty
             if source_type and not any(
@@ -140,36 +132,15 @@ class PipelineOrchestrator:
 
             # Collect documents from all sources
             documents = await self._collect_documents_from_sources(
-                filtered_config, current_project_id, since
+                filtered_config, current_project_id
             )
 
-            # SAFETY CHECK: Empty-snapshot deletion protection (WS-3 territory)
-            #
             # In force mode we bypass change detection entirely,
             # so an empty snapshot means there is nothing to process.
             #
             # In normal mode we MUST continue into change detection,
             # because an empty snapshot may indicate that previously
             # indexed documents were deleted from the source.
-            #
-            # HOWEVER: Without an explicit signal from the connector that the
-            # snapshot is complete (vs. partial failure / API outage), an empty
-            # list could trigger mass deletion. Example: Jira API outage returns []
-            # → change detection classifies all 115k indexed docs as deleted.
-            #
-            # TEMPORARY FIX: Log a warning if snapshot is empty and we're about to
-            # proceed to change detection. This is safe but noisy.
-            #
-            # PERMANENT FIX (WS-3): Require connector contract to include
-            # `snapshot_is_complete: bool` or add per-source `enable_deletion_detection` flag.
-            if not documents and not force:
-                logger.warning(
-                    "⚠️ EMPTY SNAPSHOT in non-force mode. About to enter change detection "
-                    "which may classify existing corpus as deleted if source API returned partial/null results. "
-                    "This is a known risk (WS-3: add explicit snapshot_is_complete signal or per-source enable_deletion_detection). "
-                    "Proceeding carefully."
-                )
-
             if not documents and force:
                 logger.info("✅ No documents found from sources")
                 return []
@@ -217,7 +188,6 @@ class PipelineOrchestrator:
         source_type: str | None = None,
         source: str | None = None,
         force: bool = False,
-        since: datetime | None = None,
     ) -> list[Document]:
         """Process documents from all configured projects."""
         if not self.project_manager:
@@ -238,7 +208,6 @@ class PipelineOrchestrator:
                     source_type=source_type,
                     source=source,
                     force=force,
-                    since=since,
                 )
                 project_result = self.last_pipeline_result
                 all_documents.extend(project_documents)
@@ -316,18 +285,9 @@ class PipelineOrchestrator:
         return all_documents
 
     async def _collect_documents_from_sources(
-        self,
-        filtered_config: SourcesConfig,
-        project_id: str | None = None,
-        since: datetime | None = None,
+        self, filtered_config: SourcesConfig, project_id: str | None = None
     ) -> list[Document]:
         """Collect documents from all configured sources."""
-        if since is not None:
-            logger.warning(
-                "since parameter is set but connector-level time filtering is not yet "
-                "implemented; falling back to full fetch with hash-based change detection",
-                since=since.isoformat(),
-            )
         documents = []
 
         # Process each source type with project context
@@ -441,23 +401,23 @@ class PipelineOrchestrator:
         if not deleted_documents:
             return
 
-        logger.info(
-            f"Processing {len(deleted_documents)} deleted documents"
-        )
+        logger.info(f"Processing {len(deleted_documents)} deleted documents")
 
         if not self.components.state_manager._initialized:
-            logger.debug(
-                "Initializing state manager for deleted document processing"
-            )
+            logger.debug("Initializing state manager for deleted document processing")
             await self.components.state_manager.initialize()
 
         # Use an atomic operation that marks state and deletes points together.
         try:
-            deleted_ids = await self.components.state_manager.mark_documents_deleted_atomic(
-                deleted_documents, self.components.qdrant_manager, project_id
+            deleted_ids = (
+                await self.components.state_manager.mark_documents_deleted_atomic(
+                    deleted_documents, self.components.qdrant_manager, project_id
+                )
             )
             if deleted_ids:
-                logger.info(f"Deleted {len(deleted_ids)} document points from Qdrant and updated state")
+                logger.info(
+                    f"Deleted {len(deleted_ids)} document points from Qdrant and updated state"
+                )
         except Exception as e:
             logger.error(
                 f"Failed to process deleted documents atomically: {sanitize_exception_message(e)}",
