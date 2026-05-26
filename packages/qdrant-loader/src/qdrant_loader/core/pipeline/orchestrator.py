@@ -158,6 +158,12 @@ class PipelineOrchestrator:
                     logger.info("✅ No new or updated documents to process")
                     return []
 
+            # Drop documents with empty content to avoid no-op embedding runs
+            documents = [doc for doc in documents if doc.content.strip()]
+            if not documents:
+                logger.info("✅ No documents with content to process after filtering")
+                return []
+
             # Process documents through the pipeline
             result = await self.components.document_pipeline.process_documents(
                 documents
