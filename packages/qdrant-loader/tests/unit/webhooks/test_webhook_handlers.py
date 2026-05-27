@@ -1,7 +1,6 @@
 import asyncio
 
 import pytest
-
 from qdrant_loader.webhooks.handlers import (
     enqueue_webhook_event,
     normalize_source_type,
@@ -47,15 +46,17 @@ def test_normalize_source_type_rejects_non_jira_sources():
 
 
 def test_enqueue_single_upsert_for_jira_webhook(fake_queue):
-    result = asyncio.run(enqueue_webhook_event(
-        project_id="project1",
-        source_type="jira",
-        source="my-jira",
-        payload={
-            "webhookEvent": "jira:issue_created",
-            "issue": {"key": "ABC-1", "id": "1"},
-        },
-    ))
+    result = asyncio.run(
+        enqueue_webhook_event(
+            project_id="project1",
+            source_type="jira",
+            source="my-jira",
+            payload={
+                "webhookEvent": "jira:issue_created",
+                "issue": {"key": "ABC-1", "id": "1"},
+            },
+        )
+    )
 
     assert result["operation"] == SINGLE_UPSERT
     assert result["entity_id"] == "ABC-1"
@@ -64,24 +65,28 @@ def test_enqueue_single_upsert_for_jira_webhook(fake_queue):
 
 
 def test_enqueue_full_scan_when_force(fake_queue):
-    result = asyncio.run(enqueue_webhook_event(
-        project_id="project1",
-        source_type="jira",
-        source="my-jira",
-        payload={},
-        force=True,
-    ))
+    result = asyncio.run(
+        enqueue_webhook_event(
+            project_id="project1",
+            source_type="jira",
+            source="my-jira",
+            payload={},
+            force=True,
+        )
+    )
 
     assert result["operation"] == FULL_SCAN
     assert fake_queue.events[0].force is True
 
 
 def test_enqueue_full_scan_when_unparseable(fake_queue):
-    result = asyncio.run(enqueue_webhook_event(
-        project_id=None,
-        source_type="jira",
-        source="my-jira",
-        payload={"unknown": True},
-    ))
+    result = asyncio.run(
+        enqueue_webhook_event(
+            project_id=None,
+            source_type="jira",
+            source="my-jira",
+            payload={"unknown": True},
+        )
+    )
 
     assert result["operation"] == FULL_SCAN

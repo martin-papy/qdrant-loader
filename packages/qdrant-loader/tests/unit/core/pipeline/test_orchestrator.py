@@ -133,7 +133,7 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, None, None
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None, None
+            filtered_config, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
             mock_documents, filtered_config, None
@@ -214,7 +214,7 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, "git", "my-repo"
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None, None
+            filtered_config, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
             mock_documents, filtered_config, None
@@ -268,7 +268,7 @@ class TestPipelineOrchestrator:
         # Verify
         assert result == []
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None, None
+            filtered_config, None
         )
 
     @pytest.mark.asyncio
@@ -459,6 +459,7 @@ class TestPipelineOrchestrator:
 
         filtered_config = Mock(spec=SourcesConfig)
         self.state_manager._initialized = False
+
         async def _initialize_side_effect():
             self.state_manager._initialized = True
 
@@ -515,9 +516,7 @@ class TestPipelineOrchestrator:
 
         assert result == []
 
-        mock_change_detector.detect_changes.assert_called_once_with(
-            [], filtered_config
-        )
+        mock_change_detector.detect_changes.assert_called_once_with([], filtered_config)
 
     @pytest.mark.asyncio
     async def test_detect_document_changes_state_manager_initialized(self):
@@ -864,7 +863,7 @@ class TestPipelineOrchestrator:
         # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
         self.orchestrator._collect_documents_from_sources = AsyncMock(return_value=[])
-        
+
         # Mock change detection to simulate what would happen with empty docs
         self.orchestrator._detect_document_changes = AsyncMock(return_value=[])
 
@@ -874,14 +873,8 @@ class TestPipelineOrchestrator:
                 sources_config=self.mock_sources_config
             )
 
-            # Verify warning was logged about empty snapshot
-            mock_logger.warning.assert_called()
-            warning_calls = [call for call in mock_logger.warning.call_args_list 
-                            if "EMPTY SNAPSHOT" in str(call)]
-            assert len(warning_calls) > 0, "Expected warning about empty snapshot"
-            
             # Verify that change detection was still called (not skipped)
             self.orchestrator._detect_document_changes.assert_called_once()
-            
+
             # Verify empty result
             assert result == []

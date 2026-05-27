@@ -52,9 +52,7 @@ class BaseConnector(ABC):
 
         Connectors that support single-event ingestion must override this method.
         """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not support fetch_by_id"
-        )
+        raise NotImplementedError(f"{type(self).__name__} does not support fetch_by_id")
 
     async def list_entity_ids(self) -> list[str]:
         """List all entity IDs for reconciliation (WS-1 connector contract).

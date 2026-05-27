@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from qdrant_loader_core.logging import LoggingConfig
 
 import uvicorn
 from click.exceptions import ClickException
+from qdrant_loader_core.logging import LoggingConfig
 
 from qdrant_loader.cli.config_loader import (
     load_config_with_workspace,
@@ -17,7 +17,9 @@ from qdrant_loader.webhooks.server import app
 
 def _setup_logging(log_level: str, workspace_config) -> None:
     log_file = (
-        str(workspace_config.logs_path) if workspace_config else "qdrant-loader-webhook.log"
+        str(workspace_config.logs_path)
+        if workspace_config
+        else "qdrant-loader-webhook.log"
     )
     if getattr(LoggingConfig, "reconfigure", None):
         if getattr(LoggingConfig, "_initialized", False):

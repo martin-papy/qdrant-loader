@@ -48,7 +48,9 @@ def __getattr__(name):
 
             return importlib.import_module(f"{__name__}.{name}")
         except ImportError as err:
-            raise AttributeError(f"module '{__name__}' has no attribute '{name}'") from err
+            raise AttributeError(
+                f"module '{__name__}' has no attribute '{name}'"
+            ) from err
 
 
 __all__ = [

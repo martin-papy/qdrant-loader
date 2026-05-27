@@ -146,11 +146,22 @@ app = FastAPI(
 )
 
 # Add CORS at the top level so preflight works before lifespan mounts routes
+# Configure CORS from environment variable (secure-by-default)
+cors_origins = os.getenv("CORS_ORIGINS", "")
+if cors_origins.strip():
+    allow_origins = [
+        origin.strip() for origin in cors_origins.split(",") if origin.strip()
+    ]
+else:
+    allow_origins = ["http://localhost", "http://127.0.0.1"]
+
+allow_credentials = "*" not in allow_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:[0-9]+)?",
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_origins=allow_origins,
+    allow_credentials=allow_credentials,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 

@@ -6,7 +6,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 
 from qdrant_loader.utils.logging import LoggingConfig
@@ -39,7 +39,7 @@ WEBHOOK_RATE_LIMIT_REQUESTS_PER_WINDOW = int(
 # In-memory rate limit state (process-local).
 #
 # IMPORTANT: This is NOT a substitute for infrastructure-level rate limiting.
-# 
+#
 # LIMITATION: Each uvicorn worker, container, or ECS task has its own dict instance.
 # Multiple instances → each enforces limits independently → effective limit = N × configured.
 # Example: 2 workers with limit=10 → actual limit ≈ 20 req/min.
@@ -105,7 +105,7 @@ def _cleanup_old_timestamps(client_key: str) -> None:
 
 def _enforce_rate_limit(request: Request) -> None:
     """Check rate limit for this request and reject if exceeded.
-    
+
     This is a process-local safety net. For true DDoS protection, rely on ALB/WAF.
     See _request_timestamps docstring for design details.
     """
@@ -146,7 +146,7 @@ async def _handle_webhook(
 ) -> JSONResponse:
     # Check rate limit BEFORE parsing to avoid wasting CPU on flooded requests
     _enforce_rate_limit(request)
-    
+
     payload = await _parse_json_request(request)
 
     try:
@@ -204,7 +204,7 @@ async def health_check() -> dict[str, object]:
 @app.get("/healthz")
 async def healthz() -> dict[str, object]:
     """Kubernetes-compliant health check endpoint.
-    
+
     Returns 200 OK if the webhook server process is running.
     No probing of dependencies (see /readyz for that).
     """
@@ -214,22 +214,22 @@ async def healthz() -> dict[str, object]:
 @app.get("/readyz")
 async def readyz() -> dict[str, object]:
     """Kubernetes-compliant readiness check endpoint.
-    
+
     Returns 200 OK if the server is ready to accept requests:
     - Worker process is running
     - Queue backend is initialized
-    
+
     Note: Currently does not probe Qdrant or DB connectivity;
     those would be probed by ALB/WAF health checks or monitored separately.
     """
     worker_task = getattr(app.state, "worker_task", None)
-    
+
     if worker_task is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Worker task not initialized",
         )
-    
+
     if worker_task.done():
         # If task is done, check if it errored
         try:
@@ -239,12 +239,14 @@ async def readyz() -> dict[str, object]:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Worker task failed: {str(e)}",
             )
-    
+
     return {"status": "ready"}
 
 
-@app.get("/status", dependencies=[Depends(verify_cognito_token)])
-async def status_route(claims: dict[str, Any] = Depends(verify_cognito_token)) -> dict[str, object]:
+@app.get("/status")
+async def status_route(
+    claims: dict[str, Any] = Depends(verify_cognito_token),
+) -> dict[str, object]:
     """Authenticated status endpoint for application clients (Cognito when enabled)."""
     return {
         "status": "ok",
