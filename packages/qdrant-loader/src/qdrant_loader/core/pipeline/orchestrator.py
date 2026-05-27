@@ -258,6 +258,26 @@ class PipelineOrchestrator:
                     # Convert deduplicated dicts back to lists
                     nodes_batch = list(nodes_dict.values())
                     edges_batch = list(edges_dict.values())
+
+                    # Ensure project context is attached to nodes/edges so
+                    # downstream graph store implementations can filter by project.
+                    if current_project_id:
+                        for n in nodes_batch:
+                            # prefer explicit attribute if present, else store in properties
+                            try:
+                                setattr(n, "project", current_project_id)
+                            except Exception:
+                                pass
+                            n.properties = n.properties or {}
+                            n.properties.setdefault("project", current_project_id)
+
+                        for e in edges_batch:
+                            try:
+                                setattr(e, "project", current_project_id)
+                            except Exception:
+                                pass
+                            e.properties = e.properties or {}
+                            e.properties.setdefault("project", current_project_id)
                     
                     if nodes_batch or edges_batch:
                         try:
@@ -278,7 +298,7 @@ class PipelineOrchestrator:
                         f"Graph batch size: nodes={len(nodes_batch)}, edges={len(edges_batch)}"
                     )
                     for node in nodes_batch:
-                        logger.info(f"[NODE] id={node.id}, type={node.label}, props={node.properties}")
+                        logger.info(f"[NODE] id={node.id}, type={node.label}, project={node.project}, props={node.properties}")
                     for edge in edges_batch:
                         logger.info(
                             f"[EDGE] {edge.source} -[{edge.edge_type}]-> {edge.target}, props={edge.properties}")
