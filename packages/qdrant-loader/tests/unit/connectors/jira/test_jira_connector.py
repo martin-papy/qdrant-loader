@@ -1354,6 +1354,6 @@ class TestFetchById:
             patch.object(connector, "get_issues", fake_get_issues),
         ):
             async with connector:
-                entity_ids = await connector.list_entity_ids()
+                entity_ids = [entity_id async for entity_id in connector.list_entity_ids()]
 
         assert entity_ids == ["TEST-1"]

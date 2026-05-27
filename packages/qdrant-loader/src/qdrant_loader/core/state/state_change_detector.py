@@ -113,6 +113,80 @@ class StateChangeDetector:
 
         return changes
 
+    async def classify_batch(
+        self,
+        documents: list[Document],
+        filtered_config: SourcesConfig,
+        project_id: str | None = None,
+    ) -> list[Document]:
+        """Classify a bounded batch of documents by comparing against state records.
+
+        This method performs targeted state lookups per document URI and returns
+        only new or updated documents for processing.
+        """
+        if not self._initialized:
+            raise RuntimeError(
+                "StateChangeDetector not initialized. Use as async context manager."
+            )
+
+        self.logger.info(
+            "Classifying document batch for inline change detection",
+            document_count=len(documents),
+        )
+
+        current_states = [self._get_document_state(doc) for doc in documents]
+        previous_states_by_id: dict[str, DocumentState] = {}
+
+        # Group documents by source to perform bulk DB lookups per source
+        groups: dict[tuple[str, str], list[Document]] = {}
+        for doc in documents:
+            key = (doc.source_type, doc.source)
+            groups.setdefault(key, []).append(doc)
+
+        for (source_type, source), docs in groups.items():
+            try:
+                ids = [d.id for d in docs]
+                records = await self.state_manager.get_document_state_records_by_ids(
+                    source_type, source, ids, project_id
+                )
+                for record in records:
+                    uri = self._generate_uri(
+                        record.url, record.source, record.source_type, record.document_id  # type: ignore
+                    )
+                    previous_states_by_id[record.document_id] = DocumentState(
+                        document_id=record.document_id,  # type: ignore
+                        uri=uri,
+                        content_hash=record.content_hash,  # type: ignore
+                        updated_at=record.updated_at,  # type: ignore
+                    )
+            except Exception as e:
+                self.logger.error(
+                    "Error loading existing document state for batch classification",
+                    source_type=source_type,
+                    source=source,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                raise
+
+        changed_documents: list[Document] = []
+        for state, doc in zip(current_states, documents, strict=False):
+            previous = previous_states_by_id.get(doc.id)
+            if (
+                previous is None
+                or state.uri != previous.uri
+                or self._is_document_updated(state, previous)
+            ):
+                changed_documents.append(doc)
+
+        self.logger.info(
+            "Batch classification completed",
+            new_or_updated_count=len(changed_documents),
+            total_documents=len(documents),
+        )
+
+        return changed_documents
+
     def _get_document_state(self, document: Document) -> DocumentState:
         """Get the standardized state of a document."""
         try:
