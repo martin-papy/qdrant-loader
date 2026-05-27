@@ -42,18 +42,21 @@ class FalkorGraphStore(GraphStore):
     async def upsert_node(self, node: GraphNode) -> None:
         self._validate_node(node)
 
-        query = f"""
-        MERGE (n:{node.label} {{id: $id}})
-        SET n += $props
-        """
+        project = node.project or node.properties.get("project")
+        if project is not None:
+            query = f"""
+            MERGE (n:{node.label} {{id: $id, project: $project}})
+            SET n += $props
+            """
+            params = {"id": node.id, "project": project, "props": node.properties}
+        else:
+            query = f"""
+            MERGE (n:{node.label} {{id: $id}})
+            SET n += $props
+            """
+            params = {"id": node.id, "props": node.properties}
 
-        self._graph.query(
-            query,
-            {
-                "id": node.id,
-                "props": node.properties,
-            },
-        )
+        self._graph.query(query, params)
 
     async def upsert_nodes_batch(self, nodes: list[GraphNode]) -> None:
         if not nodes:
@@ -67,13 +70,27 @@ class FalkorGraphStore(GraphStore):
                 await self.upsert_node(n)
             return
 
-        query = f"""
-        UNWIND $nodes AS node
-        MERGE (n:{label} {{id: node.id}})
-        SET n += node.props
-        """
+        payload = [
+            {
+                "id": n.id,
+                "project": n.project or n.properties.get("project"),
+                "props": n.properties,
+            }
+            for n in nodes
+        ]
 
-        payload = [{"id": n.id, "props": n.properties} for n in nodes]
+        if all(node_payload["project"] is not None for node_payload in payload):
+            query = f"""
+            UNWIND $nodes AS node
+            MERGE (n:{label} {{id: node.id, project: node.project}})
+            SET n += node.props
+            """
+        else:
+            query = f"""
+            UNWIND $nodes AS node
+            MERGE (n:{label} {{id: node.id}})
+            SET n += node.props
+            """
 
         await self._graph.query(query, {"nodes": payload})
 
@@ -83,21 +100,37 @@ class FalkorGraphStore(GraphStore):
     async def upsert_edge(self, edge: GraphEdge) -> None:
         self._validate_edge(edge)
 
-        query = f"""
-        MATCH (a {{id: $source}})
-        MATCH (b {{id: $target}})
-        MERGE (a)-[r:{edge.edge_type}]->(b)
+        query = """
+        MATCH (a {id: $source, project: $project}),
+            (b {id: $target, project: $project})
+        MERGE (a)-[r:BELONGS_TO]->(b)
         SET r += $props
         """
 
-        self._graph.query(
-            query,
-            {
-                "source": edge.source,
-                "target": edge.target,
-                "props": edge.properties,
-            },
-        )
+
+        project = edge.project or edge.properties.get("project")
+        params = {
+            "source": edge.source,
+            "target": edge.target,
+            "props": edge.properties,
+        }
+        if project is not None:
+            params["project"] = project
+            query = f"""
+            MATCH (a {{id: $source, project: $project}}),
+                  (b {{id: $target, project: $project}})
+            MERGE (a)-[r:{edge.edge_type}]->(b)
+            SET r += $props
+            """
+        else:
+            query = f"""
+            MATCH (a {{id: $source}}),
+                  (b {{id: $target}})
+            MERGE (a)-[r:{edge.edge_type}]->(b)
+            SET r += $props
+            """
+
+        self._graph.query(query, params)
 
     async def upsert_edges_batch(self, edges: list[GraphEdge]) -> None:
         for e in edges:
@@ -112,6 +145,7 @@ class FalkorGraphStore(GraphStore):
         node_id: str,
         depth: int,
         edge_types: list[str] | None = None,
+        project: str | None = None,
     ) -> SubGraph:
 
         edge_filter = ""
@@ -122,45 +156,90 @@ class FalkorGraphStore(GraphStore):
 
             edge_filter = ":" + "|".join(edge_types)
 
-        query = f"""
-        MATCH (n {{id: $id}})-[r{edge_filter}*1..{depth}]-(m)
-        RETURN n, r, m
-        """
+        params = {"id": node_id}
+        if project:
+            params["project"] = project
+            query = f"""
+            MATCH (n {{id: $id, project: $project}})-[r{edge_filter}*1..{depth}]-(m {{project: $project}})
+            RETURN n, r, m
+            """
+        else:
+            query = f"""
+            MATCH (n {{id: $id}})-[r{edge_filter}*1..{depth}]-(m)
+            RETURN n, r, m
+            """
 
-        result = self._graph.query(query, {"id": node_id})
+        result = self._graph.query(query, params)
         nodes_map: dict[str, GraphNode] = {}
+        internal_node_id_map: dict[int, str] = {}
         edges: list[GraphEdge] = []
 
+        def _extract_node(node_value):
+            if hasattr(node_value, "properties"):
+                node_id = node_value.properties.get("id")
+                label = node_value.labels[0] if getattr(node_value, "labels", None) else "Unknown"
+                properties = node_value.properties or {}
+            elif isinstance(node_value, dict):
+                node_id = node_value.get("id")
+                label = node_value.get("label", "Unknown")
+                properties = node_value
+            else:
+                node_id = str(node_value)
+                label = "Unknown"
+                properties = {}
+            return node_id, label, properties
+
+        def _normalize_relationships(rels_value):
+            if rels_value is None:
+                return []
+            if isinstance(rels_value, list):
+                return rels_value
+            return [rels_value]
+
+        def _resolve_internal_node_id(node_value):
+            if isinstance(node_value, int):
+                return internal_node_id_map.get(node_value, str(node_value))
+            return node_value
+
+        def _extract_edge(rel):
+            if hasattr(rel, "src_node") and hasattr(rel, "dest_node"):
+                source = _resolve_internal_node_id(rel.src_node)
+                target = _resolve_internal_node_id(rel.dest_node)
+                edge_type = getattr(rel, "relation", getattr(rel, "edge_type", None))
+                properties = rel.properties or {}
+                return GraphEdge(source=source, target=target, edge_type=edge_type, properties=properties)
+            if isinstance(rel, dict):
+                return GraphEdge(
+                    source=rel.get("source"),
+                    target=rel.get("target"),
+                    edge_type=rel.get("edge_type"),
+                    properties=rel.get("properties", {}),
+                )
+            raise ValueError("Unsupported relationship result type")
+
         for row in result.result_set:
+            if len(row) != 3:
+                continue
+
             n, rels, m = row
-            # ------- node n-----------
-            n_id = n.properties.get("id")
+            n_id, n_label, n_props = _extract_node(n)
+            if hasattr(n, "id") and isinstance(n.id, int):
+                internal_node_id_map[n.id] = n_id
             if n_id not in nodes_map:
-                nodes_map[n_id] = GraphNode(
-                    id=n_id,
-                    label=n.labels[0],
-                    properties=n.properties,
-                )
+                nodes_map[n_id] = GraphNode(id=n_id, label=n_label, properties=n_props)
 
-            # ------- node m-----------
-            m_id = m.properties.get("id")
+            m_id, m_label, m_props = _extract_node(m)
+            if hasattr(m, "id") and isinstance(m.id, int):
+                internal_node_id_map[m.id] = m_id
             if m_id not in nodes_map:
-                nodes_map[m_id] = GraphNode(
-                    id=m_id,
-                    label=m.labels[0],
-                    properties=m.properties,
-                )
+                nodes_map[m_id] = GraphNode(id=m_id, label=m_label, properties=m_props)
 
-            # ---------- relationships ----------
-            for r in rels:
-                edges.append(
-                    GraphEdge(
-                        source=r.src_node.properties.get("id"),
-                        target=r.dest_node.properties.get("id"),
-                        type=r.type,
-                        properties=r.properties,
-                    )
-                )
+            for rel in _normalize_relationships(rels):
+                try:
+                    edge = _extract_edge(rel)
+                except ValueError:
+                    continue
+                edges.append(edge)
 
         return SubGraph(
             nodes=list(nodes_map.values()),
@@ -185,25 +264,39 @@ class FalkorGraphStore(GraphStore):
     # -------------------------
     # Export graph for clustering
     # -------------------------
-    async def export_graph(self) -> tuple[list[dict], list[dict]]:
+    async def export_graph(self, project: str | None = None) -> tuple[list[dict], list[dict]]:
         """
         Returns:
             nodes = [{"id": str}]
             edges = [{"source": str, "target": str}]
         """
 
-        node_query = """
-        MATCH (n:Document)
-        RETURN n.id
-        """
+        if project:
+            node_query = """
+            MATCH (n {project: $project})
+            RETURN DISTINCT n.id
+            """
 
-        edge_query = """
-        MATCH (a:Document)-[:LINKS_TO]->(b:Document)
-        RETURN a.id, b.id
-        """
+            edge_query = """
+            MATCH (a {project: $project})-[r]->(b {project: $project})
+            RETURN DISTINCT a.id, b.id
+            """
 
-        node_result = self._graph.query(node_query)
-        edge_result = self._graph.query(edge_query)
+            node_result = self._graph.query(node_query, {"project": project})
+            edge_result = self._graph.query(edge_query, {"project": project})
+        else:
+            node_query = """
+            MATCH (n)
+            RETURN DISTINCT n.id
+            """
+
+            edge_query = """
+            MATCH (a)-[r]->(b)
+            RETURN DISTINCT a.id, b.id
+            """
+
+            node_result = self._graph.query(node_query)
+            edge_result = self._graph.query(edge_query)
 
         nodes = [{"id": row[0]} for row in node_result.result_set]
 
@@ -214,17 +307,28 @@ class FalkorGraphStore(GraphStore):
     # -------------------------
     # Batch update cluster_id
     # -------------------------
-    async def update_clusters_batch(self, updates: list[dict]):
+    async def update_clusters_batch(self, updates: list[dict], project: str | None = None):
         async def _run(row):
-            query = """
-            MATCH (n:Document {id: $id})
-            SET n.cluster_id = $cluster_id
-            """
-            await asyncio.to_thread(
-                self._graph.query,
-                query,
-                {"id": row["id"], "cluster_id": row["cluster_id"]},
-            )
+            if project:
+                query = """
+                MATCH (n:Document {id: $id, project: $project})
+                SET n.cluster_id = $cluster_id
+                """
+                await asyncio.to_thread(
+                    self._graph.query,
+                    query,
+                    {"id": row["id"], "cluster_id": row["cluster_id"], "project": project},
+                )
+            else:
+                query = """
+                MATCH (n:Document {id: $id})
+                SET n.cluster_id = $cluster_id
+                """
+                await asyncio.to_thread(
+                    self._graph.query,
+                    query,
+                    {"id": row["id"], "cluster_id": row["cluster_id"]},
+                )
 
         await asyncio.gather(*[_run(row) for row in updates])
 

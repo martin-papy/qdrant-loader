@@ -27,6 +27,7 @@ class CoreEdgeType(StrEnum):
 class GraphNode:
     id: str
     label: CoreNodeLabel
+    project: str | None = None
     properties: dict[str, Any] = field(default_factory=dict)
 
 
@@ -35,6 +36,7 @@ class GraphEdge:
     source: str
     target: str
     edge_type: CoreEdgeType
+    project: str | None = None
     properties: dict[str, Any] = field(default_factory=dict)
 
 
