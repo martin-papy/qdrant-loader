@@ -144,6 +144,29 @@ async def get_document_state_records(
         return list(result.scalars().all())
 
 
+    async def get_document_state_records_by_ids(
+        session_factory: AsyncSessionFactory,
+        *,
+        source_type: str,
+        source: str,
+        document_ids: list[str],
+        project_id: str | None = None,
+    ) -> list[DocumentStateRecord]:
+        """Fetch a set of DocumentStateRecord rows for a given source and list of document IDs in one query."""
+        if not document_ids:
+            return []
+        async with session_factory() as session:  # type: ignore
+            query = select(DocumentStateRecord).filter(
+                DocumentStateRecord.source_type == source_type,
+                DocumentStateRecord.source == source,
+                DocumentStateRecord.document_id.in_(document_ids),
+            )
+            if project_id is not None:
+                query = query.filter(DocumentStateRecord.project_id == project_id)
+            result = await session.execute(query)
+            return list(result.scalars().all())
+
+
 async def update_document_state(
     session_factory: AsyncSessionFactory,
     *,

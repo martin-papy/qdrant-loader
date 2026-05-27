@@ -1,7 +1,8 @@
 """Source processor for handling different source types."""
 
 import asyncio
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
+from datetime import datetime
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.connectors.base import BaseConnector, ConnectorConfigurationError
@@ -71,8 +72,15 @@ class SourceProcessor:
 
                 # Use the connector as an async context manager to ensure proper initialization
                 async with connector:
-                    # Get documents from this source
-                    documents = await connector.get_documents()
+                    documents = []
+                    if isinstance(connector, BaseConnector):
+                        try:
+                            async for document in connector.stream_documents():
+                                documents.append(document)
+                        except (TypeError, NotImplementedError, AttributeError):
+                            documents = await connector.get_documents()
+                    else:
+                        documents = await connector.get_documents()
 
                     logger.debug(
                         f"Retrieved {len(documents)} documents from {source_type} source: {source_name}"
@@ -98,3 +106,64 @@ class SourceProcessor:
                 f"📥 {source_type}: {len(all_documents)} documents from {len(source_configs)} sources"
             )
         return all_documents
+
+    async def stream_source_documents(
+        self,
+        source_configs: Mapping[str, SourceConfig],
+        connector_factory: Callable[[SourceConfig], BaseConnector],
+        source_type: str,
+        since: datetime | None = None,
+    ) -> AsyncIterator[Document]:
+        """Stream documents from a specific source type (WS-1).
+
+        Yields documents one at a time as they are fetched from the source.
+        """
+        logger.debug(f"Streaming {source_type} sources: {list(source_configs.keys())}")
+
+        for source_name, source_config in source_configs.items():
+            if self.shutdown_event.is_set():
+                logger.info(
+                    f"Shutdown requested, skipping {source_type} source: {source_name}"
+                )
+                break
+
+            try:
+                logger.debug(f"Streaming {source_type} source: {source_name}")
+
+                connector = connector_factory(source_config)
+
+                if (
+                    self.file_conversion_config
+                    and hasattr(connector, "set_file_conversion_config")
+                    and hasattr(source_config, "enable_file_conversion")
+                    and source_config.enable_file_conversion
+                ):
+                    logger.debug(
+                        f"Setting file conversion config for {source_type} source: {source_name}"
+                    )
+                    connector.set_file_conversion_config(self.file_conversion_config)
+
+                async with connector:
+                    document_count = 0
+                    async for document in connector.stream_documents(since=since):
+                        yield document
+                        document_count += 1
+                        if document_count % 100 == 0:
+                            logger.debug(
+                                f"Streamed {document_count} documents from {source_type} source: {source_name}"
+                            )
+
+                    if document_count > 0:
+                        logger.info(
+                            f"✅ Streamed {document_count} documents from {source_type} source: {source_name}"
+                        )
+
+            except ConnectorConfigurationError:
+                raise
+            except Exception as e:
+                safe_error = sanitize_exception_message(e)
+                logger.error(
+                    f"Failed to stream {source_type} source {source_name}: {safe_error}",
+                    error_type=type(e).__name__,
+                )
+                continue
