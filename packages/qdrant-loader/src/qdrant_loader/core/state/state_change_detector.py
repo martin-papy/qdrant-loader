@@ -135,7 +135,7 @@ class StateChangeDetector:
         )
 
         current_states = [self._get_document_state(doc) for doc in documents]
-        previous_states_dict: dict[str, DocumentState] = {}
+        previous_states_by_id: dict[str, DocumentState] = {}
 
         # Group documents by source to perform bulk DB lookups per source
         groups: dict[tuple[str, str], list[Document]] = {}
@@ -153,7 +153,7 @@ class StateChangeDetector:
                     uri = self._generate_uri(
                         record.url, record.source, record.source_type, record.document_id  # type: ignore
                     )
-                    previous_states_dict[uri] = DocumentState(
+                    previous_states_by_id[record.document_id] = DocumentState(
                         document_id=record.document_id,  # type: ignore
                         uri=uri,
                         content_hash=record.content_hash,  # type: ignore
@@ -169,12 +169,15 @@ class StateChangeDetector:
                 )
                 raise
 
-        changed_documents = [
-            doc
-            for state, doc in zip(current_states, documents, strict=False)
-            if state.uri not in previous_states_dict
-            or self._is_document_updated(state, previous_states_dict[state.uri])
-        ]
+        changed_documents: list[Document] = []
+        for state, doc in zip(current_states, documents, strict=False):
+            previous = previous_states_by_id.get(doc.id)
+            if (
+                previous is None
+                or state.uri != previous.uri
+                or self._is_document_updated(state, previous)
+            ):
+                changed_documents.append(doc)
 
         self.logger.info(
             "Batch classification completed",

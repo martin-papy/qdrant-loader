@@ -308,7 +308,14 @@ class PipelineOrchestrator:
                     return []
 
                 if not force and not processed_documents:
-                    logger.info("✅ No new or updated documents to process")
+                    self.last_pipeline_result = aggregated_result
+                    if aggregated_result.error_count > 0:
+                        logger.error(
+                            "No documents were successfully processed",
+                            error_count=aggregated_result.error_count,
+                        )
+                    else:
+                        logger.info("No new or updated documents to process")
                     return []
 
                     # Deletion detection / reconciliation note:

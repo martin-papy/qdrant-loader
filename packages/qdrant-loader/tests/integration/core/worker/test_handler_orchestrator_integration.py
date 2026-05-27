@@ -104,4 +104,4 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
     )
 
     assert recorded_calls, "_stream_batches_from_sources was not called"
-    assert recorded_calls[0]["since"] is not None
+    assert recorded_calls[0]["since"] == history.last_successful_ingestion

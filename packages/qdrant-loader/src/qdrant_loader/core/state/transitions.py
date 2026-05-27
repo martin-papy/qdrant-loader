@@ -160,6 +160,7 @@ async def get_document_state_records_by_ids(
             DocumentStateRecord.source_type == source_type,
             DocumentStateRecord.source == source,
             DocumentStateRecord.document_id.in_(document_ids),
+            DocumentStateRecord.is_deleted.is_(False),
         )
         if project_id is not None:
             query = query.filter(DocumentStateRecord.project_id == project_id)

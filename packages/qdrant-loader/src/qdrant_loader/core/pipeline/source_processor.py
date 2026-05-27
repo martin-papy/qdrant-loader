@@ -77,7 +77,8 @@ class SourceProcessor:
                         try:
                             async for document in connector.stream_documents():
                                 documents.append(document)
-                        except (TypeError, NotImplementedError, AttributeError):
+                        except NotImplementedError:
+                            # Connector does not implement streaming; fall back to eager fetch
                             documents = await connector.get_documents()
                     else:
                         documents = await connector.get_documents()
