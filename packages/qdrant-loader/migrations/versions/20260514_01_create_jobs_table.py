@@ -45,10 +45,17 @@ def upgrade() -> None:
             sa.PrimaryKeyConstraint("id"),
         )
 
-    existing_indexes = {idx["name"] for idx in inspector.get_indexes("jobs")} if "jobs" in existing_tables else set()
+    existing_indexes = (
+        {idx["name"] for idx in inspector.get_indexes("jobs")}
+        if "jobs" in existing_tables
+        else set()
+    )
     if "ix_jobs_status_enqueued_at" not in existing_indexes:
         op.create_index(
-            "ix_jobs_status_enqueued_at", "jobs", ["status", "enqueued_at"], unique=False
+            "ix_jobs_status_enqueued_at",
+            "jobs",
+            ["status", "enqueued_at"],
+            unique=False,
         )
 
 

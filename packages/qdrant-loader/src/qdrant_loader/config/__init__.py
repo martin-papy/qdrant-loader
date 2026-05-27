@@ -402,12 +402,12 @@ class Settings(BaseSettings):
     @staticmethod
     def _validate_env_substitution(data: Any) -> None:
         """Validate that all environment variables in config have been substituted.
-        
+
         Raises:
             ValueError: If any ${VAR_NAME} pattern remains in the configuration.
         """
         pattern = r"\$\{([^}]+)\}"
-        
+
         def check_value(value: Any, path: str = "") -> None:
             if isinstance(value, str):
                 matches = re.finditer(pattern, value)
@@ -425,7 +425,7 @@ class Settings(BaseSettings):
             elif isinstance(value, list):
                 for i, item in enumerate(value):
                     check_value(item, f"{path}[{i}]")
-        
+
         check_value(data)
 
     @classmethod

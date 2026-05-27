@@ -502,6 +502,7 @@ class TestPipelineOrchestrator:
 
         filtered_config = Mock(spec=SourcesConfig)
         self.state_manager._initialized = False
+
         async def _initialize_side_effect():
             self.state_manager._initialized = True
 
@@ -558,9 +559,7 @@ class TestPipelineOrchestrator:
 
         assert result == []
 
-        mock_change_detector.detect_changes.assert_called_once_with(
-            [], filtered_config
-        )
+        mock_change_detector.detect_changes.assert_called_once_with([], filtered_config)
 
     @pytest.mark.asyncio
     async def test_detect_document_changes_state_manager_initialized(self):
