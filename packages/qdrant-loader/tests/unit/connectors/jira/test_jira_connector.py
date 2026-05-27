@@ -1319,7 +1319,9 @@ class TestFetchById:
     """Tests for WS-1 fetch_by_id connector contract."""
 
     @pytest.mark.asyncio
-    async def test_fetch_by_id_returns_document(self, jira_cloud_config, mock_data_center_issue_data):
+    async def test_fetch_by_id_returns_document(
+        self, jira_cloud_config, mock_data_center_issue_data
+    ):
         connector = JiraCloudConnector(jira_cloud_config)
 
         with (
@@ -1339,7 +1341,9 @@ class TestFetchById:
         assert document.source == "test-jira"
 
     @pytest.mark.asyncio
-    async def test_list_entity_ids_collects_keys(self, jira_cloud_config, mock_data_center_issue_data):
+    async def test_list_entity_ids_collects_keys(
+        self, jira_cloud_config, mock_data_center_issue_data
+    ):
         connector = JiraCloudConnector(jira_cloud_config)
 
         async def fake_get_issues(updated_after=None):

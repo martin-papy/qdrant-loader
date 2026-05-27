@@ -103,9 +103,7 @@ async def enqueue_webhook_event(
             "queued": True,
         }
 
-    change_event = await parse_webhook_event(
-        normalized_source_type, source, payload
-    )
+    change_event = await parse_webhook_event(normalized_source_type, source, payload)
     if change_event is not None:
         change_event.project_id = project_id
         message_id = await queue.enqueue(change_event)
@@ -154,9 +152,7 @@ async def enqueue_ingest_request(
     Always uses FULL_SCAN; the worker runs the same pipeline as the ingest command.
     """
     if source is not None and source_type is None:
-        raise ValueError(
-            "source_type must be provided when source is specified."
-        )
+        raise ValueError("source_type must be provided when source is specified.")
 
     normalized_source_type = (
         normalize_ingest_source_type(source_type) if source_type else None

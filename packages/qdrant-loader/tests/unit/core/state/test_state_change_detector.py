@@ -406,6 +406,7 @@ class TestStateChangeDetector:
         assert deleted_doc.source_type == "git"
         assert deleted_doc.metadata["uri"] == state.uri
         assert deleted_doc.id == "deleted_doc"
+
     def test_normalize_url(self, mock_state_manager):
         """Test _normalize_url method."""
         detector = StateChangeDetector(mock_state_manager)
