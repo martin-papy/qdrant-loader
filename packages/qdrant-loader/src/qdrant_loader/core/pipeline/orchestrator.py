@@ -234,6 +234,11 @@ class PipelineOrchestrator:
                     self.components.state_manager
                 ).__aenter__()
 
+            # `since` indicates the snapshot timestamp to stream changes from.
+            # It may be provided by callers in future; default to `None` for
+            # now to preserve backward compatibility and satisfy tests.
+            since: datetime | None = None
+
             seen_uris: set[str] = set()
             try:
                 # Prefer calling the new signature but fall back to the
