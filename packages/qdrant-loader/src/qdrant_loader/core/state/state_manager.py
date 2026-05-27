@@ -383,6 +383,32 @@ class StateManager:
             )
             raise
 
+    async def get_document_state_records_by_ids(
+        self,
+        source_type: str,
+        source: str,
+        document_ids: list[str],
+        project_id: str | None = None,
+    ) -> list[DocumentStateRecord]:
+        """Get multiple document state records for a given source in a single query."""
+        self.logger.debug(
+            f"Getting document state records for {source_type}:{source} (batch of {len(document_ids)})"
+        )
+        try:
+            return await _transitions.get_document_state_records_by_ids(
+                self._session_factory,  # type: ignore[arg-type]
+                source_type=source_type,
+                source=source,
+                document_ids=document_ids,
+                project_id=project_id,
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Error getting document state records by ids for {source_type}:{source}: {str(e)}",
+                exc_info=True,
+            )
+            raise
+
     async def get_document_state_records(
         self, source_config: SourceConfig, since: datetime | None = None
     ) -> list[DocumentStateRecord]:
