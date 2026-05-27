@@ -10,6 +10,7 @@ from qdrant_loader.core.worker.handlers import (
 )
 from qdrant_loader.core.worker.pool import QueueWorkerPool
 from qdrant_loader.core.worker.queue import JobQueue, SQLiteJobQueue
+from qdrant_loader.core.worker.scheduler import IncrementalPullScheduler
 
 __all__ = [
     # Queue abstractions
@@ -17,6 +18,8 @@ __all__ = [
     "SQLiteJobQueue",
     # Pool
     "QueueWorkerPool",
+    # Scheduler
+    "IncrementalPullScheduler",
     # Handlers
     "JobHandler",
     "BaseJobHandler",

@@ -8,6 +8,7 @@ from qdrant_loader.connectors.base import ConnectorConfigurationError
 from qdrant_loader.connectors.factory import get_connector_instance
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.project_manager import ProjectManager
+from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
@@ -33,11 +34,13 @@ class PipelineComponents:
         source_processor: SourceProcessor,
         source_filter: SourceFilter,
         state_manager: StateManager,
+        qdrant_manager: QdrantManager,
     ):
         self.document_pipeline = document_pipeline
         self.source_processor = source_processor
         self.source_filter = source_filter
         self.state_manager = state_manager
+        self.qdrant_manager = qdrant_manager
 
 
 class PipelineOrchestrator:
@@ -143,7 +146,34 @@ class PipelineOrchestrator:
                 filtered_config, current_project_id, since
             )
 
-            if not documents:
+            # SAFETY CHECK: Empty-snapshot deletion protection (WS-3 territory)
+            #
+            # In force mode we bypass change detection entirely,
+            # so an empty snapshot means there is nothing to process.
+            #
+            # In normal mode we MUST continue into change detection,
+            # because an empty snapshot may indicate that previously
+            # indexed documents were deleted from the source.
+            #
+            # HOWEVER: Without an explicit signal from the connector that the
+            # snapshot is complete (vs. partial failure / API outage), an empty
+            # list could trigger mass deletion. Example: Jira API outage returns []
+            # → change detection classifies all 115k indexed docs as deleted.
+            #
+            # TEMPORARY FIX: Log a warning if snapshot is empty and we're about to
+            # proceed to change detection. This is safe but noisy.
+            #
+            # PERMANENT FIX (WS-3): Require connector contract to include
+            # `snapshot_is_complete: bool` or add per-source `enable_deletion_detection` flag.
+            if not documents and not force:
+                logger.warning(
+                    "⚠️ EMPTY SNAPSHOT in non-force mode. About to enter change detection "
+                    "which may classify existing corpus as deleted if source API returned partial/null results. "
+                    "This is a known risk (WS-3: add explicit snapshot_is_complete signal or per-source enable_deletion_detection). "
+                    "Proceeding carefully."
+                )
+
+            if not documents and force:
                 logger.info("✅ No documents found from sources")
                 return []
 
@@ -449,8 +479,6 @@ class PipelineOrchestrator:
         project_id: str | None = None,
     ) -> list[Document]:
         """Detect changes in documents and return only new/updated ones."""
-        if not documents:
-            return []
 
         logger.debug(f"Starting change detection for {len(documents)} documents")
 
@@ -467,17 +495,68 @@ class PipelineOrchestrator:
                     documents, filtered_config
                 )
 
-                logger.info(
-                    f"🔍 Change detection: {len(changes['new'])} new, "
-                    f"{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
+            new_documents = list(changes.get("new") or [])
+            updated_documents = list(changes.get("updated") or [])
+            deleted_documents = list(changes.get("deleted") or [])
+
+            logger.info(
+                f"🔍 Change detection: {len(new_documents)} new, "
+                f"{len(updated_documents)} updated, "
+                f"{len(deleted_documents)} deleted"
+            )
+
+            if deleted_documents:
+                await self._process_deleted_documents(
+                    deleted_documents,
+                    project_id,
                 )
 
-                # Return new and updated documents
-                return changes["new"] + changes["updated"]
+            documents_to_process = new_documents + updated_documents
+
+            if not documents_to_process and deleted_documents:
+                logger.info(
+                    "No new or updated documents to process, "
+                    "but deleted documents were handled"
+                )
+
+            return documents_to_process
 
         except Exception as e:
             logger.error(
                 f"Error during change detection: {sanitize_exception_message(e)}",
+                error_type=type(e).__name__,
+            )
+            raise
+
+    async def _process_deleted_documents(
+        self,
+        deleted_documents: list[Document],
+        project_id: str | None = None,
+    ) -> None:
+        """Process deleted documents by updating state and removing points from Qdrant."""
+        if not deleted_documents:
+            return
+
+        logger.info(
+            f"Processing {len(deleted_documents)} deleted documents"
+        )
+
+        if not self.components.state_manager._initialized:
+            logger.debug(
+                "Initializing state manager for deleted document processing"
+            )
+            await self.components.state_manager.initialize()
+
+        # Use an atomic operation that marks state and deletes points together.
+        try:
+            deleted_ids = await self.components.state_manager.mark_documents_deleted_atomic(
+                deleted_documents, self.components.qdrant_manager, project_id
+            )
+            if deleted_ids:
+                logger.info(f"Deleted {len(deleted_ids)} document points from Qdrant and updated state")
+        except Exception as e:
+            logger.error(
+                f"Failed to process deleted documents atomically: {sanitize_exception_message(e)}",
                 error_type=type(e).__name__,
             )
             raise

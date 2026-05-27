@@ -1099,3 +1099,43 @@ class TestJiraValidateConnection:
         with patch.object(connector, "_make_request", side_effect=side_effect):
             with pytest.raises(ConnectorConfigurationError, match="403"):
                 await connector.__aenter__()
+
+
+class TestFetchById:
+    """Tests for WS-1 fetch_by_id connector contract."""
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_document(self, jira_cloud_config, mock_data_center_issue_data):
+        connector = JiraCloudConnector(jira_cloud_config)
+
+        with (
+            patch.object(connector, "_validate_connection", return_value=None),
+            patch.object(
+                connector,
+                "_make_request",
+                return_value=mock_data_center_issue_data,
+            ),
+        ):
+            async with connector:
+                document = await connector.fetch_by_id("TEST-1")
+
+        assert document is not None
+        assert document.id == "12345"
+        assert document.metadata["key"] == "TEST-1"
+        assert document.source == "test-jira"
+
+    @pytest.mark.asyncio
+    async def test_list_entity_ids_collects_keys(self, jira_cloud_config, mock_data_center_issue_data):
+        connector = JiraCloudConnector(jira_cloud_config)
+
+        async def fake_get_issues(updated_after=None):
+            yield connector._parse_issue(mock_data_center_issue_data)
+
+        with (
+            patch.object(connector, "_validate_connection", return_value=None),
+            patch.object(connector, "get_issues", fake_get_issues),
+        ):
+            async with connector:
+                entity_ids = await connector.list_entity_ids()
+
+        assert entity_ids == ["TEST-1"]

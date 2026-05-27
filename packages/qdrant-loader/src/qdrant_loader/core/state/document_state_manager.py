@@ -109,6 +109,7 @@ class DocumentStateManager:
 
                 if result:
                     state = DocumentState(
+                        document_id=doc_id,
                         uri=result[0],
                         content_hash=result[1],
                         updated_at=datetime.fromisoformat(result[2]),
