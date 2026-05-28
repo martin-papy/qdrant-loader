@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import Header, HTTPException, Query, Request, status
 
 from qdrant_loader.utils.logging import LoggingConfig
+
 logger = LoggingConfig.get_logger(__name__)
 
 WEBHOOK_SECRET_ENV_VAR = "WEBHOOK_SECRET"
@@ -28,6 +29,7 @@ WEBHOOK_TRUSTED_PROXY = os.getenv("WEBHOOK_TRUSTED_PROXY", None)
 COGNITO_REGION = os.getenv("COGNITO_REGION", "")
 COGNITO_USER_POOL_ID = os.getenv("COGNITO_USER_POOL_ID", "")
 COGNITO_APP_CLIENT_ID = os.getenv("COGNITO_APP_CLIENT_ID", "")
+
 
 @lru_cache(maxsize=128)
 def _get_webhook_secret_from_env() -> str:

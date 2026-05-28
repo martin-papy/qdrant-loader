@@ -2,7 +2,6 @@ import asyncio
 
 import pytest
 from fastapi import HTTPException
-
 from qdrant_loader.webhooks.auth import (
     _get_webhook_secret_from_env,
     get_webhook_secret,

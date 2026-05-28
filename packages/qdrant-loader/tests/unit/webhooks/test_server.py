@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
-
 from qdrant_loader.webhooks.queue_backend import ChangeEvent, QueueBackendManager
 from qdrant_loader.webhooks.server import app
 
