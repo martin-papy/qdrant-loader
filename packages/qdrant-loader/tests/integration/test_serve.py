@@ -103,7 +103,9 @@ async def test_mini_soak_queue_drains():
         projects_config = MagicMock(spec=ProjectsConfig)
         projects_config.projects = {}
 
-        schedule = IncrementalPullScheduleConfig(enabled=True, interval=SCHEDULE_INTERVAL)
+        schedule = IncrementalPullScheduleConfig(
+            enabled=True, interval=SCHEDULE_INTERVAL
+        )
 
         fake_clock = _FakeClock(acceleration=ACCELERATION)
         scheduler = IncrementalPullScheduler(

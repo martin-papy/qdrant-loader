@@ -83,7 +83,9 @@ class _GeminiTokenCounter(TokenCounter):
         return len(text)
 
 
-def _messages_to_contents(messages: list[dict[str, Any]]) -> tuple[str | None, list[Any]]:
+def _messages_to_contents(
+    messages: list[dict[str, Any]],
+) -> tuple[str | None, list[Any]]:
     """Convert OpenAI-style messages to (system_instruction, contents) for Gemini."""
     system_parts: list[str] = []
     contents: list[Any] = []
@@ -154,7 +156,6 @@ class GeminiEmbeddings(EmbeddingsClient):
             )
         if not inputs:
             return []
-
         import asyncio
 
         config = self._build_config()
@@ -250,7 +251,6 @@ class GeminiChat(ChatClient):
         config = None
         if config_kwargs and genai_types is not None:
             config = genai_types.GenerateContentConfig(**config_kwargs)
-
         import asyncio
 
         started = datetime.now(UTC)

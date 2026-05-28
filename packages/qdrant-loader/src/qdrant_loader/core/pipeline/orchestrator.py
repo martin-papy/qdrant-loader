@@ -1,6 +1,7 @@
 """Main orchestrator for the ingestion pipeline."""
 
 import traceback
+from collections.abc import AsyncIterator
 from datetime import datetime
 
 from qdrant_loader.config import Settings, SourcesConfig
@@ -54,6 +55,98 @@ class PipelineOrchestrator:
         self.project_manager = project_manager
         self.last_pipeline_result = None
 
+    async def _stream_batches_from_sources(
+        self,
+        filtered_config: SourcesConfig,
+        batch_size: int = 256,
+        since: datetime | None = None,
+        project_id: str | None = None,
+        seen_uris: set[str] | None = None,
+    ) -> AsyncIterator[list[Document]]:
+        """Stream source documents in bounded micro-batches.
+
+        This helper collects documents from each source type and yields
+        batches of a fixed size, keeping memory usage bounded.
+        """
+        batch: list[Document] = []
+
+        # Note: previous implementation contained vestigial async inner
+        # helpers `_flush_batch` and `_append_document` which attempted to
+        # yield from inside non-generator contexts. These were dead code
+        # and confusing. Batching is handled inline in `_process_source_type`.
+
+        async def _process_source_type(source_type_name: str, source_configs):
+            if not source_configs:
+                return
+
+            async for (
+                document
+            ) in self.components.source_processor.stream_source_documents(
+                source_configs,
+                get_connector_instance,
+                source_type_name,
+                since=since,
+            ):
+                # Inject project metadata when running with project context
+                if project_id and self.project_manager:
+                    try:
+                        document.metadata = (
+                            self.project_manager.inject_project_metadata(
+                                project_id, document.metadata
+                            )
+                        )
+                    except Exception:
+                        # Don't let metadata injection break streaming; log and continue
+                        logger.debug(
+                            "Project metadata injection failed for document",
+                            document_id=document.id,
+                            project_id=project_id,
+                        )
+
+                # Track seen URIs for potential post-stream reconciliation
+                if seen_uris is not None:
+                    try:
+                        uri = f"{document.source_type}:{document.source}:{document.url.rstrip('/') }"
+                        seen_uris.add(uri)
+                    except Exception:
+                        pass
+
+                batch.append(document)
+                if len(batch) >= batch_size:
+                    yield batch.copy()
+                    batch.clear()
+
+        if filtered_config.confluence:
+            async for yielded_batch in _process_source_type(
+                "Confluence", filtered_config.confluence
+            ):
+                yield yielded_batch
+
+        if filtered_config.git:
+            async for yielded_batch in _process_source_type("Git", filtered_config.git):
+                yield yielded_batch
+
+        if filtered_config.jira:
+            async for yielded_batch in _process_source_type(
+                "Jira", filtered_config.jira
+            ):
+                yield yielded_batch
+
+        if filtered_config.publicdocs:
+            async for yielded_batch in _process_source_type(
+                "PublicDocs", filtered_config.publicdocs
+            ):
+                yield yielded_batch
+
+        if filtered_config.localfile:
+            async for yielded_batch in _process_source_type(
+                "LocalFile", filtered_config.localfile
+            ):
+                yield yielded_batch
+
+        if batch:
+            yield batch
+
     async def process_documents(
         self,
         sources_config: SourcesConfig | None = None,
@@ -71,10 +164,9 @@ class PipelineOrchestrator:
             source: Filter by specific source name
             project_id: Process documents for a specific project
             force: Force processing of all documents, bypassing change detection
-            since: Only collect documents updated after this timestamp (connector-level
+            since: Only stream documents updated after this timestamp (connector-level
                 filtering). Connectors that do not yet support time-based filtering will
-                fall back to fetching all documents and relying on hash-based change
-                detection.
+                fall back to full fetch with hash-based change detection.
 
         Returns:
             List of processed documents
@@ -138,80 +230,126 @@ class PipelineOrchestrator:
             ):
                 raise ValueError(f"No sources found for type '{source_type}'")
 
-            # Collect documents from all sources
-            documents = await self._collect_documents_from_sources(
-                filtered_config, current_project_id, since
-            )
+            # Stream documents in bounded micro-batches and process each batch
+            total_documents = 0
+            processed_documents: list[Document] = []
+            aggregated_result = PipelineResult()
+            batch_count = 0
 
-            # SAFETY CHECK: Empty-snapshot deletion protection (WS-3 territory)
-            #
-            # In force mode we bypass change detection entirely,
-            # so an empty snapshot means there is nothing to process.
-            #
-            # In normal mode we MUST continue into change detection,
-            # because an empty snapshot may indicate that previously
-            # indexed documents were deleted from the source.
-            #
-            # HOWEVER: Without an explicit signal from the connector that the
-            # snapshot is complete (vs. partial failure / API outage), an empty
-            # list could trigger mass deletion. Example: Jira API outage returns []
-            # → change detection classifies all 115k indexed docs as deleted.
-            #
-            # TEMPORARY FIX: Log a warning if snapshot is empty and we're about to
-            # proceed to change detection. This is safe but noisy.
-            #
-            # PERMANENT FIX (WS-3): Require connector contract to include
-            # `snapshot_is_complete: bool` or add per-source `enable_deletion_detection` flag.
-            if not documents and not force:
-                logger.warning(
-                    "⚠️ EMPTY SNAPSHOT in non-force mode. About to enter change detection "
-                    "which may classify existing corpus as deleted if source API returned partial/null results. "
-                    "This is a known risk (WS-3: add explicit snapshot_is_complete signal or per-source enable_deletion_detection). "
-                    "Proceeding carefully."
-                )
+            if not force and not self.components.state_manager._initialized:
+                logger.debug("Initializing state manager for change detection")
+                await self.components.state_manager.initialize()
 
-            if not documents and force:
-                logger.info("✅ No documents found from sources")
-                return []
+            change_detector = None
+            if not force:
+                change_detector = await StateChangeDetector(
+                    self.components.state_manager
+                ).__aenter__()
 
-            # Detect changes in documents (bypass if force=True)
-            if force:
-                logger.warning(
-                    f"🔄 Force mode enabled: bypassing change detection, processing all {len(documents)} documents"
-                )
-            else:
-                documents = await self._detect_document_changes(
-                    documents, filtered_config, current_project_id
-                )
+            seen_uris: set[str] = set()
+            try:
+                # Prefer calling the new signature but fall back to the
+                # legacy 3-arg signature for backwards compatibility / tests.
+                try:
+                    stream_iter = self._stream_batches_from_sources(
+                        filtered_config,
+                        256,
+                        since,
+                        project_id=current_project_id,
+                        seen_uris=seen_uris,
+                    )
+                except TypeError:
+                    # Callable likely expects the old signature
+                    stream_iter = self._stream_batches_from_sources(
+                        filtered_config, 256, since
+                    )
 
-                if not documents:
-                    logger.info("✅ No new or updated documents to process")
+                async for batch in stream_iter:
+                    total_documents += len(batch)
+                    batch_count += 1
+
+                    if not force and change_detector is not None:
+                        batch = await change_detector.classify_batch(
+                            batch, filtered_config, current_project_id
+                        )
+
+                    if not batch:
+                        continue
+
+                    batch_result = (
+                        await self.components.document_pipeline.process_batch(batch)
+                    )
+                    aggregated_result.success_count += batch_result.success_count
+                    aggregated_result.error_count += batch_result.failure_count
+                    aggregated_result.errors.extend(batch_result.errors)
+                    aggregated_result.successfully_processed_documents.update(
+                        batch_result.successfully_processed_documents
+                    )
+                    aggregated_result.failed_document_ids.update(
+                        batch_result.failed_document_ids
+                    )
+
+                    if batch_result.successfully_processed_documents:
+                        await self._update_document_states(
+                            batch,
+                            batch_result.successfully_processed_documents,
+                            current_project_id,
+                        )
+                        processed_documents.extend(
+                            [
+                                doc
+                                for doc in batch
+                                if doc.id
+                                in batch_result.successfully_processed_documents
+                            ]
+                        )
+
+                if total_documents == 0 and not force:
+                    logger.warning(
+                        "⚠️ EMPTY SNAPSHOT in non-force mode. About to enter change detection "
+                        "which may classify existing corpus as deleted if source API returned partial/null results. "
+                        "This is a known risk (WS-3: add explicit snapshot_is_complete signal or per-source enable_deletion_detection). "
+                        "Proceeding carefully."
+                    )
+
+                if total_documents == 0 and force:
+                    logger.info("✅ No documents found from sources")
                     return []
 
-            # Drop documents with empty content to avoid no-op embedding runs
-            documents = [
-                doc for doc in documents 
-                if getattr(doc, "content", "").strip()
-            ]
-            if not documents:
-                logger.info("✅ No documents with content to process after filtering")
-                return []
+                if not force and not processed_documents:
+                    self.last_pipeline_result = aggregated_result
+                    if aggregated_result.error_count > 0:
+                        logger.error(
+                            "No documents were successfully processed",
+                            error_count=aggregated_result.error_count,
+                        )
+                    else:
+                        logger.info("No new or updated documents to process")
+                    return []
 
-            # Process documents through the pipeline
-            result = await self.components.document_pipeline.process_documents(
-                documents
-            )
-            self.last_pipeline_result = result
+                    # Deletion detection / reconciliation note:
+                    # Streaming classification only detects new/updated documents
+                    # per-batch. Full deletion detection (documents present in the
+                    # state DB but absent from the current snapshot across all
+                    # batches) requires a post-stream reconciliation (WS-3).
+                    # For now we only log that reconciliation is possible and
+                    # record the set of seen URIs; implementors can enable a
+                    # reconciliation pass that compares previous state URIs to
+                    # `seen_uris` and call `_process_deleted_documents`.
+                    if not force:
+                        logger.debug(
+                            "Post-stream reconciliation not enabled. Seen URIs collected for potential WS-3 reconciliation",
+                            seen_count=len(seen_uris),
+                        )
 
-            # Update document states for successfully processed documents
-            await self._update_document_states(
-                documents, result.successfully_processed_documents, current_project_id
-            )
-
-            logger.info(
-                f"✅ Ingestion completed: {result.success_count} chunks processed successfully"
-            )
-            return documents
+                self.last_pipeline_result = aggregated_result
+                logger.info(
+                    f"✅ Ingestion completed: {aggregated_result.success_count} chunks processed successfully"
+                )
+                return processed_documents
+            finally:
+                if change_detector is not None:
+                    await change_detector.__aexit__(None, None, None)
 
         except Exception as e:
             logger.error(
@@ -325,18 +463,9 @@ class PipelineOrchestrator:
         return all_documents
 
     async def _collect_documents_from_sources(
-        self,
-        filtered_config: SourcesConfig,
-        project_id: str | None = None,
-        since: datetime | None = None,
+        self, filtered_config: SourcesConfig, project_id: str | None = None
     ) -> list[Document]:
         """Collect documents from all configured sources."""
-        if since is not None:
-            logger.warning(
-                "since parameter is set but connector-level time filtering is not yet "
-                "implemented; falling back to full fetch with hash-based change detection",
-                since=since.isoformat(),
-            )
         documents = []
 
         # Process each source type with project context
@@ -450,23 +579,23 @@ class PipelineOrchestrator:
         if not deleted_documents:
             return
 
-        logger.info(
-            f"Processing {len(deleted_documents)} deleted documents"
-        )
+        logger.info(f"Processing {len(deleted_documents)} deleted documents")
 
         if not self.components.state_manager._initialized:
-            logger.debug(
-                "Initializing state manager for deleted document processing"
-            )
+            logger.debug("Initializing state manager for deleted document processing")
             await self.components.state_manager.initialize()
 
         # Use an atomic operation that marks state and deletes points together.
         try:
-            deleted_ids = await self.components.state_manager.mark_documents_deleted_atomic(
-                deleted_documents, self.components.qdrant_manager, project_id
+            deleted_ids = (
+                await self.components.state_manager.mark_documents_deleted_atomic(
+                    deleted_documents, self.components.qdrant_manager, project_id
+                )
             )
             if deleted_ids:
-                logger.info(f"Deleted {len(deleted_ids)} document points from Qdrant and updated state")
+                logger.info(
+                    f"Deleted {len(deleted_ids)} document points from Qdrant and updated state"
+                )
         except Exception as e:
             logger.error(
                 f"Failed to process deleted documents atomically: {sanitize_exception_message(e)}",

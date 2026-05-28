@@ -1,8 +1,9 @@
 """Jira connector implementation."""
 
 import asyncio
+import warnings
 from abc import abstractmethod
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from datetime import datetime
 from urllib.parse import urlparse  # noqa: F401 - may be used in URL handling
 
@@ -462,17 +463,30 @@ class BaseJiraConnector(BaseConnector):
         documents = await self._issues_to_documents([issue])
         return documents[0] if documents else None
 
-    async def list_entity_ids(self) -> list[str]:
-        """List all issue keys in the configured project."""
-        entity_ids: list[str] = []
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream all issue keys in the configured project."""
         async for issue in self.get_issues():
-            entity_ids.append(issue.key)
-        return entity_ids
+            yield issue.key
 
     async def _issues_to_documents(self, issues: list[JiraIssue]) -> list[Document]:
-        """Convert Jira issues to Document objects (including attachments)."""
-        documents: list[Document] = []
+        """Convert Jira issues to Document objects (including attachments).
 
+        .. deprecated:: WS-1
+            Use :meth:`_stream_issues_to_documents` for streaming.
+        """
+        documents: list[Document] = []
+        async for document in self._stream_issues_to_documents(issues):
+            documents.append(document)
+        return documents
+
+    async def _stream_issues_to_documents(
+        self, issues: list[JiraIssue]
+    ) -> AsyncGenerator[Document, None]:
+        """Stream Jira issues as Document objects, including attachments.
+
+        Yields documents one at a time, with attachments yielded immediately after
+        their parent issue document.
+        """
         for issue in issues:
             content_parts = [issue.summary]
             if issue.description:
@@ -546,7 +560,6 @@ class BaseJiraConnector(BaseConnector):
                 is_deleted=False,
                 metadata=metadata,
             )
-            documents.append(document)
             logger.debug(
                 "Jira document created",
                 document_id=document.id,
@@ -554,6 +567,7 @@ class BaseJiraConnector(BaseConnector):
                 source=document.source,
                 title=document.title,
             )
+            yield document
 
             if self.config.download_attachments and self.attachment_reader:
                 attachment_metadata = self._get_issue_attachments(issue)
@@ -569,7 +583,8 @@ class BaseJiraConnector(BaseConnector):
                             attachment_metadata, document
                         )
                     )
-                    documents.extend(attachment_documents)
+                    for attachment_document in attachment_documents:
+                        yield attachment_document
 
                     logger.debug(
                         "Processed attachments for JIRA issue",
@@ -577,15 +592,24 @@ class BaseJiraConnector(BaseConnector):
                         processed_count=len(attachment_documents),
                     )
 
-        return documents
+    async def stream_documents(
+        self, since: datetime | None = None
+    ) -> AsyncGenerator[Document, None]:
+        """Stream documents from Jira (WS-1 connector contract)."""
+        async for issue in self.get_issues(updated_after=since):
+            async for document in self._stream_issues_to_documents([issue]):
+                yield document
 
     async def get_documents(self) -> list[Document]:
-        """Fetch and process documents from Jira.
-
-        Returns:
-            List[Document]: List of processed documents
-        """
-        issues = []
-        async for issue in self.get_issues():
-            issues.append(issue)
-        return await self._issues_to_documents(issues)
+        """Fetch and process documents from Jira (DEPRECATED - use stream_documents)."""
+        warnings.warn(
+            "BaseJiraConnector.get_documents is deprecated. Implement stream_documents() "
+            "or use connector.stream_documents() to avoid materializing the full "
+            "document list in memory.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        documents = []
+        async for document in self.stream_documents():
+            documents.append(document)
+        return documents

@@ -1,12 +1,15 @@
 import asyncio
 
 import pytest
-
 from qdrant_loader.webhooks.handlers import (
     enqueue_ingest_request,
     normalize_ingest_source_type,
 )
-from qdrant_loader.webhooks.queue_backend import FULL_SCAN, ChangeEvent, QueueBackendManager
+from qdrant_loader.webhooks.queue_backend import (
+    FULL_SCAN,
+    ChangeEvent,
+    QueueBackendManager,
+)
 
 
 class FakeQueueBackend:

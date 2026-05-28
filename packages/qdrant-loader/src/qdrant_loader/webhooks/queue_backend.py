@@ -143,7 +143,9 @@ class QueueBackendManager:
         cls._backend = None
 
     @classmethod
-    def set_backend(cls, backend: QueueBackend, job_queue: SQLiteJobQueue | None = None) -> None:
+    def set_backend(
+        cls, backend: QueueBackend, job_queue: SQLiteJobQueue | None = None
+    ) -> None:
         """Override backend for testing."""
         cls._backend = backend
         cls._job_queue = job_queue

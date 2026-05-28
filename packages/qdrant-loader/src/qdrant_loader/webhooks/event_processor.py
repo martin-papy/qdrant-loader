@@ -179,7 +179,11 @@ def _resolve_source_config(
         if not pipeline.project_manager:
             raise ValueError("Project manager not available")
         project_context = pipeline.project_manager.get_project_context(project_id)
-        if not project_context or not project_context.config or not project_context.config.sources:
+        if (
+            not project_context
+            or not project_context.config
+            or not project_context.config.sources
+        ):
             raise ValueError(f"Project '{project_id}' not found")
         jira_sources = project_context.config.sources.jira or {}
         if source_name not in jira_sources:

@@ -58,8 +58,29 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
         project_manager=MagicMock(),
     )
     # Stub deep enough so orchestrator.process_documents reaches
-    # _collect_documents_from_sources without needing real DB/Qdrant.
-    orchestrator._collect_documents_from_sources = AsyncMock(return_value=[])
+    # _stream_batches_from_sources without needing real DB/Qdrant.
+    recorded_calls: list[dict[str, object]] = []
+
+    async def fake_stream_batches(
+        filtered_config,
+        batch_size=256,
+        since=None,
+        project_id=None,
+        seen_uris=None,
+    ):
+        recorded_calls.append(
+            {
+                "filtered_config": filtered_config,
+                "batch_size": batch_size,
+                "since": since,
+                "project_id": project_id,
+                "seen_uris": seen_uris,
+            }
+        )
+        if False:
+            yield
+
+    orchestrator._stream_batches_from_sources = fake_stream_batches
 
     history = MagicMock()
     history.last_successful_ingestion = datetime(2026, 5, 20, 10, 0, 0, tzinfo=UTC)
@@ -82,12 +103,5 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
         }
     )
 
-    # Confirm orchestrator was called with since != None
-    call_kwargs = orchestrator._collect_documents_from_sources.call_args
-    assert call_kwargs is not None, "_collect_documents_from_sources was not called"
-    passed_since = call_kwargs.kwargs.get("since") or (
-        call_kwargs.args[2] if len(call_kwargs.args) > 2 else None
-    )
-    assert (
-        passed_since is not None
-    ), "since was not forwarded to _collect_documents_from_sources"
+    assert recorded_calls, "_stream_batches_from_sources was not called"
+    assert recorded_calls[0]["since"] == datetime(2026, 5, 20, 9, 55, 0, tzinfo=UTC)

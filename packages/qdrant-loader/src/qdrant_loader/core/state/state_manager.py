@@ -2,7 +2,7 @@
 State management service for tracking document ingestion state.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
@@ -279,7 +279,7 @@ class StateManager:
            (orphan vectors are recoverable by re-running delete; orphan state is silent corruption)
 
         Returns the list of document IDs that were marked and deleted.
-        
+
         WS-3 DESIGN NOTE: Current design prefers orphan vectors (safe, recoverable) over orphan
         state (dangerous, silent). If Qdrant fails to delete, the operation should be re-enqueued
         for retry as an idempotent operation.
@@ -292,7 +292,7 @@ class StateManager:
             raise RuntimeError("State manager session factory is not available")
 
         document_ids_to_delete: list[str] = []
-        
+
         # STEP 1: Commit state changes to DB first
         async with session_factory() as session:  # type: ignore
             tx = await session.begin()
@@ -305,7 +305,9 @@ class StateManager:
                         DocumentStateRecord.document_id == doc.id,
                     )
                     if project_id is not None:
-                        query = query.filter(DocumentStateRecord.project_id == project_id)
+                        query = query.filter(
+                            DocumentStateRecord.project_id == project_id
+                        )
                     result = await session.execute(query)
                     state = result.scalar_one_or_none()
                     if state:
@@ -337,7 +339,9 @@ class StateManager:
         # If this fails, vectors remain but state is correctly marked as deleted
         if document_ids_to_delete:
             try:
-                await qdrant_manager.delete_points_by_document_id(document_ids_to_delete)
+                await qdrant_manager.delete_points_by_document_id(
+                    document_ids_to_delete
+                )
                 self.logger.info(
                     f"Deleted {len(document_ids_to_delete)} documents' points from Qdrant"
                 )
@@ -375,6 +379,32 @@ class StateManager:
         except Exception as e:
             self.logger.error(
                 f"Error getting document state for {source_type}:{source}:{document_id}: {str(e)}",
+                exc_info=True,
+            )
+            raise
+
+    async def get_document_state_records_by_ids(
+        self,
+        source_type: str,
+        source: str,
+        document_ids: list[str],
+        project_id: str | None = None,
+    ) -> list[DocumentStateRecord]:
+        """Get multiple document state records for a given source in a single query."""
+        self.logger.debug(
+            f"Getting document state records for {source_type}:{source} (batch of {len(document_ids)})"
+        )
+        try:
+            return await _transitions.get_document_state_records_by_ids(
+                self._session_factory,  # type: ignore[arg-type]
+                source_type=source_type,
+                source=source,
+                document_ids=document_ids,
+                project_id=project_id,
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Error getting document state records by ids for {source_type}:{source}: {str(e)}",
                 exc_info=True,
             )
             raise
