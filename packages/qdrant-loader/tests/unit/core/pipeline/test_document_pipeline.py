@@ -7,6 +7,7 @@ import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline
 from qdrant_loader.core.pipeline.workers.upsert_worker import PipelineResult
+from qdrant_loader_core.graph import GraphEdge, GraphNode, SubGraph
 
 
 class TestDocumentPipeline:
@@ -155,6 +156,116 @@ class TestDocumentPipeline:
         # Verify timeout handling
         assert result.error_count == len(sample_documents)
         assert "Pipeline timed out after 1 hour" in result.errors
+
+    @pytest.mark.asyncio
+    @patch("qdrant_loader.core.pipeline.document_pipeline.get_settings")
+    @patch("qdrant_loader.core.pipeline.document_pipeline.get_graph_store", new_callable=AsyncMock)
+    @patch("qdrant_loader.core.pipeline.document_pipeline.EntityExtractor.for_source")
+    async def test_process_documents_with_graph_upsert(
+        self,
+        mock_for_source,
+        mock_get_graph_store,
+        mock_get_settings,
+        document_pipeline,
+        mock_workers,
+        sample_documents,
+    ):
+        """Test graph extraction and batch upsert happens without failing ingestion."""
+        chunking_worker, embedding_worker, upsert_worker = mock_workers
+
+        chunks_iter = AsyncMock()
+        embedded_chunks_iter = AsyncMock()
+
+        chunking_worker.process_documents.return_value = chunks_iter
+        embedding_worker.process_chunks.return_value = embedded_chunks_iter
+
+        expected_result = PipelineResult()
+        expected_result.success_count = 4
+        expected_result.error_count = 0
+        expected_result.errors = []
+        upsert_worker.process_embedded_chunks = AsyncMock(return_value=expected_result)
+
+        class FakeGraphConfig:
+            enabled = True
+
+        class FakeGlobalConfig:
+            graph = FakeGraphConfig()
+
+        class FakeSettings:
+            global_config = FakeGlobalConfig()
+
+        mock_get_settings.return_value = FakeSettings()
+
+        mock_graph_store = AsyncMock()
+        mock_get_graph_store.return_value = mock_graph_store
+
+        mock_extractor = MagicMock()
+        mock_extractor.extract.return_value = SubGraph(
+            nodes=[GraphNode(id="doc:test", label="Document", properties={"id": "doc:test"})],
+            edges=[GraphEdge(source="doc:test", target="container:1", edge_type="BELONGS_TO", properties={})],
+        )
+        mock_for_source.return_value = mock_extractor
+
+        result = await document_pipeline.process_documents(sample_documents)
+
+        assert result.success_count == 4
+        assert result.error_count == 0
+        assert mock_for_source.call_count == len(sample_documents)
+        mock_graph_store.upsert_nodes_batch.assert_awaited_once()
+        mock_graph_store.upsert_edges_batch.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("qdrant_loader.core.pipeline.document_pipeline.get_settings")
+    @patch("qdrant_loader.core.pipeline.document_pipeline.get_graph_store", new_callable=AsyncMock)
+    @patch("qdrant_loader.core.pipeline.document_pipeline.EntityExtractor.for_source")
+    async def test_process_documents_graph_failure_does_not_fail_pipeline(
+        self,
+        mock_for_source,
+        mock_get_graph_store,
+        mock_get_settings,
+        document_pipeline,
+        mock_workers,
+        sample_documents,
+    ):
+        """Test graph extraction failures are logged but do not stop ingestion."""
+        chunking_worker, embedding_worker, upsert_worker = mock_workers
+
+        chunks_iter = AsyncMock()
+        embedded_chunks_iter = AsyncMock()
+
+        chunking_worker.process_documents.return_value = chunks_iter
+        embedding_worker.process_chunks.return_value = embedded_chunks_iter
+
+        expected_result = PipelineResult()
+        expected_result.success_count = 2
+        expected_result.error_count = 0
+        expected_result.errors = []
+        upsert_worker.process_embedded_chunks = AsyncMock(return_value=expected_result)
+
+        class FakeGraphConfig:
+            enabled = True
+
+        class FakeGlobalConfig:
+            graph = FakeGraphConfig()
+
+        class FakeSettings:
+            global_config = FakeGlobalConfig()
+
+        mock_get_settings.return_value = FakeSettings()
+
+        mock_graph_store = AsyncMock()
+        mock_get_graph_store.return_value = mock_graph_store
+
+        mock_extractor = MagicMock()
+        mock_extractor.extract.side_effect = Exception("extract failed")
+        mock_for_source.return_value = mock_extractor
+
+        result = await document_pipeline.process_documents(sample_documents)
+
+        assert result.success_count == 2
+        assert result.error_count == 0
+        mock_graph_store.upsert_nodes_batch.assert_not_awaited()
+        mock_graph_store.upsert_edges_batch.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_process_documents_exception_in_pipeline(

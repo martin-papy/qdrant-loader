@@ -269,7 +269,8 @@ class PipelineOrchestrator:
                         continue
 
                     batch_result = await self.components.document_pipeline.process_batch(
-                        batch
+                        batch,
+                        current_project_id,
                     )
                     aggregated_result.success_count += batch_result.success_count
                     aggregated_result.error_count += batch_result.failure_count

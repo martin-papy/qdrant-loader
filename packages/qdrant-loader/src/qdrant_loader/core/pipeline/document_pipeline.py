@@ -4,8 +4,14 @@ import asyncio
 import time
 from dataclasses import dataclass
 
+from qdrant_loader.config import get_settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
+
+from qdrant_loader_core.graph import GraphEdge, GraphNode, SubGraph, get_graph_store
+from qdrant_loader_core.graph.extractor.base_extractor import EntityExtractor
+import qdrant_loader_core.graph.registry as _registry # noqa: F401
+from qdrant_loader_core.graph.store import GraphStore
 
 from .workers import ChunkingWorker, EmbeddingWorker, UpsertWorker
 from .workers.upsert_worker import PipelineResult
@@ -46,11 +52,122 @@ class DocumentPipeline:
         self.embedding_worker = embedding_worker
         self.upsert_worker = upsert_worker
 
-    async def process_batch(self, batch: list[Document]) -> BatchResult:
+    async def _process_graph(
+        self,
+        documents: list[Document],
+        current_project_id: str | None = None,
+    ) -> None:
+        # Optional: Graph extraction & upsert (graph is optional; failures must not fail ingestion)
+        try:
+            try:
+                # Use the global settings initialized via initialize_config()/initialize_config_with_workspace
+                settings = get_settings()
+                graph_cfg = getattr(settings.global_config, "graph", None)
+                graph_enabled = bool(getattr(graph_cfg, "enabled", None)) if graph_cfg is not None else False
+            except Exception:
+                # If settings aren't initialized or any error occurs, treat graph as disabled
+                graph_enabled = False
+
+            if graph_enabled:
+                # Ensure extractor registry is imported (registers available extractors)
+                logger.info("🔄 Starting graph extraction phase for batch...")
+
+                # Use dict to deduplicate nodes and edges by ID
+                nodes_dict: dict[str, any] = {}  # node_id -> node
+                edges_dict: dict[str, any] = {}  # (source, target, edge_type) -> edge
+
+                for doc in documents:
+                    try:
+                        extractor = EntityExtractor.for_source(doc.source_type)
+
+                        raw = {
+                            "id": doc.id,
+                            "content": getattr(doc, "content", None),
+                            "path": getattr(doc, "path", None)
+                                or getattr(doc, "source", None)
+                                or getattr(doc, "title", None),
+                            "metadata": getattr(doc, "metadata", {}),
+                            "source_type": doc.source_type,
+                        }
+                        subgraph = extractor.extract(raw)
+
+                        # Deduplicate nodes by ID
+                        if getattr(subgraph, "nodes", None):
+                            for node in subgraph.nodes:
+                                nodes_dict[node.id] = node
+
+                        # Deduplicate edges by (source, target, edge_type)
+                        if getattr(subgraph, "edges", None):
+                            for edge in subgraph.edges:
+                                edge_key = (edge.source, edge.target, edge.edge_type)
+                                edges_dict[edge_key] = edge
+                    except Exception as e:
+                        logger.error(
+                            "⚠️ Graph extraction failed for document %s: %s",
+                            getattr(doc, "id", "<unknown>"),
+                            e,
+                            exc_info=True,
+                        )
+
+                # Convert deduplicated dicts back to lists
+                nodes_batch = list(nodes_dict.values())
+                edges_batch = list(edges_dict.values())
+
+                # Ensure project context is attached to nodes/edges so
+                # downstream graph store implementations can filter by project.
+                if current_project_id:
+                    for n in nodes_batch:
+                        # prefer explicit attribute if present, else store in properties
+                        try:
+                            setattr(n, "project", current_project_id)
+                        except Exception:
+                            pass
+                        n.properties = n.properties or {}
+                        n.properties.setdefault("project", current_project_id)
+
+                    for e in edges_batch:
+                        try:
+                            setattr(e, "project", current_project_id)
+                        except Exception:
+                            pass
+                        e.properties = e.properties or {}
+                        e.properties.setdefault("project", current_project_id)
+
+                if nodes_batch or edges_batch:
+                    try:
+                        graph_store = await get_graph_store()
+                        if nodes_batch:
+                            await graph_store.upsert_nodes_batch(nodes_batch)
+                        if edges_batch:
+                            await graph_store.upsert_edges_batch(edges_batch)
+                        logger.info("🔄 Add graph store successfully...")
+                    except Exception as e:
+                        logger.error(
+                            "⚠️ Graph upsert failed (non-fatal): %s",
+                            e,
+                            exc_info=True,
+                        )
+                logger.info(
+                    f"Graph batch size: nodes={len(nodes_batch)}, edges={len(edges_batch)}"
+                )
+                for node in nodes_batch:
+                    logger.info(f"[NODE] id={node.id}, type={node.label}, project={node.project}, props={node.properties}")
+                for edge in edges_batch:
+                    logger.info(
+                        f"[EDGE] {edge.source} -[{edge.edge_type}]-> {edge.target}, props={edge.properties}")
+        except Exception:
+            logger.exception("Unexpected error during optional graph processing")
+
+    async def process_batch(
+        self,
+        batch: list[Document],
+        current_project_id: str | None = None,
+    ) -> BatchResult:
         """Process a bounded batch of documents through the pipeline.
 
         Args:
             batch: List of documents to process (bounded size, typically 256)
+            current_project_id: Optional project id context for graph extraction/upsert.
 
         Returns:
             BatchResult with processing statistics.
@@ -95,6 +212,9 @@ class DocumentPipeline:
                 f"{pipeline_result.error_count} errors in {total_duration:.2f}s"
             )
 
+            # add node and edge 
+            await self._process_graph(batch, current_project_id)
+
             return BatchResult(
                 success_count=pipeline_result.success_count,
                 failure_count=pipeline_result.error_count,
@@ -115,11 +235,16 @@ class DocumentPipeline:
                 errors=[f"Batch processing failed: {e}"],
             )
 
-    async def process_documents(self, documents: list[Document]) -> PipelineResult:
+    async def process_documents(
+        self,
+        documents: list[Document],
+        current_project_id: str | None = None,
+    ) -> PipelineResult:
         """Process documents through the pipeline.
 
         Args:
             documents: List of documents to process
+            current_project_id: Optional project id context for graph extraction/upsert.
 
         Returns:
             PipelineResult with processing statistics
@@ -128,6 +253,9 @@ class DocumentPipeline:
         start_time = time.time()
 
         try:
+            logger.info("🔄 Starting graph extraction phase...")
+            await self._process_graph(documents, current_project_id)
+
             logger.info("🔄 Starting chunking phase...")
             chunking_start = time.time()
             chunks_iter = self.chunking_worker.process_documents(documents)
