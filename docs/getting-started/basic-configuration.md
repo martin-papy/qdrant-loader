@@ -89,6 +89,26 @@ projects:
             - "**/*.md"
 ```
 
+### Optional: Enable Graph Storage
+
+If you want QDrant Loader to extract and persist knowledge graphs (entities/relations) alongside your documents, enable the `graph` section in your `global` settings. Example:
+
+```yaml
+global:
+  graph:
+    enabled: true
+    backend: "falkordb"
+    connection:
+      host: "${GRAPH_HOST}"
+      port: ${GRAPH_PORT}
+      password: "${GRAPH_PASSWORD}"
+    graph_name: "default_graph"
+    pool:
+      max_connections: 10
+```
+
+Set related environment variables in your `.env` (see Step 4) if you prefer not to store secrets in YAML.
+
 ### Step 3. Validate and ingest
 
 ```bash

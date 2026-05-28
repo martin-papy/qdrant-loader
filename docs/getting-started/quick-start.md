@@ -79,6 +79,15 @@ LLM_EMBEDDING_MODEL=text-embedding-3-small
 LLM_CHAT_MODEL=gpt-4o-mini
 ```
 
+# Optional: Graph-related environment variables
+```
+# If you enable `global.graph.enabled` in `config.yaml`, set these to configure the graph backend
+GRAPH_HOST=localhost
+GRAPH_PORT=6379
+GRAPH_NAME=default_graph
+GRAPH_PASSWORD=your-graph-password
+```
+
 Canonical configuration references:
 
 - [LLM Provider Guide](../users/configuration/llm-provider-guide.md) - Pick the right provider profile and copy a known-good `.env` template.
@@ -102,6 +111,14 @@ global:
       chat: "${LLM_CHAT_MODEL}"
     embeddings:
       vector_size: 1536
+  # Optional: Graph configuration (enable and provide connection info to persist extracted graphs)
+  graph:
+    enabled: true
+    connection:
+      host: "${GRAPH_HOST}"
+      port: ${GRAPH_PORT}
+      password: "${GRAPH_PASSWORD}"
+    graph_name: "${GRAPH_NAME}"
 
 projects:
   quickstart:

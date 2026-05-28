@@ -143,7 +143,9 @@ class TestPipelineOrchestrator:
         self.source_filter.filter_sources.assert_called_once_with(
             self.mock_sources_config, None, None
         )
-        self.document_pipeline.process_batch.assert_called_once_with(mock_documents)
+        self.document_pipeline.process_batch.assert_called_once_with(
+            mock_documents, None
+        )
         self.orchestrator._update_document_states.assert_called_once_with(
             mock_documents, {"doc1", "doc2"}, None
         )
@@ -239,7 +241,9 @@ class TestPipelineOrchestrator:
         self.source_filter.filter_sources.assert_called_once_with(
             self.mock_sources_config, "git", "my-repo"
         )
-        self.document_pipeline.process_batch.assert_called_once_with(mock_documents)
+        self.document_pipeline.process_batch.assert_called_once_with(
+            mock_documents, None
+        )
         self.orchestrator._update_document_states.assert_called_once_with(
             mock_documents, {"doc1"}, None
         )

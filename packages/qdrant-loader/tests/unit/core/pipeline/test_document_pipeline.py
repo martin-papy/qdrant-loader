@@ -268,6 +268,52 @@ class TestDocumentPipeline:
         mock_graph_store.upsert_edges_batch.assert_not_awaited()
 
     @pytest.mark.asyncio
+    @patch("qdrant_loader.core.pipeline.document_pipeline.get_settings")
+    @patch("qdrant_loader.core.pipeline.document_pipeline.get_graph_store", new_callable=AsyncMock)
+    @patch("qdrant_loader.core.pipeline.document_pipeline.EntityExtractor.for_source")
+    async def test_process_documents_skips_graph_when_disabled(
+        self,
+        mock_for_source,
+        mock_get_graph_store,
+        mock_get_settings,
+        document_pipeline,
+        mock_workers,
+        sample_documents,
+    ):
+        """Test that graph processing is skipped when graph.enabled is False."""
+        chunking_worker, embedding_worker, upsert_worker = mock_workers
+
+        chunks_iter = AsyncMock()
+        embedded_chunks_iter = AsyncMock()
+
+        chunking_worker.process_documents.return_value = chunks_iter
+        embedding_worker.process_chunks.return_value = embedded_chunks_iter
+
+        expected_result = PipelineResult()
+        expected_result.success_count = 4
+        expected_result.error_count = 0
+        expected_result.errors = []
+        upsert_worker.process_embedded_chunks = AsyncMock(return_value=expected_result)
+
+        class FakeGraphConfig:
+            enabled = False
+
+        class FakeGlobalConfig:
+            graph = FakeGraphConfig()
+
+        class FakeSettings:
+            global_config = FakeGlobalConfig()
+
+        mock_get_settings.return_value = FakeSettings()
+
+        result = await document_pipeline.process_documents(sample_documents)
+
+        assert result.success_count == 4
+        assert result.error_count == 0
+        mock_for_source.assert_not_called()
+        mock_get_graph_store.assert_not_awaited()
+
+    @pytest.mark.asyncio
     async def test_process_documents_exception_in_pipeline(
         self, document_pipeline, mock_workers, sample_documents
     ):

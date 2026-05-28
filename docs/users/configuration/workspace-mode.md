@@ -69,6 +69,15 @@ global:
       chat: "gpt-4o-mini"
     embeddings:
       vector_size: 1536
+  # Optional: Graph configuration to enable extraction and storage of entity/relation graphs
+  graph:
+    enabled: false
+    backend: "falkordb"
+    connection:
+      host: "${GRAPH_HOST}"
+      port: ${GRAPH_PORT}
+      password: "${GRAPH_PASSWORD}"
+    graph_name: "${GRAPH_NAME}"
 
 projects:
   docs-project:
@@ -105,6 +114,12 @@ projects:
 # Required - QDrant Database
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-qdrant-cloud-key # Optional
+
+# Optional - Graph backend (used when enabling global.graph)
+GRAPH_HOST=localhost
+GRAPH_PORT=6379
+GRAPH_NAME=default_graph
+# GRAPH_PASSWORD=your-graph-password
 
 # Required - LLM Provider (new unified approach)
 LLM_PROVIDER=openai

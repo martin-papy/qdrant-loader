@@ -43,9 +43,10 @@ def setup_test_environment():
     data_dir = Path("./data")
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load test configuration
-    config_path = Path("tests/config.test.yaml")
-    env_path = Path("tests/.env.test")
+    # Load test configuration from the package-local tests directory
+    tests_dir = Path(__file__).resolve().parent
+    config_path = tests_dir / "config.test.yaml"
+    env_path = tests_dir / ".env.test"
 
     # Load environment variables first
     load_dotenv(env_path, override=True)

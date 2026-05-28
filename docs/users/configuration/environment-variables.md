@@ -113,6 +113,24 @@ export LLM_VECTOR_SIZE=1536
 
 > Legacy: `OPENAI_API_KEY` remains supported for compatibility but will be superseded by `LLM_API_KEY`.
 
+### Graph Backend (optional)
+
+These variables configure the optional graph extraction and storage backend. They are used when `global.graph.enabled` is set to `true` in your YAML configuration.
+
+- `GRAPH_HOST` (string): Hostname or IP of the graph backend (e.g., Redis/FalkorDB host).
+- `GRAPH_PORT` (int): Port of the graph backend (e.g., 6379).
+- `GRAPH_NAME` (string): Optional graph namespace/name used by the graph store.
+- `GRAPH_PASSWORD` (string): Optional password for the graph backend connection.
+
+Example:
+
+```bash
+export GRAPH_HOST=localhost
+export GRAPH_PORT=6379
+export GRAPH_NAME=default_graph
+export GRAPH_PASSWORD=your-graph-password
+```
+
 ### Data Source Authentication
 
 #### CONFLUENCE_TOKEN
@@ -268,6 +286,11 @@ OPENAI_API_KEY=sk-your-openai-api-key
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=documents
 # QDRANT_API_KEY=your-qdrant-cloud-api-key
+# Optional: Graph backend configuration (used when global.graph.enabled=true)
+GRAPH_HOST=localhost
+GRAPH_PORT=6379
+GRAPH_NAME=default_graph
+# GRAPH_PASSWORD=your-graph-password
 
 # MCP Server logging (optional)
 MCP_LOG_LEVEL=INFO

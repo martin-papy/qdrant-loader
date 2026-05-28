@@ -4,6 +4,13 @@
 
 # Global configuration for all projects
 global:
+  # Graph configuration
+  graph:
+    enabled: true
+    connection:
+      host: "${GRAPH_HOST}"
+      port: "${GRAPH_PORT}"
+    graph_name: "${GRAPH_NAME}"
   # Unified LLM configuration for tests (provider-agnostic)
   llm:
     provider: "openai"
