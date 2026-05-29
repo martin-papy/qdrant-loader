@@ -119,7 +119,10 @@ class TestGraphClustersEndpoint:
                 self.edge_type = edge_type
                 self.properties = properties
 
-        nodes = [FakeNode("a", "Alpha", {"type": "source"}), FakeNode("b", "Beta", {"type": "target"})]
+        nodes = [
+            FakeNode("a", "Alpha", {"type": "source"}),
+            FakeNode("b", "Beta", {"type": "target"}),
+        ]
         edges = [FakeEdge("a", "b", "connects", {"weight": 1})]
 
         class FakeSubgraph:

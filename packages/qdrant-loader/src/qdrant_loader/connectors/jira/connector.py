@@ -613,4 +613,3 @@ class BaseJiraConnector(BaseConnector):
         async for document in self.stream_documents():
             documents.append(document)
         return documents
-

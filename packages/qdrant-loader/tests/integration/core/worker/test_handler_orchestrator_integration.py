@@ -104,6 +104,4 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
     )
 
     assert recorded_calls, "_stream_batches_from_sources was not called"
-    assert recorded_calls[0]["since"] == datetime(
-        2026, 5, 20, 9, 55, 0, tzinfo=UTC
-    )
+    assert recorded_calls[0]["since"] == datetime(2026, 5, 20, 9, 55, 0, tzinfo=UTC)

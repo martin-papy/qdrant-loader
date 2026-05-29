@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 import time
 from collections import Counter, defaultdict
-from typing import Optional
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from qdrant_loader_mcp_server.utils.logging import LoggingConfig
+
 logger = LoggingConfig.get_logger(__name__)
 
 
@@ -91,7 +91,7 @@ def _find_bridges(adjacency: dict[str, set[str]]) -> list[tuple[str, str]]:
     bridges: list[tuple[str, str]] = []
     timer = 0
 
-    def dfs(node: str, parent: Optional[str]) -> None:
+    def dfs(node: str, parent: str | None) -> None:
         nonlocal timer
         visited.add(node)
         tin[node] = timer
@@ -139,19 +139,27 @@ def _components_from_adjacency(adjacency: dict[str, set[str]]) -> list[list[str]
     return components
 
 
-def _label_propagation_clusters(adjacency: dict[str, set[str]], max_iter: int = 20) -> dict[str, str]:
+def _label_propagation_clusters(
+    adjacency: dict[str, set[str]], max_iter: int = 20
+) -> dict[str, str]:
     labels: dict[str, str] = {node: node for node in sorted(adjacency.keys())}
     nodes = sorted(adjacency.keys())
 
     for _ in range(max_iter):
         updated = False
         for node in nodes:
-            neighbor_labels = [labels[neighbor] for neighbor in adjacency.get(node, set()) if neighbor in labels]
+            neighbor_labels = [
+                labels[neighbor]
+                for neighbor in adjacency.get(node, set())
+                if neighbor in labels
+            ]
             if not neighbor_labels:
                 continue
             counts = Counter(neighbor_labels)
             best_count = max(counts.values())
-            candidates = [label for label, count in counts.items() if count == best_count]
+            candidates = [
+                label for label, count in counts.items() if count == best_count
+            ]
             chosen_label = sorted(candidates)[0]
             if labels[node] != chosen_label:
                 labels[node] = chosen_label
@@ -168,7 +176,9 @@ def _cluster_labels(labels: dict[str, str], edges: list[dict]) -> list[dict]:
         groups[label].append(node)
 
     clusters: list[dict] = []
-    for i, (cluster_label, members) in enumerate(sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])), start=1):
+    for i, (_, members) in enumerate(
+        sorted(groups.items(), key=lambda item: (-len(item[1]), item[0])), start=1
+    ):
         member_set = set(members)
         internal_edge_count = sum(
             1
@@ -190,7 +200,9 @@ def _cluster_labels(labels: dict[str, str], edges: list[dict]) -> list[dict]:
     return clusters
 
 
-def _compute_graph_clusters(nodes: list[dict], edges: list[dict]) -> tuple[str, list[dict]]:
+def _compute_graph_clusters(
+    nodes: list[dict], edges: list[dict]
+) -> tuple[str, list[dict]]:
     adjacency = _build_graph_adjacency(nodes, edges)
     if not adjacency:
         return "singletons", []
@@ -203,7 +215,9 @@ def _compute_graph_clusters(nodes: list[dict], edges: list[dict]) -> tuple[str, 
             adjacency_copy[a].discard(b)
             adjacency_copy[b].discard(a)
         components = _components_from_adjacency(adjacency_copy)
-        labels = {node: f"bridge_{i+1}" for i, comp in enumerate(components) for node in comp}
+        labels = {
+            node: f"bridge_{i+1}" for i, comp in enumerate(components) for node in comp
+        }
         algorithm = "bridge_cut"
     else:
         labels = _label_propagation_clusters(adjacency)
@@ -211,6 +225,7 @@ def _compute_graph_clusters(nodes: list[dict], edges: list[dict]) -> tuple[str, 
 
     clusters = _cluster_labels(labels, edges)
     return algorithm, clusters
+
 
 # In-memory cache for cluster results: { project_id: {"ts": float, "clusters": ...} }
 _clusters_cache: dict[str, dict] = {}
@@ -222,7 +237,9 @@ async def get_subgraph(
     root: str = Query(..., description="Root node id"),
     project: str = Query(..., description="Project id"),
     depth: int = Query(1, ge=1, description="Hop depth"),
-    edge_types: Optional[str] = Query(None, description="Comma-separated edge types to filter"),
+    edge_types: str | None = Query(
+        None, description="Comma-separated edge types to filter"
+    ),
 ):
     """Return a subgraph (nodes + edges) suitable for UI graph viz.
 
@@ -266,7 +283,9 @@ async def get_subgraph(
 
 
 @router.get("/clusters")
-async def get_clusters(project: str = Query(..., description="Project id for clustering")):
+async def get_clusters(
+    project: str = Query(..., description="Project id for clustering")
+):
     """Return cached cluster results for a project.
 
     If no cached result exists, compute clusters from the graph export
@@ -291,7 +310,10 @@ async def get_clusters(project: str = Query(..., description="Project id for clu
         raise HTTPException(status_code=501, detail=str(exc))
 
     if not hasattr(gs, "export_graph"):
-        raise HTTPException(status_code=501, detail="Graph store does not support export_graph() required for clustering")
+        raise HTTPException(
+            status_code=501,
+            detail="Graph store does not support export_graph() required for clustering",
+        )
 
     try:
         nodes, edges = await gs.export_graph(project)
@@ -320,7 +342,10 @@ async def get_all_graph():
         raise HTTPException(status_code=501, detail=str(exc))
 
     if not hasattr(gs, "export_graph"):
-        raise HTTPException(status_code=501, detail="Graph store does not support export_graph() required for full graph export")
+        raise HTTPException(
+            status_code=501,
+            detail="Graph store does not support export_graph() required for full graph export",
+        )
 
     try:
         nodes, edges = await gs.export_graph()

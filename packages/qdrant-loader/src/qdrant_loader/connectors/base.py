@@ -1,7 +1,7 @@
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from datetime import datetime
-import warnings
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.document import Document

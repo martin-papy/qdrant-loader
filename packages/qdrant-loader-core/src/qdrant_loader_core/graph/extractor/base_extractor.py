@@ -352,7 +352,7 @@ class BaseEntityExtractor(EntityExtractor):
 
         # Validate edge type
         if edge_type not in self.VALID_EDGE_TYPES:
-            return # silently ignore invalid edge types to avoid upstream failures, but do not emit
+            return  # silently ignore invalid edge types to avoid upstream failures, but do not emit
 
         props = properties or {}
 

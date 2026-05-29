@@ -159,7 +159,10 @@ class TestDocumentPipeline:
 
     @pytest.mark.asyncio
     @patch("qdrant_loader.core.pipeline.document_pipeline.get_settings")
-    @patch("qdrant_loader.core.pipeline.document_pipeline.get_graph_store", new_callable=AsyncMock)
+    @patch(
+        "qdrant_loader.core.pipeline.document_pipeline.get_graph_store",
+        new_callable=AsyncMock,
+    )
     @patch("qdrant_loader.core.pipeline.document_pipeline.EntityExtractor.for_source")
     async def test_process_documents_with_graph_upsert(
         self,
@@ -201,8 +204,19 @@ class TestDocumentPipeline:
 
         mock_extractor = MagicMock()
         mock_extractor.extract.return_value = SubGraph(
-            nodes=[GraphNode(id="doc:test", label="Document", properties={"id": "doc:test"})],
-            edges=[GraphEdge(source="doc:test", target="container:1", edge_type="BELONGS_TO", properties={})],
+            nodes=[
+                GraphNode(
+                    id="doc:test", label="Document", properties={"id": "doc:test"}
+                )
+            ],
+            edges=[
+                GraphEdge(
+                    source="doc:test",
+                    target="container:1",
+                    edge_type="BELONGS_TO",
+                    properties={},
+                )
+            ],
         )
         mock_for_source.return_value = mock_extractor
 
@@ -216,7 +230,10 @@ class TestDocumentPipeline:
 
     @pytest.mark.asyncio
     @patch("qdrant_loader.core.pipeline.document_pipeline.get_settings")
-    @patch("qdrant_loader.core.pipeline.document_pipeline.get_graph_store", new_callable=AsyncMock)
+    @patch(
+        "qdrant_loader.core.pipeline.document_pipeline.get_graph_store",
+        new_callable=AsyncMock,
+    )
     @patch("qdrant_loader.core.pipeline.document_pipeline.EntityExtractor.for_source")
     async def test_process_documents_graph_failure_does_not_fail_pipeline(
         self,
@@ -269,7 +286,10 @@ class TestDocumentPipeline:
 
     @pytest.mark.asyncio
     @patch("qdrant_loader.core.pipeline.document_pipeline.get_settings")
-    @patch("qdrant_loader.core.pipeline.document_pipeline.get_graph_store", new_callable=AsyncMock)
+    @patch(
+        "qdrant_loader.core.pipeline.document_pipeline.get_graph_store",
+        new_callable=AsyncMock,
+    )
     @patch("qdrant_loader.core.pipeline.document_pipeline.EntityExtractor.for_source")
     async def test_process_documents_skips_graph_when_disabled(
         self,

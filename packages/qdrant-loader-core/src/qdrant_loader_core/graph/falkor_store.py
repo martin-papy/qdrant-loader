@@ -107,7 +107,6 @@ class FalkorGraphStore(GraphStore):
         SET r += $props
         """
 
-
         project = edge.project or edge.properties.get("project")
         params = {
             "source": edge.source,
@@ -177,7 +176,11 @@ class FalkorGraphStore(GraphStore):
         def _extract_node(node_value):
             if hasattr(node_value, "properties"):
                 node_id = node_value.properties.get("id")
-                label = node_value.labels[0] if getattr(node_value, "labels", None) else "Unknown"
+                label = (
+                    node_value.labels[0]
+                    if getattr(node_value, "labels", None)
+                    else "Unknown"
+                )
                 properties = node_value.properties or {}
             elif isinstance(node_value, dict):
                 node_id = node_value.get("id")
@@ -207,7 +210,12 @@ class FalkorGraphStore(GraphStore):
                 target = _resolve_internal_node_id(rel.dest_node)
                 edge_type = getattr(rel, "relation", getattr(rel, "edge_type", None))
                 properties = rel.properties or {}
-                return GraphEdge(source=source, target=target, edge_type=edge_type, properties=properties)
+                return GraphEdge(
+                    source=source,
+                    target=target,
+                    edge_type=edge_type,
+                    properties=properties,
+                )
             if isinstance(rel, dict):
                 return GraphEdge(
                     source=rel.get("source"),
@@ -260,11 +268,12 @@ class FalkorGraphStore(GraphStore):
 
         return result.result_set
 
-
     # -------------------------
     # Export graph for clustering
     # -------------------------
-    async def export_graph(self, project: str | None = None) -> tuple[list[dict], list[dict]]:
+    async def export_graph(
+        self, project: str | None = None
+    ) -> tuple[list[dict], list[dict]]:
         """
         Returns:
             nodes = [{"id": str}]
@@ -307,7 +316,9 @@ class FalkorGraphStore(GraphStore):
     # -------------------------
     # Batch update cluster_id
     # -------------------------
-    async def update_clusters_batch(self, updates: list[dict], project: str | None = None):
+    async def update_clusters_batch(
+        self, updates: list[dict], project: str | None = None
+    ):
         async def _run(row):
             if project:
                 query = """
@@ -317,7 +328,11 @@ class FalkorGraphStore(GraphStore):
                 await asyncio.to_thread(
                     self._graph.query,
                     query,
-                    {"id": row["id"], "cluster_id": row["cluster_id"], "project": project},
+                    {
+                        "id": row["id"],
+                        "cluster_id": row["cluster_id"],
+                        "project": project,
+                    },
                 )
             else:
                 query = """
@@ -342,11 +357,8 @@ class FalkorGraphStore(GraphStore):
             if isinstance(v, (str, int, float, bool)):
                 clean[k] = v
             elif isinstance(v, list):
-                clean[k] = [
-                    x for x in v if isinstance(x, (str, int, float, bool))
-                ]
+                clean[k] = [x for x in v if isinstance(x, (str, int, float, bool))]
             else:
                 clean[k] = str(v)  # fallback
 
         return clean
-    

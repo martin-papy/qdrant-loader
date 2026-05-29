@@ -234,7 +234,9 @@ class TestPipelineOrchestrator:
             mock_result.failed_document_ids = set()
             self.document_pipeline.process_batch.return_value = mock_result
             result = await self.orchestrator.process_documents(
-                sources_config=self.mock_sources_config, source_type="git", source="my-repo"
+                sources_config=self.mock_sources_config,
+                source_type="git",
+                source="my-repo",
             )
 
         assert result == mock_documents
@@ -344,6 +346,7 @@ class TestPipelineOrchestrator:
         """Test document processing exception handling."""
         filtered_config = make_rich_compatible_mock(spec=SourcesConfig)
         self.source_filter.filter_sources.return_value = filtered_config
+
         async def failing_stream_batches(*args, **kwargs):
             if False:
                 yield []
@@ -922,10 +925,13 @@ class TestPipelineOrchestrator:
         state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
         state_detector_context.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
-            return_value=state_detector_context,
-        ), patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_logger:
+        with (
+            patch(
+                "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+                return_value=state_detector_context,
+            ),
+            patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_logger,
+        ):
             result = await self.orchestrator.process_documents(
                 sources_config=self.mock_sources_config
             )

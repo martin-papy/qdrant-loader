@@ -981,10 +981,7 @@ class IntelligenceHandler:
         RETURN nodes(path), relationships(path)
         """
 
-        result = await self._run_graph_query(
-            query,
-            {"id": f"jira:{ticket_key}"}
-        )
+        result = await self._run_graph_query(query, {"id": f"jira:{ticket_key}"})
 
         return self.formatters.format_graph(result)
 
@@ -999,10 +996,7 @@ class IntelligenceHandler:
         RETURN nodes(path), relationships(path)
         """
 
-        result = await self._run_graph_query(
-            query,
-            {"id": f"jira:{epic_key}"}
-        )
+        result = await self._run_graph_query(query, {"id": f"jira:{epic_key}"})
 
         return self.formatters.format_graph(result)
 
@@ -1026,10 +1020,7 @@ class IntelligenceHandler:
         RETURN nodes(path), relationships(path)
         """
 
-        result = await self._run_graph_query(
-            query,
-            {"id": document_id}
-        )
+        result = await self._run_graph_query(query, {"id": document_id})
 
         return self.formatters.format_graph(result)
 

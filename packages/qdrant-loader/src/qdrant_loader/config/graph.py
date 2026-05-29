@@ -15,22 +15,25 @@ class GraphConnectionConfig(BaseModel):
 class GraphPoolConfig(BaseModel):
     max_connections: PositiveInt = Field(default=10, description="Max connections")
 
+
 class GraphConfig(BaseModel):
     """Configuration for Graph database."""
 
     enabled: bool = Field(default=False, description="Enable graph processing")
-    backend: str = Field(default="falkordb", min_length=1, description="Graph backend type")
-
-    connection: GraphConnectionConfig = Field(
-        default_factory=GraphConnectionConfig,
-        description="Connection settings"
+    backend: str = Field(
+        default="falkordb", min_length=1, description="Graph backend type"
     )
 
-    graph_name: str = Field(default="default_graph", min_length=1, description="Graph name / namespace")
+    connection: GraphConnectionConfig = Field(
+        default_factory=GraphConnectionConfig, description="Connection settings"
+    )
+
+    graph_name: str = Field(
+        default="default_graph", min_length=1, description="Graph name / namespace"
+    )
 
     pool: GraphPoolConfig = Field(
-        default_factory=GraphPoolConfig,
-        description="Connection pool settings"
+        default_factory=GraphPoolConfig, description="Connection pool settings"
     )
 
     def to_dict(self) -> dict:
@@ -40,8 +43,11 @@ class GraphConfig(BaseModel):
             "backend": self.backend,
             "host": self.connection.host,
             "port": self.connection.port,
-            "password": self.connection.password.get_secret_value() if self.connection.password else None,
+            "password": (
+                self.connection.password.get_secret_value()
+                if self.connection.password
+                else None
+            ),
             "graph_name": self.graph_name,
             "max_connections": self.pool.max_connections,
         }
-

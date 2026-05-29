@@ -10,7 +10,7 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
         path = raw.get("path")
         if not path:
             return
-    
+
         created_at = raw.get("created_at")
         updated_at = raw.get("updated_at")
 

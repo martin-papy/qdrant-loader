@@ -4,14 +4,13 @@ import asyncio
 import time
 from dataclasses import dataclass
 
+import qdrant_loader_core.graph.registry as _registry  # noqa: F401
+from qdrant_loader_core.graph import get_graph_store
+from qdrant_loader_core.graph.extractor.base_extractor import EntityExtractor
+
 from qdrant_loader.config import get_settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
-
-from qdrant_loader_core.graph import GraphEdge, GraphNode, SubGraph, get_graph_store
-from qdrant_loader_core.graph.extractor.base_extractor import EntityExtractor
-import qdrant_loader_core.graph.registry as _registry # noqa: F401
-from qdrant_loader_core.graph.store import GraphStore
 
 from .workers import ChunkingWorker, EmbeddingWorker, UpsertWorker
 from .workers.upsert_worker import PipelineResult
@@ -63,7 +62,11 @@ class DocumentPipeline:
                 # Use the global settings initialized via initialize_config()/initialize_config_with_workspace
                 settings = get_settings()
                 graph_cfg = getattr(settings.global_config, "graph", None)
-                graph_enabled = bool(getattr(graph_cfg, "enabled", None)) if graph_cfg is not None else False
+                graph_enabled = (
+                    bool(getattr(graph_cfg, "enabled", None))
+                    if graph_cfg is not None
+                    else False
+                )
             except Exception:
                 # If settings aren't initialized or any error occurs, treat graph as disabled
                 graph_enabled = False
@@ -84,8 +87,8 @@ class DocumentPipeline:
                             "id": doc.id,
                             "content": getattr(doc, "content", None),
                             "path": getattr(doc, "path", None)
-                                or getattr(doc, "source", None)
-                                or getattr(doc, "title", None),
+                            or getattr(doc, "source", None)
+                            or getattr(doc, "title", None),
                             "metadata": getattr(doc, "metadata", {}),
                             "source_type": doc.source_type,
                         }
@@ -119,7 +122,7 @@ class DocumentPipeline:
                     for n in nodes_batch:
                         # prefer explicit attribute if present, else store in properties
                         try:
-                            setattr(n, "project", current_project_id)
+                            n.project = current_project_id
                         except Exception:
                             pass
                         n.properties = n.properties or {}
@@ -127,7 +130,7 @@ class DocumentPipeline:
 
                     for e in edges_batch:
                         try:
-                            setattr(e, "project", current_project_id)
+                            e.project = current_project_id
                         except Exception:
                             pass
                         e.properties = e.properties or {}
@@ -151,10 +154,13 @@ class DocumentPipeline:
                     f"Graph batch size: nodes={len(nodes_batch)}, edges={len(edges_batch)}"
                 )
                 for node in nodes_batch:
-                    logger.info(f"[NODE] id={node.id}, type={node.label}, project={node.project}, props={node.properties}")
+                    logger.info(
+                        f"[NODE] id={node.id}, type={node.label}, project={node.project}, props={node.properties}"
+                    )
                 for edge in edges_batch:
                     logger.info(
-                        f"[EDGE] {edge.source} -[{edge.edge_type}]-> {edge.target}, props={edge.properties}")
+                        f"[EDGE] {edge.source} -[{edge.edge_type}]-> {edge.target}, props={edge.properties}"
+                    )
         except Exception:
             logger.exception("Unexpected error during optional graph processing")
 
@@ -212,7 +218,7 @@ class DocumentPipeline:
                 f"{pipeline_result.error_count} errors in {total_duration:.2f}s"
             )
 
-            # add node and edge 
+            # add node and edge
             await self._process_graph(batch, current_project_id)
 
             return BatchResult(

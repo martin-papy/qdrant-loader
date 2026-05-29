@@ -79,7 +79,9 @@ class PipelineOrchestrator:
             if not source_configs:
                 return
 
-            async for document in self.components.source_processor.stream_source_documents(
+            async for (
+                document
+            ) in self.components.source_processor.stream_source_documents(
                 source_configs,
                 get_connector_instance,
                 source_type_name,
@@ -88,8 +90,10 @@ class PipelineOrchestrator:
                 # Inject project metadata when running with project context
                 if project_id and self.project_manager:
                     try:
-                        document.metadata = self.project_manager.inject_project_metadata(
-                            project_id, document.metadata
+                        document.metadata = (
+                            self.project_manager.inject_project_metadata(
+                                project_id, document.metadata
+                            )
                         )
                     except Exception:
                         # Don't let metadata injection break streaming; log and continue
@@ -123,7 +127,9 @@ class PipelineOrchestrator:
                 yield yielded_batch
 
         if filtered_config.jira:
-            async for yielded_batch in _process_source_type("Jira", filtered_config.jira):
+            async for yielded_batch in _process_source_type(
+                "Jira", filtered_config.jira
+            ):
                 yield yielded_batch
 
         if filtered_config.publicdocs:
@@ -208,7 +214,9 @@ class PipelineOrchestrator:
                     )
 
                 logger.debug("Processing all projects")
-                return await self._process_all_projects(source_type, source, force, since)
+                return await self._process_all_projects(
+                    source_type, source, force, since
+                )
 
             # Check if filtered config is empty
             if source_type and not any(
@@ -268,9 +276,11 @@ class PipelineOrchestrator:
                     if not batch:
                         continue
 
-                    batch_result = await self.components.document_pipeline.process_batch(
-                        batch,
-                        current_project_id,
+                    batch_result = (
+                        await self.components.document_pipeline.process_batch(
+                            batch,
+                            current_project_id,
+                        )
                     )
                     aggregated_result.success_count += batch_result.success_count
                     aggregated_result.error_count += batch_result.failure_count
@@ -292,7 +302,8 @@ class PipelineOrchestrator:
                             [
                                 doc
                                 for doc in batch
-                                if doc.id in batch_result.successfully_processed_documents
+                                if doc.id
+                                in batch_result.successfully_processed_documents
                             ]
                         )
 

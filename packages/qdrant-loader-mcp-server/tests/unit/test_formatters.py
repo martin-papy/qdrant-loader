@@ -874,9 +874,7 @@ class TestMCPFormatters:
 
         e = MockEdge(n1, n2, "LINKS_TO", {"kind": "blocks"})
 
-        result = IntelligenceResultFormatters.format_graph([
-            [[n1, n2], [e]]
-        ])
+        result = IntelligenceResultFormatters.format_graph([[[n1, n2], [e]]])
 
         assert len(result["nodes"]) == 2
         assert len(result["edges"]) == 1
@@ -894,10 +892,12 @@ class TestMCPFormatters:
 
         e = MockEdge(n1, n2)
 
-        result = IntelligenceResultFormatters.format_graph([
-            [[n1, n2], [e]],
-            [[n1, n2], [e]],
-        ])
+        result = IntelligenceResultFormatters.format_graph(
+            [
+                [[n1, n2], [e]],
+                [[n1, n2], [e]],
+            ]
+        )
 
         assert len(result["edges"]) == 2
 
@@ -906,7 +906,6 @@ class TestMCPFormatters:
         result = IntelligenceResultFormatters._safe_get(node, "id")
 
         assert result == "A"
-
 
     def test_safe_get_no_properties(self):
         class Obj:
@@ -925,7 +924,6 @@ class TestMCPFormatters:
 
         assert result == "Document"
 
-
     def test_get_label_missing(self):
         class Node:
             properties = {"id": "A"}
@@ -942,9 +940,7 @@ class TestMCPFormatters:
 
         bad_node = BadNode()
 
-        result = IntelligenceResultFormatters.format_graph([
-            [[bad_node], []]
-        ])
+        result = IntelligenceResultFormatters.format_graph([[[bad_node], []]])
 
         assert len(result["nodes"]) == 0
 
@@ -962,10 +958,12 @@ class TestMCPFormatters:
         e1 = MockEdge(n1, n2)
         e2 = MockEdge(n2, n3)
 
-        result = IntelligenceResultFormatters.format_graph([
-            [[n1, n2], [e1]],
-            [[n2, n3], [e2]],
-        ])
+        result = IntelligenceResultFormatters.format_graph(
+            [
+                [[n1, n2], [e1]],
+                [[n2, n3], [e2]],
+            ]
+        )
 
         assert len(result["nodes"]) == 3
         assert len(result["edges"]) == 2
@@ -975,9 +973,7 @@ class TestMCPFormatters:
         n2 = MockNode("B")
         e = MockEdge(n1, n2)
 
-        result = IntelligenceResultFormatters.format_graph([
-            [[n1, n2], [e]]
-        ])
+        result = IntelligenceResultFormatters.format_graph([[[n1, n2], [e]]])
 
         assert result == {
             "nodes": [
@@ -993,6 +989,8 @@ class TestMCPFormatters:
                 }
             ],
         }
+
+
 class MockNode:
     def __init__(self, node_id, label="Document", props=None):
         self.properties = {"id": node_id, **(props or {})}

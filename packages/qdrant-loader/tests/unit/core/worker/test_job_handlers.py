@@ -367,6 +367,7 @@ async def test_incremental_pull_wraps_orchestrator_exception_as_transient(monkey
             }
         )
 
+
 @pytest.mark.asyncio
 async def test_cluster_recompute():
     # -------------------------
@@ -419,8 +420,7 @@ async def test_cluster_recompute():
     graph_store = MockGraphStore()
 
     await handle_cluster_recompute(
-        graph_store=graph_store,
-        session_factory=session_factory
+        graph_store=graph_store, session_factory=session_factory
     )
 
     # -------------------------
@@ -432,6 +432,7 @@ async def test_cluster_recompute():
     for u in graph_store.updated:
         assert "cluster_id" in u
 
+
 @pytest.mark.asyncio
 async def test_cluster_empty():
     class MockGraphStore:
@@ -442,9 +443,9 @@ async def test_cluster_empty():
         raise AssertionError("Should not call DB")
 
     await handle_cluster_recompute(
-        graph_store=MockGraphStore(),
-        session_factory=session_factory
+        graph_store=MockGraphStore(), session_factory=session_factory
     )
+
 
 @pytest.mark.asyncio
 async def test_cluster_deterministic(monkeypatch):
@@ -464,15 +465,14 @@ async def test_cluster_deterministic(monkeypatch):
 
     import community
 
-    monkeypatch.setattr(
-        community,
-        "best_partition",
-        fake_partition
-    )
+    monkeypatch.setattr(community, "best_partition", fake_partition)
 
     class DummySession:
-        async def execute(self, *a, **k): pass
-        async def commit(self): pass
+        async def execute(self, *a, **k):
+            pass
+
+        async def commit(self):
+            pass
 
     class Ctx:
         async def __aenter__(self):
@@ -484,12 +484,8 @@ async def test_cluster_deterministic(monkeypatch):
     def session_factory():
         return Ctx()
 
-
     store = MockGraphStore()
 
-    await handle_cluster_recompute(
-        graph_store=store,
-        session_factory=session_factory
-    )
+    await handle_cluster_recompute(graph_store=store, session_factory=session_factory)
 
     assert store.updates[0]["cluster_id"] == 0
