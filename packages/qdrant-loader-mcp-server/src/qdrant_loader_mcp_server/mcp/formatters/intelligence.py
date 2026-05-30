@@ -484,6 +484,8 @@ class IntelligenceResultFormatters:
                         target = internal_node_id_map.get(r.dest_node)
                     else:
                         target = safe_get(r.dest_node, "id")
+                if source is None or target is None:
+                    continue
 
                 edges.append(
                     {

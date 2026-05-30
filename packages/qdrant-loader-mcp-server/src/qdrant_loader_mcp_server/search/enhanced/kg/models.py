@@ -93,19 +93,19 @@ class EnrichedNode:
                 properties=properties or {},
             )
 
-            self.core = core
-            self.title = title
-            self.content = content
-            self.centrality_score = centrality_score
-            self.authority_score = authority_score
-            self.hub_score = hub_score
-            self.entities = entities or []
-            self.topics = topics or []
-            self.concepts = concepts or []
-            self.keywords = keywords or []
-            self.metadata = metadata or {}
-            if node_type is not None:
-                self.metadata["node_type"] = node_type
+        self.core = core
+        self.title = title
+        self.content = content
+        self.centrality_score = centrality_score
+        self.authority_score = authority_score
+        self.hub_score = hub_score
+        self.entities = entities or []
+        self.topics = topics or []
+        self.concepts = concepts or []
+        self.keywords = keywords or []
+        self.metadata = metadata or {}
+        if node_type is not None:
+            self.metadata["node_type"] = node_type
 
         # ---------------------------------
         # Helper properties

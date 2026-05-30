@@ -12,6 +12,13 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
         if not path:
             return
 
+        pure_path = PurePath(path)
+
+        file_name = raw.get("file_name") or pure_path.name
+        file_dir = str(pure_path.parent) or "root"
+
+        native_id = f"{path}:{file_name}"
+
         created_at = raw.get("created_at")
         updated_at = raw.get("updated_at")
 
@@ -20,11 +27,11 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
             "created_at": created_at,
             "updated_at": updated_at,
         }
-        pure_path = PurePath(path)
+
         doc = self.build_document(
             source_type=self.SOURCE_TYPE,
-            native_id=path,
-            title=pure_path.name or path,
+            native_id=native_id,
+            title=file_name,
             url=path,
             created_at=created_at,
             updated_at=updated_at,
@@ -32,13 +39,14 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
             properties=properties,
         )
 
-        # Directory as container
-        dir_path = str(pure_path.parent) if str(pure_path.parent) else "."
-
         container = self.get_or_create_container(
             kind="filesystem_dir",
-            native_id=dir_path,
-            name=dir_path,
+            native_id=file_dir,
+            name=file_dir,
         )
 
-        self.emit_edge(source=doc, target=container, edge_type="BELONGS_TO")
+        self.emit_edge(
+            source=doc,
+            target=container,
+            edge_type="BELONGS_TO",
+        )

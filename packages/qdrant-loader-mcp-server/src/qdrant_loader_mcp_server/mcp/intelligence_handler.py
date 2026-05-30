@@ -35,6 +35,12 @@ class IntelligenceHandler:
         self._lock = asyncio.Lock()
         self._graph_store = None
 
+        self._FORBIDDEN_PATTERN = re.compile(
+            r"\b(CREATE|MERGE|DELETE|DETACH|DROP|SET|REMOVE|FOREACH|CALL)\b"
+            r"|\bLOAD\s+CSV\b",
+            re.IGNORECASE,
+        )
+
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
 
@@ -1053,21 +1059,10 @@ class IntelligenceHandler:
         """
 
         normalized = " ".join(cypher.upper().split())
-        forbidden = {
-            "CREATE",
-            "MERGE",
-            "DELETE",
-            "DETACH",
-            "DROP",
-            "SET",
-            "REMOVE",
-            "FOREACH",
-            "LOAD CSV",
-            "CALL",
-        }
+
         if not normalized.startswith(("MATCH ", "OPTIONAL MATCH ", "WITH ", "UNWIND ")):
             raise ValueError("Only read-only Cypher queries are allowed")
-        if any(token in normalized for token in forbidden):
+        if self._FORBIDDEN_PATTERN.search(cypher):
             raise ValueError("Only read-only Cypher queries are allowed")
         result = await self._run_graph_query(cypher, params)
 

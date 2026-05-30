@@ -6,6 +6,7 @@ def test_localfile_basic():
 
     raw = {
         "path": "/home/user/file.txt",
+        "file_name": "file.txt",
         "created_at": "2024-01-01T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
     }

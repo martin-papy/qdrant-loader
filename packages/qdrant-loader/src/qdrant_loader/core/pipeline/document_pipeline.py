@@ -92,6 +92,7 @@ class DocumentPipeline:
                             or metadata.get("path")
                             or getattr(doc, "source", None)
                             or getattr(doc, "title", None),
+                            "file_name": metadata.get("file_name"),
                             "source_type": doc.source_type,
                         }
                         subgraph = extractor.extract(raw)
@@ -263,8 +264,6 @@ class DocumentPipeline:
         start_time = time.time()
 
         try:
-            await self._process_graph(documents, current_project_id)
-
             logger.info("🔄 Starting chunking phase...")
             chunking_start = time.time()
             chunks_iter = self.chunking_worker.process_documents(documents)
@@ -301,6 +300,8 @@ class DocumentPipeline:
                 f"✅ Pipeline completed: {result.success_count} chunks processed, "
                 f"{result.error_count} errors"
             )
+
+            await self._process_graph(documents, current_project_id)
 
             return result
 

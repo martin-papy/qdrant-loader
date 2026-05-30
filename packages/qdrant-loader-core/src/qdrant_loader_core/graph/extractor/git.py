@@ -26,7 +26,7 @@ class GitEntityExtractor(BaseEntityExtractor):
         if author := raw.get("commit", {}).get("author"):
             author_email = author.get("email")
             author_name = author.get("name")
-            if author_email or author_name:
+            if author_email:
                 person = self.get_or_create_person(
                     email=author_email,
                     display_name=author_name,
