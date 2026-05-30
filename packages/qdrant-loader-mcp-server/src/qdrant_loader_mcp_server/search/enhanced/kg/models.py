@@ -58,14 +58,14 @@ class EnrichedNode:
 
     def __init__(
         self,
-        core: GraphNode = None,
+        core: GraphNode | None = None,
         *,
-        id: str = None,
-        node_type: NodeLabel = None,
+        id: str | None = None,
+        node_type: NodeLabel | None = None,
         title: str | None = None,
         content: str | None = None,
-        properties: dict | None = None,
-        metadata: dict | None = None,
+        properties: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
         entities: list[str] | None = None,
         topics: list[str] | None = None,
         concepts: list[str] | None = None,
@@ -73,7 +73,7 @@ class EnrichedNode:
         centrality_score: float = 0.0,
         authority_score: float = 0.0,
         hub_score: float = 0.0,
-    ):
+    ) -> None:
         """
         Supports both:
         - EnrichedNode(core=GraphNode(...))
@@ -93,28 +93,18 @@ class EnrichedNode:
                 properties=properties or {},
             )
 
-            # Assign core
             self.core = core
-
-            # Assign simple fields
             self.title = title
             self.content = content
-
             self.centrality_score = centrality_score
             self.authority_score = authority_score
             self.hub_score = hub_score
-
-            # Lists (safe default)
             self.entities = entities or []
             self.topics = topics or []
             self.concepts = concepts or []
             self.keywords = keywords or []
-
-            # Metadata
             self.metadata = metadata or {}
-
-            # Preserve semantic type
-            if node_type:
+            if node_type is not None:
                 self.metadata["node_type"] = node_type
 
         # ---------------------------------
@@ -150,14 +140,14 @@ class EnrichedEdge:
 
     def __init__(
         self,
-        core: GraphEdge = None,
+        core: GraphEdge | None = None,
         *,
-        source_id: str = None,
-        target_id: str = None,
-        relationship_type=None,
+        source_id: str | None = None,
+        target_id: str | None = None,
+        relationship_type: str | None = None,
         weight: float = 1.0,
         confidence: float = 1.0,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
         evidence: list[str] | None = None,
     ):
         if core is None:

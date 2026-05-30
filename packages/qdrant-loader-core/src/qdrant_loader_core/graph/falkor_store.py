@@ -15,14 +15,15 @@ from .models import (
 from .store import GraphStore
 
 VALID_NODE_LABELS = list(CoreNodeLabel)
-
 VALID_EDGE_TYPES = list(CoreEdgeType)
 
 
 class FalkorGraphStore(GraphStore):
 
-    def __init__(self, host="localhost", port=6379, graph_name="default_graph"):
-        self._db = FalkorDB(host=host, port=port)
+    def __init__(
+        self, host="localhost", port=6379, password=None, graph_name="default_graph"
+    ):
+        self._db = FalkorDB(host=host, port=port, password=password)
         self._graph = self._db.select_graph(graph_name)
 
     # ------------------------
@@ -56,7 +57,11 @@ class FalkorGraphStore(GraphStore):
             """
             params = {"id": node.id, "props": node.properties}
 
-        self._graph.query(query, params)
+        await asyncio.to_thread(
+            self._graph.query,
+            query,
+            params,
+        )
 
     async def upsert_nodes_batch(self, nodes: list[GraphNode]) -> None:
         if not nodes:
@@ -79,20 +84,30 @@ class FalkorGraphStore(GraphStore):
             for n in nodes
         ]
 
-        if all(node_payload["project"] is not None for node_payload in payload):
-            query = f"""
-            UNWIND $nodes AS node
-            MERGE (n:{label} {{id: node.id, project: node.project}})
-            SET n += node.props
-            """
-        else:
-            query = f"""
-            UNWIND $nodes AS node
-            MERGE (n:{label} {{id: node.id}})
-            SET n += node.props
-            """
+        with_project = [node for node in payload if node["project"] is not None]
+        without_project = [node for node in payload if node["project"] is None]
 
-        await self._graph.query(query, {"nodes": payload})
+        if with_project:
+            await asyncio.to_thread(
+                self._graph.query,
+                f"""
+                UNWIND $nodes AS node
+                MERGE (n:{label} {{id: node.id, project: node.project}})
+                SET n += node.props
+                """,
+                {"nodes": with_project},
+            )
+
+        if without_project:
+            await asyncio.to_thread(
+                self._graph.query,
+                f"""
+                UNWIND $nodes AS node
+                MERGE (n:{label} {{id: node.id}})
+                SET n += node.props
+                """,
+                {"nodes": without_project},
+            )
 
     # ------------------------
     # Edge
@@ -129,7 +144,7 @@ class FalkorGraphStore(GraphStore):
             SET r += $props
             """
 
-        self._graph.query(query, params)
+        await asyncio.to_thread(self._graph.query, query, params)
 
     async def upsert_edges_batch(self, edges: list[GraphEdge]) -> None:
         for e in edges:
@@ -168,7 +183,11 @@ class FalkorGraphStore(GraphStore):
             RETURN n, r, m
             """
 
-        result = self._graph.query(query, params)
+        result = await asyncio.to_thread(
+            self._graph.query,
+            query,
+            params,
+        )
         nodes_map: dict[str, GraphNode] = {}
         internal_node_id_map: dict[int, str] = {}
         edges: list[GraphEdge] = []
@@ -260,12 +279,7 @@ class FalkorGraphStore(GraphStore):
         params: dict[str, Any],
     ) -> list[dict[str, Any]]:
 
-        result = await asyncio.to_thread(
-            self._graph.query,
-            cypher,
-            params or {},
-        )
-
+        result = await asyncio.to_thread(self._graph.query, cypher, params or {})
         return result.result_set
 
     # -------------------------
@@ -291,8 +305,12 @@ class FalkorGraphStore(GraphStore):
             RETURN DISTINCT a.id, b.id
             """
 
-            node_result = self._graph.query(node_query, {"project": project})
-            edge_result = self._graph.query(edge_query, {"project": project})
+            node_result = await asyncio.to_thread(
+                self._graph.query, node_query, {"project": project}
+            )
+            edge_result = await asyncio.to_thread(
+                self._graph.query, edge_query, {"project": project}
+            )
         else:
             node_query = """
             MATCH (n)
@@ -304,8 +322,8 @@ class FalkorGraphStore(GraphStore):
             RETURN DISTINCT a.id, b.id
             """
 
-            node_result = self._graph.query(node_query)
-            edge_result = self._graph.query(edge_query)
+            node_result = await asyncio.to_thread(self._graph.query, node_query, {})
+            edge_result = await asyncio.to_thread(self._graph.query, edge_query, {})
 
         nodes = [{"id": row[0]} for row in node_result.result_set]
 
@@ -319,31 +337,34 @@ class FalkorGraphStore(GraphStore):
     async def update_clusters_batch(
         self, updates: list[dict], project: str | None = None
     ):
+        semaphore = asyncio.Semaphore(32)
+
         async def _run(row):
-            if project:
-                query = """
-                MATCH (n:Document {id: $id, project: $project})
-                SET n.cluster_id = $cluster_id
-                """
-                await asyncio.to_thread(
-                    self._graph.query,
-                    query,
-                    {
-                        "id": row["id"],
-                        "cluster_id": row["cluster_id"],
-                        "project": project,
-                    },
-                )
-            else:
-                query = """
-                MATCH (n:Document {id: $id})
-                SET n.cluster_id = $cluster_id
-                """
-                await asyncio.to_thread(
-                    self._graph.query,
-                    query,
-                    {"id": row["id"], "cluster_id": row["cluster_id"]},
-                )
+            async with semaphore:
+                if project:
+                    query = """
+                    MATCH (n:Document {id: $id, project: $project})
+                    SET n.cluster_id = $cluster_id
+                    """
+                    await asyncio.to_thread(
+                        self._graph.query,
+                        query,
+                        {
+                            "id": row["id"],
+                            "cluster_id": row["cluster_id"],
+                            "project": project,
+                        },
+                    )
+                else:
+                    query = """
+                    MATCH (n:Document {id: $id})
+                    SET n.cluster_id = $cluster_id
+                    """
+                    await asyncio.to_thread(
+                        self._graph.query,
+                        query,
+                        {"id": row["id"], "cluster_id": row["cluster_id"]},
+                    )
 
         await asyncio.gather(*[_run(row) for row in updates])
 

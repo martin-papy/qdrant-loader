@@ -8,5 +8,5 @@ def test_registry_lookup():
 
 
 def test_registry_invalid():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="unknown"):
         EntityExtractor.for_source("unknown")

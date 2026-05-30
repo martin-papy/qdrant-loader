@@ -30,11 +30,17 @@ def _create_graph_store():
     graph_cfg = _get_graph_config()
     host = os.getenv("GRAPH_HOST")
     port = os.getenv("GRAPH_PORT")
+    password = os.getenv("GRAPH_PASSWORD")
     graph_name = os.getenv("GRAPH_NAME")
 
     if graph_cfg is not None:
         host = host or graph_cfg.connection.host
         port = port or str(graph_cfg.connection.port)
+        password = password or (
+            graph_cfg.connection.password.get_secret_value()
+            if graph_cfg.connection.password is not None
+            else None
+        )
         graph_name = graph_name or graph_cfg.graph_name
 
     try:
@@ -44,13 +50,12 @@ def _create_graph_store():
         return FalkorGraphStore(
             host=host or "localhost",
             port=int(port) if port else 6379,
+            password=password,
             graph_name=graph_name or "default_graph",
         )
     except Exception as exc:  # pragma: no cover - surface import/runtime errors
-        raise RuntimeError(
-            "Failed to create GraphStore. Ensure graph backend dependencies are installed: "
-            f"{exc}"
-        )
+        logger.exception("Failed to create GraphStore")
+        raise RuntimeError("Failed to create GraphStore.") from exc
 
 
 # Module-level graph store instance (created lazily so imports don't require
@@ -249,17 +254,23 @@ async def get_subgraph(
 
     try:
         gs = _get_graph_store()
-    except RuntimeError as exc:
-        return JSONResponse(status_code=501, content={"detail": str(exc)})
+    except RuntimeError:
+        return JSONResponse(
+            status_code=501,
+            content={"detail": "Graph backend is not available."},
+        )
 
     try:
         subgraph = await gs.neighbors(root, depth, types, project)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:  # pragma: no cover - bubble up unexpected errors
-        raise HTTPException(status_code=500, detail=f"Error building subgraph: {exc}")
+        logger.exception("Error building subgraph")
+        raise HTTPException(
+            status_code=500, detail="Failed to build subgraph."
+        ) from exc
 
     nodes = [
         {"id": n.id, "label": str(n.label), "properties": n.properties or {}}
@@ -307,7 +318,10 @@ async def get_clusters(
     try:
         gs = _get_graph_store()
     except RuntimeError as exc:
-        raise HTTPException(status_code=501, detail=str(exc))
+        logger.exception("Failed to create GraphStore")
+        raise HTTPException(
+            status_code=501, detail="Graph backend is not available."
+        ) from exc
 
     if not hasattr(gs, "export_graph"):
         raise HTTPException(
@@ -318,7 +332,8 @@ async def get_clusters(
     try:
         nodes, edges = await gs.export_graph(project)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error exporting graph: {exc}")
+        logger.exception("Error exporting full graph")
+        raise HTTPException(status_code=500, detail="Failed to export graph.") from exc
 
     algorithm, clusters = _compute_graph_clusters(nodes, edges)
     _clusters_cache[project] = {"ts": now, "clusters": clusters, "algorithm": algorithm}
@@ -350,7 +365,8 @@ async def get_all_graph():
     try:
         nodes, edges = await gs.export_graph()
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error exporting graph: {exc}")
+        logger.exception("Error exporting full graph")
+        raise HTTPException(status_code=500, detail="Failed to export graph.") from exc
 
     return {"nodes": nodes, "edges": edges}
 

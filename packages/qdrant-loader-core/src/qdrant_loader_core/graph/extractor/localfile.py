@@ -1,3 +1,4 @@
+from pathlib import PurePath
 from typing import Any
 
 from qdrant_loader_core.graph.extractor.base_extractor import BaseEntityExtractor
@@ -19,10 +20,11 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
             "created_at": created_at,
             "updated_at": updated_at,
         }
+        pure_path = PurePath(path)
         doc = self.build_document(
             source_type=self.SOURCE_TYPE,
             native_id=path,
-            title=path.split("/")[-1],
+            title=pure_path.name or path,
             url=path,
             created_at=created_at,
             updated_at=updated_at,
@@ -31,7 +33,7 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
         )
 
         # Directory as container
-        dir_path = "/".join(path.split("/")[:-1]) or "/"
+        dir_path = str(pure_path.parent) if str(pure_path.parent) else "."
 
         container = self.get_or_create_container(
             kind="filesystem_dir",

@@ -24,17 +24,22 @@ class GitEntityExtractor(BaseEntityExtractor):
 
         # Author
         if author := raw.get("commit", {}).get("author"):
-            person = self.get_or_create_person(
-                email=author.get("email"),
-                display_name=author.get("name"),
-            )
-            self.emit_edge(source=doc, target=person, edge_type="AUTHORED_BY")
+            author_email = author.get("email")
+            author_name = author.get("name")
+            if author_email or author_name:
+                person = self.get_or_create_person(
+                    email=author_email,
+                    display_name=author_name,
+                )
+                self.emit_edge(source=doc, target=person, edge_type="AUTHORED_BY")
 
         # Repo
         if repo := raw.get("repository"):
-            container = self.get_or_create_container(
-                kind="git_repo",
-                native_id=repo.get("full_name"),
-                name=repo.get("name"),
-            )
-            self.emit_edge(source=doc, target=container, edge_type="BELONGS_TO")
+            repo_full_name = repo.get("full_name")
+            if repo_full_name:
+                container = self.get_or_create_container(
+                    kind="git_repo",
+                    native_id=repo_full_name,
+                    name=repo.get("name") or repo_full_name,
+                )
+                self.emit_edge(source=doc, target=container, edge_type="BELONGS_TO")

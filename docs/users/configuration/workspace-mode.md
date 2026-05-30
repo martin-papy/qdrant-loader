@@ -119,6 +119,7 @@ QDRANT_API_KEY=your-qdrant-cloud-key # Optional
 GRAPH_HOST=localhost
 GRAPH_PORT=6379
 GRAPH_NAME=default_graph
+QDRANT_LOADER_DATABASE_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
 # GRAPH_PASSWORD=your-graph-password
 
 # Required - LLM Provider (new unified approach)

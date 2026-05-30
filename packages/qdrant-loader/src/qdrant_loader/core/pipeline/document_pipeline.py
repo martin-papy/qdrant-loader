@@ -83,13 +83,15 @@ class DocumentPipeline:
                     try:
                         extractor = EntityExtractor.for_source(doc.source_type)
 
+                        metadata = getattr(doc, "metadata", {}) or {}
                         raw = {
-                            "id": doc.id,
+                            **metadata,
+                            "id": metadata.get("id", getattr(doc, "id", None)),
                             "content": getattr(doc, "content", None),
                             "path": getattr(doc, "path", None)
+                            or metadata.get("path")
                             or getattr(doc, "source", None)
                             or getattr(doc, "title", None),
-                            "metadata": getattr(doc, "metadata", {}),
                             "source_type": doc.source_type,
                         }
                         subgraph = extractor.extract(raw)
@@ -151,16 +153,18 @@ class DocumentPipeline:
                             exc_info=True,
                         )
                 logger.info(
-                    f"Graph batch size: nodes={len(nodes_batch)}, edges={len(edges_batch)}"
+                    "Graph batch size: nodes=%s, edges=%s",
+                    len(nodes_batch),
+                    len(edges_batch),
                 )
-                for node in nodes_batch:
-                    logger.info(
-                        f"[NODE] id={node.id}, type={node.label}, project={node.project}, props={node.properties}"
-                    )
-                for edge in edges_batch:
-                    logger.info(
-                        f"[EDGE] {edge.source} -[{edge.edge_type}]-> {edge.target}, props={edge.properties}"
-                    )
+                logger.debug("Graph node ids: %s", [node.id for node in nodes_batch])
+                logger.debug(
+                    "Graph edges: %s",
+                    [
+                        (edge.source, edge.edge_type, edge.target)
+                        for edge in edges_batch
+                    ],
+                )
         except Exception:
             logger.exception("Unexpected error during optional graph processing")
 
@@ -259,7 +263,6 @@ class DocumentPipeline:
         start_time = time.time()
 
         try:
-            logger.info("🔄 Starting graph extraction phase...")
             await self._process_graph(documents, current_project_id)
 
             logger.info("🔄 Starting chunking phase...")

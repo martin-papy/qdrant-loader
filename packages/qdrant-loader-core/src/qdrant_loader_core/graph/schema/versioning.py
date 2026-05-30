@@ -1,15 +1,15 @@
-SCHEMA_VERSION_NODE = "SchemaVersion"
+SCHEMA_VERSION_NODE = "_SchemaVersion"
 
 
 def get_version_query() -> str:
-    return """
-        MATCH (s:_SchemaVersion {id: "schema"})
-        RETURN s.version
+    return f"""
+        MATCH (s:{SCHEMA_VERSION_NODE} {{id: "schema"}})
+        RETURN s.version AS version
     """
 
 
 def set_version_query() -> str:
-    return """
-    MERGE (s:_SchemaVersion {id: "schema"})
+    return f"""
+    MERGE (s:{SCHEMA_VERSION_NODE} {{id: "schema"}})
     SET s.version = $version
     """

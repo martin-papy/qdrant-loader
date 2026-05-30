@@ -8,13 +8,12 @@ LATEST_VERSION = 1
 # ENTRY POINT
 # ------------------------
 async def init_schema(graph_store):
-    await _ensure_indexes(graph_store)
-
     current_version = await _get_current_version(graph_store)
     print("current_version: ", current_version)
 
     # Apply migrations incrementally
     if current_version < 1:
+        await _ensure_indexes(graph_store)
         await seed_v1.apply(graph_store)
         await _set_version(graph_store, 1)
 
@@ -35,9 +34,10 @@ async def _ensure_indexes(graph_store):
     for q in queries:
         try:
             await graph_store.query_cypher(q, {})
-        except Exception:
-            # already exists → idempotent
-            pass
+        except Exception as exc:
+            if "already exists" in str(exc).lower():
+                continue
+            raise
 
 
 # ------------------------
@@ -49,7 +49,7 @@ async def _get_current_version(graph_store) -> int:
     if not result:
         return 0
 
-    return result[0][0]
+    return int(result[0][0])
 
 
 async def _set_version(graph_store, version: int):

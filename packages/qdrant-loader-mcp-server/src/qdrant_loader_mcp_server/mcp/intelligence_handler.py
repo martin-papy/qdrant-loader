@@ -1,6 +1,7 @@
 """Cross-document intelligence operations handler for MCP server."""
 
 import asyncio
+import re
 import time
 import uuid
 from typing import Any
@@ -965,6 +966,15 @@ class IntelligenceHandler:
         store = await self._get_graph_store()
         return await store.query_cypher(cypher, params or {})
 
+    _REL_TYPE_RE = re.compile(r"^[A-Z_][A-Z0-9_]*$")
+
+    @staticmethod
+    def _validate_depth(depth: int) -> int:
+        depth = int(depth)
+        if depth < 1 or depth > 5:
+            raise ValueError("depth must be between 1 and 5")
+        return depth
+
     async def find_ticket_dependencies(
         self,
         ticket_key: str,
@@ -974,6 +984,7 @@ class IntelligenceHandler:
         Traverse Jira blocking dependencies
         """
 
+        depth = self._validate_depth(depth)
         query = f"""
         MATCH path = (start:Document {{id: $id}})
         -[:LINKS_TO*1..{depth}]->(target:Document)
@@ -1010,8 +1021,16 @@ class IntelligenceHandler:
         Generic multi-hop traversal
         """
 
+        depth = self._validate_depth(depth)
         rel_clause = ""
         if relationship_types:
+            invalid = [
+                rel_type
+                for rel_type in relationship_types
+                if not self._REL_TYPE_RE.fullmatch(rel_type)
+            ]
+            if invalid:
+                raise ValueError("Invalid relationship type")
             rel_clause = ":" + "|".join(relationship_types)
 
         query = f"""
@@ -1033,11 +1052,23 @@ class IntelligenceHandler:
         Raw Cypher query (power users)
         """
 
-        # basic safety check
-        forbidden = ["DELETE", "DETACH", "DROP"]
-        if any(word in cypher.upper() for word in forbidden):
-            raise ValueError("Dangerous query detected")
-
+        normalized = " ".join(cypher.upper().split())
+        forbidden = {
+            "CREATE",
+            "MERGE",
+            "DELETE",
+            "DETACH",
+            "DROP",
+            "SET",
+            "REMOVE",
+            "FOREACH",
+            "LOAD CSV",
+            "CALL",
+        }
+        if not normalized.startswith(("MATCH ", "OPTIONAL MATCH ", "WITH ", "UNWIND ")):
+            raise ValueError("Only read-only Cypher queries are allowed")
+        if any(token in normalized for token in forbidden):
+            raise ValueError("Only read-only Cypher queries are allowed")
         result = await self._run_graph_query(cypher, params)
 
         return self.formatters.format_graph(result)

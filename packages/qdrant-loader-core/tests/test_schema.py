@@ -44,11 +44,13 @@ async def store():
             state["schema_version"] = 0
             return MockResult([])
 
-        # Simulate schema creation (first run only)
-        if not state["initialized"]:
+        # Only mutate state for idempotent schema writes.
+        if "MERGE" in query and not state["initialized"]:
             state["initialized"] = True
-            state["node_count"] = 3  # giả lập có 3 node seed
+            state["node_count"] = 3
             state["schema_version"] = 1
+        elif "CREATE " in query and state["initialized"]:
+            raise AssertionError("init_schema() is not idempotent on rerun")
 
         # count nodes
         if "RETURN count(n)" in query:

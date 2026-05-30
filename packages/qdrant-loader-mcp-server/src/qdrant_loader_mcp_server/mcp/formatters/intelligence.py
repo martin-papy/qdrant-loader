@@ -434,6 +434,9 @@ class IntelligenceResultFormatters:
         nodes = {}
         edges = []
 
+        # FalkorDB internal node id -> public node id
+        internal_node_id_map: dict[int, str] = {}
+
         for row in result:
             if not row:
                 continue
@@ -450,6 +453,10 @@ class IntelligenceResultFormatters:
                 if not node_id:
                     continue
 
+                # Map FalkorDB internal node id -> public node id
+                if hasattr(n, "id") and isinstance(n.id, int):
+                    internal_node_id_map[n.id] = node_id
+
                 if node_id not in nodes:
                     nodes[node_id] = {
                         "id": node_id,
@@ -463,11 +470,30 @@ class IntelligenceResultFormatters:
             # Edges
             # -------------------------
             for r in path_edges:
+                source = None
+                target = None
+
+                if hasattr(r, "src_node"):
+                    if isinstance(r.src_node, int):
+                        source = internal_node_id_map.get(r.src_node)
+                    else:
+                        source = safe_get(r.src_node, "id")
+
+                if hasattr(r, "dest_node"):
+                    if isinstance(r.dest_node, int):
+                        target = internal_node_id_map.get(r.dest_node)
+                    else:
+                        target = safe_get(r.dest_node, "id")
+
                 edges.append(
                     {
-                        "source": safe_get(r.src_node, "id"),
-                        "target": safe_get(r.dest_node, "id"),
-                        "type": r.type,
+                        "source": source,
+                        "target": target,
+                        "type": getattr(
+                            r,
+                            "type",
+                            getattr(r, "relation", "UNKNOWN"),
+                        ),
                         "properties": (
                             dict(r.properties) if hasattr(r, "properties") else {}
                         ),

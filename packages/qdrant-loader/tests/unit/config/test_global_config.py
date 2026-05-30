@@ -122,7 +122,7 @@ class TestGlobalConfig:
             collection_name="test_collection",
         )
 
-        config = GlobalConfig(qdrant=qdrant_config, skip_validation=True)
+        config = GlobalConfig(qdrant=qdrant_config)
 
         assert config.qdrant is not None
         assert config.qdrant.url == "https://cloud.qdrant.io"
@@ -152,7 +152,7 @@ class TestGlobalConfig:
             url="http://localhost:6333", collection_name="test_collection"
         )
 
-        config = GlobalConfig(qdrant=qdrant_config, skip_validation=True)
+        config = GlobalConfig(qdrant=qdrant_config)
         result = config.to_dict()
 
         assert "qdrant" in result
@@ -162,7 +162,7 @@ class TestGlobalConfig:
 
     def test_to_dict_with_default_qdrant(self):
         """Test converting GlobalConfig to dictionary with default qdrant configuration."""
-        config = GlobalConfig(skip_validation=True)
+        config = GlobalConfig()
         result = config.to_dict()
 
         assert "qdrant" in result
@@ -171,7 +171,7 @@ class TestGlobalConfig:
 
     def test_graph_config_defaults(self):
         """Test GlobalConfig includes default graph configuration."""
-        config = GlobalConfig(skip_validation=True)
+        config = GlobalConfig()
 
         assert config.graph is not None
         assert config.graph.enabled is False
@@ -197,7 +197,7 @@ class TestGlobalConfig:
             graph_name="custom_graph",
         )
 
-        config = GlobalConfig(graph=graph_config, skip_validation=True)
+        config = GlobalConfig(graph=graph_config)
 
         assert config.graph.enabled is True
         assert config.graph.connection.host == "graph-host"
@@ -217,7 +217,7 @@ class TestGlobalConfig:
             url="http://localhost:6333", collection_name="test_collection"
         )
 
-        config = GlobalConfig(qdrant=qdrant_config, skip_validation=True)
+        config = GlobalConfig(qdrant=qdrant_config)
         assert config.qdrant is not None
 
         # Note: Additional validation tests would require custom field validators

@@ -71,6 +71,7 @@ Create or edit `.env`:
 ```bash
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=quickstart
+QDRANT_LOADER_DATABASE_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
 
 LLM_PROVIDER=openai
 LLM_BASE_URL=https://api.openai.com/v1
@@ -116,7 +117,7 @@ global:
     enabled: true
     connection:
       host: "${GRAPH_HOST}"
-      port: ${GRAPH_PORT}
+      port: "${GRAPH_PORT}"
       password: "${GRAPH_PASSWORD}"
     graph_name: "${GRAPH_NAME}"
 

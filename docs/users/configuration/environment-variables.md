@@ -60,6 +60,8 @@ export QDRANT_API_KEY="your-qdrant-cloud-api-key"
 ```bash
 export QDRANT_COLLECTION_NAME="documents"
 export QDRANT_COLLECTION_NAME="my_project_docs"
+export QDRANT_LOADER_DATABASE_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
+
 ```
 
 ### LLM Provider (Unified)
@@ -121,7 +123,6 @@ These variables configure the optional graph extraction and storage backend. The
 - `GRAPH_PORT` (int): Port of the graph backend (e.g., 6379).
 - `GRAPH_NAME` (string): Optional graph namespace/name used by the graph store.
 - `GRAPH_PASSWORD` (string): Optional password for the graph backend connection.
-
 Example:
 
 ```bash
@@ -129,6 +130,7 @@ export GRAPH_HOST=localhost
 export GRAPH_PORT=6379
 export GRAPH_NAME=default_graph
 export GRAPH_PASSWORD=your-graph-password
+export QDRANT_LOADER_DATABASE_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
 ```
 
 ### Data Source Authentication
@@ -290,6 +292,7 @@ QDRANT_COLLECTION_NAME=documents
 GRAPH_HOST=localhost
 GRAPH_PORT=6379
 GRAPH_NAME=default_graph
+QDRANT_LOADER_DATABASE_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
 # GRAPH_PASSWORD=your-graph-password
 
 # MCP Server logging (optional)

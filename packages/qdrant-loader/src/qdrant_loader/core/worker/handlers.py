@@ -233,8 +233,26 @@ async def handle_cluster_recompute(
     # -------------------------
     # 3. Run Louvain
     # -------------------------
-    partition = community_louvain.best_partition(G)
-    # {node_id: cluster_id}
+    raw_partition = community_louvain.best_partition(G, random_state=0)
+
+    cluster_members = defaultdict(list)
+    for node_id, raw_cluster_id in raw_partition.items():
+        cluster_members[raw_cluster_id].append(node_id)
+
+    stable_cluster_ids = {
+        raw_cluster_id: stable_id
+        for stable_id, (raw_cluster_id, _) in enumerate(
+            sorted(
+                cluster_members.items(),
+                key=lambda item: tuple(sorted(item[1])),
+            )
+        )
+    }
+
+    partition = {
+        node_id: stable_cluster_ids[raw_cluster_id]
+        for node_id, raw_cluster_id in raw_partition.items()
+    }
 
     # -------------------------
     # 4. Group clusters

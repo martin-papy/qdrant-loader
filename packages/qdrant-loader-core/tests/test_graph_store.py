@@ -57,8 +57,9 @@ async def test_upsert_node_idempotent(store):
     await store.upsert_node(node)
     await store.upsert_node(node)
 
-    # Ensure MERGE is used
-    assert any("MERGE" in q for q in queries)
+    assert len(queries) == 2
+    assert all("MERGE" in q for q in queries)
+    assert all("CREATE " not in q for q in queries)
 
 
 # -------------------------
@@ -90,7 +91,10 @@ async def test_upsert_edge_idempotent(store):
     await store.upsert_edge(edge)
 
     # Ensure MERGE relationship is used
-    assert any("MERGE" in q and "AUTHORED_BY" in q for q in queries)
+    edge_queries = [q for q in queries if "AUTHORED_BY" in q]
+    assert len(edge_queries) == 2
+    assert all("MERGE" in q for q in edge_queries)
+    assert all("CREATE " not in q for q in edge_queries)
 
 
 # -------------------------
