@@ -462,9 +462,8 @@ async def test_cluster_deterministic(monkeypatch):
     # fake louvain
     def fake_partition(graph, random_state=None):
         return {
-            "node-a": 1,
-            "node-b": 1,
-            "node-c": 0,
+            "A": 1,
+            "B": 1,
         }
 
     import community

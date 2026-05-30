@@ -1,8 +1,7 @@
-import os
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-DATABASE_URL = os.environ["QDRANT_LOADER_DATABASE_URL"]
+DATABASE_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 

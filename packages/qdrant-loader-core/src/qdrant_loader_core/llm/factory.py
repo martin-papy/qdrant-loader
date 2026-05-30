@@ -87,9 +87,6 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
             except Exception:
                 return _NoopProvider()
 
-    if provider_name == "openai_compat":
-        return _NoopProvider()
-
     if "openai" in provider_name or "openai" in base_url.lower():
         from .providers.openai import OpenAIProvider
 

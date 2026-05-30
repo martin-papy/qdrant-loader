@@ -26,7 +26,9 @@ def _minimal_settings():
 @pytest.mark.asyncio
 async def test_factory_returns_provider_with_expected_interfaces():
     create_provider = import_module("qdrant_loader_core.llm.factory").create_provider
+
     provider = create_provider(_minimal_settings())
+
     emb = provider.embeddings()
     chat = provider.chat()
     tok = provider.tokenizer()
@@ -34,8 +36,3 @@ async def test_factory_returns_provider_with_expected_interfaces():
     assert hasattr(emb, "embed")
     assert hasattr(chat, "chat")
     assert tok.count("abc") == 3
-
-    with pytest.raises(NotImplementedError):
-        await emb.embed(["hello"])
-    with pytest.raises(NotImplementedError):
-        await chat.chat([{"role": "user", "content": "hi"}])
