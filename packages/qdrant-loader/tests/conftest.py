@@ -60,6 +60,9 @@ def setup_test_environment():
         "CONFLUENCE_EMAIL": "test@example.com",
         "JIRA_TOKEN": "test-jira-token",
         "JIRA_EMAIL": "test@example.com",
+        "GRAPH_HOST": "localhost",
+        "GRAPH_PORT": "6379",
+        "GRAPH_NAME": "test_graph",
     }
     for key, value in fallback_env.items():
         os.environ.setdefault(key, value)
