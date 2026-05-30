@@ -70,6 +70,7 @@ dependencies = [
     "prometheus-client>=0.19.0,<1.0.0",
     "networkx>=3.5,<4.0",
     "python-louvain>=0.16,<1.0",
+    "asyncpg>=0.30.0",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
