@@ -15,7 +15,8 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
         pure_path = PurePath(path)
 
         file_name = raw.get("file_name") or pure_path.name
-        file_dir = str(pure_path.parent) or "root"
+        parent_str = str(pure_path.parent)
+        file_dir = "root" if parent_str == "." else parent_str
 
         native_id = f"{path}:{file_name}"
 

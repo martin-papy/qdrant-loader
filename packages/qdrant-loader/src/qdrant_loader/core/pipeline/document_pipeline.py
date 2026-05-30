@@ -3,6 +3,7 @@
 import asyncio
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import qdrant_loader_core.graph.registry as _registry  # noqa: F401
 from qdrant_loader_core.graph import get_graph_store
@@ -76,8 +77,8 @@ class DocumentPipeline:
                 logger.info("🔄 Starting graph extraction phase for batch...")
 
                 # Use dict to deduplicate nodes and edges by ID
-                nodes_dict: dict[str, any] = {}  # node_id -> node
-                edges_dict: dict[str, any] = {}  # (source, target, edge_type) -> edge
+                nodes_dict: dict[str, Any] = {}  # node_id -> node
+                edges_dict: dict[str, Any] = {}  # (source, target, edge_type) -> edge
 
                 for doc in documents:
                     try:
