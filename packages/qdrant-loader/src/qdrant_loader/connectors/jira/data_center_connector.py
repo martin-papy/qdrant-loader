@@ -43,31 +43,17 @@ class JiraDataCenterConnector(BaseJiraConnector):
         Yields:
             JiraIssue objects
         """
-        # Resume from checkpoint if provided (WS-2 feature)
-        # For DataCenter, checkpoint_cursor is the startAt offset as a string
-        try:
-            start_at = int(self._checkpoint_cursor) if self._checkpoint_cursor else 0
-        except (ValueError, TypeError):
-            start_at = 0
-            
+        start_at = 0
         page_size = self.config.page_size
         total_issues = 0
         processed_count = 0
 
-        if self._checkpoint_cursor:
-            logger.info(
-                "🎫 Resuming JIRA issue retrieval from checkpoint",
-                project_key=self.config.project_key,
-                page_size=page_size,
-                start_at=start_at,
-            )
-        else:
-            logger.info(
-                "🎫 Starting JIRA issue retrieval",
-                project_key=self.config.project_key,
-                page_size=page_size,
-                updated_after=updated_after.isoformat() if updated_after else None,
-            )
+        logger.info(
+            "🎫 Starting JIRA issue retrieval",
+            project_key=self.config.project_key,
+            page_size=page_size,
+            updated_after=updated_after.isoformat() if updated_after else None,
+        )
 
         while True:
             jql = self._build_jql_filter(updated_after)
@@ -111,8 +97,6 @@ class JiraDataCenterConnector(BaseJiraConnector):
                 break
 
             issues = response["issues"]
-            # Compute the offset for the next page and attach as checkpoint info
-            page_next_offset = str(start_at + len(issues))
 
             # Update total count if not set
             if total_issues == 0:
@@ -125,12 +109,6 @@ class JiraDataCenterConnector(BaseJiraConnector):
             for i, issue in enumerate(issues):
                 try:
                     parsed_issue = self._parse_issue(issue, self.config.extra_fields)
-                    # Attach checkpoint info for this page
-                    parsed_issue.__ingestion_checkpoint = {
-                        "cursor_kind": "jql_window",
-                        "cursor_value": page_next_offset,
-                        "batch_index": 0,
-                    }
                     yield parsed_issue
                     processed_count += 1
 
@@ -155,12 +133,8 @@ class JiraDataCenterConnector(BaseJiraConnector):
                     # Continue processing other issues instead of failing completely
                     continue
 
-            # Check if we've processed all issues and store checkpoint
+            # Check if we've processed all issues
             start_at += len(issues)
-            
-            # Store the current page offset for checkpoint saving (WS-2 feature)
-            self._last_page_cursor = str(start_at)
-            
             if start_at >= total_issues:
                 logger.info(
                     f"✅ Completed JIRA issue retrieval: "

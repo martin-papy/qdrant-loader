@@ -45,28 +45,19 @@ class JiraCloudConnector(BaseJiraConnector):
         Yields:
             JiraIssue objects
         """
-        # Resume from checkpoint if provided (WS-2 feature)
-        next_page_token: str | None = self._checkpoint_cursor
+        next_page_token: str | None = None
         processed_count = 0
         page_size = self.config.page_size
         attempted_count = 0
         # Log progress every 100 issues instead of every 50
         progress_log_interval = 100
 
-        if next_page_token:
-            logger.info(
-                "🎫 Resuming JIRA issue retrieval from checkpoint",
-                project_key=self.config.project_key,
-                page_size=page_size,
-                next_page_token=next_page_token,
-            )
-        else:
-            logger.info(
-                "🎫 Starting JIRA issue retrieval",
-                project_key=self.config.project_key,
-                page_size=page_size,
-                updated_after=updated_after.isoformat() if updated_after else None,
-            )
+        logger.info(
+            "🎫 Starting JIRA issue retrieval",
+            project_key=self.config.project_key,
+            page_size=page_size,
+            updated_after=updated_after.isoformat() if updated_after else None,
+        )
 
         while True:
             jql = self._build_jql_filter(updated_after)
@@ -111,19 +102,10 @@ class JiraCloudConnector(BaseJiraConnector):
                 break
 
             issues = response["issues"]
-            # Token that will be used to fetch the next page; save with documents
-            page_next_token = response.get("nextPageToken")
 
             for issue in issues:
                 try:
                     parsed_issue = self._parse_issue(issue, self.config.extra_fields)
-                    # Attach checkpoint info to the issue so downstream mapping
-                    # can include it in Document metadata for checkpoint saving.
-                    parsed_issue.__ingestion_checkpoint = {
-                        "cursor_kind": "page_token",
-                        "cursor_value": page_next_token,
-                        "batch_index": 0,
-                    }
                     yield parsed_issue
                     processed_count += 1
 
@@ -144,13 +126,9 @@ class JiraCloudConnector(BaseJiraConnector):
                     continue
 
             attempted_count += len(issues)
-            # Check next page token and save it for checkpoint
+            # Check next page token
             next_page_token = response.get("nextPageToken")
             is_last = response.get("isLast")
-            
-            # Store the current page token for checkpoint saving (WS-2 feature)
-            self._last_page_cursor = next_page_token
-            
             if is_last or not next_page_token:
                 logger.info(
                     f"✅ Completed JIRA issue retrieval: "
