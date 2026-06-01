@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
@@ -57,118 +58,131 @@ class DocumentPipeline:
         documents: list[Document],
         current_project_id: str | None = None,
     ) -> None:
-        # Optional: Graph extraction & upsert (graph is optional; failures must not fail ingestion)
+        """
+        Graph write hook (optional):
+        - Extract entities + relations from documents
+        - Build nodes/edges
+        - Deduplicate
+        - Batch upsert into GraphStore
+        - Must NOT affect ingestion if fails
+        """
+
+        # ---------------------------
+        # 1. Load config safely
+        # ---------------------------
         try:
+            settings = get_settings()
+            graph_cfg = getattr(settings.global_config, "graph", None)
+            graph_enabled = (
+                bool(getattr(graph_cfg, "enabled", False)) if graph_cfg else False
+            )
+        except Exception:
+            logger.warning("Graph config not available → graph disabled")
+            return
+
+        if not graph_enabled:
+            return
+
+        logger.info("🔄 Graph extraction started (batch size=%s)", len(documents))
+
+        # ---------------------------
+        # 2. Prepare dedup storage
+        # ---------------------------
+        nodes_dict: dict[str, Any] = {}
+        edges_dict: dict[tuple[str, str, str], Any] = {}
+
+        # Optional: group by source_type for efficiency
+        grouped_docs: dict[str, list[Document]] = defaultdict(list)
+        for doc in documents:
+            grouped_docs[doc.source_type].append(doc)
+
+        # ---------------------------
+        # 3. Extract graph per source_type
+        # ---------------------------
+        for source_type, docs in grouped_docs.items():
             try:
-                # Use the global settings initialized via initialize_config()/initialize_config_with_workspace
-                settings = get_settings()
-                graph_cfg = getattr(settings.global_config, "graph", None)
-                graph_enabled = (
-                    bool(getattr(graph_cfg, "enabled", None))
-                    if graph_cfg is not None
-                    else False
-                )
-            except Exception:
-                # If settings aren't initialized or any error occurs, treat graph as disabled
-                graph_enabled = False
+                extractor = EntityExtractor.for_source(source_type)
+                if not extractor:
+                    logger.warning("No extractor found for source_type=%s", source_type)
+                    continue
 
-            if graph_enabled:
-                # Ensure extractor registry is imported (registers available extractors)
-                logger.info("🔄 Starting graph extraction phase for batch...")
-
-                # Use dict to deduplicate nodes and edges by ID
-                nodes_dict: dict[str, Any] = {}  # node_id -> node
-                edges_dict: dict[str, Any] = {}  # (source, target, edge_type) -> edge
-
-                for doc in documents:
+                for doc in docs:
                     try:
-                        extractor = EntityExtractor.for_source(doc.source_type)
+                        subgraph = extractor.extract(doc)
 
-                        metadata = getattr(doc, "metadata", {}) or {}
-                        raw = {
-                            **metadata,
-                            "id": metadata.get("id", getattr(doc, "id", None)),
-                            "content": getattr(doc, "content", None),
-                            "path": getattr(doc, "path", None)
-                            or metadata.get("path")
-                            or getattr(doc, "source", None)
-                            or getattr(doc, "title", None),
-                            "file_name": metadata.get("file_name"),
-                            "source_type": doc.source_type,
-                        }
-                        subgraph = extractor.extract(raw)
-
-                        # Deduplicate nodes by ID
                         if getattr(subgraph, "nodes", None):
                             for node in subgraph.nodes:
                                 nodes_dict[node.id] = node
 
-                        # Deduplicate edges by (source, target, edge_type)
                         if getattr(subgraph, "edges", None):
                             for edge in subgraph.edges:
                                 edge_key = (edge.source, edge.target, edge.edge_type)
                                 edges_dict[edge_key] = edge
+
                     except Exception as e:
                         logger.error(
-                            "⚠️ Graph extraction failed for document %s: %s",
+                            "⚠️ Graph extract failed doc_id=%s error=%s",
                             getattr(doc, "id", "<unknown>"),
                             e,
                             exc_info=True,
                         )
 
-                # Convert deduplicated dicts back to lists
-                nodes_batch = list(nodes_dict.values())
-                edges_batch = list(edges_dict.values())
-
-                # Ensure project context is attached to nodes/edges so
-                # downstream graph store implementations can filter by project.
-                if current_project_id:
-                    for n in nodes_batch:
-                        # prefer explicit attribute if present, else store in properties
-                        try:
-                            n.project = current_project_id
-                        except Exception:
-                            pass
-                        n.properties = n.properties or {}
-                        n.properties.setdefault("project", current_project_id)
-
-                    for e in edges_batch:
-                        try:
-                            e.project = current_project_id
-                        except Exception:
-                            pass
-                        e.properties = e.properties or {}
-                        e.properties.setdefault("project", current_project_id)
-
-                if nodes_batch or edges_batch:
-                    try:
-                        graph_store = await get_graph_store()
-                        if nodes_batch:
-                            await graph_store.upsert_nodes_batch(nodes_batch)
-                        if edges_batch:
-                            await graph_store.upsert_edges_batch(edges_batch)
-                        logger.info("🔄 Add graph store successfully...")
-                    except Exception as e:
-                        logger.error(
-                            "⚠️ Graph upsert failed (non-fatal): %s",
-                            e,
-                            exc_info=True,
-                        )
-                logger.info(
-                    "Graph batch size: nodes=%s, edges=%s",
-                    len(nodes_batch),
-                    len(edges_batch),
+            except Exception as e:
+                logger.error(
+                    "⚠️ Extractor failed for source_type=%s error=%s",
+                    source_type,
+                    e,
+                    exc_info=True,
                 )
-                logger.debug("Graph node ids: %s", [node.id for node in nodes_batch])
-                logger.debug(
-                    "Graph edges: %s",
-                    [
-                        (edge.source, edge.edge_type, edge.target)
-                        for edge in edges_batch
-                    ],
-                )
-        except Exception:
-            logger.exception("Unexpected error during optional graph processing")
+
+        # ---------------------------
+        # 4. Build batches
+        # ---------------------------
+        nodes_batch = list(nodes_dict.values())
+        edges_batch = list(edges_dict.values())
+
+        # ---------------------------
+        # 5. Attach project context
+        # ---------------------------
+        if current_project_id:
+            for node in nodes_batch:
+                if not hasattr(node, "properties") or node.properties is None:
+                    node.properties = {}
+                node.properties["project"] = current_project_id
+
+            for edge in edges_batch:
+                if not hasattr(edge, "properties") or edge.properties is None:
+                    edge.properties = {}
+                edge.properties["project"] = current_project_id
+
+        # ---------------------------
+        # 6. Batch upsert
+        # ---------------------------
+        if not nodes_batch and not edges_batch:
+            logger.info("Graph extraction result is empty → skip upsert")
+            return
+
+        try:
+            graph_store = await get_graph_store()
+
+            if nodes_batch:
+                await graph_store.upsert_nodes_batch(nodes_batch)
+
+            if edges_batch:
+                await graph_store.upsert_edges_batch(edges_batch)
+
+            logger.info(
+                "✅ Graph upsert success | nodes=%s edges=%s",
+                len(nodes_batch),
+                len(edges_batch),
+            )
+
+        except Exception as e:
+            logger.error(
+                "⚠️ Graph upsert failed (non-fatal): %s",
+                e,
+                exc_info=True,
+            )
 
     async def process_batch(
         self,

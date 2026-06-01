@@ -1,39 +1,144 @@
-from typing import Any
+from urllib.parse import urlparse
 
-from qdrant_loader_core.graph.extractor.base_extractor import BaseEntityExtractor
+from qdrant_loader.core.document import Document
+from qdrant_loader_core.graph.extractor.base_extractor import (
+    BaseEntityExtractor,
+)
+from qdrant_loader_core.graph.models import (
+    CoreEdgeType,
+    CoreNodeLabel,
+    GraphEdge,
+    GraphNode,
+)
 
 
 class PublicDocsEntityExtractor(BaseEntityExtractor):
-    SOURCE_TYPE = "publicdocs"
+    """
+    Public documentation graph extractor.
 
-    def _extract_impl(self, raw: dict[str, Any]) -> None:
-        url = raw.get("url")
+    Extracts:
+    - Document node from page
+    - Container node from website/domain
+    - LINKS_TO edges between pages
+    - Attachment nodes
+    """
+
+    source_type = "publicdocs"
+
+    # ------------------------------------------------------------------
+    # Project
+    # ------------------------------------------------------------------
+
+    def _project(
+        self,
+        doc: Document,
+    ) -> str | None:
+        url = doc.metadata.get("url")
+
         if not url:
-            return
+            return None
 
-        doc = self.build_document(
-            source_type=self.SOURCE_TYPE,
-            native_id=url,
-            title=raw.get("title", url),
-            url=url,
-            created_at=raw.get("created_at"),
-            updated_at=raw.get("updated_at"),
-            qdrant_point_ids=[],
-            properties={},
+        parsed = urlparse(url)
+
+        return parsed.netloc
+
+    # ------------------------------------------------------------------
+    # People
+    # ------------------------------------------------------------------
+
+    def _extract_people(
+        self,
+        doc: Document,
+    ) -> list:
+        return []
+
+    # ------------------------------------------------------------------
+    # Container
+    # ------------------------------------------------------------------
+
+    def _extract_container(
+        self,
+        doc: Document,
+    ) -> GraphNode | None:
+        url = doc.metadata.get("url")
+
+        if not url:
+            return None
+
+        parsed = urlparse(url)
+
+        domain = parsed.netloc
+
+        if not domain:
+            return None
+
+        return GraphNode(
+            id=f"site:{domain}",
+            label=CoreNodeLabel.CONTAINER,
+            project=domain,
+            properties={
+                "kind": "website",
+                "domain": domain,
+            },
         )
 
-        # Domain as container
-        domain = url.split("/")[2] if "://" in url else "unknown"
+    # ------------------------------------------------------------------
+    # Links + Attachments
+    # ------------------------------------------------------------------
 
-        container = self.get_or_create_container(
-            kind="web_domain",
-            native_id=domain,
-            name=domain,
-        )
+    def _extract_source_specific(
+        self,
+        doc: Document,
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        project = self._project(doc)
 
-        self.emit_edge(source=doc, target=container, edge_type="BELONGS_TO")
+        nodes: list[GraphNode] = []
+        edges: list[GraphEdge] = []
 
-        # Optional tags
-        for tag in raw.get("tags", []):
-            label = self.get_or_create_label(name=tag)
-            self.emit_edge(source=doc, target=label, edge_type="HAS_LABEL")
+        # --------------------------------------------------------------
+        # Internal links
+        # --------------------------------------------------------------
+
+        for link in doc.metadata.get("links", []):
+            edges.append(
+                GraphEdge(
+                    source=doc.id,
+                    target=link,
+                    edge_type=CoreEdgeType.LINKS_TO,
+                    project=project,
+                )
+            )
+
+        # --------------------------------------------------------------
+        # Attachments
+        # --------------------------------------------------------------
+
+        for attachment in doc.metadata.get("attachments", []):
+            attachment_id = attachment.get("id")
+
+            if not attachment_id:
+                continue
+
+            nodes.append(
+                GraphNode(
+                    id=f"attachment:{attachment_id}",
+                    label="Attachment",
+                    project=project,
+                    properties={
+                        "filename": attachment.get("filename"),
+                        "mime_type": attachment.get("mime_type"),
+                        "download_url": attachment.get("download_url"),
+                    },
+                )
+            )
+
+            edges.append(
+                GraphEdge(
+                    source=doc.id,
+                    target=f"attachment:{attachment_id}",
+                    edge_type=CoreEdgeType.HAS_ATTACHMENT,
+                    project=project,
+                )
+            )
+
+        return nodes, edges

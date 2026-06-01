@@ -1,53 +1,82 @@
 from pathlib import PurePath
-from typing import Any
 
-from qdrant_loader_core.graph.extractor.base_extractor import BaseEntityExtractor
+from qdrant_loader.core.document import Document
+
+from ..models import (
+    CoreNodeLabel,
+    GraphNode,
+    PersonInfo,
+)
+from .base_extractor import BaseEntityExtractor
 
 
 class LocalFileEntityExtractor(BaseEntityExtractor):
-    SOURCE_TYPE = "localfile"
+    """
+    Extract graph entities from local filesystem documents.
+    """
 
-    def _extract_impl(self, raw: dict[str, Any]) -> None:
-        path = raw.get("path")
-        if not path:
-            return
+    source_type = "localfile"
 
-        pure_path = PurePath(path)
+    def _project(self, doc: Document) -> str | None:
+        """
+        Local files are not associated with a project.
+        """
+        return None
 
-        file_name = raw.get("file_name") or pure_path.name
-        parent_str = str(pure_path.parent)
-        file_dir = "root" if parent_str == "." else parent_str
+    def _extract_people(
+        self,
+        doc: Document,
+    ) -> list[tuple[PersonInfo, str]]:
+        """
+        Local files do not expose author information by default.
+        """
+        return []
 
-        native_id = f"{path}:{file_name}"
+    def _extract_container(
+        self,
+        doc: Document,
+    ) -> GraphNode | None:
 
-        created_at = raw.get("created_at")
-        updated_at = raw.get("updated_at")
+        if not doc.url:
+            return None
 
-        properties = {
-            "url": path,
-            "created_at": created_at,
-            "updated_at": updated_at,
-        }
+        pure_path = PurePath(doc.url)
 
-        doc = self.build_document(
-            source_type=self.SOURCE_TYPE,
-            native_id=native_id,
-            title=file_name,
-            url=path,
-            created_at=created_at,
-            updated_at=updated_at,
-            qdrant_point_ids=[],
-            properties=properties,
+        parent_path = str(pure_path.parent)
+        directory = "root" if parent_path == "." else parent_path
+        directory_name = PurePath(directory).name if directory != "root" else "root"
+
+        return GraphNode(
+            id=f"dir:{directory}",
+            label=CoreNodeLabel.CONTAINER,
+            project=None,
+            properties={
+                "kind": "filesystem_dir",
+                "name": directory_name,
+                "path": directory,
+            },
         )
 
-        container = self.get_or_create_container(
-            kind="filesystem_dir",
-            native_id=file_dir,
-            name=file_dir,
-        )
+    def _build_document_node(
+        self,
+        doc: Document,
+        project: str | None,
+    ) -> GraphNode:
+        """
+        Build a document node enriched with filesystem metadata.
+        """
 
-        self.emit_edge(
-            source=doc,
-            target=container,
-            edge_type="BELONGS_TO",
+        file_name = doc.metadata.get("file_name")
+
+        return GraphNode(
+            id=doc.id,
+            label=CoreNodeLabel.DOCUMENT,
+            project=project,
+            properties={
+                "title": file_name,
+                "url": doc.url,
+                "created_at": doc.metadata.get("created_at"),
+                "updated_at": doc.metadata.get("updated_at"),
+                "source_type": self.source_type,
+            },
         )

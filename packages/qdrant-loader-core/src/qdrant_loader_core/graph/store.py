@@ -38,6 +38,7 @@ class GraphStore(ABC):
         node_id: str,
         depth: int,
         edge_types: list[str] | None = None,
+        project: str | None = None,
     ) -> SubGraph:
         """
         Get neighbors up to a certain depth.

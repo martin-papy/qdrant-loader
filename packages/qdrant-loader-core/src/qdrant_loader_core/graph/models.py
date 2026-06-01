@@ -21,6 +21,22 @@ class CoreEdgeType(StrEnum):
     LINKS_TO = "LINKS_TO"
     PART_OF = "PART_OF"
     HAS_CHUNK = "HAS_CHUNK"
+    HAS_CHILD = "HAS_CHILD"
+    HAS_ATTACHMENT = "HAS_ATTACHMENT"
+
+
+
+
+@dataclass(slots=True, frozen=True)
+class PersonInfo:
+    id: str
+    display_name: str
+
+    email: str | None = None
+    username: str | None = None
+
+    source_type: str | None = None
+    source_id: str | None = None
 
 
 @dataclass

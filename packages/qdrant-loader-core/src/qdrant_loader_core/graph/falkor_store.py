@@ -14,9 +14,6 @@ from .models import (
 )
 from .store import GraphStore
 
-VALID_NODE_LABELS = list(CoreNodeLabel)
-VALID_EDGE_TYPES = list(CoreEdgeType)
-
 
 class FalkorGraphStore(GraphStore):
 
@@ -30,11 +27,11 @@ class FalkorGraphStore(GraphStore):
     # Validation
     # ------------------------
     def _validate_node(self, node: GraphNode):
-        if node.label not in VALID_NODE_LABELS:
+        if node.label not in {e.value for e in CoreNodeLabel}:
             raise ValueError(f"Invalid node label: {node.label}")
 
     def _validate_edge(self, edge: GraphEdge):
-        if edge.edge_type not in VALID_EDGE_TYPES:
+        if edge.edge_type not in {e.value for e in CoreEdgeType}:
             raise ValueError(f"Invalid edge type: {edge.edge_type}")
 
     # ------------------------
@@ -43,19 +40,28 @@ class FalkorGraphStore(GraphStore):
     async def upsert_node(self, node: GraphNode) -> None:
         self._validate_node(node)
 
-        project = node.project or node.properties.get("project")
+        props = self._clean_props(node.properties or {})
+        project = node.project or props.get("project")
+
         if project is not None:
             query = f"""
             MERGE (n:{node.label} {{id: $id, project: $project}})
             SET n += $props
             """
-            params = {"id": node.id, "project": project, "props": node.properties}
+            params = {
+                "id": node.id,
+                "project": project,
+                "props": props,
+            }
         else:
             query = f"""
             MERGE (n:{node.label} {{id: $id}})
             SET n += $props
             """
-            params = {"id": node.id, "props": node.properties}
+            params = {
+                "id": node.id,
+                "props": props,
+            }
 
         await asyncio.to_thread(
             self._graph.query,
@@ -67,24 +73,28 @@ class FalkorGraphStore(GraphStore):
         if not nodes:
             return
 
+        for node in nodes:
+            self._validate_node(node)
+
         label = nodes[0].label
-        if any(n.label != label for n in nodes):
-            # fallback if mixed label
-            for n in nodes:
-                n.properties = self._clean_props(n.properties)
-                await self.upsert_node(n)
+
+        if any(node.label != label for node in nodes):
+            # Mixed labels cannot be batched efficiently.
+            for node in nodes:
+                await self.upsert_node(node)
             return
 
         payload = [
             {
-                "id": n.id,
-                "project": n.project or n.properties.get("project"),
-                "props": n.properties,
+                "id": node.id,
+                "project": node.project or (node.properties or {}).get("project"),
+                "props": self._clean_props(node.properties or {}),
             }
-            for n in nodes
+            for node in nodes
         ]
 
         with_project = [node for node in payload if node["project"] is not None]
+
         without_project = [node for node in payload if node["project"] is None]
 
         if with_project:
@@ -115,41 +125,47 @@ class FalkorGraphStore(GraphStore):
     async def upsert_edge(self, edge: GraphEdge) -> None:
         self._validate_edge(edge)
 
-        query = """
-        MATCH (a {id: $source, project: $project}),
-            (b {id: $target, project: $project})
-        MERGE (a)-[r:BELONGS_TO]->(b)
-        SET r += $props
-        """
+        props = self._clean_props(edge.properties or {})
+        project = edge.project or props.get("project")
 
-        project = edge.project or edge.properties.get("project")
         params = {
             "source": edge.source,
             "target": edge.target,
-            "props": edge.properties,
+            "props": props,
         }
+
         if project is not None:
             params["project"] = project
+
             query = f"""
             MATCH (a {{id: $source, project: $project}}),
-                  (b {{id: $target, project: $project}})
+                (b {{id: $target, project: $project}})
             MERGE (a)-[r:{edge.edge_type}]->(b)
             SET r += $props
             """
         else:
             query = f"""
             MATCH (a {{id: $source}}),
-                  (b {{id: $target}})
+                (b {{id: $target}})
             MERGE (a)-[r:{edge.edge_type}]->(b)
             SET r += $props
             """
 
-        await asyncio.to_thread(self._graph.query, query, params)
+        await asyncio.to_thread(
+            self._graph.query,
+            query,
+            params,
+        )
 
-    async def upsert_edges_batch(self, edges: list[GraphEdge]) -> None:
-        for e in edges:
-            e.properties = self._clean_props(e.properties)
-            await self.upsert_edge(e)
+    async def upsert_edges_batch(
+        self,
+        edges: list[GraphEdge],
+    ) -> None:
+        if not edges:
+            return
+
+        for edge in edges:
+            await self.upsert_edge(edge)
 
     # ------------------------
     # Query
@@ -164,7 +180,9 @@ class FalkorGraphStore(GraphStore):
 
         edge_filter = ""
         if edge_types:
-            invalid = [e for e in edge_types if e not in VALID_EDGE_TYPES]
+            invalid = [
+                e for e in edge_types if e not in {et.value for et in CoreEdgeType}
+            ]
             if invalid:
                 raise ValueError(f"Invalid edge types: {invalid}")
 
@@ -373,7 +391,7 @@ class FalkorGraphStore(GraphStore):
 
         for k, v in props.items():
             if v is None:
-                continue  # ❌ loại bỏ None
+                continue
 
             if isinstance(v, (str, int, float, bool)):
                 clean[k] = v
