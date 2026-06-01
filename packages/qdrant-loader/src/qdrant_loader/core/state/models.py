@@ -229,3 +229,33 @@ class Job(Base):
     visibility_deadline = Column(UTCDateTime(timezone=True), nullable=True)
 
     __table_args__ = (Index("ix_jobs_status_enqueued_at", "status", "enqueued_at"),)
+
+
+class IngestionCheckpoint(Base):
+    """Tracks checkpoint state for resumable ingestion (WS-2 feature)."""
+
+    __tablename__ = "ingestion_checkpoints"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(String, nullable=False)
+    source_type = Column(String, nullable=False)
+    source = Column(String, nullable=False)
+    cursor_kind = Column(
+        String, nullable=False
+    )  # page_token | jql_window | git_commit | since_ts
+    cursor_value = Column(Text, nullable=False)
+    batch_index = Column(Integer, nullable=False, default=0)
+    updated_at = Column(UTCDateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id", "source_type", "source", name="uq_checkpoint_source"
+        ),
+        Index(
+            "ix_ingestion_checkpoints_project_source",
+            "project_id",
+            "source_type",
+            "source",
+        ),
+        Index("ix_ingestion_checkpoints_updated_at", "updated_at"),
+    )

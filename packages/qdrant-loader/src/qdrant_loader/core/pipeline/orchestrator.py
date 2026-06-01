@@ -62,6 +62,7 @@ class PipelineOrchestrator:
         since: datetime | None = None,
         project_id: str | None = None,
         seen_uris: set[str] | None = None,
+        resume: bool = True,
     ) -> AsyncIterator[list[Document]]:
         """Stream source documents in bounded micro-batches.
 
@@ -79,9 +80,36 @@ class PipelineOrchestrator:
             if not source_configs:
                 return
 
+            async def connector_factory_with_checkpoint(src_config):
+                # Determine if we should attempt to resume from a checkpoint
+                checkpoint_cursor = None
+                try:
+                    if resume and project_id is not None:
+                        # Lazy import to avoid cycles
+                        from qdrant_loader.core.state.checkpoint_manager import (
+                            CheckpointManager,
+                        )
+
+                        async with await self.components.state_manager.get_session() as session:
+                            cp_mgr = CheckpointManager(session)
+                            cp = await cp_mgr.get_checkpoint(
+                                project_id, source_type_name, src_config.source
+                            )
+                            if cp:
+                                checkpoint_cursor = cp.cursor_value
+                except Exception:
+                    # On any failure retrieving checkpoint, log and continue without it
+                    logger.debug(
+                        "Checkpoint lookup failed, proceeding without checkpoint",
+                        source_type=source_type_name,
+                        source=src_config.source,
+                    )
+
+                return get_connector_instance(src_config, checkpoint_cursor=checkpoint_cursor)
+
             async for document in self.components.source_processor.stream_source_documents(
                 source_configs,
-                get_connector_instance,
+                connector_factory_with_checkpoint,
                 source_type_name,
                 since=since,
             ):
@@ -123,7 +151,9 @@ class PipelineOrchestrator:
                 yield yielded_batch
 
         if filtered_config.jira:
-            async for yielded_batch in _process_source_type("Jira", filtered_config.jira):
+            async for yielded_batch in _process_source_type(
+                "Jira", filtered_config.jira
+            ):
                 yield yielded_batch
 
         if filtered_config.publicdocs:
@@ -149,6 +179,7 @@ class PipelineOrchestrator:
         project_id: str | None = None,
         force: bool = False,
         since: datetime | None = None,
+        resume: bool = True,
     ) -> list[Document]:
         """Main entry point for document processing.
 
@@ -162,16 +193,17 @@ class PipelineOrchestrator:
                 filtering). Connectors that do not yet support time-based filtering will
                 fall back to full fetch with hash-based change detection.
 
-        Returns:
+                try:
             List of processed documents
         """
         logger.info("🚀 Starting document ingestion")
         self.last_pipeline_result = None
 
         try:
-            # Determine sources configuration to use
+                            since,
             if sources_config:
                 # Use provided sources config (backward compatibility)
+                            resume=resume,
                 logger.debug("Using provided sources configuration")
                 filtered_config = self.components.source_filter.filter_sources(
                     sources_config, source_type, source
@@ -227,6 +259,7 @@ class PipelineOrchestrator:
             processed_documents: list[Document] = []
             aggregated_result = PipelineResult()
             batch_count = 0
+            checkpointed_sources: set[tuple[str, str]] = set()
 
             if not force and not self.components.state_manager._initialized:
                 logger.debug("Initializing state manager for change detection")
@@ -249,6 +282,7 @@ class PipelineOrchestrator:
                         since,
                         project_id=current_project_id,
                         seen_uris=seen_uris,
+                        resume=resume,
                     )
                 except TypeError:
                     # Callable likely expects the old signature
@@ -294,6 +328,39 @@ class PipelineOrchestrator:
                                 if doc.id in batch_result.successfully_processed_documents
                             ]
                         )
+                        # Persist checkpoints found on documents (WS-2)
+                        if resume and current_project_id is not None and not force:
+                            try:
+                                from qdrant_loader.core.state.checkpoint_manager import (
+                                    CheckpointManager,
+                                    Checkpoint,
+                                )
+
+                                async with await self.components.state_manager.get_session() as session:
+                                    cp_mgr = CheckpointManager(session)
+                                    # Iterate over successfully processed docs in this batch
+                                    for doc in batch:
+                                        if doc.id not in batch_result.successfully_processed_documents:
+                                            continue
+                                        cp_info = doc.metadata.get("__ingestion_checkpoint")
+                                        if not cp_info:
+                                            continue
+                                        checkpoint = Checkpoint(
+                                            project_id=current_project_id,
+                                            source_type=doc.source_type,
+                                            source=doc.source,
+                                            cursor_kind=cp_info.get("cursor_kind"),
+                                            cursor_value=cp_info.get("cursor_value"),
+                                            batch_index=cp_info.get("batch_index", 0),
+                                        )
+                                        await cp_mgr.save_checkpoint(checkpoint)
+                                        checkpointed_sources.add((doc.source_type, doc.source))
+                            except Exception as e:
+                                logger.error(
+                                    "Failed to persist checkpoint after batch",
+                                    error=str(e),
+                                    error_type=type(e).__name__,
+                                )
 
                 if total_documents == 0 and not force:
                     logger.warning(
@@ -331,6 +398,40 @@ class PipelineOrchestrator:
                         logger.debug(
                             "Post-stream reconciliation not enabled. Seen URIs collected for potential WS-3 reconciliation",
                             seen_count=len(seen_uris),
+                        )
+
+                # On a clean successful run, clear any saved checkpoints for
+                # the project/sources processed (prevents stale resume state).
+                if (
+                    resume
+                    and current_project_id is not None
+                    and not force
+                    and aggregated_result.error_count == 0
+                    and checkpointed_sources
+                ):
+                    try:
+                        from qdrant_loader.core.state.checkpoint_manager import (
+                            CheckpointManager,
+                        )
+
+                        async with await self.components.state_manager.get_session() as session:
+                            cp_mgr = CheckpointManager(session)
+                            for stype, src in checkpointed_sources:
+                                try:
+                                    await cp_mgr.clear_checkpoint(
+                                        current_project_id, stype, src
+                                    )
+                                except Exception as e:
+                                    logger.warning(
+                                        "Failed to clear checkpoint for source",
+                                        source_type=stype,
+                                        source=src,
+                                        error=str(e),
+                                    )
+                    except Exception as e:
+                        logger.warning(
+                            "Failed to clear checkpoints after successful run",
+                            error=str(e),
                         )
 
                 self.last_pipeline_result = aggregated_result
@@ -460,10 +561,38 @@ class PipelineOrchestrator:
         documents = []
 
         # Process each source type with project context
+        async def _connector_factory_for_source_type(source_type_name: str):
+            async def _factory(src_config):
+                checkpoint_cursor = None
+                try:
+                    if resume and project_id is not None:
+                        from qdrant_loader.core.state.checkpoint_manager import (
+                            CheckpointManager,
+                        )
+
+                        async with await self.components.state_manager.get_session() as session:
+                            cp_mgr = CheckpointManager(session)
+                            cp = await cp_mgr.get_checkpoint(
+                                project_id, source_type_name, src_config.source
+                            )
+                            if cp:
+                                checkpoint_cursor = cp.cursor_value
+                except Exception:
+                    logger.debug(
+                        "Checkpoint lookup failed, proceeding without checkpoint",
+                        source_type=source_type_name,
+                        source=getattr(src_config, "source", None),
+                    )
+                return get_connector_instance(src_config, checkpoint_cursor=checkpoint_cursor)
+
+            return _factory
+
         if filtered_config.confluence:
             confluence_docs = (
                 await self.components.source_processor.process_source_type(
-                    filtered_config.confluence, get_connector_instance, "Confluence"
+                    filtered_config.confluence,
+                    await _connector_factory_for_source_type("Confluence"),
+                    "Confluence",
                 )
             )
             documents.extend(confluence_docs)
@@ -476,7 +605,9 @@ class PipelineOrchestrator:
 
         if filtered_config.jira:
             jira_docs = await self.components.source_processor.process_source_type(
-                filtered_config.jira, get_connector_instance, "Jira"
+                filtered_config.jira,
+                await _connector_factory_for_source_type("Jira"),
+                "Jira",
             )
             documents.extend(jira_docs)
 
@@ -490,7 +621,9 @@ class PipelineOrchestrator:
 
         if filtered_config.localfile:
             localfile_docs = await self.components.source_processor.process_source_type(
-                filtered_config.localfile, get_connector_instance, "LocalFile"
+                filtered_config.localfile,
+                await _connector_factory_for_source_type("LocalFile"),
+                "LocalFile",
             )
             documents.extend(localfile_docs)
 
