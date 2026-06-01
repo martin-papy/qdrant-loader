@@ -192,18 +192,17 @@ class PipelineOrchestrator:
             since: Only stream documents updated after this timestamp (connector-level
                 filtering). Connectors that do not yet support time-based filtering will
                 fall back to full fetch with hash-based change detection.
+            resume: Whether to resume from the last checkpoint when available.
 
-                try:
+        Returns:
             List of processed documents
         """
         logger.info("🚀 Starting document ingestion")
         self.last_pipeline_result = None
 
         try:
-                            since,
             if sources_config:
                 # Use provided sources config (backward compatibility)
-                            resume=resume,
                 logger.debug("Using provided sources configuration")
                 filtered_config = self.components.source_filter.filter_sources(
                     sources_config, source_type, source
