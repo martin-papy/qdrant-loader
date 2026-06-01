@@ -186,7 +186,6 @@ class AsyncIngestionPipeline:
         source: str | None = None,
         project_id: str | None = None,
         force: bool = False,
-        resume: bool = True,
     ) -> list[Document]:
         """Process documents from all configured sources.
 
@@ -226,7 +225,6 @@ class AsyncIngestionPipeline:
                 source=source,
                 project_id=project_id,
                 force=force,
-                resume=resume,
             )
 
             # Update metrics

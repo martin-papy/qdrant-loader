@@ -10,8 +10,6 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.utils.sensitive import sanitize_exception_message
-import asyncio
-import inspect
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -58,12 +56,7 @@ class SourceProcessor:
                 logger.debug(f"Processing {source_type} source: {source_name}")
 
                 # Create connector instance and use as async context manager
-                maybe_connector = connector_factory(source_config)
-                connector = (
-                    await maybe_connector
-                    if asyncio.iscoroutine(maybe_connector) or inspect.isawaitable(maybe_connector)
-                    else maybe_connector
-                )
+                connector = connector_factory(source_config)
 
                 # Set file conversion config if available and connector supports it
                 if (
@@ -138,12 +131,7 @@ class SourceProcessor:
             try:
                 logger.debug(f"Streaming {source_type} source: {source_name}")
 
-                maybe_connector = connector_factory(source_config)
-                connector = (
-                    await maybe_connector
-                    if asyncio.iscoroutine(maybe_connector) or inspect.isawaitable(maybe_connector)
-                    else maybe_connector
-                )
+                connector = connector_factory(source_config)
 
                 if (
                     self.file_conversion_config

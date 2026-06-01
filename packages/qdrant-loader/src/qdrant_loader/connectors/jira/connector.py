@@ -61,12 +61,11 @@ logger = LoggingConfig.get_logger(__name__)
 class BaseJiraConnector(BaseConnector):
     """Base class for all Jira connectors."""
 
-    def __init__(self, config: JiraProjectConfig, checkpoint_cursor: str | None = None):
+    def __init__(self, config: JiraProjectConfig):
         """Initialize the Jira connector.
 
         Args:
             config: The Jira configuration.
-            checkpoint_cursor: Optional pagination cursor to resume from (WS-2 feature).
 
         Raises:
             ValueError: If required authentication parameters are not set.
@@ -84,10 +83,6 @@ class BaseJiraConnector(BaseConnector):
         self._last_sync: datetime | None = None
         self._rate_limiter = RateLimiter.per_minute(self.config.requests_per_minute)
         self._initialized = False
-
-        # Checkpoint support (WS-2 feature)
-        self._checkpoint_cursor = checkpoint_cursor
-        self._last_page_cursor: str | None = None  # Track current page cursor for checkpoint saving
 
         # Initialize file conversion components if enabled
         self.file_converter: FileConverter | None = None
@@ -553,9 +548,6 @@ class BaseJiraConnector(BaseConnector):
             if self.config.extra_fields:
                 for field in self.config.extra_fields:
                     metadata[field.name] = getattr(issue, field.name)
-            # Propagate checkpoint info into document metadata if present
-            if hasattr(issue, "__ingestion_checkpoint"):
-                metadata["__ingestion_checkpoint"] = issue.__ingestion_checkpoint
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,

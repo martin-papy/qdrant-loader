@@ -350,12 +350,7 @@ async def _cancel_all_tasks():
 @option(
     "--force",
     is_flag=True,
-    help="Force processing of all documents, bypassing change detection and ignoring checkpoints. Warning: May significantly increase processing time and costs.",
-)
-@option(
-    "--resume/--no-resume",
-    default=True,
-    help="Resume from the last checkpoint if available (default: enabled). Use --no-resume to start fresh from the beginning.",
+    help="Force processing of all documents, bypassing change detection. Warning: May significantly increase processing time and costs.",
 )
 @async_command
 async def ingest(
@@ -368,19 +363,12 @@ async def ingest(
     log_level: str,
     profile: bool,
     force: bool,
-    resume: bool,
 ):
     """Ingest documents from configured sources.
 
     Examples:
-      # Ingest all projects (with checkpoint resume if available)
+      # Ingest all projects
       qdrant-loader ingest
-
-      # Ingest with checkpoint resume disabled
-      qdrant-loader ingest --no-resume
-
-      # Force full re-ingestion (ignores checkpoints)
-      qdrant-loader ingest --force
 
       # Ingest specific project
       qdrant-loader ingest --project my-project
@@ -409,7 +397,6 @@ async def ingest(
         log_level,
         profile,
         force,
-        resume,
     )
 
 
