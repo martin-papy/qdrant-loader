@@ -164,6 +164,127 @@ async def test_mini_soak_queue_drains():
 
 
 @pytest.mark.asyncio
+async def test_scheduler_enqueues_and_workers_drain():
+    """
+    Verify that the scheduler actually emits jobs for configured sources and
+    workers drain them.
+
+    Setup: 2 projects × 3 sources each = 6 sources total.
+    The scheduler runs for 3 ticks; deduplication prevents re-enqueuing while
+    a job is still pending/running. Because workers drain each batch before the
+    next tick, we expect exactly 6 jobs × 3 ticks = 18 done jobs total.
+    """
+    from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
+    from qdrant_loader.config.sources import SourcesConfig
+
+    TICKS = 3
+    PROJECTS = 2
+    SOURCES_PER_PROJECT = 3  # 2 git + 1 confluence per project
+    EXPECTED_TOTAL = PROJECTS * SOURCES_PER_PROJECT * TICKS
+
+    # Build real ProjectsConfig: 2 projects, each with 2 git repos + 1 confluence space
+    def _make_projects() -> ProjectsConfig:
+        configs = {}
+        for p in range(PROJECTS):
+            sources = SourcesConfig()
+            sources.git = {f"repo-{p}-{i}": object() for i in range(2)}
+            sources.confluence = {f"space-{p}": object()}
+            project = ProjectConfig(
+                project_id=f"proj-{p}",
+                display_name=f"Project {p}",
+                sources=sources,
+            )
+            configs[project.project_id] = project
+        return ProjectsConfig(projects=configs)
+
+    queue, _, engine = await _make_queue()
+
+    try:
+        schedule = IncrementalPullScheduleConfig(enabled=True, interval=5)
+        projects_config = _make_projects()
+
+        # Drain workers completely between ticks by running pool inline after each tick
+        handler = _NoopHandler()
+        worker_pool = QueueWorkerPool(
+            queue=queue,
+            handler=handler,
+            worker_count=4,
+            lease_seconds=30,
+            max_attempts=1,
+            retry_backoff_base_seconds=0,
+        )
+
+        scheduler = IncrementalPullScheduler(
+            queue=queue,
+            projects_config=projects_config,
+            schedule=schedule,
+        )
+
+        for tick in range(TICKS):
+            created = await scheduler.run_once()
+            assert (
+                created == PROJECTS * SOURCES_PER_PROJECT
+            ), f"Tick {tick}: expected {PROJECTS * SOURCES_PER_PROJECT} new jobs, got {created}"
+            # Drain before next tick so dedup doesn't suppress re-enqueue
+            processed = await worker_pool.run_until_empty()
+            assert (
+                processed == PROJECTS * SOURCES_PER_PROJECT
+            ), f"Tick {tick}: expected {PROJECTS * SOURCES_PER_PROJECT} processed, got {processed}"
+
+        done = await queue.list(status="done")
+        pending = await queue.list(status="pending")
+        running = await queue.list(status="running")
+
+        assert (
+            len(done) == EXPECTED_TOTAL
+        ), f"Expected {EXPECTED_TOTAL} done jobs, got {len(done)}"
+        assert len(pending) == 0, f"Orphaned pending jobs: {len(pending)}"
+        assert len(running) == 0, f"Orphaned running jobs: {len(running)}"
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_scheduler_deduplicates_while_jobs_are_active():
+    """
+    Verify dedup: if a job from tick 1 is still pending when tick 2 fires,
+    the scheduler must NOT create a duplicate for that source.
+    """
+    from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
+    from qdrant_loader.config.sources import SourcesConfig
+
+    SOURCES = 3  # 2 git + 1 confluence in a single project
+
+    sources = SourcesConfig()
+    sources.git = {"repo-0": object(), "repo-1": object()}
+    sources.confluence = {"space-0": object()}
+    project = ProjectConfig(project_id="proj-0", display_name="Proj 0", sources=sources)
+    projects_config = ProjectsConfig(projects={"proj-0": project})
+
+    queue, _, engine = await _make_queue()
+
+    try:
+        schedule = IncrementalPullScheduleConfig(enabled=True, interval=5)
+        scheduler = IncrementalPullScheduler(
+            queue=queue, projects_config=projects_config, schedule=schedule
+        )
+
+        # Tick 1: all sources get a job
+        created_1 = await scheduler.run_once()
+        assert created_1 == SOURCES, f"Expected {SOURCES}, got {created_1}"
+
+        # Tick 2 (no drain between): jobs still pending → dedup suppresses all
+        created_2 = await scheduler.run_once()
+        assert created_2 == 0, f"Dedup failed: tick 2 created {created_2} duplicates"
+
+        # Total enqueued is still SOURCES
+        pending = await queue.list(status="pending")
+        assert len(pending) == SOURCES
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_pool_reclaims_interrupted_job_after_visibility_timeout():
     """
     WS-4 AC: Container killed mid-run, restarted — interrupted job picked up

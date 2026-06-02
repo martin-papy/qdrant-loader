@@ -79,7 +79,9 @@ def _setup_logging(log_level: str, workspace_config=None) -> None:
 
         log_format = "console"
         log_file = (
-            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+            str(workspace_config.logs_path / "cli.log")
+            if workspace_config
+            else "qdrant-loader.log"
         )
         LoggingConfig.setup(level=log_level, format=log_format, file=log_file)
         # update module-global logger

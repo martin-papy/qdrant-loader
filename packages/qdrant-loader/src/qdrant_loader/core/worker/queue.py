@@ -55,7 +55,7 @@ class JobQueue(Protocol):
         """Reset a failed or done job back to pending so it can be retried."""
 
     async def cancel(self, job_id: int) -> bool:
-        """Cancel a pending or running job (sets status to failed with 'cancelled' error)."""
+        """Cancel a pending or running job (sets status to cancelled, not failed)."""
 
 
 class SQLiteJobQueue:
@@ -65,6 +65,7 @@ class SQLiteJobQueue:
     RUNNING = "running"
     DONE = "done"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self._session_factory = session_factory
@@ -267,10 +268,10 @@ class SQLiteJobQueue:
                     Job.status.in_([self.PENDING, self.RUNNING]),
                 )
                 .values(
-                    status=self.FAILED,
+                    status=self.CANCELLED,
                     finished_at=now,
                     visibility_deadline=None,
-                    last_error="cancelled by operator",
+                    last_error=None,
                 )
             )
             updated = result.rowcount > 0

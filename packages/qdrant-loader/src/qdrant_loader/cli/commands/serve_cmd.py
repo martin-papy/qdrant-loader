@@ -84,7 +84,9 @@ async def _serve_main(
         workspace_config = setup_workspace(workspace)
 
     log_file = (
-        str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+        str(workspace_config.logs_path / "serve.log")
+        if workspace_config
+        else "qdrant-loader.log"
     )
     LoggingConfig.setup(level=log_level, format="console", file=log_file)
     logger = LoggingConfig.get_logger(__name__)
@@ -111,7 +113,8 @@ async def _serve_main(
     await state_manager.initialize()
 
     logger.info("serve.queue_init")
-    job_queue = SQLiteJobQueue(state_manager._session_factory)
+    session_factory = state_manager.session_factory
+    job_queue = SQLiteJobQueue(session_factory)
 
     logger.info("serve.qdrant_init")
     qdrant_manager = QdrantManager(settings)
@@ -131,9 +134,6 @@ async def _serve_main(
         projects_config=settings.projects_config,
         global_collection_name=settings.global_config.qdrant.collection_name,
     )
-    session_factory = state_manager._session_factory
-    if session_factory is None:
-        raise RuntimeError("State manager session factory is not initialized")
     async with session_factory() as session:
         await project_manager.initialize(session)
 
@@ -141,15 +141,9 @@ async def _serve_main(
 
     logger.info("serve.handler_init")
 
-    def _session_context_factory():
-        session_factory = state_manager._session_factory
-        if session_factory is None:
-            raise RuntimeError("State manager session factory is not initialized")
-        return session_factory()
-
     job_handler = IngestionJobHandler(
         orchestrator=orchestrator,
-        session_factory=_session_context_factory,
+        session_factory=session_factory,
     )
 
     logger.info("serve.pool_init")

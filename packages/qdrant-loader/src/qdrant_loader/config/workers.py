@@ -101,7 +101,7 @@ class IncrementalPullScheduleConfig(BaseConfig):
     @field_validator("dedup_statuses")
     @classmethod
     def validate_dedup_statuses(cls, values: list[str]) -> list[str]:
-        allowed = {"pending", "running", "done", "failed"}
+        allowed = {"pending", "running", "done", "failed", "cancelled"}
         normalized = []
         for item in values:
             if not isinstance(item, str) or not item.strip():

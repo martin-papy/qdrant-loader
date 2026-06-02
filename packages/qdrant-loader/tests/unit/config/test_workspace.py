@@ -42,7 +42,7 @@ class TestWorkspaceConfig:
             "workspace_path": temp_workspace,
             "config_path": temp_workspace / "config.yaml",
             "env_path": None,
-            "logs_path": temp_workspace / "logs" / "qdrant-loader.log",
+            "logs_path": temp_workspace / "logs",
             "metrics_path": temp_workspace / "metrics",
             "database_path": temp_workspace / "data" / "qdrant-loader.db",
         }
@@ -68,7 +68,7 @@ class TestWorkspaceConfig:
                 workspace_path=nonexistent_path,
                 config_path=nonexistent_path / "config.yaml",
                 env_path=None,
-                logs_path=nonexistent_path / "logs" / "qdrant-loader.log",
+                logs_path=nonexistent_path / "logs",
                 metrics_path=nonexistent_path / "metrics",
                 database_path=nonexistent_path / "data" / "qdrant-loader.db",
             )
@@ -83,7 +83,7 @@ class TestWorkspaceConfig:
                 workspace_path=file_path,
                 config_path=temp_workspace / "config.yaml",
                 env_path=None,
-                logs_path=temp_workspace / "logs" / "qdrant-loader.log",
+                logs_path=temp_workspace / "logs",
                 metrics_path=temp_workspace / "metrics",
                 database_path=temp_workspace / "data" / "qdrant-loader.db",
             )
@@ -98,7 +98,7 @@ class TestWorkspaceConfig:
                 workspace_path=temp_workspace,
                 config_path=temp_workspace / "config.yaml",
                 env_path=None,
-                logs_path=temp_workspace / "logs" / "qdrant-loader.log",
+                logs_path=temp_workspace / "logs",
                 metrics_path=temp_workspace / "metrics",
                 database_path=temp_workspace / "data" / "qdrant-loader.db",
             )
@@ -112,7 +112,7 @@ class TestWorkspaceConfig:
                     workspace_path=temp_workspace,
                     config_path=temp_workspace / "config.yaml",
                     env_path=None,
-                    logs_path=temp_workspace / "logs" / "qdrant-loader.log",
+                    logs_path=temp_workspace / "logs",
                     metrics_path=temp_workspace / "metrics",
                     database_path=temp_workspace / "data" / "qdrant-loader.db",
                 )
@@ -159,10 +159,7 @@ class TestSetupWorkspace:
             assert isinstance(config, WorkspaceConfig)
             assert config.workspace_path == temp_workspace.resolve()
             assert config.config_path == temp_workspace.resolve() / "config.yaml"
-            assert (
-                config.logs_path
-                == temp_workspace.resolve() / "logs" / "qdrant-loader.log"
-            )
+            assert config.logs_path == temp_workspace.resolve() / "logs"
             assert config.metrics_path == temp_workspace.resolve() / "metrics"
             assert (
                 config.database_path
