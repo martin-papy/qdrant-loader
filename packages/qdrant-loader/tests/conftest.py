@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from dotenv import load_dotenv
 from qdrant_loader.config import get_settings, initialize_config
 
@@ -132,7 +133,7 @@ def test_data_dir():
     return os.path.join(os.path.dirname(__file__), "fixtures")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def state_manager():
     """Provide a StateManager instance with an in-memory database for testing."""
     from qdrant_loader.config.state import StateManagementConfig
