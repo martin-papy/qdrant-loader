@@ -119,11 +119,13 @@ class JiraCloudConnector(BaseJiraConnector):
                     parsed_issue = self._parse_issue(issue, self.config.extra_fields)
                     # Attach checkpoint info to the issue so downstream mapping
                     # can include it in Document metadata for checkpoint saving.
-                    parsed_issue.__ingestion_checkpoint = {
-                        "cursor_kind": "page_token",
-                        "cursor_value": page_next_token,
-                        "batch_index": 0,
-                    }
+                    # Only attach checkpoint if there's a next page to resume from
+                    if page_next_token:
+                        parsed_issue.__ingestion_checkpoint = {
+                            "cursor_kind": "page_token",
+                            "cursor_value": page_next_token,
+                            "batch_index": 0,
+                        }
                     yield parsed_issue
                     processed_count += 1
 

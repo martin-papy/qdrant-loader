@@ -262,7 +262,7 @@ class PipelineOrchestrator:
             processed_documents: list[Document] = []
             aggregated_result = PipelineResult()
             batch_count = 0
-            checkpointed_sources: set[tuple[str, str]] = set()
+            checkpoint_sources_to_clear: set[tuple[str, str]] = set()
 
             if not force and not self.components.state_manager._initialized:
                 logger.debug("Initializing state manager for change detection")
@@ -358,7 +358,7 @@ class PipelineOrchestrator:
                                             batch_index=cp_info.get("batch_index", 0),
                                         )
                                         await cp_mgr.save_checkpoint(checkpoint)
-                                        checkpointed_sources.add((doc.source_type, doc.source))
+                                        checkpoint_sources_to_clear.add((doc.source_type, doc.source))
                             except Exception as e:
                                 logger.error(
                                     "Failed to persist checkpoint after batch",
@@ -411,7 +411,7 @@ class PipelineOrchestrator:
                     and current_project_id is not None
                     and not force
                     and aggregated_result.error_count == 0
-                    and checkpointed_sources
+                    and checkpoint_sources_to_clear
                 ):
                     try:
                         from qdrant_loader.core.state.checkpoint_manager import (
@@ -420,7 +420,7 @@ class PipelineOrchestrator:
 
                         async with await self.components.state_manager.get_session() as session:
                             cp_mgr = CheckpointManager(session)
-                            for stype, src in checkpointed_sources:
+                            for stype, src in checkpoint_sources_to_clear:
                                 try:
                                     await cp_mgr.clear_checkpoint(
                                         current_project_id, stype, src

@@ -220,27 +220,14 @@ class AsyncIngestionPipeline:
             logger.debug("Starting document processing with new pipeline architecture")
 
             # Use the orchestrator to process documents with project support
-            # For backwards compatibility with tests and older call sites,
-            # avoid passing the `resume` keyword when a `project_id` is
-            # specified so mocks that assert the legacy 5-arg call still
-            # succeed. Otherwise forward the `resume` flag.
-            if project_id is not None:
-                documents = await self.orchestrator.process_documents(
-                    sources_config=sources_config,
-                    source_type=source_type,
-                    source=source,
-                    project_id=project_id,
-                    force=force,
-                )
-            else:
-                documents = await self.orchestrator.process_documents(
-                    sources_config=sources_config,
-                    source_type=source_type,
-                    source=source,
-                    project_id=project_id,
-                    force=force,
-                    resume=resume,
-                )
+            documents = await self.orchestrator.process_documents(
+                sources_config=sources_config,
+                source_type=source_type,
+                source=source,
+                project_id=project_id,
+                force=force,
+                resume=resume,
+            )
 
             # Update metrics
             if documents:

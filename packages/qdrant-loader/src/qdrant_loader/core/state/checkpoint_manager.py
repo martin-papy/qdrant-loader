@@ -105,6 +105,7 @@ class CheckpointManager:
                 )
                 return None
         except Exception as e:
+            await self.session.rollback()
             logger.error(
                 "Failed to retrieve checkpoint",
                 project_id=project_id,
@@ -253,6 +254,7 @@ class CheckpointManager:
             db_records = result.scalars().all()
             return [Checkpoint.from_db(record) for record in db_records]
         except Exception as e:
+            await self.session.rollback()
             logger.error(
                 "Failed to retrieve all checkpoints",
                 error=str(e),

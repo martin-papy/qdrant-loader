@@ -1,4 +1,5 @@
 from typing import Any
+import inspect
 
 from .registry import CONNECTOR_REGISTRY
 
@@ -20,10 +21,7 @@ def get_connector_instance(config: Any, checkpoint_cursor: str | None = None) ->
         raise ValueError(f"Unsupported connector type: {key}")
 
     # Try to construct with checkpoint_cursor kwarg; fall back to single-arg.
-    try:
-        # Prefer keyword to be explicit; works for connectors that declare
-        # `checkpoint_cursor` as a parameter (positional or keyword).
+    init_params = inspect.signature(connector_class).parameters
+    if "checkpoint_cursor" in init_params:
         return connector_class(config, checkpoint_cursor=checkpoint_cursor)
-    except TypeError:
-        # Connector likely doesn't accept the extra arg – fall back.
-        return connector_class(config)
+    return connector_class(config)
