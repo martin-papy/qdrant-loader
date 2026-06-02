@@ -463,12 +463,10 @@ class BaseJiraConnector(BaseConnector):
         documents = await self._issues_to_documents([issue])
         return documents[0] if documents else None
 
-    async def list_entity_ids(self) -> list[str]:
-        """List all issue keys in the configured project."""
-        entity_ids: list[str] = []
-        async for issue in self.get_issues(updated_after=self.config.updated_after):
-            entity_ids.append(issue.key)
-        return entity_ids
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream all issue keys in the configured project."""
+        async for issue in self.get_issues():
+            yield issue.key
 
     async def _issues_to_documents(self, issues: list[JiraIssue]) -> list[Document]:
         """Convert Jira issues to Document objects (including attachments).
