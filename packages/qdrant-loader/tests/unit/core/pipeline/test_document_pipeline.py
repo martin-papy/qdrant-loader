@@ -224,7 +224,9 @@ class TestDocumentPipeline:
 
         assert result.success_count == 4
         assert result.error_count == 0
-        assert mock_for_source.call_count == len(sample_documents)
+        assert mock_for_source.call_count == len(
+            {doc.source_type for doc in sample_documents}
+        )
         mock_graph_store.upsert_nodes_batch.assert_awaited_once()
         mock_graph_store.upsert_edges_batch.assert_awaited_once()
 

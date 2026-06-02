@@ -1,17 +1,27 @@
+from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.localfile import LocalFileEntityExtractor
 
 
 def test_localfile_basic():
     extractor = LocalFileEntityExtractor()
 
-    raw = {
-        "path": "/home/user/file.txt",
-        "file_name": "file.txt",
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-02T00:00:00Z",
+    metadata = {
+        "file_name": "design_doc.md",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-02T00:00:00Z",
     }
 
-    result = extractor.extract(raw)
+    doc = Document(
+        title="Design Doc",
+        content_type="page",
+        content="Example content",
+        source_type="localfile",
+        source="localfile_instance",
+        url="D:/docs/design_doc.md",
+        metadata=metadata,
+    )
+
+    result = extractor.extract(doc)
 
     assert any(n.label == "Document" for n in result.nodes)
     assert any(n.label == "Container" for n in result.nodes)

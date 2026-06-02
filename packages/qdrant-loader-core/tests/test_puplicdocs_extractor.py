@@ -1,18 +1,26 @@
+from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.publicdocs import PublicDocsEntityExtractor
 
 
 def test_public_webpage():
     extractor = PublicDocsEntityExtractor()
 
-    raw = {
+    metadata = {
         "url": "https://example.com/page",
-        "title": "Example Page",
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-02T00:00:00Z",
         "tags": ["ai", "ml"],
     }
 
-    result = extractor.extract(raw)
+    doc = Document(
+        title="Example Page",
+        content_type="page",
+        content="Example webpage content",
+        source_type="publicdocs",
+        source="https://example.com/page",
+        url="https://example.com/page",
+        metadata=metadata,
+    )
+
+    result = extractor.extract(doc)
 
     assert any(n.label == "Document" for n in result.nodes)
     assert any(n.label == "Label" for n in result.nodes)

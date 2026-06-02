@@ -82,6 +82,22 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
             },
         )
 
+    def _extract_labels(
+        self,
+        doc: Document,
+    ) -> list[GraphNode]:
+        project = self._project(doc)
+
+        return [
+            GraphNode(
+                id=f"label:{tag}",
+                label=CoreNodeLabel.LABEL,
+                project=project,
+                properties={"name": tag},
+            )
+            for tag in doc.metadata.get("tags", [])
+        ]
+
     # ------------------------------------------------------------------
     # Links + Attachments
     # ------------------------------------------------------------------

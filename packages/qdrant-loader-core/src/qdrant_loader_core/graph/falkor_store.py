@@ -23,9 +23,6 @@ class FalkorGraphStore(GraphStore):
         self._db = FalkorDB(host=host, port=port, password=password)
         self._graph = self._db.select_graph(graph_name)
 
-    # ------------------------
-    # Validation
-    # ------------------------
     def _validate_node(self, node: GraphNode):
         if node.label not in {e.value for e in CoreNodeLabel}:
             raise ValueError(f"Invalid node label: {node.label}")
@@ -34,9 +31,6 @@ class FalkorGraphStore(GraphStore):
         if edge.edge_type not in {e.value for e in CoreEdgeType}:
             raise ValueError(f"Invalid edge type: {edge.edge_type}")
 
-    # ------------------------
-    # Node
-    # ------------------------
     async def upsert_node(self, node: GraphNode) -> None:
         self._validate_node(node)
 
@@ -79,7 +73,6 @@ class FalkorGraphStore(GraphStore):
         label = nodes[0].label
 
         if any(node.label != label for node in nodes):
-            # Mixed labels cannot be batched efficiently.
             for node in nodes:
                 await self.upsert_node(node)
             return
@@ -119,9 +112,6 @@ class FalkorGraphStore(GraphStore):
                 {"nodes": without_project},
             )
 
-    # ------------------------
-    # Edge
-    # ------------------------
     async def upsert_edge(self, edge: GraphEdge) -> None:
         self._validate_edge(edge)
 
@@ -167,9 +157,6 @@ class FalkorGraphStore(GraphStore):
         for edge in edges:
             await self.upsert_edge(edge)
 
-    # ------------------------
-    # Query
-    # ------------------------
     async def neighbors(
         self,
         node_id: str,
@@ -300,9 +287,6 @@ class FalkorGraphStore(GraphStore):
         result = await asyncio.to_thread(self._graph.query, cypher, params or {})
         return result.result_set
 
-    # -------------------------
-    # Export graph for clustering
-    # -------------------------
     async def export_graph(
         self, project: str | None = None
     ) -> tuple[list[dict], list[dict]]:
@@ -349,9 +333,6 @@ class FalkorGraphStore(GraphStore):
 
         return nodes, edges
 
-    # -------------------------
-    # Batch update cluster_id
-    # -------------------------
     async def update_clusters_batch(
         self, updates: list[dict], project: str | None = None
     ):

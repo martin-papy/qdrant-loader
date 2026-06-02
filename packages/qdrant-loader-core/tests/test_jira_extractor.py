@@ -1,30 +1,42 @@
+from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.jira import JiraEntityExtractor
 
 
 def test_jira_basic():
     extractor = JiraEntityExtractor()
 
-    raw = {
-        "key": "ABC-1",
-        "self": "http://jira/ABC-1",
-        "fields": {
-            "summary": "Fix login bug",
-            "created": "2024-01-01T00:00:00Z",
-            "updated": "2024-01-02T00:00:00Z",
-            "status": {"name": "Open"},
-            "priority": {"name": "High"},
-            "issuetype": {"name": "Bug"},
-            "project": {"key": "ABC", "name": "Project ABC"},
-            "assignee": {"emailAddress": "john@company.com", "displayName": "John"},
-            "labels": ["backend"],
+    metadata = {
+        "project_key": "ABC",
+        "status": "Open",
+        "priority": "High",
+        "issue_type": "Bug",
+        "reporter": {
+            "email_address": "reporter@company.com",
+            "display_name": "Reporter",
         },
+        "assignee": {
+            "email_address": "john@company.com",
+            "display_name": "John",
+        },
+        "labels": ["backend"],
+        "description": "Related confluence page: http://confluence.example.com/display/ABC/Page",
     }
 
-    result = extractor.extract(raw)
+    doc = Document(
+        title="Fix login bug",
+        content_type="issue",
+        content="Jira issue content",
+        source_type="jira",
+        source="ABC-1",
+        url="http://jira/ABC-1",
+        metadata=metadata,
+    )
 
-    assert len(result.nodes) >= 3
-    assert len(result.edges) >= 2
+    result = extractor.extract(doc)
 
-    # Check document exists
-    doc_ids = [n.id for n in result.nodes]
-    assert "jira:ABC-1" in doc_ids
+    assert any(n.label == "Document" for n in result.nodes)
+    assert any(n.label == "Container" for n in result.nodes)
+    assert any(n.label == "Person" for n in result.nodes)
+    assert any(n.edge_type == "BELONGS_TO" for n in result.edges)
+    assert any(e.edge_type == "AUTHORED_BY" for e in result.edges)
+    assert any(e.edge_type == "LINKS_TO" for e in result.edges)

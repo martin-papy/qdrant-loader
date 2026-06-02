@@ -25,8 +25,6 @@ class CoreEdgeType(StrEnum):
     HAS_ATTACHMENT = "HAS_ATTACHMENT"
 
 
-
-
 @dataclass(slots=True, frozen=True)
 class PersonInfo:
     id: str

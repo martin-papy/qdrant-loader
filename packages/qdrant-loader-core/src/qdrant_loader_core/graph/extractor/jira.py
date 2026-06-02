@@ -263,3 +263,5 @@ class JiraEntityExtractor(BaseEntityExtractor):
                     },
                 )
             )
+
+        return [], edges
