@@ -64,12 +64,14 @@ jobs:
           uv build --out-dir dist/
           
       - name: Publish loader package to PyPI
+        id: publish_loader
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/qdrant-loader/dist/
 
       - name: Notify teams on success
-        if: success()
+        if: ${{ steps.publish_loader.conclusion == 'success' }}
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG_NAME: ${{ github.event.release.tag_name }}
@@ -93,7 +95,7 @@ jobs:
                   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                   version: "1.4",
                   body: [
-                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "QDrant Loader package published to PyPI successfully", "color": "Good" },
+                    { type: "TextBlock", weight: "Bolder", size: "Medium", text: "QDrant Loader package published to PyPI successfully", color: "Good" },
                     { type: "FactSet", facts: [
                       { title: "Tag name", value: $tag_name },
                       { title: "Triggered by", value: $actor },
@@ -106,7 +108,8 @@ jobs:
           curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Notify teams on failure
-        if: failure()
+        if: ${{ always() && steps.publish_loader.conclusion == 'failure' }}
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG_NAME: ${{ github.event.release.tag_name }}
@@ -130,7 +133,7 @@ jobs:
                   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                   version: "1.4",
                   body: [
-                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "QDrant Loader package published to PyPI FAILED", color: "Attention" },
+                    { type: "TextBlock", weight: "Bolder", size: "Medium", text: "QDrant Loader package published to PyPI FAILED", color: "Attention" },
                     { type: "FactSet", facts: [
                       { title: "Tag name", value: $tag_name },
                       { title: "Triggered by", value: $actor },
@@ -140,7 +143,8 @@ jobs:
                 }
               }]
             }')
-          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          curl --fail --silent --show-error --max-time 30 \
+            -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
   publish-mcp-server:
     name: Publish MCP Server to PyPI
@@ -166,12 +170,14 @@ jobs:
           uv build --out-dir dist/
           
       - name: Publish MCP server package to PyPI
+        id: publish_mcp_server
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/qdrant-loader-mcp-server/dist/
 
       - name: Notify teams on success
-        if: success()
+        if: ${{ steps.publish_mcp_server.conclusion == 'success' }}
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG_NAME: ${{ github.event.release.tag_name }}
@@ -195,7 +201,7 @@ jobs:
                   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                   version: "1.4",
                   body: [
-                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "MCP Server package published to PyPI successfully", "color": "Good" },
+                    { type: "TextBlock", weight: "Bolder", size: "Medium", text: "MCP Server package published to PyPI successfully", color: "Good" },
                     { type: "FactSet", facts: [
                       { title: "Tag name", value: $tag_name },
                       { title: "Triggered by", value: $actor },
@@ -208,7 +214,8 @@ jobs:
           curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Notify teams on failure
-        if: failure()
+        if: ${{ always() && steps.publish_mcp_server.conclusion == 'failure' }}
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG_NAME: ${{ github.event.release.tag_name }}
@@ -232,7 +239,7 @@ jobs:
                   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                   version: "1.4",
                   body: [
-                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "MCP Server package published to PyPI FAILED", color: "Attention" },
+                    { type: "TextBlock", weight: "Bolder", size: "Medium", text: "MCP Server package published to PyPI FAILED", color: "Attention" },
                     { type: "FactSet", facts: [
                       { title: "Tag name", value: $tag_name },
                       { title: "Triggered by", value: $actor },
@@ -242,7 +249,8 @@ jobs:
                 }
               }]
             }')
-          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          curl --fail --silent --show-error --max-time 30 \
+            -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
   publish-core:
     name: Publish qdrant-loader-core to PyPI
@@ -268,12 +276,14 @@ jobs:
           uv build --out-dir dist/
 
       - name: Publish core package to PyPI
+        id: publish_core
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/qdrant-loader-core/dist/
 
       - name: Notify teams on success
-        if: success()
+        if: ${{ steps.publish_core.conclusion == 'success' }}
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG_NAME: ${{ github.event.release.tag_name }}
@@ -297,7 +307,7 @@ jobs:
                   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                   version: "1.4",
                   body: [
-                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "Core Library package published to PyPI successfully", "color": "Good"},
+                    { type: "TextBlock", weight: "Bolder", size: "Medium", text: "Core Library package published to PyPI successfully", color: "Good"},
                     { type: "FactSet", facts: [
                       { title: "Tag name", value: $tag_name },
                       { title: "Triggered by", value: $actor },
@@ -310,7 +320,8 @@ jobs:
           curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Notify teams on failure
-        if: failure()
+        if: ${{ always() && steps.publish_core.conclusion == 'failure' }}
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TAG_NAME: ${{ github.event.release.tag_name }}
@@ -334,7 +345,7 @@ jobs:
                   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                   version: "1.4",
                   body: [
-                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "Core Library package published to PyPI FAILED", color: "Attention" },
+                    { type: "TextBlock", weight: "Bolder", size: "Medium", text: "Core Library package published to PyPI FAILED", color: "Attention" },
                     { type: "FactSet", facts: [
                       { title: "Tag name", value: $tag_name },
                       { title: "Triggered by", value: $actor },
@@ -344,4 +355,5 @@ jobs:
                 }
               }]
             }')
-          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          curl --fail --silent --show-error --max-time 30 \
+            -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
