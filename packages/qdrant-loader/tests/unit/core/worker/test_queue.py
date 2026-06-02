@@ -217,3 +217,30 @@ async def test_release_for_retry_with_delay_hides_pending_job_until_due(
     due = await sqlite_job_queue.claim_next(lease_seconds=30)
     assert due is not None
     assert due.id == job.id
+
+
+@pytest.mark.asyncio
+async def test_reset_to_pending_preserves_attempt_history(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+
+    claimed = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert claimed is not None
+    assert claimed.id == job.id
+    assert claimed.attempts == 1
+
+    failed = await sqlite_job_queue.mark_failed(
+        job.id,
+        "operator requested retry",
+        claim_attempt=claimed.attempts,
+    )
+    assert failed is True
+
+    reset = await sqlite_job_queue.reset_to_pending(job.id)
+    assert reset is True
+
+    retried = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert retried is not None
+    assert retried.id == job.id
+    assert retried.attempts == 2

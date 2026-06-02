@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
@@ -18,6 +19,17 @@ class JobQueue(Protocol):
 
     async def claim_next(self, lease_seconds: int = 60) -> Job | None:
         """Atomically claim the next visible pending job."""
+
+    def notify(self) -> asyncio.Event:
+        """Return an event that fires when a job becomes available for claiming.
+
+        The event is raised whenever:
+        - A new job is enqueued (status=PENDING).
+        - A job is released for retry (status goes back to PENDING).
+
+        Worker loops await this event (with timeout for visibility timeout reclaim)
+        to avoid constant polling. Long-poll backends (SQS) get this for free.
+        """
 
     async def mark_done(self, job_id: int, claim_attempt: int) -> bool:
         """Mark a claimed job as completed if claim ownership still matches."""
@@ -56,6 +68,11 @@ class SQLiteJobQueue:
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self._session_factory = session_factory
+        self._pending_event = asyncio.Event()
+
+    def notify(self) -> asyncio.Event:
+        """Return the event used to signal when jobs become available."""
+        return self._pending_event
 
     async def enqueue(self, job_type: str, payload: dict[str, Any]) -> Job:
         now = datetime.now(UTC)
@@ -75,6 +92,7 @@ class SQLiteJobQueue:
             session.add(job)
             await session.commit()
             await session.refresh(job)
+            self._pending_event.set()
             return job
 
     async def claim_next(self, lease_seconds: int = 60) -> Job | None:
@@ -211,6 +229,8 @@ class SQLiteJobQueue:
             rows = result.fetchall()
             updated_job_id = rows[0][0] if rows else None
             await session.commit()
+            if updated_job_id is not None:
+                self._pending_event.set()
             return updated_job_id is not None
 
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
@@ -224,7 +244,10 @@ class SQLiteJobQueue:
             return list(result.scalars().all())
 
     async def reset_to_pending(self, job_id: int) -> bool:
-        """Reset a failed/done job back to pending for retry."""
+        """Reset a failed/done job back to pending for retry.
+
+        Preserve attempts so operator retries do not erase retry history.
+        """
         async with self._session_factory() as session:
             stmt = (
                 update(Job)
@@ -238,7 +261,6 @@ class SQLiteJobQueue:
                     finished_at=None,
                     visibility_deadline=None,
                     last_error=None,
-                    attempts=0,
                 )
                 .returning(Job.id)
             )

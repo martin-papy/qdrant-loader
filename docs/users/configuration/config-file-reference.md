@@ -544,6 +544,30 @@ global:
 - `payload_defaults`: Adds extra JSON-compatible fields into each scheduled job payload.
 - Scheduler only runs in `serve` mode; one-shot `ingest` ignores `workers.schedules`.
 
+#### Worker Runtime Configuration
+
+```yaml
+global:
+  workers:
+    runtime:
+      # Number of concurrent workers draining the queue
+      worker_count: 4
+      # Visibility lease duration in seconds when a job is claimed
+      lease_seconds: 60
+      # Maximum claim attempts before marking a job failed
+      max_attempts: 3
+      # Exponential retry base in seconds (0 disables backoff)
+      retry_backoff_base_seconds: 5
+```
+
+**Worker Runtime Notes:**
+
+- `worker_count`: Must be >= 1.
+- `lease_seconds`: Must be >= 1.
+- `max_attempts`: Must be >= 1.
+- `retry_backoff_base_seconds`: Must be >= 0.
+- These values are read by `qdrant-loader serve` when creating the worker pool.
+
 ### Project Configuration (`projects`)
 
 #### Project Structure

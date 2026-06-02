@@ -7,6 +7,7 @@ from collections.abc import Callable
 
 from qdrant_loader.config.models import ProjectsConfig
 from qdrant_loader.config.workers import IncrementalPullScheduleConfig
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.core.worker.queue import JobQueue
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -70,7 +71,12 @@ class IncrementalPullScheduler:
         created = 0
 
         for project_id, source_type, source_name in self._iter_project_sources():
-            dedup_key = ("INCREMENTAL_PULL", project_id, source_type, source_name)
+            dedup_key = (
+                JobType.INCREMENTAL_PULL.value,
+                project_id,
+                source_type,
+                source_name,
+            )
             if dedup_key in dedup_keys:
                 continue
 
@@ -85,7 +91,7 @@ class IncrementalPullScheduler:
                 }
             )
 
-            await self._queue.enqueue("INCREMENTAL_PULL", payload)
+            await self._queue.enqueue(JobType.INCREMENTAL_PULL, payload)
             dedup_keys.add(dedup_key)
             created += 1
 
@@ -114,7 +120,7 @@ class IncrementalPullScheduler:
 
     @staticmethod
     def _job_dedup_key(job) -> tuple[str, str, str, str] | None:
-        if getattr(job, "type", None) != "INCREMENTAL_PULL":
+        if getattr(job, "type", None) != JobType.INCREMENTAL_PULL.value:
             return None
 
         try:

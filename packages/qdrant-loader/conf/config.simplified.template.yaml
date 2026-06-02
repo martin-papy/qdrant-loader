@@ -24,6 +24,22 @@
 #   LLM_PROVIDER=bedrock
 #   LLM_EMBEDDING_MODEL=amazon.titan-embed-text-v2:0
 #   VECTOR_SIZE=1024
+#
+# Optional worker runtime overrides (serve mode):
+#   Uncomment this block if you run `qdrant-loader serve` and want to tune
+#   worker concurrency/retry behavior or scheduler interval.
+#
+# global:
+#   workers:
+#     runtime:
+#       worker_count: 4
+#       lease_seconds: 60
+#       max_attempts: 3
+#       retry_backoff_base_seconds: 5
+#     schedules:
+#       incremental_pull:
+#         enabled: false
+#         interval: 5s
 
 # Define your data sources directly (no 'global' or 'projects' wrapper needed):
 sources:

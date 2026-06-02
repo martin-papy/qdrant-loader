@@ -226,6 +226,26 @@ global:
       # API key for LLM service (required when enable_llm_descriptions is True)
       llm_api_key: "${OPENAI_API_KEY}"
 
+  # Worker queue runtime and scheduling configuration
+  # Controls concurrent workers, retry behavior, and periodic incremental jobs
+  workers:
+    runtime:
+      # Number of concurrent workers draining the queue
+      worker_count: 4
+      # Visibility lease duration in seconds when a job is claimed
+      lease_seconds: 60
+      # Maximum claim attempts before marking a job failed
+      max_attempts: 3
+      # Exponential retry base in seconds (0 disables backoff)
+      retry_backoff_base_seconds: 5
+
+    schedules:
+      incremental_pull:
+        # Set true to enable scheduler-driven periodic incremental jobs in serve mode
+        enabled: false
+        # Supports integer seconds or duration strings (e.g., 5s, 5m, 1h)
+        interval: 5s
+
 # Multi-project configuration
 # Define multiple projects, each with their own sources and settings
 # All projects use the global collection_name defined above

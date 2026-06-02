@@ -38,8 +38,20 @@ def test_schedule_config_accepts_alias_interval_formats():
 
 def test_workers_config_defaults_incremental_pull_disabled():
     cfg = WorkersConfig()
+    assert cfg.runtime.worker_count == 4
+    assert cfg.runtime.lease_seconds == 60
+    assert cfg.runtime.max_attempts == 3
+    assert cfg.runtime.retry_backoff_base_seconds == 5
     assert cfg.schedules.incremental_pull.enabled is False
     assert cfg.schedules.incremental_pull.interval_seconds == 300
+
+
+def test_workers_runtime_rejects_invalid_retry_values():
+    with pytest.raises(ValueError):
+        WorkersConfig(runtime={"max_attempts": 0})
+
+    with pytest.raises(ValueError):
+        WorkersConfig(runtime={"retry_backoff_base_seconds": -1})
 
 
 def test_payload_defaults_accepts_json_like_values():

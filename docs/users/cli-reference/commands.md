@@ -433,7 +433,7 @@ The `serve` command:
 1. **Loads configuration** from workspace or specified config files
 2. **Initializes job queue** in the state database
 3. **Starts scheduler** that periodically creates incremental pull jobs based on configured interval
-4. **Launches worker pool** (4 workers by default) to process jobs
+4. **Launches worker pool** using `global.workers.runtime` settings from config
 5. **Monitors gracefully** for SIGTERM/SIGINT signals for clean shutdown
 
 #### Job Processing Flow
@@ -458,12 +458,25 @@ The `serve` command:
           │   (bounded concurrency)
           │
 ┌─────────▼───────────────────────────────────┐
-│  Worker Pool (4 workers)                     │
+│  Worker Pool (configurable workers)          │
 │  - Process documents from sources            │
 │  - Generate embeddings                       │
 │  - Index into QDrant                         │
 └─────────────────────────────────────────────┘
 ```
+
+#### Worker Runtime Tuning
+
+`qdrant-loader serve` reads worker runtime knobs from `global.workers.runtime`:
+
+- `worker_count` - Number of concurrent queue workers.
+- `lease_seconds` - Visibility lease duration when claiming a job.
+- `max_attempts` - Maximum claim attempts before marking a job failed.
+- `retry_backoff_base_seconds` - Exponential retry base (0 disables backoff).
+
+When the queue is empty, workers wait on queue notifications instead of 1-second
+polling, and still wake up on `lease_seconds` timeout to reclaim expired running
+jobs.
 
 #### Examples
 
@@ -636,6 +649,8 @@ qdrant-loader jobs list --config config.yaml --env .env --status failed
 ### `qdrant-loader jobs retry`
 
 Retry a failed job by resetting it to pending status.
+
+Retry preserves `attempts` history; it does not reset attempts to zero.
 
 #### Basic Usage
 

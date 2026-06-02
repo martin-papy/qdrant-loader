@@ -15,6 +15,8 @@ from click.exceptions import ClickException
 from click.types import Choice
 from click.types import Path as ClickPath
 
+from qdrant_loader.core.worker.job_types import JobType
+
 
 def _init_queue(workspace: Path | None, config: Path | None, env: Path | None):
     """Load config, build StateManager and SQLiteJobQueue. Returns (state_manager, queue)."""
@@ -216,7 +218,9 @@ def jobs_trigger(
     """Enqueue a new ingestion job immediately."""
 
     async def _trigger(queue):
-        job_type = "BULK_INGEST" if mode.lower() == "bulk" else "INCREMENTAL_PULL"
+        job_type = (
+            JobType.BULK_INGEST if mode.lower() == "bulk" else JobType.INCREMENTAL_PULL
+        )
         payload = {
             "project_id": project_id,
             "source_type": source_type,
