@@ -68,6 +68,80 @@ jobs:
         with:
           packages-dir: packages/qdrant-loader/dist/
 
+      - name: Notify teams on success
+        if: success()
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          URL: https://pypi.org/p/qdrant-loader
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$TAG_NAME" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg url "$URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  type: "AdaptiveCard",
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "QDrant Loader package published to PyPI successfully", "color": "Good" },
+                    { type: "FactSet", facts: [
+                      { title: "Tag name", value: $tag_name },
+                      { title: "Triggered by", value: $actor },
+                      { title: "URL", value: $url }
+                    ]}
+                  ]
+                }
+              }]
+            }')
+          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+
+      - name: Notify teams on failure
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$TAG_NAME" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg url "$RUN_URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  type: "AdaptiveCard",
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "QDrant Loader package published to PyPI FAILED", color: "Attention" },
+                    { type: "FactSet", facts: [
+                      { title: "Tag name", value: $tag_name },
+                      { title: "Triggered by", value: $actor },
+                      { title: "Logs", value: $url }
+                    ]}
+                  ]
+                }
+              }]
+            }')
+          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+
   publish-mcp-server:
     name: Publish MCP Server to PyPI
     runs-on: ubuntu-latest
@@ -96,6 +170,80 @@ jobs:
         with:
           packages-dir: packages/qdrant-loader-mcp-server/dist/
 
+      - name: Notify teams on success
+        if: success()
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          URL: https://pypi.org/p/qdrant-loader-mcp-server
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$TAG_NAME" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg url "$URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  type: "AdaptiveCard",
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "MCP Server package published to PyPI successfully", "color": "Good" },
+                    { type: "FactSet", facts: [
+                      { title: "Tag name", value: $tag_name },
+                      { title: "Triggered by", value: $actor },
+                      { title: "URL", value: $url }
+                    ]}
+                  ]
+                }
+              }]
+            }')
+          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+
+      - name: Notify teams on failure
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$TAG_NAME" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg url "$RUN_URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  type: "AdaptiveCard",
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "MCP Server package published to PyPI FAILED", color: "Attention" },
+                    { type: "FactSet", facts: [
+                      { title: "Tag name", value: $tag_name },
+                      { title: "Triggered by", value: $actor },
+                      { title: "Logs", value: $url }
+                    ]}
+                  ]
+                }
+              }]
+            }')
+          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+
   publish-core:
     name: Publish qdrant-loader-core to PyPI
     runs-on: ubuntu-latest
@@ -123,3 +271,77 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/qdrant-loader-core/dist/
+
+      - name: Notify teams on success
+        if: success()
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          URL: https://pypi.org/p/qdrant-loader-core
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$TAG_NAME" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg url "$URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  type: "AdaptiveCard",
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "Core Library package published to PyPI successfully", "color": "Good"},
+                    { type: "FactSet", facts: [
+                      { title: "Tag name", value: $tag_name },
+                      { title: "Triggered by", value: $actor },
+                      { title: "URL", value: $url }
+                    ]}
+                  ]
+                }
+              }]
+            }')
+          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+
+      - name: Notify teams on failure
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "TEAMS_WEBHOOK_URL not set, skipping notification"
+            exit 0
+          fi
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$TAG_NAME" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg url "$RUN_URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  type: "AdaptiveCard",
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  version: "1.4",
+                  body: [
+                    { type: "TextBlock", weight: "Bolder", size: "Large", text: "Core Library package published to PyPI FAILED", color: "Attention" },
+                    { type: "FactSet", facts: [
+                      { title: "Tag name", value: $tag_name },
+                      { title: "Triggered by", value: $actor },
+                      { title: "Logs", value: $url }
+                    ]}
+                  ]
+                }
+              }]
+            }')
+          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
