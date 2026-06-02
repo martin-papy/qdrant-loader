@@ -18,7 +18,9 @@ def run_config_command(
         # Maintain test expectation: log via workspace-logger as before
         workspace_config = _setup_workspace_impl(workspace) if workspace else None
         log_file = (
-            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+            str(workspace_config.logs_path / "config.log")
+            if workspace_config
+            else "qdrant-loader.log"
         )
         if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
             if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]

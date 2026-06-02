@@ -101,7 +101,7 @@ class IncrementalPullScheduleConfig(BaseConfig):
     @field_validator("dedup_statuses")
     @classmethod
     def validate_dedup_statuses(cls, values: list[str]) -> list[str]:
-        allowed = {"pending", "running", "done", "failed"}
+        allowed = {"pending", "running", "done", "failed", "cancelled"}
         normalized = []
         for item in values:
             if not isinstance(item, str) or not item.strip():
@@ -162,7 +162,33 @@ class WorkerSchedulesConfig(BaseConfig):
     )
 
 
+class WorkerRuntimeConfig(BaseConfig):
+    """Runtime knobs for worker pool behavior."""
+
+    worker_count: int = Field(
+        default=4,
+        ge=1,
+        description="Number of concurrent workers draining the queue",
+    )
+    lease_seconds: int = Field(
+        default=60,
+        ge=1,
+        description="Visibility lease duration (seconds) when a job is claimed",
+    )
+    max_attempts: int = Field(
+        default=3,
+        ge=1,
+        description="Maximum claim attempts per job before marking failed",
+    )
+    retry_backoff_base_seconds: int = Field(
+        default=5,
+        ge=0,
+        description="Exponential retry base in seconds (0 disables backoff)",
+    )
+
+
 class WorkersConfig(BaseConfig):
     """Worker runtime and scheduling configuration."""
 
+    runtime: WorkerRuntimeConfig = Field(default_factory=WorkerRuntimeConfig)
     schedules: WorkerSchedulesConfig = Field(default_factory=WorkerSchedulesConfig)

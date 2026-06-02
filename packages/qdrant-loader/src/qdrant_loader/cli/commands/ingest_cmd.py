@@ -53,7 +53,9 @@ async def run_ingest_command(
 
         # Setup/reconfigure logging with workspace support
         log_file = (
-            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+            str(workspace_config.logs_path / "ingest.log")
+            if workspace_config
+            else "qdrant-loader.log"
         )
         if getattr(LoggingConfig, "reconfigure", None):  # type: ignore[attr-defined]
             if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]

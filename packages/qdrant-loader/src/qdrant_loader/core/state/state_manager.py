@@ -42,6 +42,13 @@ class StateManager:
         """Public accessor for initialization state used by callers/tests."""
         return self._initialized
 
+    @property
+    def session_factory(self) -> "async_sessionmaker[AsyncSession]":
+        """Return session factory if initialized, else raise a clear error."""
+        if self._session_factory is None:
+            raise RuntimeError("State manager session factory is not initialized")
+        return self._session_factory
+
     async def get_session(self) -> "AsyncSession":
         """Return an async session context manager, initializing if needed.
 

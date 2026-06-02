@@ -217,3 +217,78 @@ async def test_release_for_retry_with_delay_hides_pending_job_until_due(
     due = await sqlite_job_queue.claim_next(lease_seconds=30)
     assert due is not None
     assert due.id == job.id
+
+
+@pytest.mark.asyncio
+async def test_reset_to_pending_preserves_attempt_history(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+
+    claimed = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert claimed is not None
+    assert claimed.id == job.id
+    assert claimed.attempts == 1
+
+    failed = await sqlite_job_queue.mark_failed(
+        job.id,
+        "operator requested retry",
+        claim_attempt=claimed.attempts,
+    )
+    assert failed is True
+
+    reset = await sqlite_job_queue.reset_to_pending(job.id)
+    assert reset is True
+
+    retried = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert retried is not None
+    assert retried.id == job.id
+    assert retried.attempts == 2
+
+
+@pytest.mark.asyncio
+async def test_cancel_pending_job_sets_cancelled_status(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+
+    ok = await sqlite_job_queue.cancel(job.id)
+    assert ok is True
+
+    cancelled = await sqlite_job_queue.list(status=SQLiteJobQueue.CANCELLED)
+    assert len(cancelled) == 1
+    assert cancelled[0].id == job.id
+    assert cancelled[0].status == SQLiteJobQueue.CANCELLED
+    assert cancelled[0].last_error is None  # not conflated with failure
+
+    failed = await sqlite_job_queue.list(status=SQLiteJobQueue.FAILED)
+    assert len(failed) == 0
+
+
+@pytest.mark.asyncio
+async def test_cancel_running_job_sets_cancelled_status(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+    claimed = await sqlite_job_queue.claim_next(lease_seconds=30)
+    assert claimed is not None
+
+    ok = await sqlite_job_queue.cancel(job.id)
+    assert ok is True
+
+    cancelled = await sqlite_job_queue.list(status=SQLiteJobQueue.CANCELLED)
+    assert len(cancelled) == 1
+    assert cancelled[0].status == SQLiteJobQueue.CANCELLED
+
+
+@pytest.mark.asyncio
+async def test_cancelled_job_cannot_be_retried(sqlite_job_queue: SQLiteJobQueue):
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
+    await sqlite_job_queue.cancel(job.id)
+
+    # reset_to_pending only accepts FAILED | DONE — cancelled must be excluded
+    reset = await sqlite_job_queue.reset_to_pending(job.id)
+    assert reset is False
+
+    pending = await sqlite_job_queue.list(status=SQLiteJobQueue.PENDING)
+    assert len(pending) == 0

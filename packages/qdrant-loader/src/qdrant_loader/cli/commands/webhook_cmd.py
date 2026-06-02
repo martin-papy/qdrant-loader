@@ -17,7 +17,7 @@ from qdrant_loader.webhooks.server import app
 
 def _setup_logging(log_level: str, workspace_config) -> None:
     log_file = (
-        str(workspace_config.logs_path)
+        str(workspace_config.logs_path / "webhook.log")
         if workspace_config
         else "qdrant-loader-webhook.log"
     )

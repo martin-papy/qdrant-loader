@@ -935,8 +935,7 @@ class TestGitHubActionsWorkflow:
         favicon_script.parent.mkdir(parents=True, exist_ok=True)
 
         # Create a mock favicon generation script
-        favicon_script.write_text(
-            """
+        favicon_script.write_text("""
 import sys
 from pathlib import Path
 
@@ -981,8 +980,7 @@ def main():
 if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)
-"""
-        )
+""")
 
         # Test favicon generation step
         result = subprocess.run(

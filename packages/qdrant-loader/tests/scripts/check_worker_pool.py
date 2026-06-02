@@ -12,6 +12,7 @@ from qdrant_loader.core.state.session import (
     dispose_engine,
     initialize_engine_and_session,
 )
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.core.worker.pool import QueueWorkerPool
 from qdrant_loader.core.worker.queue import SQLiteJobQueue
 
@@ -48,7 +49,7 @@ async def main() -> None:
         else:
             source = f"source-{i % 10}"
         payload = {"source": source, "seq": i}
-        await queue.enqueue("INCREMENTAL_PULL", payload)
+        await queue.enqueue(JobType.INCREMENTAL_PULL, payload)
 
     active_total = 0
     max_active_total = 0

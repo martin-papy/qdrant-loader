@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
@@ -18,6 +19,17 @@ class JobQueue(Protocol):
 
     async def claim_next(self, lease_seconds: int = 60) -> Job | None:
         """Atomically claim the next visible pending job."""
+
+    def notify(self) -> asyncio.Event:
+        """Return an event that fires when a job becomes available for claiming.
+
+        The event is raised whenever:
+        - A new job is enqueued (status=PENDING).
+        - A job is released for retry (status goes back to PENDING).
+
+        Worker loops await this event (with timeout for visibility timeout reclaim)
+        to avoid constant polling. Long-poll backends (SQS) get this for free.
+        """
 
     async def mark_done(self, job_id: int, claim_attempt: int) -> bool:
         """Mark a claimed job as completed if claim ownership still matches."""
@@ -39,6 +51,12 @@ class JobQueue(Protocol):
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         """List jobs with optional status filter."""
 
+    async def reset_to_pending(self, job_id: int) -> bool:
+        """Reset a failed or done job back to pending so it can be retried."""
+
+    async def cancel(self, job_id: int) -> bool:
+        """Cancel a pending or running job (sets status to cancelled, not failed)."""
+
 
 class SQLiteJobQueue:
     """SQLite-backed job queue implementation using SQLAlchemy async sessions."""
@@ -47,9 +65,15 @@ class SQLiteJobQueue:
     RUNNING = "running"
     DONE = "done"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self._session_factory = session_factory
+        self._pending_event = asyncio.Event()
+
+    def notify(self) -> asyncio.Event:
+        """Return the event used to signal when jobs become available."""
+        return self._pending_event
 
     async def enqueue(self, job_type: str, payload: dict[str, Any]) -> Job:
         now = datetime.now(UTC)
@@ -69,6 +93,7 @@ class SQLiteJobQueue:
             session.add(job)
             await session.commit()
             await session.refresh(job)
+            self._pending_event.set()
             return job
 
     async def claim_next(self, lease_seconds: int = 60) -> Job | None:
@@ -83,17 +108,20 @@ class SQLiteJobQueue:
         )
 
         async with self._session_factory() as session:
-            next_job_id = (
+            candidate_job_id = await session.scalar(
                 select(Job.id)
                 .where(claimable_filter)
                 .order_by(Job.enqueued_at.asc(), Job.id.asc())
                 .limit(1)
-                .scalar_subquery()
             )
 
-            stmt = (
+            if candidate_job_id is None:
+                await session.commit()
+                return None
+
+            result = await session.execute(
                 update(Job)
-                .where(Job.id == next_job_id, claimable_filter)
+                .where(Job.id == candidate_job_id, claimable_filter)
                 .values(
                     status=self.RUNNING,
                     started_at=now,
@@ -102,25 +130,20 @@ class SQLiteJobQueue:
                     attempts=Job.attempts + 1,
                     last_error=None,
                 )
-                .returning(Job.id)
             )
-
-            result = await session.execute(stmt)
-            rows = result.fetchall()
-            claimed_job_id = rows[0][0] if rows else None
-
-            if claimed_job_id is None:
+            claimed = result.rowcount > 0
+            if not claimed:
                 await session.commit()
                 return None
 
-            claimed_job = await session.get(Job, claimed_job_id)
+            claimed_job = await session.get(Job, candidate_job_id)
             await session.commit()
             return claimed_job
 
     async def mark_done(self, job_id: int, claim_attempt: int) -> bool:
         now = datetime.now(UTC)
         async with self._session_factory() as session:
-            stmt = (
+            result = await session.execute(
                 update(Job)
                 .where(
                     Job.id == job_id,
@@ -133,20 +156,17 @@ class SQLiteJobQueue:
                     visibility_deadline=None,
                     last_error=None,
                 )
-                .returning(Job.id)
             )
-            result = await session.execute(stmt)
-            rows = result.fetchall()
-            updated_job_id = rows[0][0] if rows else None
+            updated = result.rowcount > 0
             await session.commit()
-            return updated_job_id is not None
+            return updated
 
     async def mark_failed(
         self, job_id: int, error_message: str, claim_attempt: int
     ) -> bool:
         now = datetime.now(UTC)
         async with self._session_factory() as session:
-            stmt = (
+            result = await session.execute(
                 update(Job)
                 .where(
                     Job.id == job_id,
@@ -159,13 +179,10 @@ class SQLiteJobQueue:
                     visibility_deadline=None,
                     last_error=error_message,
                 )
-                .returning(Job.id)
             )
-            result = await session.execute(stmt)
-            rows = result.fetchall()
-            updated_job_id = rows[0][0] if rows else None
+            updated = result.rowcount > 0
             await session.commit()
-            return updated_job_id is not None
+            return updated
 
     async def release_for_retry(
         self,
@@ -185,7 +202,7 @@ class SQLiteJobQueue:
         )
 
         async with self._session_factory() as session:
-            stmt = (
+            result = await session.execute(
                 update(Job)
                 .where(
                     Job.id == job_id,
@@ -199,13 +216,12 @@ class SQLiteJobQueue:
                     visibility_deadline=retry_deadline,
                     last_error=error_message,
                 )
-                .returning(Job.id)
             )
-            result = await session.execute(stmt)
-            rows = result.fetchall()
-            updated_job_id = rows[0][0] if rows else None
+            updated = result.rowcount > 0
             await session.commit()
-            return updated_job_id is not None
+            if updated:
+                self._pending_event.set()
+            return updated
 
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         async with self._session_factory() as session:
@@ -216,3 +232,48 @@ class SQLiteJobQueue:
 
             result = await session.execute(stmt)
             return list(result.scalars().all())
+
+    async def reset_to_pending(self, job_id: int) -> bool:
+        """Reset a failed/done job back to pending for retry.
+
+        Preserve attempts so operator retries do not erase retry history.
+        """
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status.in_([self.FAILED, self.DONE]),
+                )
+                .values(
+                    status=self.PENDING,
+                    started_at=None,
+                    finished_at=None,
+                    visibility_deadline=None,
+                    last_error=None,
+                )
+            )
+            updated = result.rowcount > 0
+            await session.commit()
+            return updated
+
+    async def cancel(self, job_id: int) -> bool:
+        """Cancel a pending or running job."""
+        now = datetime.now(UTC)
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status.in_([self.PENDING, self.RUNNING]),
+                )
+                .values(
+                    status=self.CANCELLED,
+                    finished_at=now,
+                    visibility_deadline=None,
+                    last_error=None,
+                )
+            )
+            updated = result.rowcount > 0
+            await session.commit()
+            return updated

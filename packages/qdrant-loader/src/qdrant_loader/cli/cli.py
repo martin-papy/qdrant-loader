@@ -11,6 +11,8 @@ from click.utils import echo
 
 # async_command is needed at module level for @async_command decorator on commands.
 from qdrant_loader.cli.asyncio import async_command  # noqa: F401
+from qdrant_loader.cli.commands.jobs_cmd import jobs_cmd
+from qdrant_loader.cli.commands.serve_cmd import serve_cmd as serve_command
 from qdrant_loader.utils.sensitive import sanitize_exception_message
 
 # Heavy modules are lazy-imported to keep CLI startup fast.
@@ -77,7 +79,9 @@ def _setup_logging(log_level: str, workspace_config=None) -> None:
 
         log_format = "console"
         log_file = (
-            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+            str(workspace_config.logs_path / "cli.log")
+            if workspace_config
+            else "qdrant-loader.log"
         )
         LoggingConfig.setup(level=log_level, format=log_format, file=log_file)
         # update module-global logger
@@ -96,9 +100,13 @@ def _check_for_updates() -> None:
         pass
 
 
-def _setup_workspace(workspace_path: Path):
-    workspace_config = _setup_workspace_impl(workspace_path)
-    return workspace_config
+def _setup_workspace(workspace_path):
+    try:
+        return _setup_workspace_impl(workspace_path)
+    except ValueError as e:
+        raise ClickException(str(e)) from e
+    except Exception as e:  # pragma: no cover - handled by CLI tests
+        raise ClickException(f"Failed to setup workspace: {str(e)!s}") from e
 
 
 @group(name="qdrant-loader")
@@ -118,6 +126,10 @@ def cli(log_level: str = "INFO") -> None:
     """QDrant Loader CLI."""
     # Check for available updates in background without blocking CLI startup.
     _check_for_updates()
+
+
+cli.add_command(serve_command)
+cli.add_command(jobs_cmd)
 
 
 def _create_database_directory(path: Path) -> bool:
