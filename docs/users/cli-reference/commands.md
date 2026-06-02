@@ -43,11 +43,11 @@ qdrant-loader setup --output-dir ./my-workspace --mode advanced
 
 #### Setup Modes
 
-| Mode | Description | Best For |
-|------|-------------|----------|
-| **default** | Creates a localfile source pointing to `<workspace>/docs/` with no prompts | Quick start, testing |
-| **normal** | Interactive wizard — prompts for Qdrant URL, API keys, and data sources (git, confluence, jira, publicdocs, localfile) | Most users |
-| **advanced** | Full control — configure embedding model, vector size, chunking, reranking, and multi-project setup | Production deployments |
+| Mode         | Description                                                                                                            | Best For               |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **default**  | Creates a localfile source pointing to `<workspace>/docs/` with no prompts                                             | Quick start, testing   |
+| **normal**   | Interactive wizard — prompts for Qdrant URL, API keys, and data sources (git, confluence, jira, publicdocs, localfile) | Most users             |
+| **advanced** | Full control — configure embedding model, vector size, chunking, reranking, and multi-project setup                    | Production deployments |
 
 #### What Gets Generated
 
@@ -270,7 +270,7 @@ qdrant-loader config --config config.yaml --env .env
 The config command shows:
 
 - **Project ID** - Unique identifier for each project
-- **Display Name** - Human-readable project name  
+- **Display Name** - Human-readable project name
 - **Description** - Project description
 - **Collection** - QDrant collection name used
 - **Sources** - Configured data sources for each project
@@ -293,7 +293,7 @@ qdrant-loader config --workspace . --log-level DEBUG
 The config command validates:
 
 - **Configuration syntax** - YAML structure and required fields
-- **Source configurations** - Required fields for each source type  
+- **Source configurations** - Required fields for each source type
 - **Project structure** - Valid project definitions
 - **Collection names** - Valid QDrant collection naming
 - **Environment variables** - Required variables are set
@@ -400,17 +400,337 @@ qdrant-loader ingest --workspace . --force --profile
 qdrant-loader ingest --workspace . --project my-project --profile
 ```
 
+## 💼 Service Management Commands
+
+### `qdrant-loader serve`
+
+Run the QDrant Loader as a background service with automatic job scheduling and processing.
+
+#### Basic Usage
+
+```bash
+# Run with workspace (finds config.yaml automatically)
+qdrant-loader serve --workspace .
+
+# Run with explicit configuration files
+qdrant-loader serve --config config.yaml --env .env
+
+# Run with debug logging
+qdrant-loader serve --log-level DEBUG
+```
+
+#### Options for Serve Command
+
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--log-level LEVEL` - Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default: INFO
+
+#### How It Works
+
+The `serve` command:
+
+1. **Loads configuration** from workspace or specified config files
+2. **Initializes job queue** in the state database
+3. **Starts scheduler** that periodically creates incremental pull jobs based on configured interval
+4. **Launches worker pool** using `global.workers.runtime` settings from config
+5. **Monitors gracefully** for SIGTERM/SIGINT signals for clean shutdown
+
+#### Job Processing Flow
+
+```
+┌─────────────────────────────────────────────┐
+│  Scheduler                                   │
+│  (runs every N seconds)                      │
+└─────────┬───────────────────────────────────┘
+          │
+          ├─→ Creates INCREMENTAL_PULL jobs
+          │   for each configured source
+          │
+┌─────────▼───────────────────────────────────┐
+│  Job Queue (SQLite)                          │
+│  - pending jobs                              │
+│  - running jobs                              │
+│  - completed/failed jobs                     │
+└─────────┬───────────────────────────────────┘
+          │
+          ├─→ Workers claim jobs
+          │   (bounded concurrency)
+          │
+┌─────────▼───────────────────────────────────┐
+│  Worker Pool (configurable workers)          │
+│  - Process documents from sources            │
+│  - Generate embeddings                       │
+│  - Index into QDrant                         │
+└─────────────────────────────────────────────┘
+```
+
+#### Worker Runtime Tuning
+
+`qdrant-loader serve` reads worker runtime knobs from `global.workers.runtime`:
+
+- `worker_count` - Number of concurrent queue workers.
+- `lease_seconds` - Visibility lease duration when claiming a job.
+- `max_attempts` - Maximum claim attempts before marking a job failed.
+- `retry_backoff_base_seconds` - Exponential retry base (0 disables backoff).
+
+When the queue is empty, workers wait on queue notifications instead of 1-second
+polling, and still wake up on `lease_seconds` timeout to reclaim expired running
+jobs.
+
+#### Examples
+
+```bash
+# Basic service — ingest documents on schedule
+qdrant-loader serve --workspace my-project
+
+# Production setup with debug logging
+qdrant-loader serve --workspace /opt/qdrant-loader --log-level INFO
+
+# Development with explicit files
+qdrant-loader serve --config dev.yaml --env dev.env
+```
+
+#### Graceful Shutdown
+
+- **Ctrl+C** (SIGINT) - Stop accepting new jobs, wait for in-flight jobs to complete
+- **kill -TERM** (SIGTERM) - Same as Ctrl+C
+- All running jobs complete before shutdown
+- Job state is persisted to database for recovery on restart
+
+---
+
+## 💼 Job Administration Commands
+
+### `qdrant-loader jobs`
+
+Inspect and manage the job queue. These commands help you monitor, debug, and manually control jobs without restarting the service.
+
+#### Job Status Overview
+
+Jobs have these statuses:
+
+- **pending** - Waiting to be processed
+- **running** - Currently being processed by a worker
+- **done** - Successfully completed
+- **failed** - Encountered an error during processing
+
+### `qdrant-loader jobs list`
+
+List jobs in the queue with optional filtering.
+
+#### Basic Usage
+
+```bash
+# List all jobs
+qdrant-loader jobs list
+
+# List only pending jobs
+qdrant-loader jobs list --status pending
+
+# List completed jobs
+qdrant-loader jobs list --status done
+
+# List failed jobs
+qdrant-loader jobs list --status failed
+```
+
+#### Options for Jobs List Command
+
+- `--workspace PATH` - Workspace directory (defaults to current directory)
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--status [pending|running|done|failed]` - Filter by job status
+- `--limit N` - Maximum number of jobs to display (default: 50)
+- `--json` - Output results as JSON for scripting
+
+#### Examples
+
+```bash
+# Check how many jobs are waiting to be processed
+qdrant-loader jobs list --status pending
+
+# Count pending jobs programmatically
+qdrant-loader jobs list --status pending --json | jq length
+
+# Monitor running jobs
+qdrant-loader jobs list --status running
+
+# Review recently completed jobs
+qdrant-loader jobs list --status done --limit 10
+```
+
+### `qdrant-loader jobs trigger`
+
+Manually enqueue an ingestion job for a specific source.
+
+#### Basic Usage
+
+```bash
+# Trigger an incremental pull job
+qdrant-loader jobs trigger --source-type git --source my-repo --mode incremental --project my-project
+
+# Trigger for a specific project
+qdrant-loader jobs trigger --source-type git --source my-repo --mode incremental --project my-project
+
+# Trigger a full reprocessing job (bulk)
+qdrant-loader jobs trigger --source-type git --source my-repo --mode bulk --project my-project
+```
+
+#### Options for Jobs Trigger Command
+
+- `--workspace PATH` - Workspace directory (defaults to current directory)
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--source-type TEXT` - Source type (git, confluence, jira, etc.) - **Required**
+- `--source TEXT` - Source name - **Required**
+- `--mode [bulk|incremental]` - Job mode. Default: incremental
+- `--project TEXT` - Project ID - **Required**
+
+#### Source Types
+
+- **git** - Git repositories
+- **confluence** - Confluence Cloud/Data Center
+- **jira** - JIRA Cloud/Data Center
+- **localfile** - Local file systems
+- **publicdocs** - Public documentation
+
+#### Examples
+
+```bash
+# Manually trigger a Git repo pull outside the normal schedule
+qdrant-loader jobs trigger --source-type git --source my-repo --mode incremental --project my-project
+
+# Trigger for a specific project
+qdrant-loader jobs trigger --source-type confluence --source team-space --mode incremental --project documentation
+
+# Bulk pull (reprocess everything)
+qdrant-loader jobs trigger --source-type git --source my-repo --mode bulk --project my-project
+```
+
+#### Bulk vs Incremental
+
+- `--mode incremental`: Runs normal incremental logic (uses ingestion state to detect changed/new content).
+- `--mode bulk`: Forces full reprocessing for the selected source and project (bypasses change detection).
+
+Use `bulk` when:
+
+- You changed chunking/embedding settings and want full re-index.
+- You suspect stale state in the state database.
+- You need a one-time backfill after connector/config changes.
+
+#### Do You Need Config Changes for Bulk?
+
+- No special `workers` config is required for manual `jobs trigger --mode bulk`.
+- You still need a valid source in `projects.<project_id>.sources` that matches:
+  - `--project`
+  - `--source-type`
+  - `--source`
+- `global.workers.schedules.incremental_pull` is only for periodic scheduler behavior in `serve` mode.
+
+#### How to Test Bulk Mode
+
+```bash
+# 1) Ensure service is running
+qdrant-loader serve --config config.yaml --env .env
+
+# 2) Trigger one bulk job for your source
+qdrant-loader jobs trigger --config config.yaml --env .env \
+  --source-type confluence --source AUTO-Confluence-project-1 \
+  --mode bulk --project Jira-test
+
+# 3) Monitor lifecycle
+qdrant-loader jobs list --config config.yaml --env .env --status pending
+qdrant-loader jobs list --config config.yaml --env .env --status running
+qdrant-loader jobs list --config config.yaml --env .env --status done
+qdrant-loader jobs list --config config.yaml --env .env --status failed
+```
+
+### `qdrant-loader jobs retry`
+
+Retry a failed job by resetting it to pending status.
+
+Retry preserves `attempts` history; it does not reset attempts to zero.
+
+#### Basic Usage
+
+```bash
+# Retry job with ID 5
+qdrant-loader jobs retry 5
+
+# Verify before retrying
+qdrant-loader jobs list --status failed
+qdrant-loader jobs retry 5
+```
+
+#### Options for Jobs Retry Command
+
+- `--workspace PATH` - Workspace directory (defaults to current directory)
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `JOB_ID` - Job identifier (required, positional argument)
+
+#### Examples
+
+```bash
+# Find and retry failed jobs
+qdrant-loader jobs list --status failed --json | jq '.[0].id'
+qdrant-loader jobs retry 42
+
+# Retry multiple jobs
+for job_id in 41 42 43; do
+  qdrant-loader jobs retry $job_id
+done
+```
+
+### `qdrant-loader jobs cancel`
+
+Cancel a pending or running job.
+
+#### Basic Usage
+
+```bash
+# Cancel job with ID 5
+qdrant-loader jobs cancel 5
+
+# Cancel with confirmation
+qdrant-loader jobs list --status running
+qdrant-loader jobs cancel 10
+```
+
+#### Options for Jobs Cancel Command
+
+- `--workspace PATH` - Workspace directory (defaults to current directory)
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `JOB_ID` - Job identifier (required, positional argument)
+
+#### Examples
+
+```bash
+# Cancel a running job
+qdrant-loader jobs list --status running
+qdrant-loader jobs cancel 42
+
+# Cancel all pending jobs for a source (requires scripting)
+qdrant-loader jobs list --status pending --json | \
+  jq '.[] | select(.type=="INCREMENTAL_PULL" and .payload.source=="my-repo") | .id' | \
+  xargs -I {} qdrant-loader jobs cancel {}
+```
+
+---
+
 ## 🔄 Exit Codes
 
 All commands use standard exit codes:
 
-| Code | Meaning | Description |
-|------|---------|-------------|
-| `0` | Success | Command completed successfully |
-| `1` | General error | Command failed due to an error |
-| `2` | Configuration error | Invalid configuration or missing settings |
-| `3` | Connection error | Failed to connect to data sources or QDrant |
-| `4` | Processing error | Error during data processing |
+| Code | Meaning             | Description                                 |
+| ---- | ------------------- | ------------------------------------------- |
+| `0`  | Success             | Command completed successfully              |
+| `1`  | General error       | Command failed due to an error              |
+| `2`  | Configuration error | Invalid configuration or missing settings   |
+| `3`  | Connection error    | Failed to connect to data sources or QDrant |
+| `4`  | Processing error    | Error during data processing                |
 
 ## 📚 Related Documentation
 

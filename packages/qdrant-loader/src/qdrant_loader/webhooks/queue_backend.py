@@ -13,15 +13,16 @@ from qdrant_loader.core.state.session import (
     dispose_engine,
     initialize_engine_and_session,
 )
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.core.worker.queue import SQLiteJobQueue
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
-# Job types aligned with WS-5 single-event operations
-SINGLE_UPSERT = "SINGLE_UPSERT"
-SINGLE_DELETE = "SINGLE_DELETE"
-FULL_SCAN = "FULL_SCAN"
+# Re-export for backward compatibility
+SINGLE_UPSERT = JobType.SINGLE_UPSERT.value
+SINGLE_DELETE = JobType.SINGLE_DELETE.value
+FULL_SCAN = "FULL_SCAN"  # Not yet in JobType; reserved for future use
 
 
 @dataclass

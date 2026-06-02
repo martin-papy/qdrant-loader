@@ -487,7 +487,7 @@ class TestSetupLoggingEnhanced:
     def test_setup_logging_with_workspace_config(self):
         """Test logging setup with workspace configuration."""
         mock_workspace_config = Mock()
-        mock_workspace_config.logs_path = Path("/workspace/logs/app.log")
+        mock_workspace_config.logs_path = Path("/workspace/logs")
 
         with patch("qdrant_loader.utils.logging.LoggingConfig") as mock_logging_config:
             mock_logger = Mock()
@@ -498,7 +498,7 @@ class TestSetupLoggingEnhanced:
             mock_logging_config.setup.assert_called_once_with(
                 level="DEBUG",
                 format="console",
-                file=str(mock_workspace_config.logs_path),
+                file=str(mock_workspace_config.logs_path / "cli.log"),
             )
 
     def test_setup_logging_without_workspace_config(self):

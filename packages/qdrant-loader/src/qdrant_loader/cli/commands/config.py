@@ -40,7 +40,9 @@ def run_show_config(
 
         # Setup/reconfigure logging once with workspace support
         log_file = (
-            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+            str(workspace_config.logs_path / "config.log")
+            if workspace_config
+            else "qdrant-loader.log"
         )
         if getattr(LoggingConfig, "reconfigure", None):  # Core supports reconfigure
             if getattr(LoggingConfig, "_initialized", False):  # type: ignore[attr-defined]
