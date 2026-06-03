@@ -263,6 +263,7 @@ class PipelineOrchestrator:
             aggregated_result = PipelineResult()
             batch_count = 0
             checkpoint_sources_to_clear: set[tuple[str, str]] = set()
+            streamed_checkpoint_sources: set[tuple[str, str]] = set()
 
             if not force and not self.components.state_manager._initialized:
                 logger.debug("Initializing state manager for change detection")
@@ -296,6 +297,12 @@ class PipelineOrchestrator:
                 async for batch in stream_iter:
                     total_documents += len(batch)
                     batch_count += 1
+
+                    for doc in batch:
+                        metadata = getattr(doc, "metadata", None) or {}
+                        cp_info = metadata.get("__ingestion_checkpoint") if isinstance(metadata, dict) else None
+                        if isinstance(cp_info, dict) and cp_info:
+                            streamed_checkpoint_sources.add((doc.source_type, doc.source))
 
                     if not force and change_detector is not None:
                         batch = await change_detector.classify_batch(
@@ -346,8 +353,9 @@ class PipelineOrchestrator:
                                     for doc in batch:
                                         if doc.id not in batch_result.successfully_processed_documents:
                                             continue
-                                        cp_info = doc.metadata.get("__ingestion_checkpoint")
-                                        if not cp_info:
+                                        metadata = getattr(doc, "metadata", None) or {}
+                                        cp_info = metadata.get("__ingestion_checkpoint") if isinstance(metadata, dict) else None
+                                        if not isinstance(cp_info, dict) or not cp_info:
                                             continue
                                         checkpoint = Checkpoint(
                                             project_id=current_project_id,
@@ -378,6 +386,44 @@ class PipelineOrchestrator:
                     logger.info("✅ No documents found from sources")
                     return []
 
+                sources_to_clear = (
+                    checkpoint_sources_to_clear | streamed_checkpoint_sources
+                )
+
+                # On a clean successful run, clear any saved checkpoints for
+                # the project/sources processed (prevents stale resume state).
+                if (
+                    resume
+                    and current_project_id is not None
+                    and not force
+                    and aggregated_result.error_count == 0
+                    and sources_to_clear
+                ):
+                    try:
+                        from qdrant_loader.core.state.checkpoint_manager import (
+                            CheckpointManager,
+                        )
+
+                        async with await self.components.state_manager.get_session() as session:
+                            cp_mgr = CheckpointManager(session)
+                            for stype, src in sources_to_clear:
+                                try:
+                                    await cp_mgr.clear_checkpoint(
+                                        current_project_id, stype, src
+                                    )
+                                except Exception as e:
+                                    logger.warning(
+                                        "Failed to clear checkpoint for source",
+                                        source_type=stype,
+                                        source=src,
+                                        error=str(e),
+                                    )
+                    except Exception as e:
+                        logger.warning(
+                            "Failed to clear checkpoints after successful run",
+                            error=str(e),
+                        )
+
                 if not force and not processed_documents:
                     self.last_pipeline_result = aggregated_result
                     if aggregated_result.error_count > 0:
@@ -402,40 +448,6 @@ class PipelineOrchestrator:
                         logger.debug(
                             "Post-stream reconciliation not enabled. Seen URIs collected for potential WS-3 reconciliation",
                             seen_count=len(seen_uris),
-                        )
-
-                # On a clean successful run, clear any saved checkpoints for
-                # the project/sources processed (prevents stale resume state).
-                if (
-                    resume
-                    and current_project_id is not None
-                    and not force
-                    and aggregated_result.error_count == 0
-                    and checkpoint_sources_to_clear
-                ):
-                    try:
-                        from qdrant_loader.core.state.checkpoint_manager import (
-                            CheckpointManager,
-                        )
-
-                        async with await self.components.state_manager.get_session() as session:
-                            cp_mgr = CheckpointManager(session)
-                            for stype, src in checkpoint_sources_to_clear:
-                                try:
-                                    await cp_mgr.clear_checkpoint(
-                                        current_project_id, stype, src
-                                    )
-                                except Exception as e:
-                                    logger.warning(
-                                        "Failed to clear checkpoint for source",
-                                        source_type=stype,
-                                        source=src,
-                                        error=str(e),
-                                    )
-                    except Exception as e:
-                        logger.warning(
-                            "Failed to clear checkpoints after successful run",
-                            error=str(e),
                         )
 
                 self.last_pipeline_result = aggregated_result
@@ -559,7 +571,10 @@ class PipelineOrchestrator:
         return all_documents
 
     async def _collect_documents_from_sources(
-        self, filtered_config: SourcesConfig, project_id: str | None = None
+        self,
+        filtered_config: SourcesConfig,
+        project_id: str | None = None,
+        resume: bool = True,
     ) -> list[Document]:
         """Collect documents from all configured sources."""
         documents = []

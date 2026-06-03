@@ -338,6 +338,68 @@ class TestPipelineOrchestrator:
         )
 
     @pytest.mark.asyncio
+    async def test_process_documents_clears_checkpoint_for_streamed_source_when_batch_is_filtered_out(self):
+        """A clean run should clear stale checkpoints even when all documents were filtered out."""
+        doc = Mock(spec=Document, id="doc1", source_type="jira", source="jira-main")
+        doc.metadata = {"__ingestion_checkpoint": {"cursor_kind": "batch", "cursor_value": "cursor-1"}}
+
+        filtered_config = Mock(spec=SourcesConfig)
+        filtered_config.git = None
+        filtered_config.confluence = None
+        filtered_config.jira = ["jira-main"]
+        filtered_config.publicdocs = None
+        filtered_config.localfile = None
+
+        project_manager = Mock()
+        project_manager.get_project_context.return_value = Mock(
+            config=Mock(sources=filtered_config)
+        )
+        self.orchestrator.project_manager = project_manager
+
+        self.source_filter.filter_sources.return_value = filtered_config
+        self.orchestrator._update_document_states = AsyncMock()
+        self.state_manager._initialized = True
+
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True):
+            assert filtered_config_arg is filtered_config
+            yield [doc]
+
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.classify_batch.return_value = []
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        session = object()
+        session_context = Mock()
+        session_context.__aenter__ = AsyncMock(return_value=session)
+        session_context.__aexit__ = AsyncMock(return_value=None)
+        self.state_manager.get_session = AsyncMock(return_value=session_context)
+
+        clear_checkpoint = AsyncMock()
+
+        with (
+            patch(
+                "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+                return_value=state_detector_context,
+            ),
+            patch(
+                "qdrant_loader.core.state.checkpoint_manager.CheckpointManager"
+            ) as checkpoint_manager_cls,
+        ):
+            checkpoint_manager_cls.return_value.clear_checkpoint = clear_checkpoint
+
+            result = await self.orchestrator.process_documents(
+                project_id="project-1",
+                resume=True,
+            )
+
+        assert result == []
+        clear_checkpoint.assert_awaited_once_with("project-1", "jira", "jira-main")
+
+    @pytest.mark.asyncio
     async def test_process_documents_exception_handling(self):
         """Test document processing exception handling."""
         filtered_config = make_rich_compatible_mock(spec=SourcesConfig)
