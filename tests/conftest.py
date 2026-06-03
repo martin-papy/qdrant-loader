@@ -387,7 +387,8 @@ Sitemap: https://qdrant-loader.net/sitemap.xml"""
     (templates_dir / "robots.txt").write_text(robots_template)
 
     # Create sample documentation files
-    (temp_workspace / "README.md").write_text("""# QDrant Loader
+    (temp_workspace / "README.md").write_text(
+        """# QDrant Loader
 
 Enterprise-ready vector database toolkit for building searchable knowledge bases.
 
@@ -396,16 +397,19 @@ Enterprise-ready vector database toolkit for building searchable knowledge bases
 - Multi-source data loading
 - Vector embeddings
 - Search capabilities
-""")
+"""
+    )
 
-    (temp_workspace / "docs" / "installation.md").write_text("""# Installation
+    (temp_workspace / "docs" / "installation.md").write_text(
+        """# Installation
 
 Install QDrant Loader using pip:
 
 ```bash
 pip install qdrant-loader
 ```
-""")
+"""
+    )
 
     # Create sample assets
     assets_dir = temp_workspace / "website" / "assets"

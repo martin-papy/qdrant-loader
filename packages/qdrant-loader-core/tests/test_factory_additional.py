@@ -46,7 +46,7 @@ def test_factory_routes_to_noop_on_openai_init_failure(monkeypatch):
         with pytest.raises(NotImplementedError):
             await chat.chat([{"role": "user", "content": "hi"}])  # type: ignore[func-returns-value]
 
-    asyncio.get_event_loop().run_until_complete(_run())
+    asyncio.run(_run())
 
 
 def test_factory_azure_error_returns_noop(monkeypatch):

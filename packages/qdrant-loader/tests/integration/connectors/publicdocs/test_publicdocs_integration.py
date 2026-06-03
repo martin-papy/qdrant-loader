@@ -22,7 +22,10 @@ class TestPublicDocsIntegration:
     def publicdocs_config(self):
         """Get the PublicDocs configuration from test config file."""
         # Load the test configuration directly from the file
-        config_path = Path("tests/config.test.yaml")
+        config_path = (
+            next(p for p in Path(__file__).resolve().parents if p.name == "tests")
+            / "config.test.yaml"
+        )
 
         with open(config_path) as f:
             config_data = yaml.safe_load(f)

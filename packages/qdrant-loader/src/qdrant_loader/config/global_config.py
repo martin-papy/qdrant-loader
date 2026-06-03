@@ -16,6 +16,7 @@ from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.config.workers import WorkersConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig
+from qdrant_loader.config.graph import GraphConfig
 
 
 class SemanticAnalysisConfig(BaseConfig):
@@ -61,6 +62,9 @@ class GlobalConfig(BaseConfig):
         default_factory=WorkersConfig,
         description="Worker scheduling and runtime configuration",
     )
+    graph: GraphConfig = Field(
+        default_factory=GraphConfig, description="Graph configuration"
+    )
 
     def __init__(self, **data):
         """Initialize global configuration."""
@@ -104,4 +108,5 @@ class GlobalConfig(BaseConfig):
             },
             "qdrant": self.qdrant.to_dict(),
             "workers": self.workers.to_dict(),
+            "graph": self.graph.to_dict(),
         }

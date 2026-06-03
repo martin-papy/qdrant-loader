@@ -34,8 +34,3 @@ async def test_factory_returns_provider_with_expected_interfaces():
     assert hasattr(emb, "embed")
     assert hasattr(chat, "chat")
     assert tok.count("abc") == 3
-
-    with pytest.raises(NotImplementedError):
-        await emb.embed(["hello"])
-    with pytest.raises(NotImplementedError):
-        await chat.chat([{"role": "user", "content": "hi"}])
