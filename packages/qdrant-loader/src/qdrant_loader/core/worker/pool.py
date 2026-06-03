@@ -102,7 +102,31 @@ class QueueWorkerPool:
                     )
                     t0 = time.monotonic()
                     try:
-                        await self._handler(job.type, payload)
+                        # Start lease renewal task to prevent visibility timeout during handler
+                        renewal_interval = max(1, self._lease_seconds // 3)
+
+                        async def _renew_lease(
+                            *,
+                            current_job_id: int = job.id,
+                            current_lease_seconds: int = self._lease_seconds,
+                            current_renewal_interval: int = renewal_interval,
+                        ) -> None:
+                            while True:
+                                await asyncio.sleep(current_renewal_interval)
+                                async with self._queue_io_guard:
+                                    await self._queue.extend_visibility(
+                                        current_job_id, current_lease_seconds
+                                    )
+
+                        renewal_task = asyncio.create_task(_renew_lease())
+                        try:
+                            await self._handler(job.type, payload)
+                        finally:
+                            renewal_task.cancel()
+                            try:
+                                await renewal_task
+                            except asyncio.CancelledError:
+                                pass
                     except Exception as exc:
                         duration_ms = round((time.monotonic() - t0) * 1000)
                         async with self._queue_io_guard:

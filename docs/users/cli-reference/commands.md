@@ -685,7 +685,7 @@ done
 
 ### `qdrant-loader jobs cancel`
 
-Cancel a pending or running job.
+Cancel a pending job.
 
 #### Basic Usage
 

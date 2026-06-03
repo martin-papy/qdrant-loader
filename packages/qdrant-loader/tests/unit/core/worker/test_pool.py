@@ -260,3 +260,49 @@ async def test_worker_pool_marks_failed_for_missing_source_lock(
     assert len(done_jobs) == 0
     assert len(failed_jobs) == 1
     assert "source_lock" in failed_jobs[0].last_error
+
+
+@pytest.mark.asyncio
+async def test_worker_pool_extends_visibility_during_long_handler(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """Lease renewal should prevent reclaim of long-running jobs.
+
+    Test that when a handler takes longer than (lease_seconds / 3),
+    the renewal task extends the visibility deadline periodically,
+    preventing false reclaim by another worker.
+    """
+    job = await sqlite_job_queue.enqueue("TEST", {"source_lock": "test"})
+
+    handler_duration = 0.15  # 150ms
+    lease_seconds = 10  # 10s lease
+    # renewal_interval = max(1, 10 // 3) = 3s
+
+    call_count = [0]  # Track handler invocations
+
+    async def long_handler(_type: str, _payload: dict) -> None:
+        call_count[0] += 1
+        await asyncio.sleep(handler_duration)
+
+    pool = QueueWorkerPool(
+        sqlite_job_queue,
+        handler=long_handler,
+        worker_count=1,
+        lease_seconds=lease_seconds,
+    )
+
+    # Run pool once
+    processed = await pool.run_until_empty()
+
+    # Job should be processed exactly once (no false reclaim)
+    assert processed == 1
+    assert call_count[0] == 1
+
+    # Job should be DONE
+    done_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.DONE)
+    assert len(done_jobs) == 1
+    assert done_jobs[0].id == job.id
+
+    # No jobs should be left RUNNING
+    running_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.RUNNING)
+    assert len(running_jobs) == 0

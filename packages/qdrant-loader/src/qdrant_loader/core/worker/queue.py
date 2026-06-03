@@ -48,6 +48,13 @@ class JobQueue(Protocol):
     ) -> bool:
         """Release a claimed job back to pending for a later retry."""
 
+    async def extend_visibility(self, job_id: int, lease_seconds: int) -> bool:
+        """Extend the visibility deadline of a RUNNING job by lease_seconds.
+
+        Used to prevent lease expiration during long-running handler execution.
+        Returns True if successfully extended, False if job is no longer RUNNING.
+        """
+
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         """List jobs with optional status filter."""
 
@@ -55,7 +62,7 @@ class JobQueue(Protocol):
         """Reset a failed or done job back to pending so it can be retried."""
 
     async def cancel(self, job_id: int) -> bool:
-        """Cancel a pending or running job (sets status to cancelled, not failed)."""
+        """Cancel a pending job (sets status to CANCELLED)."""
 
 
 class SQLiteJobQueue:
@@ -223,6 +230,30 @@ class SQLiteJobQueue:
                 self._pending_event.set()
             return updated
 
+    async def extend_visibility(self, job_id: int, lease_seconds: int) -> bool:
+        """Extend the visibility deadline of a RUNNING job by lease_seconds.
+
+        Used to prevent lease expiration during long-running handler execution.
+        Returns True if successfully extended, False if job is no longer RUNNING.
+        """
+        now = datetime.now(UTC)
+        new_deadline = now + timedelta(seconds=lease_seconds)
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status == self.RUNNING,
+                )
+                .values(
+                    visibility_deadline=new_deadline,
+                )
+            )
+            updated = result.rowcount > 0
+            await session.commit()
+            return updated
+
     async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
         async with self._session_factory() as session:
             stmt = select(Job)
@@ -237,6 +268,7 @@ class SQLiteJobQueue:
         """Reset a failed/done job back to pending for retry.
 
         Preserve attempts so operator retries do not erase retry history.
+        Does not reset CANCELLED jobs (operator must explicitly delete them).
         """
         async with self._session_factory() as session:
             result = await session.execute(
@@ -258,14 +290,14 @@ class SQLiteJobQueue:
             return updated
 
     async def cancel(self, job_id: int) -> bool:
-        """Cancel a pending or running job."""
+        """Cancel a pending job."""
         now = datetime.now(UTC)
         async with self._session_factory() as session:
             result = await session.execute(
                 update(Job)
                 .where(
                     Job.id == job_id,
-                    Job.status.in_([self.PENDING, self.RUNNING]),
+                    Job.status == self.PENDING,
                 )
                 .values(
                     status=self.CANCELLED,

@@ -18,14 +18,17 @@ from click.types import Path as ClickPath
 from qdrant_loader.core.worker.job_types import JobType
 
 
-def _load_config(workspace: Path | None, config: Path | None, env: Path | None) -> None:
-    """Validate flags and load global config. Raises ClickException on failure."""
+def _init_queue(workspace: Path | None, config: Path | None, env: Path | None):
+    """Load config, build StateManager and SQLiteJobQueue. Returns (state_manager, queue)."""
     from qdrant_loader.cli.config_loader import (
         load_config_with_workspace,
         setup_workspace,
     )
+    from qdrant_loader.config import get_global_config
     from qdrant_loader.config.workspace import validate_workspace_flags
+    from qdrant_loader.core.state.state_manager import StateManager
 
+    # Validate mutually exclusive flags early
     try:
         validate_workspace_flags(workspace, config, env)
     except ValueError as e:
@@ -48,30 +51,23 @@ def _load_config(workspace: Path | None, config: Path | None, env: Path | None) 
             skip_validation=True,
         )
 
+    global_config = get_global_config()
+    state_manager = StateManager(global_config.state_management)
+    return state_manager
+
 
 async def _run_with_queue(workspace, config, env, coro_factory):
-    """Load config, open engine directly (no DDL), run coro_factory(queue), dispose engine."""
-    from qdrant_loader.core.state.session import dispose_engine
-    from qdrant_loader.core.worker.queue import SQLiteJobQueue
-
-    engine, session_factory = _make_session_factory(workspace, config, env)
+    """Initialize queue, run coro_factory(queue), dispose state manager."""
+    state_manager = _init_queue(workspace, config, env)
+    await state_manager.initialize()
+    queue_instance = None
     try:
-        queue = SQLiteJobQueue(session_factory)
-        return await coro_factory(queue)
+        from qdrant_loader.core.worker.queue import SQLiteJobQueue
+
+        queue_instance = SQLiteJobQueue(state_manager._session_factory)
+        return await coro_factory(queue_instance)
     finally:
-        await dispose_engine(engine)
-
-
-def _make_session_factory(
-    workspace: Path | None, config: Path | None, env: Path | None
-):
-    """Minimum bootstrap: load config, build engine, return (engine, session_factory). No DDL."""
-    from qdrant_loader.config import get_global_config
-    from qdrant_loader.core.state.session import initialize_engine_and_session
-
-    _load_config(workspace, config, env)
-    global_config = get_global_config()
-    return initialize_engine_and_session(global_config.state_management)
+        await state_manager.dispose()
 
 
 # ────────────────────────────────────────────────
@@ -117,9 +113,7 @@ def _common_options(fn):
 @jobs_cmd.command("list")
 @click.option(
     "--status",
-    type=Choice(
-        ["pending", "running", "done", "failed", "cancelled"], case_sensitive=False
-    ),
+    type=Choice(["pending", "running", "done", "failed"], case_sensitive=False),
     default=None,
     help="Filter by job status.",
 )
@@ -248,7 +242,7 @@ def jobs_trigger(
 @click.argument("job_id", type=int)
 @_common_options
 def jobs_cancel(job_id, workspace, config_path, env_path):
-    """Cancel a pending or running job."""
+    """Cancel a pending job."""
 
     async def _cancel(queue):
         ok = await queue.cancel(job_id)
@@ -256,7 +250,7 @@ def jobs_cancel(job_id, workspace, config_path, env_path):
             click.echo(f"Job {job_id} cancelled.")
         else:
             raise ClickException(
-                f"Job {job_id} not found or is not in pending/running state."
+                f"Job {job_id} not found or is not in pending state."
             )
 
     asyncio.run(_run_with_queue(workspace, config_path, env_path, _cancel))
