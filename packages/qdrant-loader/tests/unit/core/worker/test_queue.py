@@ -266,7 +266,7 @@ async def test_cancel_pending_job_sets_cancelled_status(
 
 
 @pytest.mark.asyncio
-async def test_cancel_running_job_sets_cancelled_status(
+async def test_cancel_running_job_is_rejected(
     sqlite_job_queue: SQLiteJobQueue,
 ):
     job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
@@ -274,11 +274,14 @@ async def test_cancel_running_job_sets_cancelled_status(
     assert claimed is not None
 
     ok = await sqlite_job_queue.cancel(job.id)
-    assert ok is True
+    assert ok is False
 
     cancelled = await sqlite_job_queue.list(status=SQLiteJobQueue.CANCELLED)
-    assert len(cancelled) == 1
-    assert cancelled[0].status == SQLiteJobQueue.CANCELLED
+    assert len(cancelled) == 0
+
+    running = await sqlite_job_queue.list(status=SQLiteJobQueue.RUNNING)
+    assert len(running) == 1
+    assert running[0].id == job.id
 
 
 @pytest.mark.asyncio
