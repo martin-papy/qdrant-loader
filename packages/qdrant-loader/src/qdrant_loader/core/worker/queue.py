@@ -302,16 +302,6 @@ class SQLiteJobQueue:
 
             result = await session.execute(stmt)
             return list(result.scalars().all())
-            if status:
-                stmt = stmt.where(Job.status == status)
-            stmt = (
-                stmt.order_by(Job.enqueued_at.asc(), Job.id.asc())
-                .offset(offset)
-                .limit(limit)
-            )
-
-            result = await session.execute(stmt)
-            return list(result.scalars().all())
 
     async def reset_to_pending(self, job_id: int) -> bool:
         """Reset a failed/done job back to pending for retry.

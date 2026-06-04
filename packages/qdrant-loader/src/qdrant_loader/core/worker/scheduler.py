@@ -111,6 +111,19 @@ class IncrementalPullScheduler:
         active jobs are accounted for, even when a status has >10k entries.
         Scaling: 100k PENDING jobs → ~100 queries of 1k each, O(n) memory constant.
 
+        **Offset pagination caveat:** If new jobs are enqueued during pagination
+        (by other workers or the pool), rows can shift and be skipped. This is
+        acceptable because:
+        1. Unlikely: pagination completes in <100ms for 10k jobs; concurrent
+           enqueues during this window are rare.
+        2. Dedup only checks jobs active at the START of run_once(). Jobs
+           enqueued mid-pagination are not yet in dedup_keys anyway.
+        3. Worst case: duplicate enqueue for a source, caught by downstream
+           dedup logic or visibility lease enforcement.
+
+        Future: Consider keyset pagination (WHERE (enqueued_at, id) > ...) if
+        this risk becomes unacceptable.
+
         Returns:
             Set of (job_type, project_id, source_type, source_name) tuples.
         """
