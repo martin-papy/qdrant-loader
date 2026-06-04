@@ -19,7 +19,7 @@ from qdrant_loader.core.worker.job_types import JobType
 
 
 def _init_queue(workspace: Path | None, config: Path | None, env: Path | None):
-    """Load config, build StateManager and SQLiteJobQueue. Returns (state_manager, queue)."""
+    """Load config, build StateManager. Returns state_manager."""
     from qdrant_loader.cli.config_loader import (
         load_config_with_workspace,
         setup_workspace,
@@ -64,7 +64,7 @@ async def _run_with_queue(workspace, config, env, coro_factory):
     try:
         from qdrant_loader.core.worker.queue import SQLiteJobQueue
 
-        queue_instance = SQLiteJobQueue(state_manager._session_factory)
+        queue_instance = SQLiteJobQueue(state_manager.session_factory)
         return await coro_factory(queue_instance)
     finally:
         await state_manager.dispose()
@@ -113,7 +113,9 @@ def _common_options(fn):
 @jobs_cmd.command("list")
 @click.option(
     "--status",
-    type=Choice(["pending", "running", "done", "failed"], case_sensitive=False),
+    type=Choice(
+        ["pending", "running", "done", "failed", "cancelled"], case_sensitive=False
+    ),
     default=None,
     help="Filter by job status.",
 )
@@ -249,8 +251,6 @@ def jobs_cancel(job_id, workspace, config_path, env_path):
         if ok:
             click.echo(f"Job {job_id} cancelled.")
         else:
-            raise ClickException(
-                f"Job {job_id} not found or is not in pending state."
-            )
+            raise ClickException(f"Job {job_id} not found or is not in pending state.")
 
     asyncio.run(_run_with_queue(workspace, config_path, env_path, _cancel))

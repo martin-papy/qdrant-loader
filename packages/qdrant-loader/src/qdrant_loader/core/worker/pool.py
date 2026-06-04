@@ -113,9 +113,17 @@ class QueueWorkerPool:
                         ) -> None:
                             while True:
                                 await asyncio.sleep(current_renewal_interval)
-                                async with self._queue_io_guard:
-                                    await self._queue.extend_visibility(
-                                        current_job_id, current_lease_seconds
+                                try:
+                                    async with self._queue_io_guard:
+                                        await self._queue.extend_visibility(
+                                            current_job_id, current_lease_seconds
+                                        )
+                                except Exception as exc:
+                                    logger.warning(
+                                        "job.lease_renew_failed",
+                                        job_id=current_job_id,
+                                        error=str(exc),
+                                        error_type=type(exc).__name__,
                                     )
 
                         renewal_task = asyncio.create_task(_renew_lease())
@@ -127,6 +135,13 @@ class QueueWorkerPool:
                                 await renewal_task
                             except asyncio.CancelledError:
                                 pass
+                            except Exception as exc:
+                                logger.warning(
+                                    "job.lease_renew_teardown_failed",
+                                    job_id=job.id,
+                                    error=str(exc),
+                                    error_type=type(exc).__name__,
+                                )
                     except Exception as exc:
                         duration_ms = round((time.monotonic() - t0) * 1000)
                         async with self._queue_io_guard:
