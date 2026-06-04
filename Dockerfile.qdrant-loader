@@ -36,6 +36,8 @@ COPY --chown=appuser:appuser --from=base /qdrant-loader/.venv /qdrant-loader/.ve
 COPY --chown=appuser:appuser packages/qdrant-loader-core /qdrant-loader/packages/qdrant-loader-core
 COPY --chown=appuser:appuser packages/qdrant-loader /qdrant-loader/packages/qdrant-loader
 
+RUN chmod +x /qdrant-loader/packages/qdrant-loader/entrypoint.sh
+
 ENV PATH="/qdrant-loader/.venv/bin:$PATH"
 
-CMD ["python", "-c", "import asyncio; from pathlib import Path; from qdrant_loader.cli.commands.webhook_cmd import run_webhook_command; config_path = Path('config.yaml'); assert config_path.exists(), 'config.yaml not found'; env_path = Path('.env') if Path('.env').exists() else None; asyncio.run(run_webhook_command(workspace=None, config=config_path, env=env_path, host='0.0.0.0', port=8081, log_level='INFO'))"]
+CMD ["/qdrant-loader/packages/qdrant-loader/entrypoint.sh"]
