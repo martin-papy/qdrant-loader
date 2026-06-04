@@ -4,13 +4,13 @@ from pathlib import Path
 
 import uvicorn
 from click.exceptions import ClickException
-from qdrant_loader_core.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
+from qdrant_loader.utils.logging import LoggingConfig
 
 from qdrant_loader.cli.config_loader import (
     load_config_with_workspace,
     setup_workspace,
 )
-from qdrant_loader.cli.logging_utils import setup_logging
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.webhooks.server import app
 
@@ -39,15 +39,19 @@ async def run_webhook_command(
     log_level: str,
 ) -> None:
     """Run the webhook server for connector events."""
-    validate_workspace_flags(workspace, config, env)
-    workspace_config = setup_workspace(workspace) if workspace else None
+    try:
+        validate_workspace_flags(workspace, config, env)
+        workspace_config = setup_workspace(workspace) if workspace else None
+    except ValueError as exc:
+        raise ClickException(str(exc)) from exc
 
-    setup_logging(log_level, workspace_config)
+    _setup_logging(log_level, workspace_config)
 
     try:
         load_config_with_workspace(workspace_config, config, env)
     except Exception as exc:
-        raise ClickException(f"Failed to load configuration: {exc}") from exc
+        safe_error = sanitize_exception_message(exc) or type(exc).__name__
+        raise ClickException(f"Failed to load configuration: {safe_error}") from exc
 
     logger = LoggingConfig.get_logger(__name__)
     logger.info(
@@ -68,4 +72,5 @@ async def run_webhook_command(
         await server.serve()
     except Exception as exc:
         logger.exception("Webhook server error")
-        raise ClickException(f"Webhook server failed: {exc}") from exc
+        safe_error = sanitize_exception_message(exc) or type(exc).__name__
+        raise ClickException(f"Webhook server failed: {safe_error}") from exc

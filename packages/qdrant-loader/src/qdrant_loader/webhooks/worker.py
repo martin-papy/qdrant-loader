@@ -53,10 +53,17 @@ async def run_webhook_worker(stop_event: asyncio.Event) -> None:
                 job_id=job.id,
                 error=str(exc),
             )
-            await job_queue.mark_failed(
-                job.id,
-                error_message=str(exc),
-                claim_attempt=job.attempts,
-            )
+            try:
+                await job_queue.mark_failed(
+                    job.id,
+                    error_message=str(exc),
+                    claim_attempt=job.attempts,
+                )
+            except Exception as mark_exc:
+                logger.exception(
+                    "Failed to mark webhook job as failed",
+                    job_id=job.id,
+                    error=str(mark_exc),
+                )
 
     logger.info("Webhook worker stopped")

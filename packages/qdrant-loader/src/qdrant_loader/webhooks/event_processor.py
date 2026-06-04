@@ -195,6 +195,7 @@ def _resolve_source_config(
     if not pipeline.project_manager:
         raise ValueError("Project id is required when project manager is unavailable")
 
+    matches: list[tuple[Any, str]] = []
     for candidate_project_id in pipeline.project_manager.list_project_ids():
         project_context = pipeline.project_manager.get_project_context(
             candidate_project_id
@@ -203,6 +204,13 @@ def _resolve_source_config(
             continue
         jira_sources = project_context.config.sources.jira or {}
         if source_name in jira_sources:
-            return jira_sources[source_name], candidate_project_id
+            matches.append((jira_sources[source_name], candidate_project_id))
 
-    raise ValueError(f"Jira source '{source_name}' not found in any project")
+    if not matches:
+        raise ValueError(f"Jira source '{source_name}' not found in any project")
+    if len(matches) > 1:
+        raise ValueError(
+            f"Jira source '{source_name}' is ambiguous across projects; "
+            "provide project_id explicitly."
+        )
+    return matches[0]
