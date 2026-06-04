@@ -37,7 +37,7 @@ services:
       - 8081:8081
     # Ensure .env and config.yaml exist on the host
     volumes:
-      - .env:/qdrant-loader/.env
+      - ./.env:/qdrant-loader/.env
       - ./config.yaml:/qdrant-loader/config.yaml
     depends_on: 
       qdrant:

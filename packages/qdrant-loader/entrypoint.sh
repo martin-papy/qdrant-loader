@@ -13,13 +13,13 @@ if [ ! -f ".env" ]; then
 fi
 
 # Allow environment variable overrides
-HOST="${WEBHOOK_HOST:-0.0.0.0}"
-PORT="${WEBHOOK_PORT:-8081}"
-LOG_LEVEL="${WEBHOOK_LOG_LEVEL:-INFO}"
+export _ENTRYPOINT_HOST="${WEBHOOK_HOST:-0.0.0.0}"
+export _ENTRYPOINT_PORT="${WEBHOOK_PORT:-8081}"
+export _ENTRYPOINT_LOG_LEVEL="${WEBHOOK_LOG_LEVEL:-INFO}"
 
 # Run the webhook command
 exec python -c "
-import asyncio
+import asyncio, os
 from pathlib import Path
 from qdrant_loader.cli.commands.webhook_cmd import run_webhook_command
 
@@ -27,8 +27,8 @@ asyncio.run(run_webhook_command(
     workspace=None,
     config=Path('config.yaml'),
     env=Path('.env'),
-    host='$HOST',
-    port=$PORT,
-    log_level='$LOG_LEVEL'
+    host=os.environ['_ENTRYPOINT_HOST'],
+    port=int(os.environ['_ENTRYPOINT_PORT']),
+    log_level=os.environ['_ENTRYPOINT_LOG_LEVEL'],
 ))
 "
