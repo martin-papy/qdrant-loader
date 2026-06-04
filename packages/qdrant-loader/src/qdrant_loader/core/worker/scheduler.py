@@ -105,16 +105,36 @@ class IncrementalPullScheduler:
                     yield project.project_id, source_type, source_name
 
     async def _load_active_dedup_keys(self) -> set[tuple[str, str, str, str]]:
+        """Load all active (non-terminal) job dedup keys to avoid re-enqueueing.
+
+        Paginates through each configured status (dedup_statuses) to ensure all
+        active jobs are accounted for, even when a status has >10k entries.
+        Scaling: 100k PENDING jobs → ~100 queries of 1k each, O(n) memory constant.
+
+        Returns:
+            Set of (job_type, project_id, source_type, source_name) tuples.
+        """
         keys: set[tuple[str, str, str, str]] = set()
 
         # JobQueue protocol only supports filtering by one status at a time.
-        # Query each configured status and normalize to dedup keys.
+        # Paginate through each configured status to avoid missing jobs when
+        # a status has >limit entries. Continue until list returns < limit results.
         for status in self._schedule.dedup_statuses:
-            jobs = await self._queue.list(status=status, limit=10000)
-            for job in jobs:
-                key = self._job_dedup_key(job)
-                if key is not None:
-                    keys.add(key)
+            offset = 0
+            page_size = 1000
+            while True:
+                jobs = await self._queue.list(
+                    status=status, limit=page_size, offset=offset
+                )
+                if not jobs:
+                    break
+                for job in jobs:
+                    key = self._job_dedup_key(job)
+                    if key is not None:
+                        keys.add(key)
+                if len(jobs) < page_size:
+                    break
+                offset += page_size
 
         return keys
 

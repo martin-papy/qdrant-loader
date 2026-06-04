@@ -48,8 +48,26 @@ class JobQueue(Protocol):
     ) -> bool:
         """Release a claimed job back to pending for a later retry."""
 
-    async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
-        """List jobs with optional status filter."""
+    async def extend_visibility(self, job_id: int, lease_seconds: int) -> bool:
+        """Extend the visibility deadline of a RUNNING job by lease_seconds.
+
+        Used to prevent lease expiration during long-running handler execution.
+        Returns True if successfully extended, False if job is no longer RUNNING.
+        """
+
+    async def list(
+        self, status: str | None = None, limit: int = 100, offset: int = 0
+    ) -> list[Job]:
+        """List jobs with optional status filter and pagination (offset/limit).
+
+        Args:
+            status: Filter by job status (e.g., 'pending', 'running'). None = all statuses.
+            limit: Max jobs per page (default 100).
+            offset: Pagination offset; skip first N results.
+
+        Returns:
+            List of Job objects ordered by (enqueued_at, id). May return <limit results.
+        """
 
     async def reset_to_pending(self, job_id: int) -> bool:
         """Reset a failed or done job back to pending so it can be retried."""
@@ -223,12 +241,74 @@ class SQLiteJobQueue:
                 self._pending_event.set()
             return updated
 
-    async def list(self, status: str | None = None, limit: int = 100) -> list[Job]:
+    async def extend_visibility(self, job_id: int, lease_seconds: int) -> bool:
+        """Extend the visibility deadline of a RUNNING job by lease_seconds.
+
+        Used to prevent lease expiration during long-running handler execution.
+        Returns True if successfully extended, False if job is no longer RUNNING.
+        """
+        now = datetime.now(UTC)
+        new_deadline = now + timedelta(seconds=lease_seconds)
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Job)
+                .where(
+                    Job.id == job_id,
+                    Job.status == self.RUNNING,
+                )
+                .values(
+                    visibility_deadline=new_deadline,
+                )
+            )
+            updated = result.rowcount > 0
+            await session.commit()
+            return updated
+
+    async def list(
+        self, status: str | None = None, limit: int = 100, offset: int = 0
+    ) -> list[Job]:
+        """List jobs with optional status filter and pagination support.
+
+        Args:
+            status: Filter by job status (e.g., 'pending', 'running'). None = all statuses.
+            limit: Max jobs to return per page (default 100).
+            offset: Pagination offset; skip first N results.
+
+        Returns:
+            List of Job objects ordered by (enqueued_at ASC, id ASC). May return <limit results.
+
+        Example (paginate through all pending jobs):
+            offset = 0
+            while True:
+                jobs = await queue.list(status='pending', limit=1000, offset=offset)
+                if not jobs:
+                    break
+                for job in jobs:
+                    process(job)
+                if len(jobs) < 1000:
+                    break
+                offset += 1000
+        """
         async with self._session_factory() as session:
             stmt = select(Job)
             if status:
                 stmt = stmt.where(Job.status == status)
-            stmt = stmt.order_by(Job.enqueued_at.asc(), Job.id.asc()).limit(limit)
+            stmt = (
+                stmt.order_by(Job.enqueued_at.asc(), Job.id.asc())
+                .offset(offset)
+                .limit(limit)
+            )
+
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+            if status:
+                stmt = stmt.where(Job.status == status)
+            stmt = (
+                stmt.order_by(Job.enqueued_at.asc(), Job.id.asc())
+                .offset(offset)
+                .limit(limit)
+            )
 
             result = await session.execute(stmt)
             return list(result.scalars().all())
