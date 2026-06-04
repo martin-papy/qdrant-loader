@@ -266,7 +266,7 @@ async def test_cancel_pending_job_sets_cancelled_status(
 
 
 @pytest.mark.asyncio
-async def test_cancel_running_job_sets_cancelled_status(
+async def test_cancel_running_job_is_rejected(
     sqlite_job_queue: SQLiteJobQueue,
 ):
     job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
@@ -274,11 +274,14 @@ async def test_cancel_running_job_sets_cancelled_status(
     assert claimed is not None
 
     ok = await sqlite_job_queue.cancel(job.id)
-    assert ok is True
+    assert ok is False
 
     cancelled = await sqlite_job_queue.list(status=SQLiteJobQueue.CANCELLED)
-    assert len(cancelled) == 1
-    assert cancelled[0].status == SQLiteJobQueue.CANCELLED
+    assert len(cancelled) == 0
+
+    running = await sqlite_job_queue.list(status=SQLiteJobQueue.RUNNING)
+    assert len(running) == 1
+    assert running[0].id == job.id
 
 
 @pytest.mark.asyncio
@@ -292,3 +295,53 @@ async def test_cancelled_job_cannot_be_retried(sqlite_job_queue: SQLiteJobQueue)
 
     pending = await sqlite_job_queue.list(status=SQLiteJobQueue.PENDING)
     assert len(pending) == 0
+
+
+@pytest.mark.asyncio
+async def test_extend_visibility_updates_running_job_deadline(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """extend_visibility should extend deadline for RUNNING jobs."""
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "test"})
+
+    # Claim job (status = RUNNING, visibility_deadline = now + 60s)
+    claimed = await sqlite_job_queue.claim_next(lease_seconds=60)
+    assert claimed is not None
+    assert claimed.status == SQLiteJobQueue.RUNNING
+
+    # Extend by 30s
+    extended = await sqlite_job_queue.extend_visibility(job.id, lease_seconds=30)
+    assert extended is True  # Should succeed
+
+    # Verify deadline was extended (new deadline should be >= original + 30s)
+    updated_job = await sqlite_job_queue.claim_next(lease_seconds=60)
+    assert updated_job is None  # Can't claim again (still leased from renewal)
+
+
+@pytest.mark.asyncio
+async def test_extend_visibility_ignores_non_running_job(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """extend_visibility should fail for non-RUNNING jobs (DONE, FAILED, PENDING)."""
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "test"})
+    claimed = await sqlite_job_queue.claim_next(lease_seconds=60)
+    assert claimed is not None
+
+    # Mark DONE
+    await sqlite_job_queue.mark_done(job.id, claim_attempt=claimed.attempts)
+
+    # Try to extend DONE job
+    extended = await sqlite_job_queue.extend_visibility(job.id, lease_seconds=30)
+    assert extended is False  # Should fail because job is DONE
+
+
+@pytest.mark.asyncio
+async def test_extend_visibility_on_pending_job_fails(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """extend_visibility should reject PENDING jobs (not yet claimed)."""
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "test"})
+
+    # Try to extend PENDING job (without claiming)
+    extended = await sqlite_job_queue.extend_visibility(job.id, lease_seconds=30)
+    assert extended is False
