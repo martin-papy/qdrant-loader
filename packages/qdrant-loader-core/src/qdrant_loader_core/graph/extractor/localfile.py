@@ -1,6 +1,10 @@
-from pathlib import PurePath
+from __future__ import annotations
 
-from qdrant_loader.core.document import Document
+from pathlib import PurePath
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qdrant_loader.core.document import Document
 
 from ..models import (
     CoreNodeLabel,

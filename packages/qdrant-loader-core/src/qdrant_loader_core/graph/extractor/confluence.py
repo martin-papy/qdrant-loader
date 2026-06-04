@@ -1,4 +1,10 @@
-from qdrant_loader.core.document import Document
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qdrant_loader.core.document import Document
+
 from qdrant_loader_core.graph.extractor.base_extractor import (
     BaseEntityExtractor,
 )

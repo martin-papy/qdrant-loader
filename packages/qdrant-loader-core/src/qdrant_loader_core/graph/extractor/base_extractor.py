@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qdrant_loader.core.document import Document
+
 from abc import ABC, abstractmethod
 from typing import ClassVar
-
-from qdrant_loader.core.document import Document
 
 from ..models import (
     CoreEdgeType,
@@ -132,7 +135,10 @@ class BaseEntityExtractor(EntityExtractor):
             )
 
         # 5. Cross references
-        edges.extend(self._extract_links(doc))
+        link_nodes, link_edges = self._extract_links(doc)
+
+        nodes.extend(link_nodes)
+        edges.extend(link_edges)
 
         # 6. Source specific
         custom_nodes, custom_edges = self._extract_source_specific(doc)
@@ -215,8 +221,8 @@ class BaseEntityExtractor(EntityExtractor):
     def _extract_links(
         self,
         doc: Document,
-    ) -> list[GraphEdge]:
-        return []
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        return [], []
 
     def _extract_source_specific(
         self,

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from collections import defaultdict
 import datetime
-from enum import Enum
 import json
+from collections import defaultdict
+from enum import Enum
 from typing import Any
 
 from falkordb import FalkorDB
@@ -21,8 +21,17 @@ from .store import GraphStore
 
 class FalkorGraphStore(GraphStore):
     def __init__(
-        self, host="localhost", port=6379, password=None, graph_name="default_graph"
+        self,
+        host="localhost",
+        port=6379,
+        password=None,
+        graph_name="default_graph",
+        max_connections: int = 10,
     ):
+
+        if max_connections < 1:
+            raise ValueError("max_connections must be >= 1")
+        self._semaphore = asyncio.Semaphore(max_connections)
         self._db = FalkorDB(host=host, port=port, password=password)
         self._graph = self._db.select_graph(graph_name)
 
@@ -89,24 +98,28 @@ class FalkorGraphStore(GraphStore):
             without_project = [n for n in payload if n["project"] is None]
 
             if with_project:
-                await asyncio.to_thread(
-                    self._graph.query,
-                    f"""
+                tasks.append(
+                    asyncio.to_thread(
+                        self._graph.query,
+                        f"""
                     UNWIND $nodes AS node
                     MERGE (n:{label} {{id: node.id, project: node.project}})
                     SET n += node.props
                     """,
-                    {"nodes": with_project},
+                        {"nodes": with_project},
+                    )
                 )
             if without_project:
-                await asyncio.to_thread(
-                    self._graph.query,
-                    f"""
+                tasks.append(
+                    asyncio.to_thread(
+                        self._graph.query,
+                        f"""
                     UNWIND $nodes AS node
                     MERGE (n:{label} {{id: node.id}})
                     SET n += node.props
                     """,
-                    {"nodes": without_project},
+                        {"nodes": without_project},
+                    )
                 )
         if tasks:
             await asyncio.gather(*tasks)
@@ -220,13 +233,13 @@ class FalkorGraphStore(GraphStore):
             params["project"] = project
             query = f"""
             MATCH (n {{id: $id, project: $project}})-[r{edge_filter}*1..{depth}]-(m {{project: $project}})
-            RETURN n.id, type(r), m.id
+            RETURN n, r, m
             LIMIT {MAX_ROWS}
             """
         else:
             query = f"""
             MATCH (n {{id: $id}})-[r{edge_filter}*1..{depth}]-(m)
-            RETURN n.id, type(r), m.id
+            RETURN n, r, m
             LIMIT {MAX_ROWS}
             """
         result = await asyncio.to_thread(
@@ -321,9 +334,10 @@ class FalkorGraphStore(GraphStore):
         self,
         cypher: str,
         params: dict[str, Any],
-    ) -> list[dict[str, Any]]:
-        result = await asyncio.to_thread(self._graph.query, cypher, params or {})
-        return result.result_set
+    ) -> list[list[Any]]:
+        async with self._semaphore:
+            result = await asyncio.to_thread(self._graph.query, cypher, params or {})
+            return result.result_set
 
     def _clean_props(self, props: dict) -> dict:
         def _normalize_value(v: Any):
@@ -333,7 +347,7 @@ class FalkorGraphStore(GraphStore):
             if isinstance(v, (str, int, float, bool)):
                 return v
 
-            if isinstance(v, (datetime, datetime.date)):
+            if isinstance(v, (datetime.datetime, datetime.date)):
                 return v.isoformat()
 
             if isinstance(v, Enum):

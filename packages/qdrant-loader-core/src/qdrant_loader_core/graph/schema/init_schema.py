@@ -41,14 +41,7 @@ async def init_schema(graph_store):
 # INDEXES
 # ------------------------
 async def _ensure_indexes(graph_store):
-    queries = [
-        "CREATE INDEX ON :Document(id)",
-        "CREATE INDEX ON :Person(id)",
-        "CREATE INDEX ON :Container(id)",
-        "CREATE INDEX ON :Label(id)",
-        "CREATE INDEX ON :Concept(id)",
-        "CREATE INDEX ON :Chunk(id)",
-    ]
+    queries = [f"CREATE INDEX ON :{label.value}(id)" for label in CoreNodeLabel]
 
     for query in queries:
         try:

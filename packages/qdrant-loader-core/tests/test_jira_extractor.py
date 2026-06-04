@@ -33,10 +33,13 @@ def test_jira_basic():
     )
 
     result = extractor.extract(doc)
+    print([n.label for n in result.nodes])
+    print([e.edge_type for e in result.edges])
 
     assert any(n.label == "Document" for n in result.nodes)
     assert any(n.label == "Container" for n in result.nodes)
     assert any(n.label == "Person" for n in result.nodes)
-    assert any(n.edge_type == "BELONGS_TO" for n in result.edges)
+
+    assert any(e.edge_type == "BELONGS_TO" for e in result.edges)
     assert any(e.edge_type == "AUTHORED_BY" for e in result.edges)
     assert any(e.edge_type == "LINKS_TO" for e in result.edges)

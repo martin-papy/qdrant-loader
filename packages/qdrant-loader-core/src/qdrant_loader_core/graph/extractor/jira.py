@@ -1,6 +1,12 @@
-import re
+from __future__ import annotations
 
-from qdrant_loader.core.document import Document
+import re
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
+
+if TYPE_CHECKING:
+    from qdrant_loader.core.document import Document
+
 from qdrant_loader_core.graph.extractor.base_extractor import (
     BaseEntityExtractor,
 )
@@ -24,7 +30,6 @@ class JiraEntityExtractor(BaseEntityExtractor):
     - Label nodes
     - Linked issue relationships
     - Parent/subtask relationships
-    - Epic relationships
     - Cross-source links from URLs found in description
     """
 
@@ -96,39 +101,39 @@ class JiraEntityExtractor(BaseEntityExtractor):
         reporter = doc.metadata.get("reporter")
 
         if reporter:
-            person_id = reporter.get("email_address") or reporter.get("account_id")
+            if isinstance(reporter, dict):
+                person_id = (
+                    reporter.get("email_address")
+                    or reporter.get("account_id")
+                    or reporter.get("display_name")
+                )
+                display_name = reporter.get("display_name", person_id)
+            else:
+                person_id = str(reporter)
+                display_name = person_id
 
             if person_id:
                 people.append(
-                    (
-                        PersonInfo(
-                            id=person_id,
-                            display_name=reporter.get(
-                                "display_name",
-                                person_id,
-                            ),
-                        ),
-                        "reporter",
-                    )
+                    (PersonInfo(id=person_id, display_name=display_name), "reporter")
                 )
 
         assignee = doc.metadata.get("assignee")
 
         if assignee:
-            person_id = assignee.get("email_address") or assignee.get("account_id")
+            if isinstance(assignee, dict):
+                person_id = (
+                    assignee.get("email_address")
+                    or assignee.get("account_id")
+                    or assignee.get("display_name")
+                )
+                display_name = assignee.get("display_name", person_id)
+            else:
+                person_id = str(assignee)
+                display_name = person_id
 
             if person_id:
                 people.append(
-                    (
-                        PersonInfo(
-                            id=person_id,
-                            display_name=assignee.get(
-                                "display_name",
-                                person_id,
-                            ),
-                        ),
-                        "assignee",
-                    )
+                    (PersonInfo(id=person_id, display_name=display_name), "assignee")
                 )
 
         return people
@@ -186,43 +191,56 @@ class JiraEntityExtractor(BaseEntityExtractor):
     # Cross-source URL links
     # ------------------------------------------------------------------
 
+    from urllib.parse import urlparse
+
     def _extract_links(
         self,
         doc: Document,
-    ) -> list[GraphEdge]:
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
         project = self._project(doc)
 
         text = doc.metadata.get("description") or getattr(doc, "content", "") or ""
 
+        nodes: list[GraphNode] = []
         edges: list[GraphEdge] = []
 
-        for url in self.CONFLUENCE_URL_RE.findall(text):
+        def _is_url(value: str) -> bool:
+            try:
+                parsed = urlparse(value)
+                return bool(parsed.scheme and parsed.netloc)
+            except Exception:
+                return False
+
+        def _handle_url(url: str, kind: str) -> None:
+            target = url.strip()
+
+            if _is_url(target):
+                nodes.append(
+                    GraphNode(
+                        id=target,
+                        label=CoreNodeLabel.URL,
+                        project=project,
+                        properties={"url": target},
+                    )
+                )
+
             edges.append(
                 GraphEdge(
                     source=doc.id,
-                    target=url,
+                    target=target,
                     edge_type=CoreEdgeType.LINKS_TO,
                     project=project,
-                    properties={
-                        "kind": "confluence",
-                    },
+                    properties={"kind": kind},
                 )
             )
+
+        for url in self.CONFLUENCE_URL_RE.findall(text):
+            _handle_url(url, "confluence")
 
         for url in self.GIT_URL_RE.findall(text):
-            edges.append(
-                GraphEdge(
-                    source=doc.id,
-                    target=url,
-                    edge_type=CoreEdgeType.LINKS_TO,
-                    project=project,
-                    properties={
-                        "kind": "git",
-                    },
-                )
-            )
+            _handle_url(url, "git")
 
-        return edges
+        return nodes, edges
 
     # ------------------------------------------------------------------
     # Jira-specific relationships

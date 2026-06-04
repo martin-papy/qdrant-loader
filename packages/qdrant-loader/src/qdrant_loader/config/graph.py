@@ -43,11 +43,7 @@ class GraphConfig(BaseModel):
             "backend": self.backend,
             "host": self.connection.host,
             "port": self.connection.port,
-            "password": (
-                self.connection.password.get_secret_value()
-                if self.connection.password
-                else None
-            ),
+            "password": self.connection.password,  # keep SecretStr; call get_secret_value() at client init only
             "graph_name": self.graph_name,
             "max_connections": self.pool.max_connections,
         }

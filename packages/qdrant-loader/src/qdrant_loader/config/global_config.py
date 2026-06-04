@@ -11,12 +11,12 @@ from pydantic import Field
 from qdrant_loader.config.base import BaseConfig
 from qdrant_loader.config.chunking import ChunkingConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
+from qdrant_loader.config.graph import GraphConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.config.workers import WorkersConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig
-from qdrant_loader.config.graph import GraphConfig
 
 
 class SemanticAnalysisConfig(BaseConfig):

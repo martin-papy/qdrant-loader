@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from qdrant_loader.core.document import Document
+if TYPE_CHECKING:
+    from qdrant_loader.core.document import Document
+
 from qdrant_loader_core.graph.extractor.base_extractor import (
     BaseEntityExtractor,
 )
@@ -33,7 +38,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
         self,
         doc: Document,
     ) -> str | None:
-        url = doc.metadata.get("url")
+        url = getattr(doc, "url", None) or doc.metadata.get("url")
 
         if not url:
             return None
@@ -60,7 +65,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
         self,
         doc: Document,
     ) -> GraphNode | None:
-        url = doc.metadata.get("url")
+        url = getattr(doc, "url", None) or doc.metadata.get("url")
 
         if not url:
             return None
@@ -138,7 +143,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
             nodes.append(
                 GraphNode(
                     id=f"attachment:{attachment_id}",
-                    label="Attachment",
+                    label=CoreNodeLabel.ATTACHMENT,
                     project=project,
                     properties={
                         "filename": attachment.get("filename"),

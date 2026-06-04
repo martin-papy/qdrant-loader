@@ -12,6 +12,8 @@ class CoreNodeLabel(StrEnum):
     LABEL = "Label"
     CONCEPT = "Concept"
     CHUNK = "Chunk"
+    URL = "URL"
+    ATTACHMENT = "Attachment"
 
 
 class CoreEdgeType(StrEnum):
@@ -22,6 +24,7 @@ class CoreEdgeType(StrEnum):
     PART_OF = "PART_OF"
     HAS_CHUNK = "HAS_CHUNK"
     HAS_CHILD = "HAS_CHILD"
+    HAS_ATTACHMENT = "HAS_ATTACHMENT"
 
 
 @dataclass(slots=True, frozen=True)

@@ -1,3 +1,6 @@
+from unittest.mock import AsyncMock, call
+
+import pytest
 from qdrant_loader_core.graph.models import CoreEdgeType, CoreNodeLabel
 from qdrant_loader_core.graph.schema.init_schema import (
     LATEST_VERSION,
@@ -7,9 +10,6 @@ from qdrant_loader_core.graph.schema.init_schema import (
     apply,
     init_schema,
 )
-
-import pytest
-from unittest.mock import AsyncMock, call
 
 
 @pytest.mark.asyncio
@@ -47,7 +47,7 @@ async def test_ensure_indexes_success():
 
     await _ensure_indexes(graph_store)
 
-    assert graph_store.query_cypher.await_count == 6
+    assert graph_store.query_cypher.await_count == 8
 
 
 @pytest.mark.asyncio

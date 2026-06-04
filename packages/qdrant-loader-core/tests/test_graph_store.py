@@ -1,92 +1,115 @@
-from qdrant_loader_core.graph.models import GraphNode, GraphEdge, SubGraph
-
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+from qdrant_loader_core.graph.models import GraphEdge, GraphNode, SubGraph
 from qdrant_loader_core.graph.store import GraphStore
 
 
 class DummyGraphStore(GraphStore):
     def __init__(self):
-        self.upsert_node = AsyncMock()
-        self.upsert_edge = AsyncMock()
-        self.upsert_nodes_batch = AsyncMock()
-        self.upsert_edges_batch = AsyncMock()
-        self.neighbors = AsyncMock()
-        self.query_cypher = AsyncMock()
+        self._upsert_node = AsyncMock()
+        self._upsert_edge = AsyncMock()
+        self._upsert_nodes_batch = AsyncMock()
+        self._upsert_edges_batch = AsyncMock()
+        self._neighbors = AsyncMock()
+        self._query_cypher = AsyncMock()
 
-    @pytest.mark.asyncio
-    async def test_upsert_node_called():
-        store = DummyGraphStore()
+    async def upsert_node(self, node):
+        return await self._upsert_node(node)
 
-        node = GraphNode(id="1", label="Test")
+    async def upsert_edge(self, edge):
+        return await self._upsert_edge(edge)
 
-        await store.upsert_node(node)
+    async def upsert_nodes_batch(self, nodes):
+        return await self._upsert_nodes_batch(nodes)
 
-        store.upsert_node.assert_awaited_once_with(node)
+    async def upsert_edges_batch(self, edges):
+        return await self._upsert_edges_batch(edges)
 
-    @pytest.mark.asyncio
-    async def test_upsert_edge_called():
-        store = DummyGraphStore()
+    async def neighbors(self, **kwargs):
+        return await self._neighbors(**kwargs)
 
-        edge = GraphEdge(source="1", target="2", edge_type="REL")
+    async def query_cypher(self, query, params):
+        return await self._query_cypher(query, params)
 
-        await store.upsert_edge(edge)
 
-        store.upsert_edge.assert_awaited_once_with(edge)
+@pytest.mark.asyncio
+async def test_upsert_node_called():
+    store = DummyGraphStore()
 
-    @pytest.mark.asyncio
-    async def test_upsert_nodes_batch():
-        store = DummyGraphStore()
+    node = GraphNode(id="1", label="Test")
 
-        nodes = [
-            GraphNode(id="1", label="A"),
-            GraphNode(id="2", label="B"),
-        ]
+    await store.upsert_node(node)
 
-        await store.upsert_nodes_batch(nodes)
+    store._upsert_node.assert_awaited_once_with(node)
 
-        store.upsert_nodes_batch.assert_awaited_once_with(nodes)
 
-    @pytest.mark.asyncio
-    async def test_upsert_edges_batch():
-        store = DummyGraphStore()
+@pytest.mark.asyncio
+async def test_upsert_edge_called():
+    store = DummyGraphStore()
 
-        edges = [GraphEdge(source="1", target="2", edge_type="REL")]
+    edge = GraphEdge(source="1", target="2", edge_type="REL")
 
-        await store.upsert_edges_batch(edges)
+    await store.upsert_edge(edge)
 
-        store.upsert_edges_batch.assert_awaited_once_with(edges)
+    store._upsert_edge.assert_awaited_once_with(edge)
 
-    @pytest.mark.asyncio
-    async def test_neighbors():
-        store = DummyGraphStore()
 
-        expected = SubGraph(nodes=[], edges=[])
+@pytest.mark.asyncio
+async def test_upsert_nodes_batch():
+    store = DummyGraphStore()
 
-        store.neighbors.return_value = expected
+    nodes = [
+        GraphNode(id="1", label="A"),
+        GraphNode(id="2", label="B"),
+    ]
 
-        result = await store.neighbors(
-            node_id="1",
-            depth=2,
-            edge_types=["REL"],
-            project="test",
-        )
+    await store.upsert_nodes_batch(nodes)
 
-        assert result == expected
-        store.neighbors.assert_awaited_once()
+    store._upsert_nodes_batch.assert_awaited_once_with(nodes)
 
-    @pytest.mark.asyncio
-    async def test_query_cypher():
-        store = DummyGraphStore()
 
-        expected = [{"a": 1}]
-        store.query_cypher.return_value = expected
+@pytest.mark.asyncio
+async def test_upsert_edges_batch():
+    store = DummyGraphStore()
 
-        result = await store.query_cypher(
-            "MATCH (n) RETURN n",
-            {},
-        )
+    edges = [GraphEdge(source="1", target="2", edge_type="REL")]
 
-        assert result == expected
-        store.query_cypher.assert_awaited_once_with("MATCH (n) RETURN n", {})
+    await store.upsert_edges_batch(edges)
+
+    store._upsert_edges_batch.assert_awaited_once_with(edges)
+
+
+@pytest.mark.asyncio
+async def test_neighbors():
+    store = DummyGraphStore()
+
+    expected = SubGraph(nodes=[], edges=[])
+
+    store._neighbors.return_value = expected
+
+    result = await store.neighbors(
+        node_id="1",
+        depth=2,
+        edge_types=["REL"],
+        project="test",
+    )
+
+    assert result == expected
+    store._neighbors.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_query_cypher():
+    store = DummyGraphStore()
+
+    expected = [{"a": 1}]
+    store._query_cypher.return_value = expected
+
+    result = await store.query_cypher(
+        "MATCH (n) RETURN n",
+        {},
+    )
+
+    assert result == expected
+    store._query_cypher.assert_awaited_once_with("MATCH (n) RETURN n", {})
