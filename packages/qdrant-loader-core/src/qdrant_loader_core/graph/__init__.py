@@ -1,11 +1,7 @@
 import asyncio
 from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
-    from .falkor_store import FalkorGraphStore
-else:
-    FalkorGraphStore = Any
-
+from .falkor_store import FalkorGraphStore
 from .schema.init_schema import init_schema
 from .store import GraphEdge, GraphNode, GraphStore, SubGraph
 
