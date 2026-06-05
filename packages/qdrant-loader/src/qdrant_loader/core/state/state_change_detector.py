@@ -173,9 +173,7 @@ class StateChangeDetector:
 
         changed_documents: list[Document] = []
         for state, doc in zip(current_states, documents, strict=False):
-            previous = previous_states_by_key.get(
-                (doc.source_type, doc.source, doc.id)
-            )
+            previous = previous_states_by_key.get((doc.source_type, doc.source, doc.id))
             if (
                 previous is None
                 or state.uri != previous.uri

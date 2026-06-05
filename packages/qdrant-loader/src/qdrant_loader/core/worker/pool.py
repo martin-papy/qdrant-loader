@@ -121,7 +121,7 @@ class QueueWorkerPool:
                                             current_job_id,
                                             current_lease_seconds,
                                             claim_attempt=current_claim_attempt,
-                                         )
+                                        )
                                     if not extended:
                                         lease_lost.set()
                                         return

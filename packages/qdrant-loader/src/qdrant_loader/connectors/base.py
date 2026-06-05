@@ -1,5 +1,5 @@
 import warnings
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import AsyncIterator
 from datetime import datetime
 

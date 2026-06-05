@@ -455,7 +455,7 @@ class BaseJiraConnector(BaseConnector):
             documents = await self._issues_to_documents([issue])
         except Exception as exc:
             logger.error(
-            "Failed to fetch/parse Jira issue by id",
+                "Failed to fetch/parse Jira issue by id",
                 entity_id=entity_id,
                 error=str(exc),
             )

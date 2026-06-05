@@ -4,14 +4,14 @@ from pathlib import Path
 
 import uvicorn
 from click.exceptions import ClickException
-from qdrant_loader.utils.sensitive import sanitize_exception_message
-from qdrant_loader.utils.logging import LoggingConfig
 
 from qdrant_loader.cli.config_loader import (
     load_config_with_workspace,
     setup_workspace,
 )
 from qdrant_loader.config.workspace import validate_workspace_flags
+from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 from qdrant_loader.webhooks.server import app
 
 
