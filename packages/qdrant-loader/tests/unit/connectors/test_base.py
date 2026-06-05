@@ -56,13 +56,16 @@ class TestBaseConnector:
         # Should be able to call set_file_conversion_config (covers line 35)
         connector.set_file_conversion_config(Mock())
 
-    def test_base_connector_instantiation_fails(self):
-        """Test that BaseConnector cannot be instantiated directly due to abstract methods."""
-        with pytest.raises(TypeError):
-            BaseConnector()
+    def test_base_connector_can_be_instantiated(self):
+        """BaseConnector is a usable base class, not an abstract one."""
+        connector = BaseConnector(Mock())
 
-    def test_concrete_subclass_must_implement_get_documents(self):
-        """Test that concrete subclasses must implement get_documents."""
+        assert connector is not None
+        assert connector.config is not None
+
+    @pytest.mark.asyncio
+    async def test_incomplete_subclass_raises_when_get_documents_is_used(self):
+        """Subclasses without a concrete document source must fail at runtime."""
 
         class IncompleteConnector(BaseConnector):
             def __init__(self, config=None):
@@ -70,10 +73,12 @@ class TestBaseConnector:
                     config = Mock()
                 super().__init__(config)
 
-            # Missing get_documents implementation
+            # Missing stream_documents/get_documents implementation
 
-        with pytest.raises(TypeError):
-            IncompleteConnector()
+        connector = IncompleteConnector()
+
+        with pytest.raises(NotImplementedError, match="does not implement"):
+            await connector.get_documents()
 
     def test_set_file_conversion_config_with_none_config(self):
         """Test set_file_conversion_config with None config - covers line 35."""
