@@ -112,6 +112,7 @@ class QueueWorkerPool:
                             current_claim_attempt: int = job.attempts,
                             current_lease_seconds: int = self._lease_seconds,
                             current_renewal_interval: int = renewal_interval,
+                            lease_lost_event: asyncio.Event = lease_lost,
                         ) -> None:
                             while True:
                                 await asyncio.sleep(current_renewal_interval)
@@ -123,7 +124,7 @@ class QueueWorkerPool:
                                             claim_attempt=current_claim_attempt,
                                         )
                                     if not extended:
-                                        lease_lost.set()
+                                        lease_lost_event.set()
                                         return
                                 except Exception as exc:
                                     logger.warning(

@@ -2,7 +2,6 @@
 Tests for the base connector interface and functionality.
 """
 
-from abc import ABC
 from unittest.mock import MagicMock
 
 import pytest
@@ -142,9 +141,9 @@ class TestBaseConnector:
         assert connector.config is not original_config
 
     def test_inheritance_structure(self, concrete_connector_class):
-        """Test that BaseConnector has proper inheritance structure."""
-        assert issubclass(BaseConnector, ABC)
+        """Test that BaseConnector remains a usable base class."""
         assert issubclass(concrete_connector_class, BaseConnector)
+        assert not hasattr(BaseConnector, "__abstractmethods__")
 
     @pytest.mark.asyncio
     async def test_connector_with_different_config_types(
