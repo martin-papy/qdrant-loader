@@ -238,7 +238,12 @@ class SearchEngine:
                 else:
                     await self.client.create_collection(
                         collection_name=config.collection_name,
-                        vectors_config=dense_params,
+                        vectors_config={sparse_runtime.dense_vector_name: dense_params},
+                     )
+                    self.logger.info(
+                        "Created Qdrant collection with dense-only vectors",
+                        collection=config.collection_name,
+                        dense_vector_name=sparse_runtime.dense_vector_name,
                     )
 
             # Initialize hybrid search (single path; pass through search_config which may be None)

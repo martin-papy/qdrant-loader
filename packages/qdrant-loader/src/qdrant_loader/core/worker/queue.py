@@ -48,7 +48,9 @@ class JobQueue(Protocol):
     ) -> bool:
         """Release a claimed job back to pending for a later retry."""
 
-    async def extend_visibility(self, job_id: int, lease_seconds: int) -> bool:
+    async def extend_visibility(
+        self, job_id: int, lease_seconds: int, claim_attempt: int
+    ) -> bool:
         """Extend the visibility deadline of a RUNNING job by lease_seconds.
 
         Used to prevent lease expiration during long-running handler execution.
@@ -230,7 +232,9 @@ class SQLiteJobQueue:
                 self._pending_event.set()
             return updated
 
-    async def extend_visibility(self, job_id: int, lease_seconds: int) -> bool:
+    async def extend_visibility(
+        self, job_id: int, lease_seconds: int, claim_attempt: int
+    ) -> bool:
         """Extend the visibility deadline of a RUNNING job by lease_seconds.
 
         Used to prevent lease expiration during long-running handler execution.
@@ -245,6 +249,7 @@ class SQLiteJobQueue:
                 .where(
                     Job.id == job_id,
                     Job.status == self.RUNNING,
+                    Job.attempts == claim_attempt,
                 )
                 .values(
                     visibility_deadline=new_deadline,

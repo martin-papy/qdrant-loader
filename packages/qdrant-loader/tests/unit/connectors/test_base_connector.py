@@ -56,25 +56,28 @@ class TestBaseConnector:
         assert connector.config.source_id == "test-source"
         assert connector.config.name == "Test Source"
 
-    def test_base_connector_is_abstract(self):
-        """Test that BaseConnector cannot be instantiated directly."""
+    def test_base_connector_can_be_instantiated(self):
+        """BaseConnector is a concrete base class with default helpers."""
         mock_config = MagicMock(spec=SourceConfig)
 
-        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-            BaseConnector(mock_config)  # type: ignore
+        connector = BaseConnector(mock_config)
 
-    def test_abstract_method_enforcement(self):
-        """Test that subclasses must implement abstract methods."""
+        assert connector.config is mock_config
+
+    @pytest.mark.asyncio
+    async def test_incomplete_subclass_fails_when_get_documents_is_used(self):
+        """Incomplete subclasses should fail at runtime when fetching documents."""
 
         class IncompleteConnector(BaseConnector):
-            """Incomplete connector missing abstract method implementation."""
+            """Connector that relies on the base fallback implementation."""
 
             pass
 
         mock_config = MagicMock(spec=SourceConfig)
+        connector = IncompleteConnector(mock_config)
 
-        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-            IncompleteConnector(mock_config)  # type: ignore
+        with pytest.raises(NotImplementedError, match="does not implement"):
+            await connector.get_documents()
 
     @pytest.mark.asyncio
     async def test_get_documents_abstract_method(self, connector):

@@ -31,7 +31,15 @@ def parse_interval_seconds(value: int | float | str) -> int:
     if isinstance(value, bool):
         raise ValueError("interval must be a positive duration")
 
-    if isinstance(value, (int, float)):
+    if isinstance(value, int):
+        seconds = value
+        if seconds < 1:
+            raise ValueError("interval must be at least 1 second")
+        return seconds
+
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError("interval must be a whole number of seconds")
         seconds = int(value)
         if seconds < 1:
             raise ValueError("interval must be at least 1 second")

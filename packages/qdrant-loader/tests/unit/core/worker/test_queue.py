@@ -310,7 +310,9 @@ async def test_extend_visibility_updates_running_job_deadline(
     assert claimed.status == SQLiteJobQueue.RUNNING
 
     # Extend by 30s
-    extended = await sqlite_job_queue.extend_visibility(job.id, lease_seconds=30)
+    extended = await sqlite_job_queue.extend_visibility(
+        job.id, lease_seconds=30, claim_attempt=claimed.attempts
+    )
     assert extended is True  # Should succeed
 
     # Verify deadline was extended (new deadline should be >= original + 30s)
@@ -331,7 +333,9 @@ async def test_extend_visibility_ignores_non_running_job(
     await sqlite_job_queue.mark_done(job.id, claim_attempt=claimed.attempts)
 
     # Try to extend DONE job
-    extended = await sqlite_job_queue.extend_visibility(job.id, lease_seconds=30)
+    extended = await sqlite_job_queue.extend_visibility(
+        job.id, lease_seconds=30, claim_attempt=claimed.attempts
+    )
     assert extended is False  # Should fail because job is DONE
 
 
@@ -343,5 +347,7 @@ async def test_extend_visibility_on_pending_job_fails(
     job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "test"})
 
     # Try to extend PENDING job (without claiming)
-    extended = await sqlite_job_queue.extend_visibility(job.id, lease_seconds=30)
+    extended = await sqlite_job_queue.extend_visibility(
+        job.id, lease_seconds=30, claim_attempt=1
+    )
     assert extended is False
