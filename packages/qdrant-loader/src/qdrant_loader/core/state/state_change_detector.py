@@ -135,7 +135,7 @@ class StateChangeDetector:
         )
 
         current_states = [self._get_document_state(doc) for doc in documents]
-        previous_states_by_id: dict[str, DocumentState] = {}
+        previous_states_by_key: dict[tuple[str, str, str], DocumentState] = {}
 
         # Group documents by source to perform bulk DB lookups per source
         groups: dict[tuple[str, str], list[Document]] = {}
@@ -153,7 +153,9 @@ class StateChangeDetector:
                     uri = self._generate_uri(
                         record.url, record.source, record.source_type, record.document_id  # type: ignore
                     )
-                    previous_states_by_id[record.document_id] = DocumentState(
+                    previous_states_by_key[
+                        (record.source_type, record.source, record.document_id)
+                    ] = DocumentState(
                         document_id=record.document_id,  # type: ignore
                         uri=uri,
                         content_hash=record.content_hash,  # type: ignore
@@ -171,7 +173,9 @@ class StateChangeDetector:
 
         changed_documents: list[Document] = []
         for state, doc in zip(current_states, documents, strict=False):
-            previous = previous_states_by_id.get(doc.id)
+            previous = previous_states_by_key.get(
+                (doc.source_type, doc.source, doc.id)
+            )
             if (
                 previous is None
                 or state.uri != previous.uri

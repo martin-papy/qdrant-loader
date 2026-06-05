@@ -205,7 +205,7 @@ class GeminiEmbeddings(EmbeddingsClient):
                 )
             except Exception:
                 pass
-            raise mapped
+            raise mapped from exc
 
 
 class GeminiChat(ChatClient):

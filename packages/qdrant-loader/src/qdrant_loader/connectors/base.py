@@ -72,7 +72,6 @@ class BaseConnector(ABC):
         for document in documents:
             yield document
 
-    @abstractmethod
     async def get_documents(self) -> list[Document]:
         """Get documents from the source (DEPRECATED - use stream_documents)."""
         warnings.warn(

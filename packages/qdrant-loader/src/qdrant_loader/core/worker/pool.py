@@ -104,10 +104,12 @@ class QueueWorkerPool:
                     try:
                         # Start lease renewal task to prevent visibility timeout during handler
                         renewal_interval = max(1, self._lease_seconds // 3)
+                        lease_lost = asyncio.Event()
 
                         async def _renew_lease(
                             *,
                             current_job_id: int = job.id,
+                            current_claim_attempt: int = job.attempts,
                             current_lease_seconds: int = self._lease_seconds,
                             current_renewal_interval: int = renewal_interval,
                         ) -> None:
@@ -115,9 +117,14 @@ class QueueWorkerPool:
                                 await asyncio.sleep(current_renewal_interval)
                                 try:
                                     async with self._queue_io_guard:
-                                        await self._queue.extend_visibility(
-                                            current_job_id, current_lease_seconds
-                                        )
+                                        extended = await self._queue.extend_visibility(
+                                            current_job_id,
+                                            current_lease_seconds,
+                                            claim_attempt=current_claim_attempt,
+                                         )
+                                    if not extended:
+                                        lease_lost.set()
+                                        return
                                 except Exception as exc:
                                     logger.warning(
                                         "job.lease_renew_failed",
@@ -129,6 +136,10 @@ class QueueWorkerPool:
                         renewal_task = asyncio.create_task(_renew_lease())
                         try:
                             await self._handler(job.type, payload)
+                            if lease_lost.is_set():
+                                raise RuntimeError(
+                                    f"Lost lease for job {job.id} while handler was running"
+                                )
                         finally:
                             renewal_task.cancel()
                             try:

@@ -451,16 +451,16 @@ class BaseJiraConnector(BaseConnector):
         """Fetch a single Jira issue by key or numeric ID."""
         try:
             raw_issue = await self._make_request("GET", f"issue/{entity_id}")
+            issue = self._parse_issue(raw_issue, self.config.extra_fields)
+            documents = await self._issues_to_documents([issue])
         except Exception as exc:
             logger.error(
-                "Failed to fetch Jira issue by id",
+            "Failed to fetch/parse Jira issue by id",
                 entity_id=entity_id,
                 error=str(exc),
             )
             return None
 
-        issue = self._parse_issue(raw_issue, self.config.extra_fields)
-        documents = await self._issues_to_documents([issue])
         return documents[0] if documents else None
 
     async def list_entity_ids(self) -> AsyncIterator[str]:
