@@ -119,8 +119,8 @@ class FalkorGraphStore(GraphStore):
                     )
                 )
 
-            if tasks:
-                await asyncio.gather(*tasks)
+        if tasks:
+            await asyncio.gather(*tasks)
 
     async def upsert_edge(self, edge: GraphEdge) -> None:
         self._validate_edge(edge)

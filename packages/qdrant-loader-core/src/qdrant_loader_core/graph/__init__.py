@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
+from .schema.init_schema import init_schema
+from .store import GraphEdge, GraphNode, GraphStore, SubGraph
+
 if TYPE_CHECKING:
     from .falkor_store import FalkorGraphStore
 
@@ -11,8 +14,7 @@ try:
 except ImportError:
     _FalkorGraphStore = None
 
-from .schema.init_schema import init_schema
-from .store import GraphEdge, GraphNode, GraphStore, SubGraph
+FalkorGraphStore = _FalkorGraphStore
 
 try:
     from qdrant_loader.config import get_settings
