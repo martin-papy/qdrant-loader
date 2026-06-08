@@ -596,7 +596,8 @@ class BaseJiraConnector(BaseConnector):
         self, since: datetime | None = None
     ) -> AsyncGenerator[Document, None]:
         """Stream documents from Jira (WS-1 connector contract)."""
-        async for issue in self.get_issues(updated_after=since):
+        effective_since = since if since is not None else self.config.updated_after
+        async for issue in self.get_issues(updated_after=effective_since):
             async for document in self._stream_issues_to_documents([issue]):
                 yield document
 
