@@ -1,8 +1,10 @@
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.localfile import LocalFileEntityExtractor
 
 
-def test_localfile_basic():
+@pytest.mark.asyncio
+async def test_localfile_basic():
     extractor = LocalFileEntityExtractor()
 
     metadata = {
@@ -21,7 +23,7 @@ def test_localfile_basic():
         metadata=metadata,
     )
 
-    result = extractor.extract(doc)
+    result = await extractor.extract(doc)
 
     assert any(n.label == "Document" for n in result.nodes)
     assert any(n.label == "Container" for n in result.nodes)

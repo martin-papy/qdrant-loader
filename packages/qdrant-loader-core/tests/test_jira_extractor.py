@@ -1,8 +1,10 @@
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.jira import JiraEntityExtractor
 
 
-def test_jira_basic():
+@pytest.mark.asyncio
+async def test_jira_basic():
     extractor = JiraEntityExtractor()
 
     metadata = {
@@ -32,7 +34,7 @@ def test_jira_basic():
         metadata=metadata,
     )
 
-    result = extractor.extract(doc)
+    result = await extractor.extract(doc)
     print([n.label for n in result.nodes])
     print([e.edge_type for e in result.edges])
 

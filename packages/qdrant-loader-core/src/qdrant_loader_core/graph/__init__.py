@@ -84,7 +84,9 @@ async def get_graph_store(
                     host=final_host,
                     port=int(final_port),
                     graph_name=final_graph,
-                    max_connections=final_max_conn,
+                    max_connections=(
+                        final_max_conn if final_max_conn is not None else 10
+                    ),
                 )
 
                 await init_schema(_graph_store)

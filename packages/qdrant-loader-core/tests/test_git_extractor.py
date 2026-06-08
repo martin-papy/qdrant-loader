@@ -1,8 +1,10 @@
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.git import GitEntityExtractor
 
 
-def test_git_commit():
+@pytest.mark.asyncio
+async def test_git_commit():
     extractor = GitEntityExtractor()
 
     metadata = {
@@ -23,7 +25,7 @@ def test_git_commit():
         metadata=metadata,
     )
 
-    result = extractor.extract(doc)
+    result = await extractor.extract(doc)
 
     assert any(n.label == "Document" for n in result.nodes)
     assert any(n.label == "Person" for n in result.nodes)

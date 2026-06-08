@@ -1,8 +1,10 @@
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.confluence import ConfluenceEntityExtractor
 
 
-def test_confluence_page():
+@pytest.mark.asyncio
+async def test_confluence_page():
     extractor = ConfluenceEntityExtractor()
 
     # Prepare a Document instance with normalized metadata the extractor expects
@@ -24,7 +26,7 @@ def test_confluence_page():
         metadata=metadata,
     )
 
-    result = extractor.extract(doc)
+    result = await extractor.extract(doc)
 
     assert any(n.label == "Container" for n in result.nodes)
     assert any(e.edge_type == "BELONGS_TO" for e in result.edges)

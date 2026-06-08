@@ -190,9 +190,6 @@ class JiraEntityExtractor(BaseEntityExtractor):
     # ------------------------------------------------------------------
     # Cross-source URL links
     # ------------------------------------------------------------------
-
-    from urllib.parse import urlparse
-
     def _extract_links(
         self,
         doc: Document,
@@ -214,15 +211,17 @@ class JiraEntityExtractor(BaseEntityExtractor):
         def _handle_url(url: str, kind: str) -> None:
             target = url.strip()
 
-            if _is_url(target):
-                nodes.append(
-                    GraphNode(
-                        id=target,
-                        label=CoreNodeLabel.URL,
-                        project=project,
-                        properties={"url": target},
-                    )
+            if not _is_url(target):
+                return
+
+            nodes.append(
+                GraphNode(
+                    id=target,
+                    label=CoreNodeLabel.URL,
+                    project=project,
+                    properties={"url": target},
                 )
+            )
 
             edges.append(
                 GraphEdge(
