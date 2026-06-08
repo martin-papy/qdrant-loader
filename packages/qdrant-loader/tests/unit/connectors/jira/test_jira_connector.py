@@ -1105,6 +1105,32 @@ class TestFetchById:
     """Tests for WS-1 fetch_by_id connector contract."""
 
     @pytest.mark.asyncio
+    async def test_fetch_by_id_skips_attachment_processing_on_failure(
+        self, jira_cloud_config, mock_data_center_issue_data
+    ):
+        connector = JiraCloudConnector(jira_cloud_config)
+        connector.config.download_attachments = True
+        connector.attachment_reader = MagicMock()
+        connector.attachment_reader.fetch_and_process.side_effect = RuntimeError(
+            "attachment boom"
+        )
+
+        with (
+            patch.object(connector, "_validate_connection", return_value=None),
+            patch.object(
+                connector,
+                "_make_request",
+                return_value=mock_data_center_issue_data,
+            ),
+        ):
+            async with connector:
+                document = await connector.fetch_by_id("TEST-1")
+
+        assert document is not None
+        assert document.metadata["key"] == "TEST-1"
+        connector.attachment_reader.fetch_and_process.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_fetch_by_id_returns_document(
         self, jira_cloud_config, mock_data_center_issue_data
     ):
