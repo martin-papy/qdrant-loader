@@ -102,3 +102,7 @@ internal/
 
 # Beads issue tracking
 .beads/
+
+# FalkorDB / Redis snapshots
+packages/qdrant-loader-core/data/*.rdb
+

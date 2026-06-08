@@ -2,6 +2,7 @@
 
 import pytest
 from qdrant_loader.config.global_config import GlobalConfig
+from qdrant_loader.config.graph import GraphConfig, GraphConnectionConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig, MarkItDownConfig
 
@@ -179,3 +180,50 @@ class TestGlobalConfig:
         assert config.qdrant is not None
 
         # Note: Additional validation tests would require custom field validators
+
+    def test_graph_config_defaults(self):
+        """Test GlobalConfig includes default graph configuration."""
+        config = GlobalConfig()
+
+        assert config.graph is not None
+        assert config.graph.enabled is False
+        assert config.graph.backend == "falkordb"
+        assert config.graph.connection.host == "localhost"
+        assert config.graph.connection.port == 6379
+        assert config.graph.graph_name == "default_graph"
+
+        config_dict = config.to_dict()
+        assert "graph" in config_dict
+        assert config_dict["graph"]["enabled"] is False
+        assert config_dict["graph"]["backend"] == "falkordb"
+        assert config_dict["graph"]["host"] == "localhost"
+        assert config_dict["graph"]["port"] == 6379
+        assert config_dict["graph"]["graph_name"] == "default_graph"
+
+    def test_custom_graph_configuration(self):
+        """Test that custom graph configuration can be provided."""
+        graph_config = GraphConfig(
+            enabled=True,
+            backend="falkordb",
+            connection=GraphConnectionConfig(
+                host="graph-host",
+                port=7777,
+                password=None,
+            ),
+            graph_name="custom_graph",
+        )
+
+        config = GlobalConfig(graph=graph_config)
+
+        assert config.graph.enabled is True
+        assert config.graph.backend == "falkordb"
+        assert config.graph.connection.host == "graph-host"
+        assert config.graph.connection.port == 7777
+        assert config.graph.graph_name == "custom_graph"
+
+        config_dict = config.to_dict()
+        assert config_dict["graph"]["enabled"] is True
+        assert config_dict["graph"]["backend"] == "falkordb"
+        assert config_dict["graph"]["host"] == "graph-host"
+        assert config_dict["graph"]["port"] == 7777
+        assert config_dict["graph"]["graph_name"] == "custom_graph"
