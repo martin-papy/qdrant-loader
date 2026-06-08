@@ -69,11 +69,7 @@ class FalkorGraphStore(GraphStore):
                 "props": props,
             }
 
-        await asyncio.to_thread(
-            self._graph.query,
-            query,
-            params,
-        )
+        await self._run_query(query, params)
 
     async def upsert_nodes_batch(self, nodes: list[GraphNode]) -> None:
         if not nodes:
@@ -97,32 +93,34 @@ class FalkorGraphStore(GraphStore):
             with_project = [n for n in payload if n["project"] is not None]
             without_project = [n for n in payload if n["project"] is None]
 
+            tasks = []
+
             if with_project:
                 tasks.append(
-                    asyncio.to_thread(
-                        self._graph.query,
+                    self._run_query(
                         f"""
-                    UNWIND $nodes AS node
-                    MERGE (n:{label} {{id: node.id, project: node.project}})
-                    SET n += node.props
-                    """,
+                        UNWIND $nodes AS node
+                        MERGE (n:{label} {{id: node.id, project: node.project}})
+                        SET n += node.props
+                        """,
                         {"nodes": with_project},
                     )
                 )
+
             if without_project:
                 tasks.append(
-                    asyncio.to_thread(
-                        self._graph.query,
+                    self._run_query(
                         f"""
-                    UNWIND $nodes AS node
-                    MERGE (n:{label} {{id: node.id}})
-                    SET n += node.props
-                    """,
+                        UNWIND $nodes AS node
+                        MERGE (n:{label} {{id: node.id}})
+                        SET n += node.props
+                        """,
                         {"nodes": without_project},
                     )
                 )
-        if tasks:
-            await asyncio.gather(*tasks)
+
+            if tasks:
+                await asyncio.gather(*tasks)
 
     async def upsert_edge(self, edge: GraphEdge) -> None:
         self._validate_edge(edge)
@@ -148,11 +146,7 @@ class FalkorGraphStore(GraphStore):
             MERGE (a)-[r:{edge.edge_type}]->(b)
             SET r += $props
             """
-        await asyncio.to_thread(
-            self._graph.query,
-            query,
-            params,
-        )
+        await self._run_query(query, params)
 
     async def upsert_edges_batch(
         self,
@@ -183,8 +177,7 @@ class FalkorGraphStore(GraphStore):
 
             if with_project:
                 tasks.append(
-                    asyncio.to_thread(
-                        self._graph.query,
+                        self._run_query(
                         f"""
                     UNWIND $edges AS e
                     MATCH (a {{id: e.source, project: e.project}})
@@ -193,12 +186,11 @@ class FalkorGraphStore(GraphStore):
                     SET r += e.props
                     """,
                         {"edges": with_project},
-                    )
+                        )
                 )
             if without_project:
                 tasks.append(
-                    asyncio.to_thread(
-                        self._graph.query,
+                        self._run_query(
                         f"""
                     UNWIND $edges AS e
                     MATCH (a {{id: e.source}})
@@ -207,7 +199,7 @@ class FalkorGraphStore(GraphStore):
                     SET r += e.props
                     """,
                         {"edges": without_project},
-                    )
+                        )
                 )
         if tasks:
             await asyncio.gather(*tasks)
@@ -242,11 +234,7 @@ class FalkorGraphStore(GraphStore):
             RETURN n, r, m
             LIMIT {MAX_ROWS}
             """
-        result = await asyncio.to_thread(
-            self._graph.query,
-            query,
-            params,
-        )
+        result = await self._run_query(query, params)
         nodes_map: dict[str, GraphNode] = {}
         internal_node_id_map: dict[int, str] = {}
         edges: list[GraphEdge] = []
@@ -335,9 +323,8 @@ class FalkorGraphStore(GraphStore):
         cypher: str,
         params: dict[str, Any],
     ) -> list[list[Any]]:
-        async with self._semaphore:
-            result = await asyncio.to_thread(self._graph.query, cypher, params or {})
-            return result.result_set
+        result = await self._run_query(cypher, params or {})
+        return result.result_set
 
     def _clean_props(self, props: dict) -> dict:
         def _normalize_value(v: Any):
@@ -382,3 +369,8 @@ class FalkorGraphStore(GraphStore):
                 continue
             clean[k] = val
         return clean
+    
+    async def _run_query(self, query, params):
+        async with self._semaphore:
+            return await asyncio.to_thread(self._graph.query, query, params)
+
