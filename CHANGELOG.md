@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-06-08
+
+### Added
+
+#### Qdrant-loader
+
+- Queue-based ingestion architecture with SQLite job queue, worker pool, scheduler, and new `serve`/`jobs`/`webhook` CLI flows [#269] [#280] [#281] [#284] [#289] [#291] [#294] [#307]
+- Excel ingestion improvements and Jira Data Center custom field mapping support [#251] [#276]
+- Container deployment setup with dedicated Dockerfiles and `docker-compose.yaml` [#278]
+
+#### Qdrant-loader-core
+
+- Bedrock and Gemini provider support in the LLM/embedding layer [#275] [#292]
+- Sparse retrieval primitives for hybrid search flows [#184]
+
+#### Qdrant-loader-mcp-server
+
+- Qdrant hybrid search support with sparse+dense pipeline integration [#184]
+
+### Fixed
+
+#### Qdrant-loader
+
+- Queue concurrency and failure-path hardening, including race-condition fixes and safer startup/auth/readiness handling [#307] [#311]
+- State DB and Alembic path resolution reliability, plus safer rollback behavior for multi-project transactions [#270] [#285] [#290]
+- Empty-chunk regression prevention and CORS environment configuration fixes [#268] [#293]
+
+### Changed
+
+#### Qdrant-loader
+
+- Ingestion pipeline refactored to a streaming-oriented flow for queue-driven execution [#295]
+
 ## [1.0.2] - 2026-05-12
 
 ### Changed
@@ -630,6 +663,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change detection for incremental updates [#21]
 - Signal handling for graceful shutdown [#21]
 
+[1.0.3]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.2...qdrant-loader-v1.0.3
 [1.0.2]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.1...qdrant-loader-v1.0.2
 [1.0.1]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v1.0.0...qdrant-loader-v1.0.1
 [1.0.0]: https://github.com/martin-papy/qdrant-loader/compare/qdrant-loader-v0.9.0...qdrant-loader-v1.0.0
