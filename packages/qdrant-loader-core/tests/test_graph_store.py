@@ -119,9 +119,9 @@ async def test_query_cypher():
 async def test_upsert_nodes_batch_persists_all_labels():
     store = DummyGraphStore()
     nodes = [
-        GraphNode(id="doc-1", label="Document", properties={...}),
-        GraphNode(id="person-1", label="Person", properties={...}),
-        GraphNode(id="container-1", label="Container", properties={...}),
+        GraphNode(id="doc-1", label="Document", properties={}),
+        GraphNode(id="person-1", label="Person", properties={}),
+        GraphNode(id="container-1", label="Container", properties={}),
     ]
     await store.upsert_nodes_batch(nodes)
 
