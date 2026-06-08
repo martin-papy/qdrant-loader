@@ -28,13 +28,16 @@ class _FakeQueue:
             type=job_type, payload_json=json.dumps(payload), status="pending"
         )
 
-    async def list(self, status: str | None = None, limit: int = 100):
+    async def list(
+        self, status: str | None = None, limit: int = 100, offset: int = 0
+    ):
         if status is None:
             all_jobs = []
             for items in self.active_by_status.values():
                 all_jobs.extend(items)
-            return all_jobs[:limit]
-        return self.active_by_status.get(status, [])[:limit]
+            return all_jobs[offset : offset + limit]
+        jobs = self.active_by_status.get(status, [])
+        return jobs[offset : offset + limit]
 
 
 def _projects_config() -> ProjectsConfig:

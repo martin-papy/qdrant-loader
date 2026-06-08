@@ -351,3 +351,75 @@ async def test_extend_visibility_on_pending_job_fails(
         job.id, lease_seconds=30, claim_attempt=1
     )
     assert extended is False
+
+
+@pytest.mark.asyncio
+async def test_list_with_offset_and_limit_pagination(sqlite_job_queue: SQLiteJobQueue):
+    """Test pagination using offset and limit parameters."""
+    # Create 25 jobs
+    NUM_JOBS = 25
+    for i in range(NUM_JOBS):
+        await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"index": i})
+
+    # Page 1: offset=0, limit=10 → jobs 0-9
+    page1 = await sqlite_job_queue.list(limit=10, offset=0)
+    assert len(page1) == 10
+    assert page1[0].payload_json == '{"index": 0}'
+    assert page1[9].payload_json == '{"index": 9}'
+
+    # Page 2: offset=10, limit=10 → jobs 10-19
+    page2 = await sqlite_job_queue.list(limit=10, offset=10)
+    assert len(page2) == 10
+    assert page2[0].payload_json == '{"index": 10}'
+    assert page2[9].payload_json == '{"index": 19}'
+
+    # Page 3: offset=20, limit=10 → jobs 20-24 (only 5 left)
+    page3 = await sqlite_job_queue.list(limit=10, offset=20)
+    assert len(page3) == 5
+    assert page3[0].payload_json == '{"index": 20}'
+    assert page3[4].payload_json == '{"index": 24}'
+
+    # Page 4: offset=30, limit=10 → empty (beyond end)
+    page4 = await sqlite_job_queue.list(limit=10, offset=30)
+    assert len(page4) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_pagination_with_status_filter(sqlite_job_queue: SQLiteJobQueue):
+    """Test pagination respects status filter correctly."""
+    # Create 20 PENDING jobs and 5 DONE jobs
+    for i in range(20):
+        await sqlite_job_queue.enqueue(
+            "INCREMENTAL_PULL", {"status": "pending", "index": i}
+        )
+
+    # Claim and mark 5 as done
+    for _i in range(5):
+        job = await sqlite_job_queue.claim_next(lease_seconds=30)
+        if job:
+            await sqlite_job_queue.mark_done(job.id, claim_attempt=job.attempts)
+
+    # Paginate PENDING (should be 15 left after 5 done)
+    pending_page1 = await sqlite_job_queue.list(status="pending", limit=10, offset=0)
+    assert len(pending_page1) == 10
+
+    pending_page2 = await sqlite_job_queue.list(status="pending", limit=10, offset=10)
+    assert len(pending_page2) == 5
+
+    # Paginate DONE (should be 5)
+    done_page1 = await sqlite_job_queue.list(status="done", limit=10, offset=0)
+    assert len(done_page1) == 5
+
+    done_page2 = await sqlite_job_queue.list(status="done", limit=10, offset=5)
+    assert len(done_page2) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_default_offset_is_zero(sqlite_job_queue: SQLiteJobQueue):
+    """Test that offset defaults to 0 when not specified."""
+    for i in range(5):
+        await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"index": i})
+
+    # Call without offset parameter (should default to 0, return first 5)
+    jobs = await sqlite_job_queue.list(limit=10)
+    assert len(jobs) == 5
