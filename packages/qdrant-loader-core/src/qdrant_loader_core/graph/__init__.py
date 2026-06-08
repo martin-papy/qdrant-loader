@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .falkor_store import FalkorGraphStore
-else:
-    FalkorGraphStore = Any
+
+try:
+    from .falkor_store import FalkorGraphStore as _FalkorGraphStore
+except ImportError:
+    _FalkorGraphStore = None
 
 from .schema.init_schema import init_schema
 from .store import GraphEdge, GraphNode, GraphStore, SubGraph
@@ -36,8 +41,7 @@ async def get_graph_store(
 ) -> FalkorGraphStore:
     global _graph_store
 
-    # Check runtime availability
-    if not isinstance(FalkorGraphStore, type):
+    if _FalkorGraphStore is None:
         raise ModuleNotFoundError(
             "FalkorGraphStore requires the 'graph' extra.\n"
             "Install it with:\n"
@@ -52,7 +56,6 @@ async def get_graph_store(
                 final_graph = graph_name or "default_graph"
                 final_max_conn = max_connections
 
-                # merge config (only override if param not provided)
                 if get_settings is not None:
                     try:
                         settings = get_settings()
@@ -75,15 +78,13 @@ async def get_graph_store(
                     except AttributeError:
                         pass
 
-                # init store
-                _graph_store = FalkorGraphStore(
+                _graph_store = _FalkorGraphStore(
                     host=final_host,
                     port=int(final_port),
                     graph_name=final_graph,
                     max_connections=final_max_conn,
                 )
 
-                # init schema
                 await init_schema(_graph_store)
 
     return _graph_store
