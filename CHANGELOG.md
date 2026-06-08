@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Queue concurrency and failure-path hardening, including race-condition fixes and safer startup/auth/readiness handling [#307] [#311]
 - State DB and Alembic path resolution reliability, plus safer rollback behavior for multi-project transactions [#270] [#285] [#290]
+- Deleted Jira issues are now cleaned up from Qdrant during re-ingestion and delete flows [#307]
 - Empty-chunk regression prevention and CORS environment configuration fixes [#268] [#293]
 
 ### Changed
