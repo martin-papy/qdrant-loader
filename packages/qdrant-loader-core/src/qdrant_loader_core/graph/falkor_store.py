@@ -93,8 +93,6 @@ class FalkorGraphStore(GraphStore):
             with_project = [n for n in payload if n["project"] is not None]
             without_project = [n for n in payload if n["project"] is None]
 
-            tasks = []
-
             if with_project:
                 tasks.append(
                     self._run_query(

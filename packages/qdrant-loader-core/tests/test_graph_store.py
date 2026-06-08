@@ -113,3 +113,23 @@ async def test_query_cypher():
 
     assert result == expected
     store._query_cypher.assert_awaited_once_with("MATCH (n) RETURN n", {})
+
+
+@pytest.mark.asyncio
+async def test_upsert_nodes_batch_persists_all_labels():
+    store = DummyGraphStore()
+    nodes = [
+        GraphNode(id="doc-1", label="Document", properties={...}),
+        GraphNode(id="person-1", label="Person", properties={...}),
+        GraphNode(id="container-1", label="Container", properties={...}),
+    ]
+    await store.upsert_nodes_batch(nodes)
+
+    store._upsert_nodes_batch.assert_awaited_once_with(nodes)
+    called_nodes = store._upsert_nodes_batch.await_args.args[0]
+
+    assert {n.label for n in called_nodes} == {
+        "Document",
+        "Person",
+        "Container",
+    }
