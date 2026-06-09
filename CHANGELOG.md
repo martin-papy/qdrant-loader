@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Queue-based ingestion architecture with SQLite job queue, worker pool, scheduler, and new `serve`/`jobs`/`webhook` CLI flows [#269] [#280] [#281] [#284] [#289] [#291] [#294] [#307]
 - Excel ingestion improvements and Jira Data Center custom field mapping support [#251] [#276]
+- `updated_after` filter for Jira connector to limit ingestion to issues updated after a given date [#267]
 - Container deployment setup with dedicated Dockerfiles and `docker-compose.yaml` [#278]
 
 #### Qdrant-loader-core

@@ -28,9 +28,7 @@ class _FakeQueue:
             type=job_type, payload_json=json.dumps(payload), status="pending"
         )
 
-    async def list(
-        self, status: str | None = None, limit: int = 100, offset: int = 0
-    ):
+    async def list(self, status: str | None = None, limit: int = 100, offset: int = 0):
         if status is None:
             all_jobs = []
             for items in self.active_by_status.values():
