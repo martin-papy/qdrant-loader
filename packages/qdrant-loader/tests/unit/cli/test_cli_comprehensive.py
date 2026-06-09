@@ -176,7 +176,7 @@ class TestCLIHelpers:
         from qdrant_loader.cli.cli import _setup_logging
 
         mock_workspace_config = Mock()
-        mock_workspace_config.logs_path = "/tmp/test.log"
+        mock_workspace_config.logs_path = "/tmp/logs"
 
         # Test that function accepts workspace config without crashing
         try:

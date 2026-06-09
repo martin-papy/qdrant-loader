@@ -4,12 +4,15 @@ from unittest.mock import Mock, patch
 
 from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
     BaseSplitter,
-    ExcelSplitter,
     FallbackSplitter,
     HeaderAnalysis,
+    RowKVExcelSplitter,
     SectionMetadata,
     SectionSplitter,
     StandardSplitter,
+)
+from qdrant_loader.core.chunking.strategy.markdown.splitters.excel import (
+    ExcelSplitter,
 )
 
 
@@ -492,7 +495,7 @@ class TestSectionSplitter:
         """Test SectionSplitter initialization."""
         assert self.splitter.settings is self.mock_settings
         assert isinstance(self.splitter.standard_splitter, StandardSplitter)
-        assert isinstance(self.splitter.excel_splitter, ExcelSplitter)
+        assert isinstance(self.splitter.excel_splitter, RowKVExcelSplitter)
         assert isinstance(self.splitter.fallback_splitter, FallbackSplitter)
 
     def test_analyze_header_distribution(self):
@@ -784,7 +787,50 @@ class TestSectionSplitter:
                     # Should create multiple sub-sections
                     assert len(result) == 3
                     for i, section in enumerate(result):
-                        assert f"Part {i+1}" in section["title"]
+                        assert f"Part {i + 1}" in section["title"]
+
+    def test_split_sections_routes_small_excel_through_kv_splitter(self):
+        """Excel sections must go through RowKVExcelSplitter regardless of size.
+
+        Pre-fix, section_splitter.py:428 bypassed the splitter when content fit
+        in chunk_size, leaving small Excel sheets as raw markdown tables while
+        large ones became KV blocks. Same xlsx file produced two chunk shapes.
+        """
+        with (
+            patch(
+                "qdrant_loader.core.chunking.strategy.markdown.section_splitter.DocumentParser"
+            ) as mock_parser_class,
+            patch(
+                "qdrant_loader.core.chunking.strategy.markdown.section_splitter.HierarchyBuilder"
+            ),
+        ):
+            mock_parser = Mock()
+            mock_parser_class.return_value = mock_parser
+            # H2 sheet section, well under chunk_size (1000 in setup_method)
+            small_content = "## Sheet: Tiny\n| a | b |\n|---|---|\n| 1 | 2 |\n"
+            mock_parser.parse_document_structure.return_value = [
+                {
+                    "type": "header",
+                    "level": 2,
+                    "title": "Sheet: Tiny",
+                    "text": "## Sheet: Tiny",
+                },
+                {"type": "content", "text": "| a | b |\n|---|---|\n| 1 | 2 |"},
+            ]
+            mock_parser.extract_section_title.return_value = "Sheet: Tiny"
+
+            excel_doc = Mock()
+            excel_doc.metadata = {"original_file_type": "xlsx"}
+
+            with patch.object(
+                self.splitter.excel_splitter, "split_content"
+            ) as mock_split:
+                mock_split.return_value = ["KV chunk"]
+                self.splitter.split_sections(small_content, document=excel_doc)
+                assert mock_split.called, (
+                    "small Excel section must still route through excel_splitter "
+                    "so chunk shape stays uniform"
+                )
 
     def test_merge_related_sections_empty_list(self):
         """Test merge_related_sections with empty input."""

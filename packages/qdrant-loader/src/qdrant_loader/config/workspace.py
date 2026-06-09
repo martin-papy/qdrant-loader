@@ -73,7 +73,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
     # Define workspace file paths
     config_path = workspace_path / "config.yaml"
     env_path = workspace_path / ".env"
-    logs_path = workspace_path / "logs" / "qdrant-loader.log"
+    logs_path = workspace_path / "logs"
     metrics_path = workspace_path / "metrics"
     data_path = workspace_path / "data"
     database_path = data_path / "qdrant-loader.db"

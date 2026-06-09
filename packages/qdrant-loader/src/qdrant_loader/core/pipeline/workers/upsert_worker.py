@@ -113,10 +113,15 @@ class UpsertWorker(BaseWorker):
 
         try:
             with prometheus_metrics.UPSERT_DURATION.time():
+                # QdrantManager.build_point_vector owns the dense / dense+sparse
+                # decision and has its own dense-only fallback on encode failure,
+                # so no defensive wrapper is needed here.
                 points = [
                     models.PointStruct(
                         id=chunk.id,
-                        vector=embedding,
+                        vector=self.qdrant_manager.build_point_vector(
+                            embedding, chunk.content
+                        ),
                         payload={
                             "content": chunk.content,
                             "contextual_content": chunk.contextual_content,

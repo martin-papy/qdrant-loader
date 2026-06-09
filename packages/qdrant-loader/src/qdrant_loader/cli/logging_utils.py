@@ -21,7 +21,7 @@ def setup_logging(log_level: str, workspace_config: Any | None = None) -> None:
 
         log_format = "console"
         if workspace_config:
-            log_file = str(workspace_config.logs_path)
+            log_file = str(workspace_config.logs_path / "loader.log")
         else:
             log_file = "qdrant-loader.log"
 

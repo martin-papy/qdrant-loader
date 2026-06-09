@@ -144,12 +144,28 @@ global:
       vector_size: ${VECTOR_SIZE}
       # MUST match model output dimension
       # OpenAI: text-embedding-3-small → 1536
+    # Hybrid retrieval config. The `sparse` key name reflects that this block
+    # is only consulted when sparse vectors are in play — once `enabled: true`,
+    # Qdrant requires every vector slot in the collection to be named, so the
+    # dense vector also needs a name here. In dense-only mode (enabled: false)
+    # both names are ignored and the loader uses Qdrant's unnamed vector slot.
+    sparse:
+      enabled: false # Opt-in: enable dense+sparse collection schema and sparse upserts to turn on hybrid retrieval
+      model: "bm25" # Sparse model family (default: bm25)
+      dense_vector_name: "dense" # Named dense vector key in Qdrant (only consulted when sparse.enabled=true)
+      sparse_vector_name: "sparse" # Named sparse vector key in Qdrant (only consulted when sparse.enabled=true)
+    retrieval:
+      use_qdrant_hybrid: false # MCP retrieval: requires sparse.enabled=true; set to true to use Qdrant fusion (dense+sparse)
     # Optional provider-specific options
     provider_options:
       # For Azure: set azure_endpoint explicitly if different from base_url
       azure_endpoint: null
       # For Ollama native servers: force endpoint behavior (auto|embed|embeddings)
       native_endpoint: auto
+      # For Bedrock: configure AWS region and Titan model id
+      # aws_region: "us-east-1"
+      # model_id: "amazon.titan-embed-text-v2:0"
+      # provisioned_throughput_arn: null
 
   # Semantic analysis configuration
   # Controls text processing and topic extraction
@@ -209,6 +225,26 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       # API key for LLM service (required when enable_llm_descriptions is True)
       llm_api_key: "${OPENAI_API_KEY}"
+
+  # Worker queue runtime and scheduling configuration
+  # Controls concurrent workers, retry behavior, and periodic incremental jobs
+  workers:
+    runtime:
+      # Number of concurrent workers draining the queue
+      worker_count: 4
+      # Visibility lease duration in seconds when a job is claimed
+      lease_seconds: 60
+      # Maximum claim attempts before marking a job failed
+      max_attempts: 3
+      # Exponential retry base in seconds (0 disables backoff)
+      retry_backoff_base_seconds: 5
+
+    schedules:
+      incremental_pull:
+        # Set true to enable scheduler-driven periodic incremental jobs in serve mode
+        enabled: false
+        # Supports integer seconds or duration strings (e.g., 5s, 5m, 1h)
+        interval: 5s
 
 # Multi-project configuration
 # Define multiple projects, each with their own sources and settings

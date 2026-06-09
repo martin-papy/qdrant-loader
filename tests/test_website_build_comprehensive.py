@@ -133,8 +133,8 @@ class TestWebsiteBuilderMarkdown:
         html = builder.basic_markdown_to_html(markdown)
         # The output varies depending on whether the markdown library is available
         # Just verify it contains code-related elements
-        assert '<code' in html
-        assert "print('hello')" in html or 'print(&#39;hello&#39;)' in html
+        assert "<code" in html
+        assert "print('hello')" in html or "print(&#39;hello&#39;)" in html
 
         # Test inline code
         markdown = "Use `pip install` to install"
@@ -233,9 +233,9 @@ class TestWebsiteBuilderMarkdown:
         result = builder.markdown_to_html(markdown)
 
         assert 'type="checkbox"' in result
-        assert 'disabled' in result
-        assert 'task-list-item' in result
-        assert 'checked' in result
+        assert "disabled" in result
+        assert "task-list-item" in result
+        assert "checked" in result
         assert "Pending item" in result
         assert "Done item" in result
 
@@ -935,8 +935,7 @@ class TestGitHubActionsWorkflow:
         favicon_script.parent.mkdir(parents=True, exist_ok=True)
 
         # Create a mock favicon generation script
-        favicon_script.write_text(
-            """
+        favicon_script.write_text("""
 import sys
 from pathlib import Path
 
@@ -981,8 +980,7 @@ def main():
 if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)
-"""
-        )
+""")
 
         # Test favicon generation step
         result = subprocess.run(

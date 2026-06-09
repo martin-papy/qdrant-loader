@@ -105,7 +105,29 @@ projects:
           project_key: "PROJ"
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
-          
+          extra_fields:
+            # simple: store a scalar field directly
+            - param_name: customfield_12000
+              name: external_id
+              field_type: simple
+
+            # object: store a nested object as metadata
+            - param_name: customfield_12001
+              name: resolution_details
+              field_type: object
+              attr_name: value
+
+            # array: store a list of scalar values
+            - param_name: customfield_12002
+              name: labels_list
+              field_type: array
+
+            # array_object: extract a named attribute from each object in a list
+            - param_name: customfield_12003
+              name: affected_versions
+              field_type: array_object
+              attr_name: name
+
           # Rate limiting
           requests_per_minute: 60
           page_size: 50
@@ -124,6 +146,9 @@ projects:
             - "In Progress"
             - "Done"
           
+          # Update filtering - fetch issues updated in the last 2 days
+          updated_after: "-2 days"
+
           # File conversion (requires global file_conversion config)
           enable_file_conversion: true
 ```
@@ -193,6 +218,16 @@ projects:
 | `page_size` | int | Number of issues per API request | `100` |
 | `download_attachments` | bool | Download and process issue attachments | `false` |
 | `enable_file_conversion` | bool | Enable file conversion for attachments | `false` |
+| `extra_fields` | list | Add custom JIRA fields to extract as metadata | `[]` |
+
+#### `extra_fields` options
+
+| Option | Type | Description | Required |
+|--------|------|-------------|----------|
+| `param_name` | string | JIRA field key or custom field ID | yes |
+| `name` | string | Metadata key used in Qdrant | yes |
+| `field_type` | string | One of `simple`, `object`, `array`, `array_object` | yes |
+| `attr_name` | string | Attribute to extract for `array_object` fields | required for `array_object` or `object` |
 
 ### Issue Filtering
 
@@ -200,6 +235,8 @@ projects:
 |--------|------|-------------|---------|
 | `issue_types` | list | Issue types to include | All types |
 | `include_statuses` | list | Issue statuses to include | All statuses |
+| `updated_after` | string | Only fetch issues updated after this time. Supports ISO 8601 format (`"2026-05-04T12:00:00"`) or relative format (`"-2 days"`, `"-48h"`, `"-1w"`) | None (fetch all) |
+
 
 ## 🚀 Usage Examples
 

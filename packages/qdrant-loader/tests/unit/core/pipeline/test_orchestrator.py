@@ -13,6 +13,7 @@ from qdrant_loader.core.pipeline.orchestrator import (
 )
 from qdrant_loader.core.pipeline.source_filter import SourceFilter
 from qdrant_loader.core.pipeline.source_processor import SourceProcessor
+from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
 
 
@@ -36,17 +37,20 @@ class TestPipelineComponents:
         source_filter = Mock(spec=SourceFilter)
         state_manager = Mock(spec=StateManager)
 
+        qdrant_manager = Mock(spec=QdrantManager)
         components = PipelineComponents(
             document_pipeline=document_pipeline,
             source_processor=source_processor,
             source_filter=source_filter,
             state_manager=state_manager,
+            qdrant_manager=qdrant_manager,
         )
 
         assert components.document_pipeline == document_pipeline
         assert components.source_processor == source_processor
         assert components.source_filter == source_filter
         assert components.state_manager == state_manager
+        assert components.qdrant_manager == qdrant_manager
 
 
 class TestPipelineOrchestrator:
@@ -66,11 +70,13 @@ class TestPipelineOrchestrator:
         self.state_manager = AsyncMock(spec=StateManager)
         self.state_manager._initialized = False  # Add the _initialized attribute
 
+        self.qdrant_manager = AsyncMock(spec=QdrantManager)
         self.components = PipelineComponents(
             document_pipeline=self.document_pipeline,
             source_processor=self.source_processor,
             source_filter=self.source_filter,
             state_manager=self.state_manager,
+            qdrant_manager=self.qdrant_manager,
         )
 
         self.orchestrator = PipelineOrchestrator(self.settings, self.components)
@@ -87,8 +93,8 @@ class TestPipelineOrchestrator:
         mock_documents = cast(
             list[Document],
             [
-                Mock(spec=Document, id="doc1"),
-                Mock(spec=Document, id="doc2"),
+                Mock(spec=Document, id="doc1", content="content1"),
+                Mock(spec=Document, id="doc2", content="content2"),
             ],
         )
 
@@ -107,34 +113,42 @@ class TestPipelineOrchestrator:
 
         # Configure mocks
         self.source_filter.filter_sources.return_value = filtered_config
-        self.orchestrator._collect_documents_from_sources = AsyncMock(
-            return_value=mock_documents
-        )
-        self.orchestrator._detect_document_changes = AsyncMock(
-            return_value=mock_documents
-        )
-        self.document_pipeline.process_documents.return_value = mock_result
         self.orchestrator._update_document_states = AsyncMock()
 
-        # Execute - pass sources_config parameter
-        result = await self.orchestrator.process_documents(
-            sources_config=self.mock_sources_config
-        )
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None):
+            assert filtered_config_arg is filtered_config
+            yield mock_documents
 
-        # Verify
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.classify_batch.return_value = mock_documents
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+            return_value=state_detector_context,
+        ):
+            mock_result.failure_count = 0
+            mock_result.errors = []
+            mock_result.failed_document_ids = set()
+            self.document_pipeline.process_batch.return_value = mock_result
+            result = await self.orchestrator.process_documents(
+                sources_config=self.mock_sources_config
+            )
+
         assert result == mock_documents
         self.source_filter.filter_sources.assert_called_once_with(
             self.mock_sources_config, None, None
         )
-        self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None
-        )
-        self.orchestrator._detect_document_changes.assert_called_once_with(
-            mock_documents, filtered_config, None
-        )
-        self.document_pipeline.process_documents.assert_called_once_with(mock_documents)
+        self.document_pipeline.process_batch.assert_called_once_with(mock_documents)
         self.orchestrator._update_document_states.assert_called_once_with(
             mock_documents, {"doc1", "doc2"}, None
+        )
+        mock_change_detector.classify_batch.assert_called_once_with(
+            mock_documents, filtered_config, None
         )
 
     @pytest.mark.asyncio
@@ -142,29 +156,38 @@ class TestPipelineOrchestrator:
         """Test document processing with custom sources config."""
         custom_sources_config = Mock(spec=SourcesConfig)
         filtered_config = Mock(spec=SourcesConfig)
-        mock_documents = [Mock(spec=Document, id="doc1")]
+        mock_documents = [Mock(spec=Document, id="doc1", content="content1")]
 
-        # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
-        self.orchestrator._collect_documents_from_sources = AsyncMock(
-            return_value=mock_documents
-        )
-        self.orchestrator._detect_document_changes = AsyncMock(
-            return_value=mock_documents
-        )
-
-        mock_result = Mock()
-        mock_result.successfully_processed_documents = {"doc1"}
-        mock_result.success_count = 1
-        self.document_pipeline.process_documents.return_value = mock_result
         self.orchestrator._update_document_states = AsyncMock()
 
-        # Execute
-        result = await self.orchestrator.process_documents(
-            sources_config=custom_sources_config
-        )
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None):
+            assert filtered_config_arg is filtered_config
+            yield mock_documents
 
-        # Verify
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.classify_batch.return_value = mock_documents
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+            return_value=state_detector_context,
+        ):
+            mock_result = Mock()
+            mock_result.successfully_processed_documents = {"doc1"}
+            mock_result.success_count = 1
+            mock_result.failure_count = 0
+            mock_result.errors = []
+            mock_result.failed_document_ids = set()
+            self.document_pipeline.process_batch.return_value = mock_result
+            result = await self.orchestrator.process_documents(
+                sources_config=custom_sources_config
+            )
+
         assert result == mock_documents
         self.source_filter.filter_sources.assert_called_once_with(
             custom_sources_config, None, None
@@ -180,42 +203,50 @@ class TestPipelineOrchestrator:
         filtered_config.publicdocs = None
         filtered_config.localfile = None
 
-        mock_documents = [Mock(spec=Document, id="doc1")]
+        mock_documents = [Mock(spec=Document, id="doc1", content="content1")]
 
-        # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
-        self.orchestrator._collect_documents_from_sources = AsyncMock(
-            return_value=mock_documents
-        )
-        self.orchestrator._detect_document_changes = AsyncMock(
-            return_value=mock_documents
-        )
-
-        mock_result = Mock()
-        mock_result.successfully_processed_documents = {"doc1"}
-        mock_result.success_count = 1
-        self.document_pipeline.process_documents.return_value = mock_result
         self.orchestrator._update_document_states = AsyncMock()
 
-        # Execute - pass sources_config parameter
-        result = await self.orchestrator.process_documents(
-            sources_config=self.mock_sources_config, source_type="git", source="my-repo"
-        )
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None):
+            assert filtered_config_arg is filtered_config
+            yield mock_documents
 
-        # Verify
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.classify_batch.return_value = mock_documents
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+            return_value=state_detector_context,
+        ):
+            mock_result = Mock()
+            mock_result.successfully_processed_documents = {"doc1"}
+            mock_result.success_count = 1
+            mock_result.failure_count = 0
+            mock_result.errors = []
+            mock_result.failed_document_ids = set()
+            self.document_pipeline.process_batch.return_value = mock_result
+            result = await self.orchestrator.process_documents(
+                sources_config=self.mock_sources_config,
+                source_type="git",
+                source="my-repo",
+            )
+
         assert result == mock_documents
         self.source_filter.filter_sources.assert_called_once_with(
             self.mock_sources_config, "git", "my-repo"
         )
-        self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None
-        )
-        self.orchestrator._detect_document_changes.assert_called_once_with(
-            mock_documents, filtered_config, None
-        )
-        self.document_pipeline.process_documents.assert_called_once_with(mock_documents)
+        self.document_pipeline.process_batch.assert_called_once_with(mock_documents)
         self.orchestrator._update_document_states.assert_called_once_with(
             mock_documents, {"doc1"}, None
+        )
+        mock_change_detector.classify_batch.assert_called_once_with(
+            mock_documents, filtered_config, None
         )
 
     @pytest.mark.asyncio
@@ -249,42 +280,60 @@ class TestPipelineOrchestrator:
         filtered_config.publicdocs = None
         filtered_config.localfile = None
 
-        # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
-        self.orchestrator._collect_documents_from_sources = AsyncMock(return_value=[])
 
-        # Execute
-        result = await self.orchestrator.process_documents(
-            sources_config=self.mock_sources_config
-        )
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None):
+            if False:
+                yield []
 
-        # Verify
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+            return_value=state_detector_context,
+        ):
+            result = await self.orchestrator.process_documents(
+                sources_config=self.mock_sources_config
+            )
+
         assert result == []
-        self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config, None
-        )
 
     @pytest.mark.asyncio
     async def test_process_documents_no_changes_detected(self):
         """Test document processing when no changes are detected."""
-        mock_documents = [Mock(spec=Document, id="doc1")]
+        mock_documents = [Mock(spec=Document, id="doc1", content="content1")]
         filtered_config = Mock(spec=SourcesConfig)
 
-        # Setup mocks
         self.source_filter.filter_sources.return_value = filtered_config
-        self.orchestrator._collect_documents_from_sources = AsyncMock(
-            return_value=mock_documents
-        )
-        self.orchestrator._detect_document_changes = AsyncMock(return_value=[])
+        self.orchestrator._update_document_states = AsyncMock()
 
-        # Execute
-        result = await self.orchestrator.process_documents(
-            sources_config=self.mock_sources_config
-        )
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None):
+            assert filtered_config_arg is filtered_config
+            yield mock_documents
 
-        # Verify
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.classify_batch.return_value = []
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+            return_value=state_detector_context,
+        ):
+            result = await self.orchestrator.process_documents(
+                sources_config=self.mock_sources_config
+            )
+
         assert result == []
-        self.orchestrator._detect_document_changes.assert_called_once_with(
+        mock_change_detector.classify_batch.assert_called_once_with(
             mock_documents, filtered_config, None
         )
 
@@ -293,9 +342,13 @@ class TestPipelineOrchestrator:
         """Test document processing exception handling."""
         filtered_config = make_rich_compatible_mock(spec=SourcesConfig)
         self.source_filter.filter_sources.return_value = filtered_config
-        self.orchestrator._collect_documents_from_sources = AsyncMock(
-            side_effect=Exception("Collection failed")
-        )
+
+        async def failing_stream_batches(*args, **kwargs):
+            if False:
+                yield []
+            raise Exception("Collection failed")
+
+        self.orchestrator._stream_batches_from_sources = failing_stream_batches
 
         # Patch the logger to prevent Rich formatting issues during exception logging
         with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
@@ -400,8 +453,8 @@ class TestPipelineOrchestrator:
         mock_documents = cast(
             list[Document],
             [
-                Mock(spec=Document, id="doc1"),
-                Mock(spec=Document, id="doc2"),
+                Mock(spec=Document, id="doc1", content="content1"),
+                Mock(spec=Document, id="doc2", content="content2"),
             ],
         )
         filtered_config = Mock(spec=SourcesConfig)
@@ -438,10 +491,78 @@ class TestPipelineOrchestrator:
             )
 
     @pytest.mark.asyncio
+    async def test_detect_document_changes_handles_deleted_documents(self):
+        """Test deleted documents are marked deleted and removed from Qdrant."""
+        mock_documents = cast(
+            list[Document],
+            [
+                Mock(spec=Document, id="doc1"),
+            ],
+        )
+        deleted_document = Mock(spec=Document, id="deleted-doc")
+        deleted_document.source_type = "jira"
+        deleted_document.source = "my-jira"
+
+        filtered_config = Mock(spec=SourcesConfig)
+        self.state_manager._initialized = False
+
+        async def _initialize_side_effect():
+            self.state_manager._initialized = True
+
+        self.state_manager.initialize.side_effect = _initialize_side_effect
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.detect_changes.return_value = {
+            "new": mock_documents,
+            "updated": [],
+            "deleted": [deleted_document],
+        }
+        self.orchestrator._process_deleted_documents = AsyncMock()
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector"
+        ) as mock_detector_class:
+            mock_detector_class.return_value.__aenter__.return_value = (
+                mock_change_detector
+            )
+
+            result = await self.orchestrator._detect_document_changes(
+                mock_documents, filtered_config, None
+            )
+
+        assert result == mock_documents
+        self.state_manager.initialize.assert_called_once()
+
+        self.orchestrator._process_deleted_documents.assert_awaited_once_with(
+            [deleted_document], None
+        )
+
+    @pytest.mark.asyncio
     async def test_detect_document_changes_empty_documents(self):
         """Test document change detection with empty document list."""
-        result = await self.orchestrator._detect_document_changes([], Mock(), None)
+        filtered_config = Mock(spec=SourcesConfig)
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.detect_changes.return_value = {
+            "new": [],
+            "updated": [],
+            "deleted": [],
+        }
+
+        with patch(
+            "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector"
+        ) as mock_detector_class:
+            mock_detector_class.return_value.__aenter__.return_value = (
+                mock_change_detector
+            )
+
+            result = await self.orchestrator._detect_document_changes(
+                [], filtered_config, None
+            )
+
         assert result == []
+
+        mock_change_detector.detect_changes.assert_called_once_with([], filtered_config)
 
     @pytest.mark.asyncio
     async def test_detect_document_changes_state_manager_initialized(self):
@@ -774,3 +895,48 @@ class TestPipelineOrchestrator:
         assert "error_type=RuntimeError" in error_entry
         assert "message=project-level failure" in error_entry
         assert "traceback=" in error_entry
+
+    @pytest.mark.asyncio
+    async def test_process_documents_empty_snapshot_warning(self):
+        """Test that empty snapshot in non-force mode logs a warning (WS-3 safety check)."""
+        filtered_config = Mock(spec=SourcesConfig)
+        filtered_config.git = ["git_source"]
+        filtered_config.confluence = None
+        filtered_config.jira = None
+        filtered_config.publicdocs = None
+        filtered_config.localfile = None
+
+        self.source_filter.filter_sources.return_value = filtered_config
+        self.orchestrator._update_document_states = AsyncMock()
+
+        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None):
+            if False:
+                yield []
+
+        self.orchestrator._stream_batches_from_sources = fake_stream_batches
+
+        mock_change_detector = AsyncMock()
+        mock_change_detector.classify_batch.return_value = []
+        state_detector_context = Mock()
+        state_detector_context.__aenter__ = AsyncMock(return_value=mock_change_detector)
+        state_detector_context.__aexit__ = AsyncMock(return_value=None)
+
+        with (
+            patch(
+                "qdrant_loader.core.pipeline.orchestrator.StateChangeDetector",
+                return_value=state_detector_context,
+            ),
+            patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_logger,
+        ):
+            result = await self.orchestrator.process_documents(
+                sources_config=self.mock_sources_config
+            )
+
+        mock_logger.warning.assert_called()
+        warning_calls = [
+            call
+            for call in mock_logger.warning.call_args_list
+            if "EMPTY SNAPSHOT" in str(call)
+        ]
+        assert len(warning_calls) > 0, "Expected warning about empty snapshot"
+        assert result == []

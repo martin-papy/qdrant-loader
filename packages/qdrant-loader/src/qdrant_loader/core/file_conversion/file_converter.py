@@ -44,7 +44,6 @@ def capture_openpyxl_warnings(logger_instance, file_path: str):
                 or "Conditional Formatting extension" in str(message)
             )
         ):
-
             # Extract the specific warning type
             warning_type = "Unknown Excel feature"
             if "Data Validation extension" in str(message):
@@ -154,15 +153,12 @@ class FileConverter:
             try:
                 from markitdown import MarkItDown  # type: ignore
 
-                # Configure MarkItDown with LLM settings if enabled
                 if self.config.markitdown.enable_llm_descriptions:
                     self.logger.debug(
                         "Initializing MarkItDown with LLM configuration",
                         llm_model=self.config.markitdown.llm_model,
                         llm_endpoint=self.config.markitdown.llm_endpoint,
                     )
-
-                    # Warn when legacy MarkItDown overrides are in effect
                     try:
                         if (
                             self.config.markitdown.llm_model
@@ -178,9 +174,7 @@ class FileConverter:
                     except Exception:
                         pass
 
-                    # Create LLM client backed by provider (OpenAI-compatible wrapper)
                     llm_client = self._create_llm_client()
-
                     self._markitdown = MarkItDown(
                         llm_client=llm_client,
                         llm_model=self.config.markitdown.llm_model,
@@ -190,11 +184,26 @@ class FileConverter:
                     self._markitdown = MarkItDown()
                     self.logger.debug("MarkItDown initialized without LLM support")
 
+                self._register_custom_converters(self._markitdown)
+
             except ImportError as e:
                 raise MarkItDownError(
                     Exception("MarkItDown library not available")
                 ) from e
         return self._markitdown
+
+    def _register_custom_converters(self, markitdown_instance) -> None:
+        """Register qdrant-loader's custom converters at higher priority than the defaults."""
+        from qdrant_loader.core.file_conversion.clean_xlsx_converter import (
+            CleanXlsConverter,
+            CleanXlsxConverter,
+        )
+
+        # priority=-1 beats MarkItDown's default PRIORITY_SPECIFIC_FILE_FORMAT (0.0 in
+        # installed version 0.1.5; task spec mentioned 10). Strictly lower priority
+        # ensures our converters are tried first during ascending-sort dispatch.
+        markitdown_instance.register_converter(CleanXlsxConverter(), priority=-1)
+        markitdown_instance.register_converter(CleanXlsConverter(), priority=-1)
 
     def _create_llm_client(self):
         """Create an OpenAI-compatible LLM client backed by core provider.

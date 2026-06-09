@@ -83,7 +83,7 @@ async def run_init_command(
 
             # Setup logging again with workspace-aware file path
             log_file = (
-                str(workspace_config.logs_path)
+                str(workspace_config.logs_path / "init.log")
                 if workspace_config
                 else "qdrant-loader.log"
             )

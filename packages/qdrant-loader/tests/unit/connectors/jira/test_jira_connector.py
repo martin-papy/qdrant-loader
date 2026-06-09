@@ -7,7 +7,12 @@ import pytest
 from pydantic import HttpUrl
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.cloud_connector import JiraCloudConnector
-from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
+from qdrant_loader.connectors.jira.config import (
+    JiraDeploymentType,
+    JiraExtraField,
+    JiraFieldType,
+    JiraProjectConfig,
+)
 from qdrant_loader.connectors.jira.data_center_connector import JiraDataCenterConnector
 from qdrant_loader.connectors.jira.models import (
     JiraIssue,
@@ -107,6 +112,14 @@ def mock_data_center_issue_data():
             "parent": {"key": "TEST-0"},
             "subtasks": [{"key": "TEST-2"}],
             "issuelinks": [{"outwardIssue": {"key": "TEST-3"}}],
+            # Extra fields for testing
+            "customfield_10000": "EXT-12345",
+            "customfield_10001": {"name": "Fixed", "id": "1"},
+            "customfield_10002": ["tag1", "tag2", "tag3"],
+            "customfield_10003": [
+                {"name": "v1.0", "id": "100"},
+                {"name": "v2.0", "id": "200"},
+            ],
         },
     }
 
@@ -190,6 +203,14 @@ def mock_cloud_issue_data():
             "parent": {"key": "TEST-0"},
             "subtasks": [{"key": "TEST-2"}],
             "issuelinks": [{"outwardIssue": {"key": "TEST-3"}}],
+            # Extra fields for testing
+            "customfield_10000": "EXT-12345",
+            "customfield_10001": {"name": "Fixed", "id": "1"},
+            "customfield_10002": ["tag1", "tag2", "tag3"],
+            "customfield_10003": [
+                {"name": "v1.0", "id": "100"},
+                {"name": "v2.0", "id": "200"},
+            ],
         },
     }
 
@@ -733,6 +754,220 @@ class TestJiraConnector:
         assert '"Open"' in captured_jql
 
     @pytest.mark.asyncio
+    async def test_get_issues_with_updated_after(
+        self, jira_cloud_config, mock_cloud_issue_data
+    ):
+        """Test get_issues() with updated_after parameter."""
+        from datetime import datetime
+
+        connector = JiraCloudConnector(jira_cloud_config)
+        updated_after = datetime(2024, 1, 1, 12, 0)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_cloud_issue_data], "total": 1}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues(updated_after=updated_after):
+                    issues.append(issue)
+
+        # Verify updated_after was included in JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "updated >= " in captured_jql
+        assert "2024-01-01 12:00" in captured_jql
+        assert len(issues) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_issues_without_updated_after(
+        self, jira_cloud_config, mock_cloud_issue_data
+    ):
+        """Test get_issues() without updated_after parameter."""
+        connector = JiraCloudConnector(jira_cloud_config)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_cloud_issue_data], "total": 1}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues(updated_after=None):
+                    issues.append(issue)
+
+        # Verify updated_after was NOT included in JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "updated >= " not in captured_jql
+        assert len(issues) == 1
+
+    @pytest.mark.asyncio
+    async def test_datacenter_get_issues_with_updated_after(
+        self, jira_data_center_config, mock_data_center_issue_data
+    ):
+        """Test Data Center get_issues() with updated_after parameter."""
+        from datetime import datetime
+
+        connector = JiraDataCenterConnector(jira_data_center_config)
+        updated_after = datetime(2024, 6, 15, 10, 30)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_data_center_issue_data], "total": 1}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues(updated_after=updated_after):
+                    issues.append(issue)
+
+        # Verify updated_after was included in JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "updated >= " in captured_jql
+        assert "2024-06-15 10:30" in captured_jql
+        assert len(issues) == 1
+
+    @pytest.mark.asyncio
+    async def test_datacenter_get_issues_without_updated_after(
+        self, jira_data_center_config, mock_data_center_issue_data
+    ):
+        """Test Data Center get_issues() without updated_after parameter."""
+        connector = JiraDataCenterConnector(jira_data_center_config)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_data_center_issue_data], "total": 1}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues(updated_after=None):
+                    issues.append(issue)
+
+        # Verify updated_after was NOT included in JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "updated >= " not in captured_jql
+        assert len(issues) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_issues_with_all_filters_and_updated_after(
+        self, mock_cloud_issue_data
+    ):
+        """Test get_issues() with issue_types, statuses, and updated_after."""
+        from datetime import datetime
+
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            issue_types=["Bug", "Task"],
+            include_statuses=["Open", "In Progress"],
+        )
+        connector = JiraCloudConnector(config)
+        updated_after = datetime(2024, 5, 1, 0, 0)
+
+        # Track the JQL query used
+        captured_jql = None
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            nonlocal captured_jql
+            if "params" in kwargs:
+                captured_jql = kwargs["params"].get("jql")
+            return {"issues": [mock_cloud_issue_data], "total": 1}
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues(updated_after=updated_after):
+                    issues.append(issue)
+
+        # Verify all filters were applied in JQL query
+        assert captured_jql is not None
+        assert 'project = "TEST"' in captured_jql
+        assert "type IN " in captured_jql
+        assert '"Bug"' in captured_jql
+        assert '"Task"' in captured_jql
+        assert "status IN " in captured_jql
+        assert '"Open"' in captured_jql
+        assert '"In Progress"' in captured_jql
+        assert "updated >= " in captured_jql
+        assert "2024-05-01 00:00" in captured_jql
+        assert len(issues) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_issues_multiple_pages_with_updated_after(
+        self, jira_cloud_config, mock_cloud_issue_data
+    ):
+        """Test get_issues() pagination with updated_after parameter."""
+        from datetime import datetime
+
+        connector = JiraCloudConnector(jira_cloud_config)
+        updated_after = datetime(2024, 1, 1, 0, 0)
+
+        # Track JQL queries from each page
+        captured_jqls = []
+        call_count = [0]  # Use list to maintain state in nested function
+
+        async def mock_make_request(method, endpoint, **kwargs):
+            call_count[0] += 1
+            if "params" in kwargs:
+                captured_jqls.append(kwargs["params"].get("jql"))
+            # Return different data based on call count
+            if call_count[0] == 1:
+                # First page: return 1 issue with nextPageToken
+                return {
+                    "issues": [mock_cloud_issue_data],
+                    "nextPageToken": "page2",
+                    "isLast": False,
+                }
+            else:
+                # Second page: return another issue and mark as last
+                return {
+                    "issues": [mock_cloud_issue_data],
+                    "isLast": True,
+                }
+
+        with patch.object(connector, "_make_request", side_effect=mock_make_request):
+            async with connector:
+                issues = []
+                async for issue in connector.get_issues(updated_after=updated_after):
+                    issues.append(issue)
+
+        # Verify updated_after was included in all JQL queries
+        assert len(captured_jqls) >= 2
+        for jql in captured_jqls:
+            assert "updated >= " in jql
+            assert "2024-01-01 00:00" in jql
+        assert len(issues) == 2
+
+    @pytest.mark.asyncio
     async def test_datacenter_issue_filtering(
         self, jira_data_center_config, mock_data_center_issue_data
     ):
@@ -773,6 +1008,174 @@ class TestJiraConnector:
         assert '"Task"' in captured_jql
         assert "status IN " in captured_jql
         assert '"Done"' in captured_jql
+
+    # ─── extra_fields end-to-end tests ───────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_get_cloud_documents_with_extra_fields(self, mock_cloud_issue_data):
+        """Test that extra_fields appear in Document.metadata (end-to-end)."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_10000",
+                    name="external_id",
+                    field_type=JiraFieldType.SIMPLE,
+                ),
+                JiraExtraField(
+                    param_name="customfield_10001",
+                    name="resolution",
+                    field_type=JiraFieldType.OBJECT,
+                    attr_name="name",
+                ),
+                JiraExtraField(
+                    param_name="customfield_10002",
+                    name="tags",
+                    field_type=JiraFieldType.ARRAY,
+                ),
+                JiraExtraField(
+                    param_name="customfield_10003",
+                    name="versions",
+                    field_type=JiraFieldType.ARRAY_OBJECT,
+                    attr_name="name",
+                ),
+            ],
+        )
+        connector = JiraCloudConnector(config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [mock_cloud_issue_data]},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                document = documents[0]
+
+                # Verify extra fields are in metadata
+                assert document.metadata["external_id"] == "EXT-12345"
+                assert document.metadata["resolution"] == "Fixed"
+                assert document.metadata["tags"] == ["tag1", "tag2", "tag3"]
+                assert document.metadata["versions"] == ["v1.0", "v2.0"]
+
+    @pytest.mark.asyncio
+    async def test_get_datacenter_documents_with_extra_fields(
+        self, mock_data_center_issue_data
+    ):
+        """Test that extra_fields work with Data Center connector."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://jira.company.com"),
+            deployment_type=JiraDeploymentType.DATACENTER,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-pat-token",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_10000",
+                    name="external_id",
+                    field_type=JiraFieldType.SIMPLE,
+                ),
+            ],
+        )
+        connector = JiraDataCenterConnector(config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [mock_data_center_issue_data], "total": 1},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                assert documents[0].metadata["external_id"] == "EXT-12345"
+
+    @pytest.mark.asyncio
+    async def test_extra_fields_with_missing_param(self, mock_cloud_issue_data):
+        """Test extra_fields handling when param_name is missing from response."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_99999",  # doesn't exist in response
+                    name="missing_field",
+                    field_type=JiraFieldType.SIMPLE,
+                ),
+            ],
+        )
+        connector = JiraCloudConnector(config)
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [mock_cloud_issue_data]},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                # Should be None for missing field
+                assert documents[0].metadata["missing_field"] is None
+
+    @pytest.mark.asyncio
+    async def test_extra_fields_array_object_with_non_dict_items(
+        self, mock_cloud_issue_data
+    ):
+        """Test array_object field_type gracefully skips non-dict items."""
+        config = JiraProjectConfig(
+            base_url=HttpUrl("https://test.atlassian.net"),
+            deployment_type=JiraDeploymentType.CLOUD,
+            project_key="TEST",
+            source="test-jira",
+            source_type=SourceType.JIRA,
+            token="test-token",
+            email="test@example.com",
+            extra_fields=[
+                JiraExtraField(
+                    param_name="customfield_10000",
+                    name="items",
+                    field_type=JiraFieldType.ARRAY_OBJECT,
+                    attr_name="name",
+                ),
+            ],
+        )
+        connector = JiraCloudConnector(config)
+
+        issue_data = mock_cloud_issue_data.copy()
+        issue_data["fields"]["customfield_10000"] = [
+            {"name": "item1", "id": "1"},
+            "not a dict",  # should be skipped
+            {"name": "item2", "id": "2"},
+            None,  # should be skipped
+            {"name": "item3", "id": "3"},
+        ]
+
+        with patch.object(
+            connector,
+            "_make_request",
+            return_value={"issues": [issue_data]},
+        ):
+            async with connector:
+                documents = await connector.get_documents()
+
+                assert len(documents) == 1
+                # Should extract only from dict items
+                assert documents[0].metadata["items"] == ["item1", "item2", "item3"]
 
 
 class TestJiraValidateConnection:
@@ -910,3 +1313,75 @@ class TestJiraValidateConnection:
         with patch.object(connector, "_make_request", side_effect=side_effect):
             with pytest.raises(ConnectorConfigurationError, match="403"):
                 await connector.__aenter__()
+
+
+class TestFetchById:
+    """Tests for WS-1 fetch_by_id connector contract."""
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_skips_attachment_processing_on_failure(
+        self, jira_cloud_config, mock_data_center_issue_data
+    ):
+        connector = JiraCloudConnector(jira_cloud_config)
+        connector.config.download_attachments = True
+        connector.attachment_reader = MagicMock()
+        connector.attachment_reader.fetch_and_process.side_effect = RuntimeError(
+            "attachment boom"
+        )
+
+        with (
+            patch.object(connector, "_validate_connection", return_value=None),
+            patch.object(
+                connector,
+                "_make_request",
+                return_value=mock_data_center_issue_data,
+            ),
+        ):
+            async with connector:
+                document = await connector.fetch_by_id("TEST-1")
+
+        assert document is not None
+        assert document.metadata["key"] == "TEST-1"
+        connector.attachment_reader.fetch_and_process.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_document(
+        self, jira_cloud_config, mock_data_center_issue_data
+    ):
+        connector = JiraCloudConnector(jira_cloud_config)
+
+        with (
+            patch.object(connector, "_validate_connection", return_value=None),
+            patch.object(
+                connector,
+                "_make_request",
+                return_value=mock_data_center_issue_data,
+            ),
+        ):
+            async with connector:
+                document = await connector.fetch_by_id("TEST-1")
+
+        assert document is not None
+        assert document.id == "12345"
+        assert document.metadata["key"] == "TEST-1"
+        assert document.source == "test-jira"
+
+    @pytest.mark.asyncio
+    async def test_list_entity_ids_collects_keys(
+        self, jira_cloud_config, mock_data_center_issue_data
+    ):
+        connector = JiraCloudConnector(jira_cloud_config)
+
+        async def fake_get_issues(updated_after=None):
+            yield connector._parse_issue(mock_data_center_issue_data)
+
+        with (
+            patch.object(connector, "_validate_connection", return_value=None),
+            patch.object(connector, "get_issues", fake_get_issues),
+        ):
+            async with connector:
+                entity_ids = [
+                    entity_id async for entity_id in connector.list_entity_ids()
+                ]
+
+        assert entity_ids == ["TEST-1"]

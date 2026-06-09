@@ -1,8 +1,9 @@
 """Jira connector implementation."""
 
 import asyncio
+import warnings
 from abc import abstractmethod
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from datetime import datetime
 from urllib.parse import urlparse  # noqa: F401 - may be used in URL handling
 
@@ -15,7 +16,11 @@ from qdrant_loader.connectors.jira.auth import (
     auto_detect_deployment_type as _auto_detect_type,
 )
 from qdrant_loader.connectors.jira.auth import setup_authentication as _setup_auth
-from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
+from qdrant_loader.connectors.jira.config import (
+    JiraDeploymentType,
+    JiraExtraField,
+    JiraProjectConfig,
+)
 from qdrant_loader.connectors.jira.mappers import (
     parse_attachment as _parse_attachment_helper,
 )
@@ -289,7 +294,7 @@ class BaseJiraConnector(BaseConnector):
 
         # Add updated_after filter if provided
         if updated_after:
-            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M:%S')}'"
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
 
         return jql
 
@@ -403,9 +408,11 @@ class BaseJiraConnector(BaseConnector):
         """Get all issues from Jira."""
         ...
 
-    def _parse_issue(self, raw_issue: dict) -> JiraIssue:
+    def _parse_issue(
+        self, raw_issue: dict, extra_fields: list[JiraExtraField] | None = None
+    ) -> JiraIssue:
         """Parse a raw issue from the Jira response into a JiraIssue object."""
-        return _parse_issue_helper(raw_issue)
+        return _parse_issue_helper(raw_issue, extra_fields)
 
     def _parse_user(
         self, raw_user: dict | None, required: bool = False
@@ -440,27 +447,61 @@ class BaseJiraConnector(BaseConnector):
 
         return attachment_metadata
 
-    async def get_documents(self) -> list[Document]:
-        """Fetch and process documents from Jira.
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single Jira issue by key or numeric ID."""
+        try:
+            raw_issue = await self._make_request("GET", f"issue/{entity_id}")
+            issue = self._parse_issue(raw_issue, self.config.extra_fields)
+            documents = await self._issues_to_documents(
+                [issue], include_attachments=False
+            )
+        except Exception as exc:
+            logger.error(
+                "Failed to fetch/parse Jira issue by id",
+                entity_id=entity_id,
+                error=str(exc),
+            )
+            return None
 
-        Returns:
-            List[Document]: List of processed documents
-        """
-        documents = []
+        return documents[0] if documents else None
 
-        # Collect all issues
-        issues = []
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream all issue keys in the configured project."""
         async for issue in self.get_issues():
-            issues.append(issue)
+            yield issue.key
 
-        # Convert issues to documents
+    async def _issues_to_documents(
+        self, issues: list[JiraIssue], include_attachments: bool = True
+    ) -> list[Document]:
+        """Convert Jira issues to Document objects.
+
+        Set ``include_attachments=False`` for single-entity fetches where the
+        parent document must remain available even if attachment materialization
+        fails.
+
+        .. deprecated:: WS-1
+            Use :meth:`_stream_issues_to_documents` for streaming.
+        """
+        documents: list[Document] = []
+        async for document in self._stream_issues_to_documents(
+            issues, include_attachments=include_attachments
+        ):
+            documents.append(document)
+        return documents
+
+    async def _stream_issues_to_documents(
+        self, issues: list[JiraIssue], include_attachments: bool = True
+    ) -> AsyncGenerator[Document, None]:
+        """Stream Jira issues as Document objects, including attachments.
+
+        Yields documents one at a time, with attachments yielded immediately after
+        their parent issue document.
+        """
         for issue in issues:
-            # Build content including comments
             content_parts = [issue.summary]
             if issue.description:
                 content_parts.append(issue.description)
 
-            # Add comments to content
             for comment in issue.comments:
                 content_parts.append(
                     f"\nComment by {comment.author.display_name} on {comment.created.strftime('%Y-%m-%d %H:%M')}:"
@@ -468,7 +509,53 @@ class BaseJiraConnector(BaseConnector):
                 content_parts.append(comment.body)
 
             content = "\n\n".join(content_parts)
-
+            metadata = {
+                "project": self.config.project_key,
+                "issue_type": issue.issue_type,
+                "status": issue.status,
+                "key": issue.key,
+                "priority": issue.priority,
+                "labels": issue.labels,
+                "reporter": issue.reporter.display_name if issue.reporter else None,
+                "assignee": issue.assignee.display_name if issue.assignee else None,
+                "created": issue.created.isoformat(),
+                "updated": issue.updated.isoformat(),
+                "parent_key": issue.parent_key,
+                "subtasks": issue.subtasks,
+                "linked_issues": issue.linked_issues,
+                "comments": [
+                    {
+                        "id": comment.id,
+                        "body": comment.body,
+                        "created": comment.created.isoformat(),
+                        "updated": (
+                            comment.updated.isoformat() if comment.updated else None
+                        ),
+                        "author": (
+                            comment.author.display_name if comment.author else None
+                        ),
+                    }
+                    for comment in issue.comments
+                ],
+                "attachments": (
+                    [
+                        {
+                            "id": att.id,
+                            "filename": att.filename,
+                            "size": att.size,
+                            "mime_type": att.mime_type,
+                            "created": att.created.isoformat(),
+                            "author": (att.author.display_name if att.author else None),
+                        }
+                        for att in issue.attachments
+                    ]
+                    if issue.attachments
+                    else []
+                ),
+            }
+            if self.config.extra_fields:
+                for field in self.config.extra_fields:
+                    metadata[field.name] = getattr(issue, field.name)
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,
@@ -481,54 +568,8 @@ class BaseJiraConnector(BaseConnector):
                 title=issue.summary,
                 updated_at=issue.updated,
                 is_deleted=False,
-                metadata={
-                    "project": self.config.project_key,
-                    "issue_type": issue.issue_type,
-                    "status": issue.status,
-                    "key": issue.key,
-                    "priority": issue.priority,
-                    "labels": issue.labels,
-                    "reporter": issue.reporter.display_name if issue.reporter else None,
-                    "assignee": issue.assignee.display_name if issue.assignee else None,
-                    "created": issue.created.isoformat(),
-                    "updated": issue.updated.isoformat(),
-                    "parent_key": issue.parent_key,
-                    "subtasks": issue.subtasks,
-                    "linked_issues": issue.linked_issues,
-                    "comments": [
-                        {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "created": comment.created.isoformat(),
-                            "updated": (
-                                comment.updated.isoformat() if comment.updated else None
-                            ),
-                            "author": (
-                                comment.author.display_name if comment.author else None
-                            ),
-                        }
-                        for comment in issue.comments
-                    ],
-                    "attachments": (
-                        [
-                            {
-                                "id": att.id,
-                                "filename": att.filename,
-                                "size": att.size,
-                                "mime_type": att.mime_type,
-                                "created": att.created.isoformat(),
-                                "author": (
-                                    att.author.display_name if att.author else None
-                                ),
-                            }
-                            for att in issue.attachments
-                        ]
-                        if issue.attachments
-                        else []
-                    ),
-                },
+                metadata=metadata,
             )
-            documents.append(document)
             logger.debug(
                 "Jira document created",
                 document_id=document.id,
@@ -536,9 +577,13 @@ class BaseJiraConnector(BaseConnector):
                 source=document.source,
                 title=document.title,
             )
+            yield document
 
-            # Process attachments if enabled
-            if self.config.download_attachments and self.attachment_reader:
+            if (
+                include_attachments
+                and self.config.download_attachments
+                and self.attachment_reader
+            ):
                 attachment_metadata = self._get_issue_attachments(issue)
                 if attachment_metadata:
                     logger.info(
@@ -552,7 +597,8 @@ class BaseJiraConnector(BaseConnector):
                             attachment_metadata, document
                         )
                     )
-                    documents.extend(attachment_documents)
+                    for attachment_document in attachment_documents:
+                        yield attachment_document
 
                     logger.debug(
                         "Processed attachments for JIRA issue",
@@ -560,4 +606,25 @@ class BaseJiraConnector(BaseConnector):
                         processed_count=len(attachment_documents),
                     )
 
+    async def stream_documents(
+        self, since: datetime | None = None
+    ) -> AsyncGenerator[Document, None]:
+        """Stream documents from Jira (WS-1 connector contract)."""
+        effective_since = since if since is not None else self.config.updated_after
+        async for issue in self.get_issues(updated_after=effective_since):
+            async for document in self._stream_issues_to_documents([issue]):
+                yield document
+
+    async def get_documents(self) -> list[Document]:
+        """Fetch and process documents from Jira (DEPRECATED - use stream_documents)."""
+        warnings.warn(
+            "BaseJiraConnector.get_documents is deprecated. Implement stream_documents() "
+            "or use connector.stream_documents() to avoid materializing the full "
+            "document list in memory.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        documents = []
+        async for document in self.stream_documents():
+            documents.append(document)
         return documents

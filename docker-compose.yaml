@@ -1,0 +1,142 @@
+services:
+  qdrant:
+    container_name: qdrant
+    image: qdrant/qdrant:v1.18.0
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: bash -c ':> /dev/tcp/localhost/6333'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - qdrant-net
+  
+  # ------------------------------------------------------------------------------
+  # IMPORTANT
+  # SQLite is intended for local CLI usage only.
+  # Container deployments should not rely on SQLite state (will implement in the future release).
+  # ------------------------------------------------------------------------------
+  qdrant-loader:
+    container_name: qdrant-loader
+    build:
+      context: .
+      dockerfile: Dockerfile.qdrant-loader
+    image: qdrant-loader:latest
+    restart: unless-stopped
+    ports:
+      - 8081:8081
+    # Ensure .env and config.yaml exist on the host
+    volumes:
+      - ./.env:/qdrant-loader/.env
+      - ./config.yaml:/qdrant-loader/config.yaml
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+    networks:
+      - qdrant-net
+
+  # ------------------------------------------------------------------------------
+  # NOTE
+  # This MCP server is stateless:
+  # - No SQL database
+  # - No background job state
+  #
+  # Persistent storage is not required.
+  # ------------------------------------------------------------------------------
+  qdrant-loader-mcp-server:
+    container_name: qdrant-loader-mcp-server
+    build:
+      context: .
+      dockerfile: Dockerfile.qdrant-loader-mcp-server
+    image: qdrant-loader-mcp-server:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_EMBEDDING_MODEL=${LLM_EMBEDDING_MODEL}
+      - LLM_CHAT_MODEL=${LLM_CHAT_MODEL}
+      - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
+      - MCP_LOG_FILE=${MCP_LOG_FILE:-mcp.log}
+      - MCP_DISABLE_CONSOLE_LOGGING=${MCP_DISABLE_CONSOLE_LOGGING:-false}
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - qdrant-net
+
+  # ==============================================================================
+  # OLLAMA SETUP
+  # ==============================================================================
+  #
+  # Required only when LLM_PROVIDER=ollama.
+  #
+  # Startup order:
+  #   1. ollama
+  #   2. ollama pull <model_name>
+  #   3. qdrant-loader / qdrant-loader-mcp-server
+  #
+  # Example:
+  #   docker exec -it ollama bash
+  #   ollama pull llama3.2
+  #
+  # ==============================================================================
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - 11434:11434
+  #   volumes:
+  #     - ollama:/root/.ollama
+  #   container_name: ollama
+  #   tty: true
+  #   restart: always
+  #   environment:
+  #     - OLLAMA_KEEP_ALIVE=24h
+  #     - OLLAMA_HOST=0.0.0.0
+  #   command: ["serve"]
+  #   networks:
+  #     - qdrant-net
+  #   healthcheck:
+  #     test: ["CMD", "ollama", "ps"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+volumes:
+  qdrant_data:
+    driver: local
+  # ollama:
+  #   driver: local
+
+networks:
+  qdrant-net:
+    driver: bridge
+
