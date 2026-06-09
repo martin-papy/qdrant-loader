@@ -17,6 +17,12 @@ from qdrant_loader.utils.logging import LoggingConfig
 from .workers import ChunkingWorker, EmbeddingWorker, UpsertWorker
 from .workers.upsert_worker import PipelineResult
 
+# Sanity-check that at least one extractor was registered.
+assert EntityExtractor._registry, (
+    "No graph extractors registered — "
+    "ensure qdrant_loader_core.graph.registry was imported."
+)
+
 logger = LoggingConfig.get_logger(__name__)
 
 
@@ -237,7 +243,8 @@ class DocumentPipeline:
             )
 
             # add node and edge
-            await self._process_graph(batch, current_project_id)
+            if pipeline_result.success_count > 0:
+                await self._process_graph(batch, current_project_id)
 
             return BatchResult(
                 success_count=pipeline_result.success_count,

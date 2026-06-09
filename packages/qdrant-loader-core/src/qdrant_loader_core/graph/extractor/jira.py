@@ -211,17 +211,15 @@ class JiraEntityExtractor(BaseEntityExtractor):
         def _handle_url(url: str, kind: str) -> None:
             target = url.strip()
 
-            if not _is_url(target):
-                return
-
-            nodes.append(
-                GraphNode(
-                    id=target,
-                    label=CoreNodeLabel.URL,
-                    project=project,
-                    properties={"url": target},
+            if _is_url(target):
+                nodes.append(
+                    GraphNode(
+                        id=target,
+                        label=CoreNodeLabel.URL,
+                        project=project,
+                        properties={"url": target},
+                    )
                 )
-            )
 
             edges.append(
                 GraphEdge(
