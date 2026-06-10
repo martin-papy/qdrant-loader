@@ -51,26 +51,15 @@ class BaseConnector(ABC):
     ) -> AsyncIterator[Document]:
         """Stream documents from the source (WS-1 connector contract).
 
-        This default implementation bridges legacy connectors by calling
-        :meth:`get_documents` and yielding documents from the returned list.
-
-        Args:
-            since: Optional datetime to fetch documents updated after this time.
-
-        Yields:
-            Document objects from the source.
+        Connectors must implement true streaming. This default raises
+        NotImplementedError to prevent silently materializing the full
+        document list via get_documents().
         """
-        if (
-            type(self).get_documents is BaseConnector.get_documents
-            and type(self).stream_documents is BaseConnector.stream_documents
-        ):
-            raise NotImplementedError(
-                f"{type(self).__name__} does not implement stream_documents or get_documents"
-            )
-
-        documents = await self.get_documents()
-        for document in documents:
-            yield document
+        if False:  # pragma: no cover - makes this function an async generator
+            yield ""  # type: ignore
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement stream_documents"
+        )
 
     @abstractmethod
     async def get_documents(self) -> list[Document]:

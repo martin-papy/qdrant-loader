@@ -1,4 +1,5 @@
 import os
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from urllib.parse import unquote, urlparse
 
@@ -78,124 +79,125 @@ class LocalFileConnector(BaseConnector):
             self.file_converter = FileConverter(file_conversion_config)
             self.logger.debug("File converter initialized with global config")
 
-    async def get_documents(self) -> list[Document]:
-        """Get all documents from the local file source."""
-        documents = []
+    def _build_file_document(self, file_path: str) -> Document | None:
+        """Build a Document for a local file, or None if the file should be skipped.
+
+        Used by both stream_documents and fetch_by_id.
+        """
+        file = os.path.basename(file_path)
+        # Get relative path from base directory
+        rel_path = os.path.relpath(file_path, self.base_path)
+        file_extension = os.path.splitext(file)[1].lower()
+
+        if self.config.enable_file_conversion and file_extension in {".doc", ".ppt"}:
+            file_info = (
+                self.file_detector.get_file_type_info(file_path)
+                if self.file_detector
+                else {
+                    "mime_type": None,
+                    "file_extension": file_extension,
+                }
+            )
+            self.logger.warning(
+                "Skipping file: old doc/ppt are not supported for MarkItDown conversion",
+                file_path=rel_path.replace("\\", "/"),
+                mime_type=file_info.get("mime_type"),
+                file_extension=file_info.get("file_extension"),
+            )
+            return None
+
+        # Check if file needs conversion
+        needs_conversion = (
+            self.config.enable_file_conversion
+            and self.file_detector
+            and self.file_converter
+            and self.file_detector.is_supported_for_conversion(file_path)
+        )
+
+        if needs_conversion:
+            self.logger.debug(
+                "File needs conversion",
+                file_path=rel_path.replace("\\", "/"),
+            )
+            try:
+                # Convert file to markdown
+                assert self.file_converter is not None  # Type checker hint
+                content = self.file_converter.convert_file(file_path)
+                content_type = "md"  # Converted files are markdown
+                conversion_method = "markitdown"
+                conversion_failed = False
+                self.logger.info(
+                    "File conversion successful",
+                    file_path=rel_path.replace("\\", "/"),
+                )
+            except FileConversionError as e:
+                self.logger.warning(
+                    "File conversion failed, creating fallback document",
+                    file_path=rel_path.replace("\\", "/"),
+                    error=str(e),
+                )
+                # Create fallback document
+                assert self.file_converter is not None  # Type checker hint
+                content = self.file_converter.create_fallback_document(file_path, e)
+                content_type = "md"  # Fallback is also markdown
+                conversion_method = "markitdown_fallback"
+                conversion_failed = True
+        else:
+            # Read file content normally
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            # Get file extension without the dot
+            content_type = os.path.splitext(file)[1].lower().lstrip(".")
+            conversion_method = None
+            conversion_failed = False
+
+        # Get file modification time
+        file_mtime = os.path.getmtime(file_path)
+        updated_at = datetime.fromtimestamp(file_mtime, tz=UTC)
+
+        metadata = self.metadata_extractor.extract_all_metadata(file_path, content)
+
+        # Add file conversion metadata if applicable
+        if needs_conversion:
+            metadata.update(
+                {
+                    "conversion_method": conversion_method,
+                    "conversion_failed": conversion_failed,
+                    "original_file_type": os.path.splitext(file)[1]
+                    .lower()
+                    .lstrip("."),
+                }
+            )
+
+        self.logger.debug(f"Processed local file: {rel_path.replace('\\', '/')}")
+
+        # Create consistent URL with forward slashes for cross-platform compatibility
+        normalized_path = os.path.realpath(file_path).replace("\\", "/")
+        return Document(
+            title=os.path.basename(file_path),
+            content=content,
+            content_type=content_type,
+            metadata=metadata,
+            source_type="localfile",
+            source=self.config.source,
+            url=f"file://{normalized_path}",
+            is_deleted=False,
+            updated_at=updated_at,
+        )
+
+    async def stream_documents(
+        self, since: datetime | None = None
+    ) -> AsyncIterator[Document]:
+        """Stream documents from the local file source (WS-1 connector contract)."""
         for root, _, files in os.walk(self.base_path):
             for file in files:
                 file_path = os.path.join(root, file)
                 if not self.file_processor.should_process_file(file_path):
                     continue
                 try:
-                    # Get relative path from base directory
-                    rel_path = os.path.relpath(file_path, self.base_path)
-                    file_extension = os.path.splitext(file)[1].lower()
-
-                    if self.config.enable_file_conversion and file_extension in {
-                        ".doc",
-                        ".ppt",
-                    }:
-                        file_info = (
-                            self.file_detector.get_file_type_info(file_path)
-                            if self.file_detector
-                            else {
-                                "mime_type": None,
-                                "file_extension": file_extension,
-                            }
-                        )
-                        self.logger.warning(
-                            "Skipping file: old doc/ppt are not supported for MarkItDown conversion",
-                            file_path=rel_path.replace("\\", "/"),
-                            mime_type=file_info.get("mime_type"),
-                            file_extension=file_info.get("file_extension"),
-                        )
-                        continue
-
-                    # Check if file needs conversion
-                    needs_conversion = (
-                        self.config.enable_file_conversion
-                        and self.file_detector
-                        and self.file_converter
-                        and self.file_detector.is_supported_for_conversion(file_path)
-                    )
-
-                    if needs_conversion:
-                        self.logger.debug(
-                            "File needs conversion",
-                            file_path=rel_path.replace("\\", "/"),
-                        )
-                        try:
-                            # Convert file to markdown
-                            assert self.file_converter is not None  # Type checker hint
-                            content = self.file_converter.convert_file(file_path)
-                            content_type = "md"  # Converted files are markdown
-                            conversion_method = "markitdown"
-                            conversion_failed = False
-                            self.logger.info(
-                                "File conversion successful",
-                                file_path=rel_path.replace("\\", "/"),
-                            )
-                        except FileConversionError as e:
-                            self.logger.warning(
-                                "File conversion failed, creating fallback document",
-                                file_path=rel_path.replace("\\", "/"),
-                                error=str(e),
-                            )
-                            # Create fallback document
-                            assert self.file_converter is not None  # Type checker hint
-                            content = self.file_converter.create_fallback_document(
-                                file_path, e
-                            )
-                            content_type = "md"  # Fallback is also markdown
-                            conversion_method = "markitdown_fallback"
-                            conversion_failed = True
-                    else:
-                        # Read file content normally
-                        with open(file_path, encoding="utf-8", errors="ignore") as f:
-                            content = f.read()
-                        # Get file extension without the dot
-                        content_type = os.path.splitext(file)[1].lower().lstrip(".")
-                        conversion_method = None
-                        conversion_failed = False
-
-                    # Get file modification time
-                    file_mtime = os.path.getmtime(file_path)
-                    updated_at = datetime.fromtimestamp(file_mtime, tz=UTC)
-
-                    metadata = self.metadata_extractor.extract_all_metadata(
-                        file_path, content
-                    )
-
-                    # Add file conversion metadata if applicable
-                    if needs_conversion:
-                        metadata.update(
-                            {
-                                "conversion_method": conversion_method,
-                                "conversion_failed": conversion_failed,
-                                "original_file_type": os.path.splitext(file)[1]
-                                .lower()
-                                .lstrip("."),
-                            }
-                        )
-
-                    self.logger.debug(
-                        f"Processed local file: {rel_path.replace('\\', '/')}"
-                    )
-
-                    # Create consistent URL with forward slashes for cross-platform compatibility
-                    normalized_path = os.path.realpath(file_path).replace("\\", "/")
-                    doc = Document(
-                        title=os.path.basename(file_path),
-                        content=content,
-                        content_type=content_type,
-                        metadata=metadata,
-                        source_type="localfile",
-                        source=self.config.source,
-                        url=f"file://{normalized_path}",
-                        is_deleted=False,
-                        updated_at=updated_at,
-                    )
-                    documents.append(doc)
+                    doc = self._build_file_document(file_path)
+                    if doc is not None:
+                        yield doc
                 except Exception as e:
                     self.logger.error(
                         "Failed to process file",
@@ -203,4 +205,31 @@ class LocalFileConnector(BaseConnector):
                         error=str(e),
                     )
                     continue
-        return documents
+
+    async def get_documents(self) -> list[Document]:
+        """Get documents from the local file source (DEPRECATED - use stream_documents)."""
+        return await super().get_documents()
+
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single file by its path relative to the connector's base directory."""
+        file_path = os.path.join(self.base_path, *entity_id.split("/"))
+        if not os.path.exists(
+            file_path
+        ) or not self.file_processor.should_process_file(file_path):
+            return None
+        try:
+            return self._build_file_document(file_path)
+        except Exception as e:
+            self.logger.error(
+                "Failed to fetch file by id", entity_id=entity_id, error=str(e)
+            )
+            return None
+
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream paths (relative to base_path, forward slashes) for all processable files."""
+        for root, _, files in os.walk(self.base_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if self.file_processor.should_process_file(file_path):
+                    rel_path = os.path.relpath(file_path, self.base_path)
+                    yield rel_path.replace(os.sep, "/").replace("\\", "/")

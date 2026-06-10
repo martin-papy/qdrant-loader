@@ -3,6 +3,8 @@
 import os
 import shutil
 import tempfile
+from collections.abc import AsyncIterator
+from datetime import datetime
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
@@ -386,11 +388,13 @@ class GitConnector(BaseConnector):
             )
             raise
 
-    async def get_documents(self) -> list[Document]:
-        """Get all documents from the repository.
+    async def stream_documents(
+        self, since: datetime | None = None
+    ) -> AsyncIterator[Document]:
+        """Stream documents from the repository (WS-1 connector contract).
 
-        Returns:
-            List of documents
+        Yields:
+            Document objects from the repository.
 
         Raises:
             Exception: If document retrieval fails
@@ -405,24 +409,19 @@ class GitConnector(BaseConnector):
                 self.logger.error("Failed to list files", error=str(e))
                 raise ValueError("Repository not initialized") from e
 
-            documents = []
-
             for file_path in files:
                 if not self.file_processor.should_process_file(file_path):  # type: ignore
                     continue
 
                 try:
                     document = self._process_file(file_path)
-                    documents.append(document)
+                    yield document
 
                 except Exception as e:
                     self.logger.error(
                         "Failed to process file", file_path=file_path, error=str(e)
                     )
                     continue
-
-            # Return all documents that need to be processed
-            return documents
 
         except ValueError as e:
             # Re-raise ValueError to maintain the error type
@@ -431,6 +430,35 @@ class GitConnector(BaseConnector):
         except Exception as e:
             self.logger.error("Failed to get documents", error=str(e))
             raise
+
+    async def get_documents(self) -> list[Document]:
+        """Get documents from the repository (DEPRECATED - use stream_documents)."""
+        return await super().get_documents()
+
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single file by its repo-relative path (forward slashes)."""
+        self._ensure_initialized()
+        file_path = os.path.join(self.temp_dir, *entity_id.split("/"))
+        if not os.path.exists(file_path) or not self.file_processor.should_process_file(  # type: ignore
+            file_path
+        ):
+            return None
+        try:
+            return self._process_file(file_path)
+        except Exception as e:
+            self.logger.error(
+                "Failed to fetch file by id", entity_id=entity_id, error=str(e)
+            )
+            return None
+
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream repo-relative paths (forward slashes) for all processable files."""
+        self._ensure_initialized()
+        for file_path in self.git_ops.list_files():
+            if not self.file_processor.should_process_file(file_path):  # type: ignore
+                continue
+            rel_path = os.path.relpath(file_path, self.temp_dir)
+            yield rel_path.replace(os.sep, "/").replace("\\", "/")
 
     def _ensure_initialized(self):
         """Ensure the repository is initialized before performing operations."""

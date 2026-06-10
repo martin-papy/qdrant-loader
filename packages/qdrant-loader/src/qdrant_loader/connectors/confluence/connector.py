@@ -1,4 +1,5 @@
 import re
+from collections.abc import AsyncIterator
 from datetime import datetime
 from urllib.parse import quote, urljoin
 
@@ -16,6 +17,9 @@ from qdrant_loader.connectors.confluence.config import (
 )
 from qdrant_loader.connectors.confluence.mappers import (
     extract_hierarchy_info as _extract_hierarchy_info_helper,
+)
+from qdrant_loader.connectors.confluence.pagination import (
+    CONTENT_EXPAND as _CONTENT_EXPAND,
 )
 from qdrant_loader.connectors.confluence.pagination import (
     build_cloud_search_params as _build_cloud_params,
@@ -188,18 +192,22 @@ class ConfluenceConnector(BaseConnector):
             )
             raise
 
-    async def _get_space_content_cloud(self, cursor: str | None = None) -> dict:
+    async def _get_space_content_cloud(
+        self, cursor: str | None = None, light: bool = False
+    ) -> dict:
         """Fetch content from a Confluence Cloud space using cursor-based pagination.
 
         Args:
             cursor: Cursor for pagination. If None, starts from the beginning.
+            light: If True, request a minimal `expand` (no page bodies) for
+                cheap ID-only listing.
 
         Returns:
             dict: Response containing space content
         """
         # Build params via helper
         params = _build_cloud_params(
-            self.config.space_key, self.config.content_types, cursor
+            self.config.space_key, self.config.content_types, cursor, light=light
         )
 
         logger.debug(
@@ -218,17 +226,21 @@ class ConfluenceConnector(BaseConnector):
                 )
         return response
 
-    async def _get_space_content_datacenter(self, start: int = 0) -> dict:
+    async def _get_space_content_datacenter(
+        self, start: int = 0, light: bool = False
+    ) -> dict:
         """Fetch content from a Confluence Data Center space using start/limit pagination.
 
         Args:
             start: Starting index for pagination. Defaults to 0.
+            light: If True, request a minimal `expand` (no page bodies) for
+                cheap ID-only listing.
 
         Returns:
             dict: Response containing space content
         """
         params = _build_dc_params(
-            self.config.space_key, self.config.content_types, start
+            self.config.space_key, self.config.content_types, start, light=light
         )
 
         logger.debug(
@@ -792,162 +804,249 @@ class ConfluenceConnector(BaseConnector):
         text = re.sub(r"\s+", " ", text)
         return text.strip()
 
-    async def get_documents(self) -> list[Document]:
-        """Fetch and process documents from Confluence.
-
-        Returns:
-            list[Document]: List of processed documents
-        """
-        documents = []
+    async def _stream_content_cloud(self) -> AsyncIterator[Document]:
+        """Stream documents from Confluence Cloud using cursor-based pagination."""
+        cursor = None
         page_count = 0
-        total_documents = 0
 
-        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
-            # Cloud uses cursor-based pagination
-            cursor = None
+        while True:
+            try:
+                page_count += 1
+                logger.debug(
+                    f"Fetching page {page_count} of Confluence content (cursor={cursor})"
+                )
+                response = await self._get_space_content_cloud(cursor)
+                results = response.get("results", [])
 
-            while True:
-                try:
-                    page_count += 1
-                    logger.debug(
-                        f"Fetching page {page_count} of Confluence content (cursor={cursor})"
-                    )
-                    response = await self._get_space_content_cloud(cursor)
-                    results = response.get("results", [])
+                if not results:
+                    logger.debug("No more results found, ending pagination")
+                    break
 
-                    if not results:
-                        logger.debug("No more results found, ending pagination")
-                        break
+                logger.debug(
+                    f"Processing {len(results)} documents from page {page_count}"
+                )
 
-                    total_documents += len(results)
-                    logger.debug(
-                        f"Processing {len(results)} documents from page {page_count}"
-                    )
-
-                    # Process each content item
-                    for content in results:
-                        if self._should_process_content(content):
-                            try:
-                                document = self._process_content(
-                                    content, clean_html=True
-                                )
-                                if document:
-                                    documents.append(document)
-
-                                    attachment_docs = (
-                                        await self._process_attachments_for_document(
-                                            content, document
-                                        )
-                                    )
-                                    documents.extend(attachment_docs)
-
-                                    logger.debug(
-                                        f"Processed {content['type']} '{content['title']}' "
-                                        f"(ID: {content['id']}) from space {self.config.space_key}"
-                                    )
-                            except Exception as e:
-                                logger.error(
-                                    f"Failed to process {content['type']} '{content['title']}' "
-                                    f"(ID: {content['id']}): {e!s}"
-                                )
-
-                    # Get the next cursor from the response
-                    next_url = response.get("_links", {}).get("next")
-                    if not next_url:
-                        logger.debug("No next page link found, ending pagination")
-                        break
-
-                    # Extract just the cursor value from the URL
-                    try:
-                        from urllib.parse import parse_qs, urlparse
-
-                        parsed_url = urlparse(next_url)
-                        query_params = parse_qs(parsed_url.query)
-                        cursor = query_params.get("cursor", [None])[0]
-                        if not cursor:
-                            logger.debug(
-                                "No cursor found in next URL, ending pagination"
+                # Process each content item
+                for content in results:
+                    if self._should_process_content(content):
+                        try:
+                            document = self._process_content(
+                                content, clean_html=True
                             )
-                            break
-                        logger.debug(f"Found next cursor: {cursor}")
-                    except Exception as e:
-                        logger.error(f"Failed to parse next URL: {e!s}")
-                        break
+                            if document:
+                                yield document
 
-                except Exception as e:
-                    logger.error(
-                        f"Failed to fetch content from space {self.config.space_key}: {e!s}"
-                    )
-                    raise
-        else:
-            # Data Center/Server uses start/limit pagination
-            start = 0
-            limit = 25
+                                attachment_docs = (
+                                    await self._process_attachments_for_document(
+                                        content, document
+                                    )
+                                )
+                                for attachment_doc in attachment_docs:
+                                    yield attachment_doc
 
-            while True:
+                                logger.debug(
+                                    f"Processed {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}) from space {self.config.space_key}"
+                                )
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to process {content['type']} '{content['title']}' "
+                                f"(ID: {content['id']}): {e!s}"
+                            )
+
+                # Get the next cursor from the response
+                next_url = response.get("_links", {}).get("next")
+                if not next_url:
+                    logger.debug("No next page link found, ending pagination")
+                    break
+
+                # Extract just the cursor value from the URL
                 try:
-                    page_count += 1
-                    logger.debug(
-                        f"Fetching page {page_count} of Confluence content (start={start})"
-                    )
-                    response = await self._get_space_content_datacenter(start)
-                    results = response.get("results", [])
+                    from urllib.parse import parse_qs, urlparse
 
-                    if not results:
-                        logger.debug("No more results found, ending pagination")
-                        break
-
-                    total_documents += len(results)
-                    logger.debug(
-                        f"Processing {len(results)} documents from page {page_count}"
-                    )
-
-                    # Process each content item
-                    for content in results:
-                        if self._should_process_content(content):
-                            try:
-                                document = self._process_content(
-                                    content, clean_html=True
-                                )
-                                if document:
-                                    documents.append(document)
-
-                                    attachment_docs = (
-                                        await self._process_attachments_for_document(
-                                            content, document
-                                        )
-                                    )
-                                    documents.extend(attachment_docs)
-
-                                    logger.debug(
-                                        f"Processed {content['type']} '{content['title']}' "
-                                        f"(ID: {content['id']}) from space {self.config.space_key}"
-                                    )
-                            except Exception as e:
-                                logger.error(
-                                    f"Failed to process {content['type']} '{content['title']}' "
-                                    f"(ID: {content['id']}): {e!s}"
-                                )
-
-                    # Check if there are more pages
-                    total_size = response.get("totalSize", response.get("size", 0))
-                    if start + limit >= total_size:
+                    parsed_url = urlparse(next_url)
+                    query_params = parse_qs(parsed_url.query)
+                    cursor = query_params.get("cursor", [None])[0]
+                    if not cursor:
                         logger.debug(
-                            f"Reached end of results: {start + limit} >= {total_size}"
+                            "No cursor found in next URL, ending pagination"
                         )
                         break
-
-                    # Move to next page
-                    start += limit
-                    logger.debug(f"Moving to next page with start={start}")
-
+                    logger.debug(f"Found next cursor: {cursor}")
                 except Exception as e:
-                    logger.error(
-                        f"Failed to fetch content from space {self.config.space_key}: {e!s}"
+                    logger.error(f"Failed to parse next URL: {e!s}")
+                    break
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to fetch content from space {self.config.space_key}: {e!s}"
+                )
+                raise
+
+    async def _stream_content_datacenter(self) -> AsyncIterator[Document]:
+        """Stream documents from Confluence Data Center/Server using start/limit pagination."""
+        start = 0
+        limit = 25
+        page_count = 0
+
+        while True:
+            try:
+                page_count += 1
+                logger.debug(
+                    f"Fetching page {page_count} of Confluence content (start={start})"
+                )
+                response = await self._get_space_content_datacenter(start)
+                results = response.get("results", [])
+
+                if not results:
+                    logger.debug("No more results found, ending pagination")
+                    break
+
+                logger.debug(
+                    f"Processing {len(results)} documents from page {page_count}"
+                )
+
+                # Process each content item
+                for content in results:
+                    if self._should_process_content(content):
+                        try:
+                            document = self._process_content(
+                                content, clean_html=True
+                            )
+                            if document:
+                                yield document
+
+                                attachment_docs = (
+                                    await self._process_attachments_for_document(
+                                        content, document
+                                    )
+                                )
+                                for attachment_doc in attachment_docs:
+                                    yield attachment_doc
+
+                                logger.debug(
+                                    f"Processed {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}) from space {self.config.space_key}"
+                                )
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to process {content['type']} '{content['title']}' "
+                                f"(ID: {content['id']}): {e!s}"
+                            )
+
+                # Check if there are more pages
+                total_size = response.get("totalSize", response.get("size", 0))
+                if start + limit >= total_size:
+                    logger.debug(
+                        f"Reached end of results: {start + limit} >= {total_size}"
                     )
-                    raise
+                    break
+
+                # Move to next page
+                start += limit
+                logger.debug(f"Moving to next page with start={start}")
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to fetch content from space {self.config.space_key}: {e!s}"
+                )
+                raise
+
+    async def stream_documents(
+        self, since: datetime | None = None
+    ) -> AsyncIterator[Document]:
+        """Stream documents from Confluence (WS-1 connector contract)."""
+        count = 0
+
+        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+            async for document in self._stream_content_cloud():
+                count += 1
+                yield document
+        else:
+            async for document in self._stream_content_datacenter():
+                count += 1
+                yield document
 
         logger.info(
-            f"📄 Confluence: {len(documents)} documents from space {self.config.space_key}"
+            f"📄 Confluence: {count} documents from space {self.config.space_key}"
         )
-        return documents
+
+    async def get_documents(self) -> list[Document]:
+        """Get documents from Confluence (DEPRECATED - use stream_documents)."""
+        return await super().get_documents()
+
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single Confluence content item by its content ID."""
+        try:
+            params = {"expand": _CONTENT_EXPAND}
+            content = await self._make_request(
+                "GET", f"content/{entity_id}", params=params
+            )
+            if not content or not self._should_process_content(content):
+                return None
+            return self._process_content(content, clean_html=True)
+        except Exception as e:
+            logger.error(
+                "Failed to fetch Confluence content by id",
+                content_id=entity_id,
+                error=str(e),
+            )
+            return None
+
+    async def _stream_content_ids_cloud(self) -> AsyncIterator[str]:
+        """Stream content IDs from Confluence Cloud using a lightweight expand."""
+        cursor = None
+
+        while True:
+            response = await self._get_space_content_cloud(cursor, light=True)
+            results = response.get("results", [])
+            if not results:
+                break
+
+            for content in results:
+                if self._should_process_content(content):
+                    yield content["id"]
+
+            next_url = response.get("_links", {}).get("next")
+            if not next_url:
+                break
+
+            try:
+                from urllib.parse import parse_qs, urlparse
+
+                parsed_url = urlparse(next_url)
+                query_params = parse_qs(parsed_url.query)
+                cursor = query_params.get("cursor", [None])[0]
+                if not cursor:
+                    break
+            except Exception:
+                break
+
+    async def _stream_content_ids_datacenter(self) -> AsyncIterator[str]:
+        """Stream content IDs from Confluence Data Center using a lightweight expand."""
+        start = 0
+        limit = 25
+
+        while True:
+            response = await self._get_space_content_datacenter(start, light=True)
+            results = response.get("results", [])
+            if not results:
+                break
+
+            for content in results:
+                if self._should_process_content(content):
+                    yield content["id"]
+
+            total_size = response.get("totalSize", response.get("size", 0))
+            if start + limit >= total_size:
+                break
+            start += limit
+
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream content IDs for all processable content in the configured space."""
+        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+            async for content_id in self._stream_content_ids_cloud():
+                yield content_id
+        else:
+            async for content_id in self._stream_content_ids_datacenter():
+                yield content_id
