@@ -848,7 +848,7 @@ class ConfluenceConnector(BaseConnector):
                                     f"Processed {content['type']} '{content['title']}' "
                                     f"(ID: {content['id']}) from space {self.config.space_key}"
                                 )
-                        except Exception as e:
+                        except (ValueError, KeyError, AttributeError, TypeError) as e:
                             logger.error(
                                 f"Failed to process {content['type']} '{content['title']}' "
                                 f"(ID: {content['id']}): {e!s}"
@@ -873,11 +873,11 @@ class ConfluenceConnector(BaseConnector):
                         )
                         break
                     logger.debug(f"Found next cursor: {cursor}")
-                except Exception as e:
+                except (ValueError, KeyError, AttributeError) as e:
                     logger.error(f"Failed to parse next URL: {e!s}")
                     break
 
-            except Exception as e:
+            except (requests.exceptions.RequestException, ValueError) as e:
                 logger.error(
                     f"Failed to fetch content from space {self.config.space_key}: {e!s}"
                 )
@@ -928,7 +928,7 @@ class ConfluenceConnector(BaseConnector):
                                     f"Processed {content['type']} '{content['title']}' "
                                     f"(ID: {content['id']}) from space {self.config.space_key}"
                                 )
-                        except Exception as e:
+                        except (ValueError, KeyError, AttributeError, TypeError) as e:
                             logger.error(
                                 f"Failed to process {content['type']} '{content['title']}' "
                                 f"(ID: {content['id']}): {e!s}"
@@ -946,7 +946,7 @@ class ConfluenceConnector(BaseConnector):
                 start += limit
                 logger.debug(f"Moving to next page with start={start}")
 
-            except Exception as e:
+            except (ValueError, KeyError, AttributeError, TypeError) as e:
                 logger.error(
                     f"Failed to fetch content from space {self.config.space_key}: {e!s}"
                 )
@@ -985,7 +985,7 @@ class ConfluenceConnector(BaseConnector):
             if not content or not self._should_process_content(content):
                 return None
             return self._process_content(content, clean_html=True)
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError, TypeError) as e:
             logger.error(
                 "Failed to fetch Confluence content by id",
                 content_id=entity_id,
@@ -1019,7 +1019,7 @@ class ConfluenceConnector(BaseConnector):
                 cursor = query_params.get("cursor", [None])[0]
                 if not cursor:
                     break
-            except Exception:
+            except (ValueError, KeyError, AttributeError):
                 break
 
     async def _stream_content_ids_datacenter(self) -> AsyncIterator[str]:
