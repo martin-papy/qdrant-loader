@@ -179,9 +179,7 @@ class PublicDocsConnector(BaseConnector):
 
     def _build_page_document(self, page: str, content: str, title: str) -> Document:
         """Build a Document for a documentation page (used by stream_documents and fetch_by_id)."""
-        doc_id = str(hash(page))  # Use URL hash as document ID
         return Document(
-            id=doc_id,
             title=title,
             content=content,
             content_type="html",

@@ -286,6 +286,22 @@ class TestFetchById:
         assert document is None
 
     @pytest.mark.asyncio
+    async def test_fetch_by_id_blocks_path_traversal(self, mock_config, mock_git_ops):
+        """fetch_by_id should reject path traversal attempts."""
+        with (
+            patch(
+                "qdrant_loader.connectors.git.connector.GitOperations",
+                return_value=mock_git_ops,
+            ),
+        ):
+            connector = GitConnector(mock_config)
+
+            async with connector:
+                document = await connector.fetch_by_id("../../etc/passwd")
+
+        assert document is None
+
+    @pytest.mark.asyncio
     async def test_fetch_by_id_returns_none_when_filtered(
         self, mock_config, mock_git_ops
     ):

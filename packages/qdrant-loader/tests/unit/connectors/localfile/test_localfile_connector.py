@@ -69,6 +69,13 @@ class TestFetchById:
         assert document is None
 
     @pytest.mark.asyncio
+    async def test_fetch_by_id_blocks_path_traversal(self, connector):
+        """fetch_by_id should reject path traversal attempts."""
+        document = await connector.fetch_by_id("../../etc/passwd")
+
+        assert document is None
+
+    @pytest.mark.asyncio
     async def test_fetch_by_id_returns_none_for_excluded_file(self, temp_dir):
         """fetch_by_id should return None for a file excluded by file_types."""
         (Path(temp_dir) / "ignored.bin").write_bytes(b"binary-data")
