@@ -271,6 +271,7 @@
         /* Documentation-specific styles */
         .toc-layout {
             display: flex;
+            margin-bottom: 80px;
         }
 
         .toc-sidebar {
@@ -595,6 +596,7 @@
         /* Footer section */
         .footer-section {
             padding: 96px 40px 40px;
+            border-top: 1px solid #8D8D8D;
         }
 
         .footer-section .row {
@@ -990,7 +992,7 @@
                                 </svg>
                                 PyPI
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="pypiDropdown">
                                 <li>
                                     <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/"
                                         target="_blank">
@@ -1027,7 +1029,7 @@
         <div class="row">
             <div class="col-12 col-lg-6 px-0">
                 <div class="footer-logo">
-                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader"></a>
+                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60"></a>
                 </div>
                 <p class="doc-description">
                     Enterprise-ready vector database toolkit for building searchable knowledge bases

@@ -461,13 +461,14 @@
         text-decoration: none;
         font-size: 14px;
         font-weight: 400;
-        transition: opacity 0.2s ease;
+        transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
         font-family: var(--second-family);
     }
 
     .tool-cta:hover {
         opacity: 0.85;
         color: #ffffff;
+        transform: translateY(-3px);
     }
 
     .tool-cta svg {
@@ -948,7 +949,7 @@
 
     .install-card a:hover,
     .install-cta:hover {
-        transform: translateY(-1px);
+        transform: translateY(-3px);
     }
 
     .install-card a svg,
@@ -1180,6 +1181,12 @@
         font-size: 16px;
         line-height: 24px;
     }
+
+    .community-start-btn:hover {
+        transform: translateY(-3px);
+        transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+    }
+
 
     .community-start-btn svg {
         width: 1.5rem;
