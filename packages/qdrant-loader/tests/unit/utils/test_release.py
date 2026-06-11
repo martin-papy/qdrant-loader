@@ -491,11 +491,12 @@ def test_check_github_workflows_commit_mismatch():
 
         # Verify error messages (updated to match new format)
         mock_log.error.assert_any_call(
-            "Critical workflow 'Test and Coverage' was run on a different commit. Please ensure it runs on the current commit."
+            "Critical workflow '%s' was run on a different commit. Please ensure it runs on the current commit.",
+            "Test and Coverage",
         )
-        mock_log.error.assert_any_call("Current commit: abc123")
-        mock_log.error.assert_any_call("Workflow commit: def456")
-        mock_log.error.assert_any_call("Workflow run: http://example.com")
+        mock_log.error.assert_any_call("Current commit: %s", "abc123")
+        mock_log.error.assert_any_call("Workflow commit: %s", "def456")
+        mock_log.error.assert_any_call("Workflow run: %s", "http://example.com")
 
 
 def test_check_github_workflows_failure():
@@ -556,10 +557,13 @@ def test_check_github_workflows_failure():
             with pytest.raises(SystemExit):
                 check_github_workflows()
             mock_log.error.assert_any_call(
-                "Workflow 'Test and Coverage' is not passing. Latest run status: failure"
+                "Workflow '%s' is not passing. Latest run status: %s",
+                "Test and Coverage",
+                "failure",
             )
             mock_log.error.assert_any_call(
-                "Please check the workflow run at: http://example.com"
+                "Please check the workflow run at: %s",
+                "http://example.com",
             )
 
             # Verify the correct repository URL was used in both API calls
