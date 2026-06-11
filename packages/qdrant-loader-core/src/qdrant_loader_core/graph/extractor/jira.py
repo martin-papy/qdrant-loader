@@ -190,9 +190,6 @@ class JiraEntityExtractor(BaseEntityExtractor):
     # ------------------------------------------------------------------
     # Cross-source URL links
     # ------------------------------------------------------------------
-
-    from urllib.parse import urlparse
-
     def _extract_links(
         self,
         doc: Document,

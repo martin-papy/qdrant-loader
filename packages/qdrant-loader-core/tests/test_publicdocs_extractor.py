@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader_core.graph.extractor.publicdocs import PublicDocsEntityExtractor
 
 
-def test_public_webpage():
+@pytest.mark.asyncio
+async def test_public_webpage():
     extractor = PublicDocsEntityExtractor()
 
     metadata = {
@@ -26,7 +28,7 @@ def test_public_webpage():
         metadata=metadata,
     )
 
-    result = extractor.extract(doc)
+    result = await extractor.extract(doc)
 
     assert any(n.label == "Document" for n in result.nodes)
     assert any(n.label == "Label" for n in result.nodes)

@@ -29,7 +29,7 @@ class EntityExtractor(ABC):
     _registry: dict[str, type[EntityExtractor]] = {}
 
     @abstractmethod
-    def extract(self, doc: Document) -> SubGraph:
+    async def extract(self, doc: Document) -> SubGraph:
         """
         Map raw source data into a SubGraph
         """
@@ -67,7 +67,7 @@ class BaseEntityExtractor(EntityExtractor):
 
     source_type: ClassVar[str]
 
-    def extract(self, doc: Document) -> SubGraph:
+    async def extract(self, doc: Document) -> SubGraph:
         project = self._project(doc)
 
         nodes: list[GraphNode] = []
