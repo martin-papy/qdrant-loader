@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from urllib.parse import unquote, urlparse
 
-from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.base import BaseConnector, resolve_safe_path
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
     FileConversionConfig,
@@ -188,7 +188,12 @@ class LocalFileConnector(BaseConnector):
     async def stream_documents(
         self, since: datetime | None = None
     ) -> AsyncIterator[Document]:
-        """Stream documents from the local file source (WS-1 connector contract)."""
+        """Stream documents from the local file source (WS-1 connector contract).
+
+        Note:
+            The `since` parameter is not yet implemented for incremental
+            ingestion. All files are processed regardless of modification time.
+        """
         for root, _, files in os.walk(self.base_path):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -212,7 +217,12 @@ class LocalFileConnector(BaseConnector):
 
     async def fetch_by_id(self, entity_id: str) -> Document | None:
         """Fetch a single file by its path relative to the connector's base directory."""
-        file_path = os.path.join(self.base_path, *entity_id.split("/"))
+        file_path = resolve_safe_path(self.base_path, entity_id)
+        if file_path is None:
+            self.logger.warning(
+                "Path traversal attempt blocked", entity_id=entity_id
+            )
+            return None
         if not os.path.exists(
             file_path
         ) or not self.file_processor.should_process_file(file_path):

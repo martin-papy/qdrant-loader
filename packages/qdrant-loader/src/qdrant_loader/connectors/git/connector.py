@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 
 from qdrant_loader.config.types import SourceType
-from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.base import BaseConnector, resolve_safe_path
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.file_processor import FileProcessor
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
@@ -393,6 +393,11 @@ class GitConnector(BaseConnector):
     ) -> AsyncIterator[Document]:
         """Stream documents from the repository (WS-1 connector contract).
 
+        Note:
+            The `since` parameter is not yet implemented for incremental
+            ingestion. All files in the repository are processed regardless
+            of modification time.
+
         Yields:
             Document objects from the repository.
 
@@ -438,7 +443,12 @@ class GitConnector(BaseConnector):
     async def fetch_by_id(self, entity_id: str) -> Document | None:
         """Fetch a single file by its repo-relative path (forward slashes)."""
         self._ensure_initialized()
-        file_path = os.path.join(self.temp_dir, *entity_id.split("/"))
+        file_path = resolve_safe_path(self.temp_dir, entity_id)
+        if file_path is None:
+            self.logger.warning(
+                "Path traversal attempt blocked", entity_id=entity_id
+            )
+            return None
         if not os.path.exists(file_path) or not self.file_processor.should_process_file(  # type: ignore
             file_path
         ):
