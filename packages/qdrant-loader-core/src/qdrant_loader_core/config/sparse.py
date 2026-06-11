@@ -79,8 +79,10 @@ class SparseRuntimeConfig(BaseModel):
     @classmethod
     def _strict_str(cls, v: Any) -> str:
         """Accept only non-empty strings; reject ``None``, numbers, etc."""
-        if isinstance(v, str) and v.strip():
-            return v
+        if isinstance(v, str):
+            normalized = v.strip()
+            if normalized:
+                return normalized
         raise ValueError(f"expected non-empty string, got {v!r}")
 
     @classmethod

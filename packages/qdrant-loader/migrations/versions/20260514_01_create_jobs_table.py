@@ -12,6 +12,7 @@ import importlib
 from typing import Any
 
 import sqlalchemy as sa
+from qdrant_loader.core.state.models import UTCDateTime
 
 op: Any = importlib.import_module("alembic.op")
 
@@ -36,12 +37,14 @@ def upgrade() -> None:
             sa.Column("type", sa.String(), nullable=False),
             sa.Column("payload_json", sa.Text(), nullable=False),
             sa.Column("status", sa.String(), nullable=False),
-            sa.Column("enqueued_at", sa.DateTime(timezone=True), nullable=False),
-            sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
-            sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
-            sa.Column("attempts", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column("enqueued_at", UTCDateTime(timezone=True), nullable=False),
+            sa.Column("started_at", UTCDateTime(timezone=True), nullable=True),
+            sa.Column("finished_at", UTCDateTime(timezone=True), nullable=True),
+            sa.Column(
+                "attempts", sa.Integer(), nullable=False, server_default=sa.text("0")
+            ),
             sa.Column("last_error", sa.Text(), nullable=True),
-            sa.Column("visibility_deadline", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("visibility_deadline", UTCDateTime(timezone=True), nullable=True),
             sa.PrimaryKeyConstraint("id"),
         )
 

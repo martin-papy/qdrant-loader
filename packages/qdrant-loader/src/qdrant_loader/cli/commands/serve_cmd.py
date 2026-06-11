@@ -108,6 +108,7 @@ async def _serve_main(
     config_obj = get_global_config()
     settings = get_settings()
 
+    state_manager = None
     logger.info("serve.state_manager_init")
     state_manager = StateManager(config_obj.state_management)
     await state_manager.initialize()
@@ -236,5 +237,6 @@ async def _serve_main(
             ),
             return_exceptions=True,
         )
-        await state_manager.dispose()
+        if state_manager is not None:
+            await state_manager.dispose()
         logger.info("serve.shutdown_complete")
