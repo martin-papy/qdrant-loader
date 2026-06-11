@@ -622,6 +622,13 @@ def check_github_workflows(dry_run: bool = False) -> bool:
 
     for workflow_name, run in workflows.items():
         if run["conclusion"] != "success":
+            # Skip failure check for excluded workflows (they won't block release)
+            if workflow_name in excluded_workflows:
+                logger.warning(
+                    f"Workflow '{workflow_name}' is not passing (status: {run['conclusion']}), but this is non-critical and won't block the release"
+                )
+                continue
+
             logger.error(
                 f"Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}"
             )
