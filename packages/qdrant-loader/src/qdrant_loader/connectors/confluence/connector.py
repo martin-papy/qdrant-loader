@@ -946,7 +946,7 @@ class ConfluenceConnector(BaseConnector):
                 start += limit
                 logger.debug(f"Moving to next page with start={start}")
 
-            except (ValueError, KeyError, AttributeError, TypeError) as e:
+            except (requests.exceptions.RequestException, ValueError) as e:
                 logger.error(
                     f"Failed to fetch content from space {self.config.space_key}: {e!s}"
                 )
@@ -985,7 +985,7 @@ class ConfluenceConnector(BaseConnector):
             if not content or not self._should_process_content(content):
                 return None
             return self._process_content(content, clean_html=True)
-        except (ValueError, KeyError, AttributeError, TypeError) as e:
+        except (requests.exceptions.RequestException, ValueError, KeyError) as e:
             logger.error(
                 "Failed to fetch Confluence content by id",
                 content_id=entity_id,

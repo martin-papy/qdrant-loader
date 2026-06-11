@@ -331,6 +331,10 @@ class PublicDocsConnector(BaseConnector):
             raise ConnectorNotInitializedError(
                 "Connector not initialized. Use async context manager."
             )
+        if not self._initialized:
+            raise ConnectorNotInitializedError(
+                "Connector not initialized. Use async context manager."
+            )
 
         if not self._should_process_url(entity_id):
             return None

@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from urllib.parse import unquote, urlparse
 
+from qdrant_loader.utils.errors import sanitize_exception_message  # reuse existing sanitizer utility
 from qdrant_loader.connectors.base import BaseConnector, resolve_safe_path
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
@@ -185,6 +186,11 @@ class LocalFileConnector(BaseConnector):
             updated_at=updated_at,
         )
 
+    def _is_within_base_path(self, file_path: str) -> bool:
+        base_real = os.path.realpath(self.base_path)
+        file_real = os.path.realpath(file_path)
+        return file_real == base_real or file_real.startswith(base_real + os.sep)
+
     async def stream_documents(
         self, since: datetime | None = None
     ) -> AsyncIterator[Document]:
@@ -197,19 +203,27 @@ class LocalFileConnector(BaseConnector):
         for root, _, files in os.walk(self.base_path):
             for file in files:
                 file_path = os.path.join(root, file)
+                if not self._is_within_base_path(file_path):
+                    self.logger.warning(
+                        "Skipping file outside base path",
+                        file_path=file_path.replace("\\", "/"),
+                    )
+                    continue
                 if not self.file_processor.should_process_file(file_path):
                     continue
                 try:
                     doc = self._build_file_document(file_path)
                     if doc is not None:
                         yield doc
-                except Exception as e:
-                    self.logger.error(
+                except (OSError, UnicodeError, ValueError) as e:
+                    self.logger.warning(
                         "Failed to process file",
                         file_path=file_path.replace("\\", "/"),
-                        error=str(e),
+                        error=sanitize_exception_message(e),
                     )
                     continue
+                except Exception:
+                    raise
 
     async def get_documents(self) -> list[Document]:
         """Get documents from the local file source (DEPRECATED - use stream_documents)."""
@@ -229,9 +243,11 @@ class LocalFileConnector(BaseConnector):
             return None
         try:
             return self._build_file_document(file_path)
-        except Exception as e:
-            self.logger.error(
-                "Failed to fetch file by id", entity_id=entity_id, error=str(e)
+        except (OSError, UnicodeError, ValueError) as e:
+            self.logger.warning(
+                "Failed to fetch file by id",
+                entity_id=entity_id,
+                error=sanitize_exception_message(e),
             )
             return None
 
@@ -240,6 +256,8 @@ class LocalFileConnector(BaseConnector):
         for root, _, files in os.walk(self.base_path):
             for file in files:
                 file_path = os.path.join(root, file)
+                if not self._is_within_base_path(file_path):
+                    continue
                 if self.file_processor.should_process_file(file_path):
                     rel_path = os.path.relpath(file_path, self.base_path)
                     yield rel_path.replace(os.sep, "/").replace("\\", "/")
