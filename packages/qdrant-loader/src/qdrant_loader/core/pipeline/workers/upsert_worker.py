@@ -25,6 +25,9 @@ class PipelineResult:
         self.successfully_processed_documents: set[str] = set()
         self.failed_document_ids: set[str] = set()
         self.errors: list[str] = []
+        self.processed_document_count: int = 0
+        self.failed_document_count: int = 0
+        self.total_size_bytes: int = 0
 
 
 class UpsertWorker(BaseWorker):

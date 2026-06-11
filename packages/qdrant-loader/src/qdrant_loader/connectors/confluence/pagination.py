@@ -5,6 +5,16 @@ from typing import Any
 
 _ALLOWED_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
+# Full expand used when the page body/content is needed (streaming, fetch_by_id).
+CONTENT_EXPAND = (
+    "body.storage,version,metadata.labels,history,space,extensions.position,"
+    "children.comment.body.storage,ancestors,children.page"
+)
+
+# Minimal expand used when only enough metadata to filter by labels is needed
+# (e.g. list_entity_ids), avoiding fetching full page bodies.
+LIGHT_EXPAND = "metadata.labels"
+
 
 def _quote_cql_literal(value: str) -> str:
     # Escape backslashes first, then double quotes
@@ -32,10 +42,13 @@ def _sanitize_content_types(content_types: list[str]) -> list[str]:
 
 
 def build_cloud_search_params(
-    space_key: str, content_types: list[str] | None, cursor: str | None
+    space_key: str,
+    content_types: list[str] | None,
+    cursor: str | None,
+    light: bool = False,
 ) -> dict[str, Any]:
     params: dict[str, Any] = {
-        "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
+        "expand": LIGHT_EXPAND if light else CONTENT_EXPAND,
         "limit": 25,
     }
     cql = f"space = {_sanitize_space_key(space_key)}"
@@ -49,10 +62,13 @@ def build_cloud_search_params(
 
 
 def build_dc_search_params(
-    space_key: str, content_types: list[str] | None, start: int
+    space_key: str,
+    content_types: list[str] | None,
+    start: int,
+    light: bool = False,
 ) -> dict[str, Any]:
     params: dict[str, Any] = {
-        "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
+        "expand": LIGHT_EXPAND if light else CONTENT_EXPAND,
         "limit": 25,
         "start": start,
     }
