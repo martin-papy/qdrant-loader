@@ -36,14 +36,14 @@ class MarkdownProcessor:
                     "sane_lists",
                 ],
                 extension_configs={
-                            "pymdownx.superfences": {
-                                "custom_fences": []  # Disable custom fences that might use Pygments
-                            },
-                            "codehilite": {
-                                "css_class": "codehilite",
-                                "use_pygments": False,  # Use simple highlighting without Pygments
-                                "guess_lang": True,
-                            }
+                    "pymdownx.superfences": {
+                        "custom_fences": []  # Disable custom fences that might use Pygments
+                    },
+                    "codehilite": {
+                        "css_class": "codehilite",
+                        "use_pygments": False,  # Use simple highlighting without Pygments
+                        "guess_lang": True,
+                    },
                 },
             )
             html = md.convert(markdown_content)
