@@ -336,7 +336,16 @@ class PublicDocsConnector(BaseConnector):
                 "Connector not initialized. Use async context manager."
             )
 
-        if not self._should_process_url(entity_id):
+        parsed = urlparse(entity_id)
+        base = urlparse(self.base_url)
+        base_path = base.path.rstrip("/")
+        entity_path = parsed.path.rstrip("/")
+        in_scope = (
+            parsed.scheme in {"http", "https"}
+            and parsed.netloc == base.netloc
+            and (entity_path == base_path or entity_path.startswith(base_path + "/"))
+        )
+        if not in_scope or not self._should_process_url(entity_id):
             return None
         try:
             content, title = await self._process_page(entity_id)

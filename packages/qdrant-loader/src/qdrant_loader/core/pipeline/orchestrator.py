@@ -234,6 +234,8 @@ class PipelineOrchestrator:
             processed_count = 0
             aggregated_result = PipelineResult()
             batch_count = 0
+            counted_success_doc_ids: set[str] = set()
+            counted_failed_doc_ids: set[str] = set()
 
             if not force and not self.components.state_manager._initialized:
                 logger.debug("Initializing state manager for change detection")
@@ -271,11 +273,21 @@ class PipelineOrchestrator:
                     aggregated_result.success_count += batch_result.success_count
                     aggregated_result.error_count += batch_result.failure_count
                     aggregated_result.errors.extend(batch_result.errors)
-                    aggregated_result.processed_document_count += len(
+                    new_success_doc_ids = (
                         batch_result.successfully_processed_documents
+                        - counted_success_doc_ids
                     )
-                    aggregated_result.failed_document_count += len(
-                        batch_result.failed_document_ids
+                    counted_success_doc_ids.update(new_success_doc_ids)
+                    aggregated_result.processed_document_count = len(
+                        counted_success_doc_ids
+                    )
+
+                    new_failed_doc_ids = (
+                        batch_result.failed_document_ids - counted_failed_doc_ids
+                    )
+                    counted_failed_doc_ids.update(new_failed_doc_ids)
+                    aggregated_result.failed_document_count = len(
+                        counted_failed_doc_ids
                     )
 
                     if batch_result.successfully_processed_documents:
@@ -284,8 +296,13 @@ class PipelineOrchestrator:
                             batch_result.successfully_processed_documents,
                             current_project_id,
                         )
+                        batch_counted_doc_ids: set[str] = set()
                         for doc in batch:
-                            if doc.id in batch_result.successfully_processed_documents:
+                            if (
+                                doc.id in new_success_doc_ids
+                                and doc.id not in batch_counted_doc_ids
+                            ):
+                                batch_counted_doc_ids.add(doc.id)
                                 processed_count += 1
                                 aggregated_result.total_size_bytes += (
                                     _safe_document_size(doc)

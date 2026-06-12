@@ -850,8 +850,11 @@ class ConfluenceConnector(BaseConnector):
                                 )
                         except (ValueError, KeyError, AttributeError, TypeError) as e:
                             logger.error(
-                                f"Failed to process {content['type']} '{content['title']}' "
-                                f"(ID: {content['id']}): {e!s}"
+                                "Failed to process Confluence content",
+                                content_type=content.get("type"),
+                                content_title=content.get("title"),
+                                content_id=content.get("id"),
+                                error=str(e),
                             )
 
                 # Get the next cursor from the response
@@ -930,8 +933,11 @@ class ConfluenceConnector(BaseConnector):
                                 )
                         except (ValueError, KeyError, AttributeError, TypeError) as e:
                             logger.error(
-                                f"Failed to process {content['type']} '{content['title']}' "
-                                f"(ID: {content['id']}): {e!s}"
+                                "Failed to process Confluence content",
+                                content_type=content.get("type"),
+                                content_title=content.get("title"),
+                                content_id=content.get("id"),
+                                error=str(e),
                             )
 
                 # Check if there are more pages
@@ -979,8 +985,9 @@ class ConfluenceConnector(BaseConnector):
         """Fetch a single Confluence content item by its content ID."""
         try:
             params = {"expand": _CONTENT_EXPAND}
+            safe_entity_id = quote(entity_id, safe="")
             content = await self._make_request(
-                "GET", f"content/{entity_id}", params=params
+                "GET", f"content/{safe_entity_id}", params=params
             )
             if not content or not self._should_process_content(content):
                 return None
