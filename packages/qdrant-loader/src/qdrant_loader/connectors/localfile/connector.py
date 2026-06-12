@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from urllib.parse import unquote, urlparse
 
-from qdrant_loader.utils.errors import sanitize_exception_message  # reuse existing sanitizer utility
+from qdrant_loader.utils.sensitive import sanitize_exception_message
 from qdrant_loader.connectors.base import BaseConnector, resolve_safe_path
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
