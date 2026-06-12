@@ -992,7 +992,7 @@ class ConfluenceConnector(BaseConnector):
             if not content or not self._should_process_content(content):
                 return None
             return self._process_content(content, clean_html=True)
-        except (requests.exceptions.RequestException, ValueError, KeyError) as e:
+        except Exception as e:
             logger.error(
                 "Failed to fetch Confluence content by id",
                 content_id=entity_id,

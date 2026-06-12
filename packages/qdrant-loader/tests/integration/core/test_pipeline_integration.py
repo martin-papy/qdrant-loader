@@ -185,22 +185,9 @@ async def test_pipeline_project_specific_processing(
         enable_metrics=False,
     )
 
-    # Mock the orchestrator's process_documents method
-    mock_documents = [
-        Document(
-            id="doc-1",
-            title="Test Document 1",
-            content="Test content 1",
-            content_type="text/plain",
-            url="http://test.com/doc1",
-            source_type="git",
-            source="repo-1",
-            metadata={"test": "metadata"},
-        )
-    ]
-
+    # Mock the orchestrator's process_documents method to return a processed count
     with patch.object(
-        pipeline.orchestrator, "process_documents", return_value=mock_documents
+        pipeline.orchestrator, "process_documents", return_value=1
     ) as mock_process:
         # Process documents for a specific project
         result = await pipeline.process_documents(project_id="project-1")
@@ -215,8 +202,7 @@ async def test_pipeline_project_specific_processing(
         )
 
         # Verify result
-        assert len(result) == 1
-        assert result[0].title == "Test Document 1"
+        assert result == 1
 
 
 @pytest.mark.asyncio

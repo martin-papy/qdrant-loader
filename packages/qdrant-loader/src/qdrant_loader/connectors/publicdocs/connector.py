@@ -327,15 +327,6 @@ class PublicDocsConnector(BaseConnector):
 
     async def fetch_by_id(self, entity_id: str) -> Document | None:
         """Fetch a single documentation page by its URL."""
-        if not self._initialized:
-            raise ConnectorNotInitializedError(
-                "Connector not initialized. Use async context manager."
-            )
-        if not self._initialized:
-            raise ConnectorNotInitializedError(
-                "Connector not initialized. Use async context manager."
-            )
-
         parsed = urlparse(entity_id)
         base = urlparse(self.base_url)
         base_path = base.path.rstrip("/")
@@ -349,7 +340,7 @@ class PublicDocsConnector(BaseConnector):
             return None
         try:
             content, title = await self._process_page(entity_id)
-        except (HTTPRequestError, DocumentProcessingError, ConnectorError) as e:
+        except Exception as e:
             self.logger.error(f"Failed to fetch page {entity_id}: {e}")
             return None
         if not content or not content.strip():
