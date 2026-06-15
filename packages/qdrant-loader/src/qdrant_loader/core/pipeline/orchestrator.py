@@ -80,6 +80,11 @@ class PipelineOrchestrator:
             if not source_configs:
                 return
 
+            # Tracks the checkpoint cursor of the last document with checkpoint
+            # info, so a batch is flushed before crossing a page boundary
+            # (see _process_source_type body below for why this matters).
+            last_cursor_value = None
+
             async def connector_factory_with_checkpoint(src_config):
                 # Determine if we should attempt to resume from a checkpoint
                 checkpoint_cursor = None
@@ -136,6 +141,26 @@ class PipelineOrchestrator:
                         seen_uris.add(uri)
                     except Exception:
                         pass
+
+                # Flush the batch before crossing a checkpoint page boundary so
+                # that a saved checkpoint never covers a partially-upserted page
+                # (a batch never spans two different page cursors).
+                doc_metadata = getattr(document, "metadata", None) or {}
+                cp_info = (
+                    doc_metadata.get("__ingestion_checkpoint")
+                    if isinstance(doc_metadata, dict)
+                    else None
+                )
+                if isinstance(cp_info, dict) and cp_info:
+                    cursor_value = cp_info.get("cursor_value")
+                    if (
+                        last_cursor_value is not None
+                        and cursor_value != last_cursor_value
+                        and batch
+                    ):
+                        yield batch.copy()
+                        batch.clear()
+                    last_cursor_value = cursor_value
 
                 batch.append(document)
                 if len(batch) >= batch_size:
@@ -339,7 +364,9 @@ class PipelineOrchestrator:
                                 in batch_result.successfully_processed_documents
                             ]
                         )
-                        # Persist checkpoints found on documents (WS-2)
+                        # Persist checkpoints found on documents (WS-2).
+                        # Save once per source with the furthest-advanced cursor
+                        # in this batch, not once per document.
                         if resume and current_project_id is not None and not force:
                             try:
                                 from qdrant_loader.core.state.checkpoint_manager import (
@@ -347,26 +374,33 @@ class PipelineOrchestrator:
                                     Checkpoint,
                                 )
 
-                                async with await self.components.state_manager.get_session() as session:
-                                    cp_mgr = CheckpointManager(session)
-                                    # Iterate over successfully processed docs in this batch
-                                    for doc in batch:
-                                        if doc.id not in batch_result.successfully_processed_documents:
-                                            continue
-                                        metadata = getattr(doc, "metadata", None) or {}
-                                        cp_info = metadata.get("__ingestion_checkpoint") if isinstance(metadata, dict) else None
-                                        if not isinstance(cp_info, dict) or not cp_info:
-                                            continue
-                                        checkpoint = Checkpoint(
-                                            project_id=current_project_id,
-                                            source_type=doc.source_type,
-                                            source=doc.source,
-                                            cursor_kind=cp_info.get("cursor_kind"),
-                                            cursor_value=cp_info.get("cursor_value"),
-                                            batch_index=cp_info.get("batch_index", 0),
-                                        )
-                                        await cp_mgr.save_checkpoint(checkpoint)
-                                        checkpoint_sources_to_clear.add((doc.source_type, doc.source))
+                                # Iteration order is the streaming order, so the
+                                # last cp_info seen per source is the furthest
+                                # along (later cursor overwrites earlier ones).
+                                checkpoints_to_save: dict[tuple[str, str], Checkpoint] = {}
+                                for doc in batch:
+                                    if doc.id not in batch_result.successfully_processed_documents:
+                                        continue
+                                    metadata = getattr(doc, "metadata", None) or {}
+                                    cp_info = metadata.get("__ingestion_checkpoint") if isinstance(metadata, dict) else None
+                                    if not isinstance(cp_info, dict) or not cp_info:
+                                        continue
+                                    key = (doc.source_type, doc.source)
+                                    checkpoints_to_save[key] = Checkpoint(
+                                        project_id=current_project_id,
+                                        source_type=doc.source_type,
+                                        source=doc.source,
+                                        cursor_kind=cp_info.get("cursor_kind"),
+                                        cursor_value=cp_info.get("cursor_value"),
+                                        batch_index=cp_info.get("batch_index", 0),
+                                    )
+                                    checkpoint_sources_to_clear.add(key)
+
+                                if checkpoints_to_save:
+                                    async with await self.components.state_manager.get_session() as session:
+                                        cp_mgr = CheckpointManager(session)
+                                        for checkpoint in checkpoints_to_save.values():
+                                            await cp_mgr.save_checkpoint(checkpoint)
                             except Exception as e:
                                 logger.error(
                                     "Failed to persist checkpoint after batch",

@@ -121,7 +121,7 @@ class JiraCloudConnector(BaseJiraConnector):
                     # can include it in Document metadata for checkpoint saving.
                     # Only attach checkpoint if there's a next page to resume from
                     if page_next_token:
-                        parsed_issue.__ingestion_checkpoint = {
+                        parsed_issue.ingestion_checkpoint = {
                             "cursor_kind": "page_token",
                             "cursor_value": page_next_token,
                             "batch_index": 0,
@@ -149,10 +149,7 @@ class JiraCloudConnector(BaseJiraConnector):
             # Check next page token and save it for checkpoint
             next_page_token = response.get("nextPageToken")
             is_last = response.get("isLast")
-            
-            # Store the current page token for checkpoint saving (WS-2 feature)
-            self._last_page_cursor = next_page_token
-            
+
             if is_last or not next_page_token:
                 logger.info(
                     f"✅ Completed JIRA issue retrieval: "

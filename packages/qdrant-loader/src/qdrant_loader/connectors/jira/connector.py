@@ -87,7 +87,6 @@ class BaseJiraConnector(BaseConnector):
 
         # Checkpoint support (WS-2 feature)
         self._checkpoint_cursor = checkpoint_cursor
-        self._last_page_cursor: str | None = None  # Track current page cursor for checkpoint saving
 
         # Initialize file conversion components if enabled
         self.file_converter: FileConverter | None = None
@@ -552,8 +551,9 @@ class BaseJiraConnector(BaseConnector):
                 for field in self.config.extra_fields:
                     metadata[field.name] = getattr(issue, field.name)
             # Propagate checkpoint info into document metadata if present
-            if hasattr(issue, "__ingestion_checkpoint"):
-                metadata["__ingestion_checkpoint"] = issue.__ingestion_checkpoint
+            cp = getattr(issue, "ingestion_checkpoint", None)
+            if cp:
+                metadata["__ingestion_checkpoint"] = cp
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,

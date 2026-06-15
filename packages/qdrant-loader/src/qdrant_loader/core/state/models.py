@@ -245,7 +245,9 @@ class IngestionCheckpoint(Base):
     )  # page_token | jql_window | git_commit | since_ts
     cursor_value = Column(Text, nullable=False)
     batch_index = Column(Integer, nullable=False, default=0)
-    updated_at = Column(UTCDateTime(timezone=True), nullable=False)
+    updated_at = Column(
+        UTCDateTime(timezone=True), nullable=False, server_default=sa.func.now()
+    )
 
     __table_args__ = (
         UniqueConstraint(

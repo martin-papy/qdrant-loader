@@ -38,7 +38,12 @@ def upgrade() -> None:
             sa.Column("cursor_kind", sa.String(), nullable=False),
             sa.Column("cursor_value", sa.Text(), nullable=False),
             sa.Column("batch_index", sa.Integer(), nullable=False, server_default="0"),
-            sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(timezone=True),
+                nullable=False,
+                server_default=sa.func.now(),
+            ),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint(
                 "project_id", "source_type", "source", name="uq_checkpoint_source"
