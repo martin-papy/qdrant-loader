@@ -21,6 +21,11 @@ services:
     networks:
       - qdrant-net
   
+  # ------------------------------------------------------------------------------
+  # IMPORTANT
+  # SQLite is intended for local CLI usage only.
+  # Container deployments should not rely on SQLite state (will implement in the future release).
+  # ------------------------------------------------------------------------------
   qdrant-loader:
     container_name: qdrant-loader
     build:
@@ -28,12 +33,26 @@ services:
       dockerfile: Dockerfile.qdrant-loader
     image: qdrant-loader:latest
     restart: unless-stopped
+    ports:
+      - 8081:8081
+    # Ensure .env and config.yaml exist on the host
+    volumes:
+      - ./.env:/qdrant-loader/.env
+      - ./config.yaml:/qdrant-loader/config.yaml
     depends_on: 
       qdrant:
         condition: service_healthy
     networks:
       - qdrant-net
 
+  # ------------------------------------------------------------------------------
+  # NOTE
+  # This MCP server is stateless:
+  # - No SQL database
+  # - No background job state
+  #
+  # Persistent storage is not required.
+  # ------------------------------------------------------------------------------
   qdrant-loader-mcp-server:
     container_name: qdrant-loader-mcp-server
     build:
@@ -73,9 +92,49 @@ services:
     networks:
       - qdrant-net
 
+  # ==============================================================================
+  # OLLAMA SETUP
+  # ==============================================================================
+  #
+  # Required only when LLM_PROVIDER=ollama.
+  #
+  # Startup order:
+  #   1. ollama
+  #   2. ollama pull <model_name>
+  #   3. qdrant-loader / qdrant-loader-mcp-server
+  #
+  # Example:
+  #   docker exec -it ollama bash
+  #   ollama pull llama3.2
+  #
+  # ==============================================================================
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - 11434:11434
+  #   volumes:
+  #     - ollama:/root/.ollama
+  #   container_name: ollama
+  #   tty: true
+  #   restart: always
+  #   environment:
+  #     - OLLAMA_KEEP_ALIVE=24h
+  #     - OLLAMA_HOST=0.0.0.0
+  #   command: ["serve"]
+  #   networks:
+  #     - qdrant-net
+  #   healthcheck:
+  #     test: ["CMD", "ollama", "ps"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
 volumes:
   qdrant_data:
     driver: local
+  # ollama:
+  #   driver: local
 
 networks:
   qdrant-net:

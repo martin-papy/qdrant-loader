@@ -182,12 +182,15 @@ async def verify_webhook_token(
         return
 
     if not secret:
-        logger.warning(
-            "Webhook secret is not configured; webhook endpoints are unprotected",
+        logger.error(
+            "Webhook secret is not configured",
             env_var=WEBHOOK_SECRET_ENV_VAR,
             project_id=project_id,
         )
-        return
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook authentication is not configured.",
+        )
 
     if webhook_token and not authorization:
         logger.warning(

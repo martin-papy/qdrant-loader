@@ -96,12 +96,11 @@ def create_provider(settings: LLMSettings) -> LLMProvider:
             return _NoopProvider()
 
     if provider_name == "bedrock":
-
         try:
             from .providers.bedrock import BedrockProvider
 
             return BedrockProvider(settings)
-        except ImportError:
+        except Exception:
             return _NoopProvider()
 
     is_gemini = (

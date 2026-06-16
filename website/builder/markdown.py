@@ -23,6 +23,8 @@ class MarkdownProcessor:
 
             md = markdown.Markdown(
                 extensions=[
+                    # Supports fenced code blocks reliably inside list items.
+                    "pymdownx.superfences",
                     "fenced_code",
                     "codehilite",
                     "tables",
@@ -34,11 +36,14 @@ class MarkdownProcessor:
                     "sane_lists",
                 ],
                 extension_configs={
+                    "pymdownx.superfences": {
+                        "custom_fences": []  # Disable custom fences that might use Pygments
+                    },
                     "codehilite": {
                         "css_class": "codehilite",
                         "use_pygments": False,  # Use simple highlighting without Pygments
                         "guess_lang": True,
-                    }
+                    },
                 },
             )
             html = md.convert(markdown_content)
@@ -97,7 +102,8 @@ class MarkdownProcessor:
 
         for line in lines:
             raw = line.rstrip("\n")
-            if raw.startswith("```"):
+            stripped = raw.lstrip()
+            if stripped.startswith("```"):
                 if in_code_block:
                     html_lines.append("</code></pre>")
                     in_code_block = False
@@ -191,14 +197,14 @@ class MarkdownProcessor:
 
         # Fix paragraphs with bash/shell commands (with or without language prefix)
         html_content = re.sub(
-            r'<p><code class="inline-code">(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|qdrant-loader|mcp-)[^<]*)</code></p>',
+            r'<p><code class="inline-code">(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|uv|qdrant-loader|mcp-)[^<]*)</code></p>',
             r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-bash">\1</code></pre></div>',
             html_content,
         )
 
         # Also handle cases where there's no class attribute
         html_content = re.sub(
-            r"<p><code>(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|qdrant-loader|mcp-)[^<]*)</code></p>",
+            r"<p><code>(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|uv|qdrant-loader|mcp-)[^<]*)</code></p>",
             r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-bash">\1</code></pre></div>',
             html_content,
         )
