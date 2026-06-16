@@ -1158,7 +1158,6 @@ wheels = [
 [[package]]
 name = "gitpython"
 version = "3.1.50"
-version = "3.1.50"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gitdb", marker = "python_full_version < '3.13'" },
