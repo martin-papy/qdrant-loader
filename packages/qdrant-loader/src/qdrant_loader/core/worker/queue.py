@@ -17,8 +17,15 @@ class JobQueue(Protocol):
     async def enqueue(self, job_type: str, payload: dict[str, Any]) -> Job:
         """Create and persist a new pending job."""
 
-    async def claim_next(self, lease_seconds: int = 60) -> Job | None:
-        """Atomically claim the next visible pending job."""
+    async def claim_next(
+        self, lease_seconds: int = 60, job_types: list[str] | None = None
+    ) -> Job | None:
+        """Atomically claim the next visible pending job.
+
+        Args:
+            lease_seconds: Visibility lease duration.
+            job_types: If provided, only claim jobs whose type is in this list.
+        """
 
     def notify(self) -> asyncio.Event:
         """Return an event that fires when a job becomes available for claiming.
@@ -116,7 +123,9 @@ class SQLiteJobQueue:
             self._pending_event.set()
             return job
 
-    async def claim_next(self, lease_seconds: int = 60) -> Job | None:
+    async def claim_next(
+        self, lease_seconds: int = 60, job_types: list[str] | None = None
+    ) -> Job | None:
         if lease_seconds < 0:
             raise ValueError("lease_seconds must be non-negative")
         now = datetime.now(UTC)
@@ -128,11 +137,11 @@ class SQLiteJobQueue:
         )
 
         async with self._session_factory() as session:
+            select_stmt = select(Job.id).where(claimable_filter)
+            if job_types:
+                select_stmt = select_stmt.where(Job.type.in_(job_types))
             candidate_job_id = await session.scalar(
-                select(Job.id)
-                .where(claimable_filter)
-                .order_by(Job.enqueued_at.asc(), Job.id.asc())
-                .limit(1)
+                select_stmt.order_by(Job.enqueued_at.asc(), Job.id.asc()).limit(1)
             )
 
             if candidate_job_id is None:

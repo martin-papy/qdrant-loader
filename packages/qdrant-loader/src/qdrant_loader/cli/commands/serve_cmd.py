@@ -42,14 +42,29 @@ from qdrant_loader.config.workspace import validate_workspace_flags
     default="INFO",
     help="Set the logging level.",
 )
+@click.option(
+    "--host",
+    default="0.0.0.0",
+    show_default=True,
+    help="Webhook HTTP server host.",
+)
+@click.option(
+    "--port",
+    default=8081,
+    type=int,
+    show_default=True,
+    help="Webhook HTTP server port.",
+)
 def serve_cmd(
     workspace: Path | None,
     config: Path | None,
     env: Path | None,
     log_level: str,
+    host: str,
+    port: int,
 ):
-    """Run the qdrant-loader service (scheduler + worker pool)."""
-    asyncio.run(_serve_main(workspace, config, env, log_level))
+    """Run the qdrant-loader service (scheduler + worker pool + webhook HTTP server)."""
+    asyncio.run(_serve_main(workspace, config, env, log_level, host, port))
 
 
 async def _serve_main(
@@ -57,7 +72,11 @@ async def _serve_main(
     config: Path | None,
     env: Path | None,
     log_level: str,
+    host: str = "0.0.0.0",
+    port: int = 8081,
 ):
+    import uvicorn
+
     from qdrant_loader.cli.config_loader import (
         load_config_with_workspace,
         setup_workspace,
@@ -70,10 +89,16 @@ async def _serve_main(
     from qdrant_loader.core.qdrant_manager import QdrantManager
     from qdrant_loader.core.state.state_manager import StateManager
     from qdrant_loader.core.worker.handlers import IngestionJobHandler
+    from qdrant_loader.core.worker.job_types import JobType
     from qdrant_loader.core.worker.pool import QueueWorkerPool
     from qdrant_loader.core.worker.queue import SQLiteJobQueue
     from qdrant_loader.core.worker.scheduler import IncrementalPullScheduler
     from qdrant_loader.utils.logging import LoggingConfig
+    from qdrant_loader.webhooks.queue_backend import (
+        QueueBackendManager,
+        SQLiteChangeEventQueue,
+    )
+    from qdrant_loader.webhooks.server import app as webhook_app
 
     # Validate flag combinations
     validate_workspace_flags(workspace, config, env)
@@ -156,6 +181,7 @@ async def _serve_main(
         lease_seconds=worker_runtime.lease_seconds,
         max_attempts=worker_runtime.max_attempts,
         retry_backoff_base_seconds=worker_runtime.retry_backoff_base_seconds,
+        job_types=[JobType.BULK_INGEST.value, JobType.INCREMENTAL_PULL.value],
     )
 
     logger.info("serve.scheduler_init")
@@ -166,10 +192,32 @@ async def _serve_main(
         schedule=schedule,
     )
 
+    # Share the already-initialised job_queue with QueueBackendManager so that:
+    # 1. The webhook HTTP layer enqueues jobs on the same SQLiteJobQueue instance.
+    # 2. job_queue.notify() fires immediately when /ingest enqueues a BULK_INGEST
+    #    job, waking the worker pool without waiting for the lease timeout.
+    QueueBackendManager.set_backend(SQLiteChangeEventQueue(job_queue), job_queue)
+
     logger.info("serve.starting")
+
+    # --- HTTP server (webhook endpoints) ---
+    http_server_config = uvicorn.Config(
+        webhook_app,
+        host=host,
+        port=port,
+        log_level=log_level.lower(),
+    )
+    http_server = uvicorn.Server(http_server_config)
+    # serve_cmd owns signal handling; prevent uvicorn from overriding SIGINT/SIGTERM.
+    http_server.install_signal_handlers = lambda: None
+
+    logger.info("serve.http_server_init", host=host, port=port)
 
     async def scheduler_task():
         await scheduler.run(stop_event)
+        # When scheduler is disabled it returns immediately; keep this task
+        # alive so asyncio.wait() only exits on stop_event or a real failure.
+        await stop_event.wait()
 
     async def worker_pool_task():
         """Drain queue on job arrival or visibility timeout reclaim (every ~60s lease).
@@ -202,18 +250,20 @@ async def _serve_main(
     scheduler_runner = None
     worker_runner = None
     stop_waiter = None
+    http_runner = None
     try:
         scheduler_runner = asyncio.create_task(scheduler_task())
         worker_runner = asyncio.create_task(worker_pool_task())
         stop_waiter = asyncio.create_task(stop_event.wait())
+        http_runner = asyncio.create_task(http_server.serve())
 
         done, _ = await asyncio.wait(
-            {scheduler_runner, worker_runner, stop_waiter},
+            {scheduler_runner, worker_runner, stop_waiter, http_runner},
             return_when=asyncio.FIRST_COMPLETED,
         )
 
         # Check for background task failures
-        for task in (scheduler_runner, worker_runner):
+        for task in (scheduler_runner, worker_runner, http_runner):
             if task in done and (exc := task.exception()) is not None:
                 logger.error(
                     "serve.background_task_failed",
@@ -226,13 +276,16 @@ async def _serve_main(
         raise
     finally:
         logger.info("serve.shutting_down")
+        # Signal uvicorn to stop gracefully so its lifespan cleanup (webhook worker
+        # teardown, QueueBackendManager.shutdown) runs before we dispose StateManager.
+        http_server.should_exit = True
         for task in (scheduler_runner, worker_runner, stop_waiter):
             if task is not None:
                 task.cancel()
         await asyncio.gather(
             *(
                 t
-                for t in (scheduler_runner, worker_runner, stop_waiter)
+                for t in (scheduler_runner, worker_runner, stop_waiter, http_runner)
                 if t is not None
             ),
             return_exceptions=True,

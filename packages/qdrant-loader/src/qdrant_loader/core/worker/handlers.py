@@ -151,15 +151,31 @@ class IngestionJobHandler(BaseJobHandler):
         project_id = payload["project_id"].strip()
         return source_type, source, project_id
 
+    @staticmethod
+    def _extract_optional_fields(
+        payload: dict[str, Any],
+    ) -> tuple[str | None, str | None, str | None]:
+        """Extract source fields that may be absent (blank string → None = 'all')."""
+        def _clean(key: str) -> str | None:
+            v = payload.get(key)
+            return v.strip() or None if isinstance(v, str) else None
+
+        return _clean("source_type"), _clean("source"), _clean("project_id")
+
     async def handle_bulk_ingest(self, payload: dict[str, Any]) -> None:
-        """Run a full ingestion for the source, bypassing change detection."""
+        """Run a full ingestion, optionally scoped to a specific source.
+
+        source_type / source / project_id may be absent or blank, in which case
+        the orchestrator processes all configured sources (used by /ingest API).
+        """
         try:
-            source_type, source, project_id = self._validated_required_fields(payload)
+            source_type, source, project_id = self._extract_optional_fields(payload)
+            force = bool(payload.get("force", True))
             await self._orchestrator.process_documents(
                 source_type=source_type,
                 source=source,
                 project_id=project_id,
-                force=True,
+                force=force,
             )
         except PermanentJobError:
             raise
