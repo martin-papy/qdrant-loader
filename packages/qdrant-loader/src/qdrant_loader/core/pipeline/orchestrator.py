@@ -84,6 +84,9 @@ class PipelineOrchestrator:
             # info, so a batch is flushed before crossing a page boundary
             # (see _process_source_type body below for why this matters).
             last_cursor_value = None
+            # True once a size-based mid-page flush has fired for the current page.
+            # Used to emit the warning only once per overflowing page.
+            page_has_overflowed = False
 
             async def connector_factory_with_checkpoint(src_config):
                 # Determine if we should attempt to resume from a checkpoint
@@ -158,12 +161,35 @@ class PipelineOrchestrator:
                         and cursor_value != last_cursor_value
                         and batch
                     ):
+                        # Page boundary: all docs for the previous cursor are
+                        # accumulated; safe to save the checkpoint now.
                         yield batch.copy()
                         batch.clear()
+                        page_has_overflowed = False  # reset for the new page
                     last_cursor_value = cursor_value
 
                 batch.append(document)
                 if len(batch) >= batch_size:
+                    # A size-based flush that fires while we are still inside a
+                    # page (same cursor_value across docs) must NOT carry
+                    # __ingestion_checkpoint.  Saving the page token here would
+                    # cause resume to skip the page tail on crash (Jira WS-2
+                    # regression: 100 issues × avg attachments > batch_size=256).
+                    if last_cursor_value is not None:
+                        if not page_has_overflowed:
+                            logger.warning(
+                                "Source page exceeds batch_size; stripping "
+                                "__ingestion_checkpoint from mid-page flush to "
+                                "prevent resume from skipping the page tail",
+                                source_type=source_type_name,
+                                page_cursor=last_cursor_value,
+                                batch_size=batch_size,
+                            )
+                            page_has_overflowed = True
+                        for doc in batch:
+                            doc_meta = getattr(doc, "metadata", None)
+                            if isinstance(doc_meta, dict):
+                                doc_meta.pop("__ingestion_checkpoint", None)
                     yield batch.copy()
                     batch.clear()
 
