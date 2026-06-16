@@ -55,10 +55,22 @@ _request_timestamps: dict[str, list[float]] = {}
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    if not os.getenv(WEBHOOK_SECRET_ENV_VAR) and not os.getenv("WEBHOOK_SECRETS"):
+    has_global_secret = bool(os.getenv(WEBHOOK_SECRET_ENV_VAR)) or bool(
+        os.getenv("WEBHOOK_SECRETS")
+    )
+    has_project_secret = any(
+        key.startswith("WEBHOOK_SECRET_") and bool(value)
+        for key, value in os.environ.items()
+    )
+    cognito_enabled = os.getenv("WEBHOOK_ENABLE_COGNITO_JWT", "false").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    if not (has_global_secret or has_project_secret or cognito_enabled):
         raise RuntimeError(
-            f"{WEBHOOK_SECRET_ENV_VAR} or WEBHOOK_SECRETS must be set before "
-            "starting the webhook server."
+            "Webhook authentication is not configured. Set WEBHOOK_SECRET, "
+            "WEBHOOK_SECRETS, WEBHOOK_SECRET_<PROJECT_ID>, or enable Cognito JWT."
         )
 
     await QueueBackendManager.initialize()
@@ -234,11 +246,12 @@ async def readyz() -> dict[str, object]:
         # If task is done, check if it errored
         try:
             worker_task.result()
-        except Exception as e:
+        except Exception as err:
+            logger.exception("Worker task failed readiness check", error=str(err))
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Worker task failed: {str(e)}",
-            )
+                detail="Worker task failed.",
+            ) from err
 
     return {"status": "ready"}
 

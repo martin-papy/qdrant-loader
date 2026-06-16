@@ -102,7 +102,58 @@ class QueueWorkerPool:
                     )
                     t0 = time.monotonic()
                     try:
-                        await self._handler(job.type, payload)
+                        # Start lease renewal task to prevent visibility timeout during handler
+                        renewal_interval = max(1, self._lease_seconds // 3)
+                        lease_lost = asyncio.Event()
+
+                        async def _renew_lease(
+                            *,
+                            current_job_id: int = job.id,
+                            current_claim_attempt: int = job.attempts,
+                            current_lease_seconds: int = self._lease_seconds,
+                            current_renewal_interval: int = renewal_interval,
+                            lease_lost_event: asyncio.Event = lease_lost,
+                        ) -> None:
+                            while True:
+                                await asyncio.sleep(current_renewal_interval)
+                                try:
+                                    async with self._queue_io_guard:
+                                        extended = await self._queue.extend_visibility(
+                                            current_job_id,
+                                            current_lease_seconds,
+                                            claim_attempt=current_claim_attempt,
+                                        )
+                                    if not extended:
+                                        lease_lost_event.set()
+                                        return
+                                except Exception as exc:
+                                    logger.warning(
+                                        "job.lease_renew_failed",
+                                        job_id=current_job_id,
+                                        error=str(exc),
+                                        error_type=type(exc).__name__,
+                                    )
+
+                        renewal_task = asyncio.create_task(_renew_lease())
+                        try:
+                            await self._handler(job.type, payload)
+                            if lease_lost.is_set():
+                                raise RuntimeError(
+                                    f"Lost lease for job {job.id} while handler was running"
+                                )
+                        finally:
+                            renewal_task.cancel()
+                            try:
+                                await renewal_task
+                            except asyncio.CancelledError:
+                                pass
+                            except Exception as exc:
+                                logger.warning(
+                                    "job.lease_renew_teardown_failed",
+                                    job_id=job.id,
+                                    error=str(exc),
+                                    error_type=type(exc).__name__,
+                                )
                     except Exception as exc:
                         duration_ms = round((time.monotonic() - t0) * 1000)
                         async with self._queue_io_guard:

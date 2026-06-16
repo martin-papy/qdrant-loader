@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-workspace"
-version = "1.0.1"
+version = "1.0.3"
 description = "A comprehensive toolkit for loading data into Qdrant vector database with MCP server support"
 readme = "README.md"
 authors = [
@@ -63,7 +63,7 @@ docs = [
     "pygments>=2.15.0",
     "cairosvg>=2.7.0",
     "pillow>=12.2.0",
-    "pymdown-extensions>=10.0.0",
+    "pymdown-extensions>=10.21.3",
 ]
 
 [tool.setuptools.packages.find]

@@ -355,3 +355,65 @@ async def test_pool_reclaims_interrupted_job_after_visibility_timeout():
         ), f"Expected attempts=2, got {done_jobs[0].attempts}"
     finally:
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_scheduler_dedup_pagination_handles_large_job_count():
+    """Verify scheduler._load_active_dedup_keys() paginates through >page_size jobs.
+
+    Previously, the scheduler only called list(status=..., limit=10000) once,
+    which meant if a status had >10k jobs, dedup would miss the ones beyond that.
+
+    This test creates 2500 PENDING jobs (>page_size of 1000) and verifies that
+    the scheduler correctly identifies all of them as active dedup keys when
+    computing which sources to enqueue next.
+    """
+    from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
+    from qdrant_loader.config.sources import SourcesConfig
+
+    queue, _, engine = await _make_queue()
+
+    try:
+        # Create 2500 PENDING jobs (exceeds default page_size of 1000)
+        NUM_JOBS = 2500
+        for i in range(NUM_JOBS):
+            await queue.enqueue(
+                JobType.INCREMENTAL_PULL,
+                {
+                    "project_id": f"proj-{i % 5}",
+                    "source_type": "git",
+                    "source": f"repo-{i}",
+                    "source_lock": f"proj-{i % 5}:git:repo-{i}",
+                },
+            )
+
+        # Build a single project with 1 source to attempt to schedule
+        sources = SourcesConfig()
+        sources.git = {"new-repo": object()}
+        project = ProjectConfig(
+            project_id="proj-new", display_name="New", sources=sources
+        )
+        projects_config = ProjectsConfig(projects={"proj-new": project})
+
+        schedule = IncrementalPullScheduleConfig(enabled=True, interval=5)
+        scheduler = IncrementalPullScheduler(
+            queue=queue,
+            projects_config=projects_config,
+            schedule=schedule,
+        )
+
+        # Load dedup keys (should paginate through all 2500 PENDING jobs)
+        dedup_keys = await scheduler._load_active_dedup_keys()
+
+        # Verify all 2500 jobs are in dedup (not just first 1000)
+        assert len(dedup_keys) == NUM_JOBS, (
+            f"Pagination failed: expected {NUM_JOBS} dedup keys, got {len(dedup_keys)}. "
+            "Likely missed jobs beyond first page."
+        )
+
+        # Verify scheduler correctly sees new source is safe to enqueue
+        created = await scheduler.run_once()
+        assert created == 1, f"Expected 1 new job for new source, got {created}"
+
+    finally:
+        await engine.dispose()

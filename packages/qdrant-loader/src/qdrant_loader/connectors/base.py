@@ -1,5 +1,4 @@
 import warnings
-from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from datetime import datetime
 
@@ -16,7 +15,7 @@ class ConnectorConfigurationError(Exception):
     """
 
 
-class BaseConnector(ABC):
+class BaseConnector:
     """Base class for all connectors."""
 
     def __init__(self, config: SourceConfig):
@@ -72,7 +71,6 @@ class BaseConnector(ABC):
         for document in documents:
             yield document
 
-    @abstractmethod
     async def get_documents(self) -> list[Document]:
         """Get documents from the source (DEPRECATED - use stream_documents)."""
         warnings.warn(
