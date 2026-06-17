@@ -382,11 +382,11 @@ def cli(
             os.environ["MCP_HOST"] = host
             os.environ["MCP_PORT"] = str(port)
 
-            use_fastmcp = os.getenv("MCP_USE_FASTMCP", "").lower() in ("1", "true", "yes")
+            use_legacy = os.getenv("MCP_USE_LEGACY", "").lower() in ("1", "true", "yes")
             app_path = (
-                "qdrant_loader_mcp_server.fastmcp_app:http_app"
-                if use_fastmcp
-                else "qdrant_loader_mcp_server.server:app" # fallback to server.py
+                "qdrant_loader_mcp_server.server:app"
+                if use_legacy
+                else "qdrant_loader_mcp_server.fastmcp_app:http_app"
             )
 
             logger = LoggingConfig.get_logger(__name__)
@@ -408,9 +408,8 @@ def cli(
             )
 
         elif transport.lower() == "stdio":
-            # FastMCP migration path (opt-in). Bypassing legacy hand-rooled
-            # stdio loop; FastMCP owns its event loop + signal handling
-            if os.getenv("MCP_USE_FASTMCP", "").lower() in ("1", "true", "yes"):
+            # FastMCP is the default transport. MCP_USE_LEGACY as fallback
+            if os.getenv("MCP_USE_LEGACY", "").lower() not in ("1", "true", "yes"):
                 logger = LoggingConfig.get_logger(__name__)
                 logger.info("Starting stdio transport via FastMCP")
                 from .fastmcp_app import mcp
@@ -418,7 +417,7 @@ def cli(
                 mcp.run(transport="stdio", show_banner=False)
                 return
 
-            # ---- legacy stdio path ---------------------------
+            # ---- legacy stdio path (opt-out) ---------------------------
             # stdio needs its own event loop and signal handling
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
