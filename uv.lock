@@ -1897,24 +1897,6 @@ wheels = [
 ]
 
 [[package]]
-name = "jsonrpcclient"
-version = "4.0.3"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/4b/ba54814656b155f14ae73092ae194dd04eaf7e8e9a3da4f2ee7ffc9fe98f/jsonrpcclient-4.0.3-py3-none-any.whl", hash = "sha256:3cbb9e27e1be29821becf135ea183144a836215422727e1ffe5056a49a670f0d", size = 7009, upload-time = "2023-02-23T11:25:06.173Z" },
-]
-
-[[package]]
-name = "jsonrpcserver"
-version = "5.0.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jsonschema", marker = "python_full_version < '3.13'" },
-    { name = "oslash", marker = "python_full_version < '3.13'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/3b/8d4d4fe8c59a1a4d1e6edd6126ec118b989510fadf262950a5c4f4bca664/jsonrpcserver-5.0.9.tar.gz", hash = "sha256:a71fb2cfa18541c80935f60987f92755d94d74141248c7438847b96eee5c4482", size = 14506, upload-time = "2022-09-15T02:28:24.004Z" }
-
-[[package]]
 name = "jsonschema"
 version = "4.26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3138,18 +3120,6 @@ wheels = [
 ]
 
 [[package]]
-name = "oslash"
-version = "0.6.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/60/b2/54ea4a7c6f768469a4c6a2f27f5c7cf572d63e9fd7f7618fca89c30966b3/OSlash-0.6.3.tar.gz", hash = "sha256:868aeb58a656f2ed3b73d9dd6abe387b20b74fc9413d3e8653b615b15bf728f3", size = 35228, upload-time = "2020-10-12T20:50:14.165Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/c3/77d40a6e20fdfbf92b086d2c47e3cc82731e179e3f44bdc8e60b7306bcc3/OSlash-0.6.3-py3-none-any.whl", hash = "sha256:89b978443b7db3ac2666106bdc3680add3c886a6d8fcdd02fd062af86d29494f", size = 26943, upload-time = "2020-10-12T20:50:13.06Z" },
-]
-
-[[package]]
 name = "packaging"
 version = "26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4250,10 +4220,7 @@ version = "1.0.1"
 source = { editable = "packages/qdrant-loader-mcp-server" }
 dependencies = [
     { name = "click", marker = "python_full_version < '3.13'" },
-    { name = "fastapi", marker = "python_full_version < '3.13'" },
     { name = "fastmcp", marker = "python_full_version < '3.13'" },
-    { name = "jsonrpcclient", marker = "python_full_version < '3.13'" },
-    { name = "jsonrpcserver", marker = "python_full_version < '3.13'" },
     { name = "networkx", marker = "python_full_version < '3.13'" },
     { name = "nltk", marker = "python_full_version < '3.13'" },
     { name = "numpy", marker = "python_full_version < '3.13'" },
@@ -4274,10 +4241,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
-    { name = "fastapi", specifier = ">=0.104.0" },
     { name = "fastmcp", specifier = ">=3.4,<4" },
-    { name = "jsonrpcclient", specifier = ">=4.0.3" },
-    { name = "jsonrpcserver", specifier = ">=5.0.7" },
     { name = "networkx", specifier = ">=3.0.0" },
     { name = "nltk", specifier = ">=3.8.0" },
     { name = "numpy", specifier = ">=1.26.0" },

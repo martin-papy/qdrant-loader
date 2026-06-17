@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+#### MCP Server
+
+- Rebuilt the MCP server on [FastMCP](https://gofastmcp.com) v3. Tool input/output
+  schemas are now generated from typed Python signatures instead of hand-written
+  JSON Schema, and both stdio and streamable-HTTP transports are provided by the
+  framework. All 11 tools are preserved with the same names (including
+  `detect_document_conflicts`).
+
+### Removed
+
+#### MCP Server
+
+- Removed the hand-rolled JSON-RPC layer: the `MCPHandler` dispatcher, the
+  `mcp/schemas/` tool-schema definitions, the `mcp/models.py` request/response
+  models, the legacy `server.py` + `transport/` HTTP stack, and the hand-written
+  stdio loop in `cli.py`.
+- Removed the non-standard `listOfferings` method and the ability to invoke tools
+  as top-level JSON-RPC methods (e.g. `{"method": "search"}`). Use the standard
+  MCP `tools/list` and `tools/call` instead.
+- Dropped the now-unused `fastapi`, `jsonrpcclient`, and `jsonrpcserver`
+  dependencies.
+
 ## [1.0.2] - 2026-05-12
 
 ### Changed
