@@ -141,7 +141,7 @@ class TestPipelineOrchestrator:
         self.orchestrator._update_document_states = AsyncMock()
 
         async def fake_stream_batches(
-            filtered_config_arg, batch_size=256, since=None, project_id=None
+            filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True
         ):
             assert filtered_config_arg is filtered_config
             yield mock_documents
@@ -189,7 +189,7 @@ class TestPipelineOrchestrator:
         self.orchestrator._update_document_states = AsyncMock()
 
         async def fake_stream_batches(
-            filtered_config_arg, batch_size=256, since=None, project_id=None
+            filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True
         ):
             assert filtered_config_arg is filtered_config
             yield mock_documents
@@ -238,7 +238,7 @@ class TestPipelineOrchestrator:
         self.orchestrator._update_document_states = AsyncMock()
 
         async def fake_stream_batches(
-            filtered_config_arg, batch_size=256, since=None, project_id=None
+            filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True
         ):
             assert filtered_config_arg is filtered_config
             yield mock_documents
@@ -314,7 +314,7 @@ class TestPipelineOrchestrator:
         self.source_filter.filter_sources.return_value = filtered_config
 
         async def fake_stream_batches(
-            filtered_config_arg, batch_size=256, since=None, project_id=None
+            filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True
         ):
             if False:
                 yield []
@@ -346,7 +346,7 @@ class TestPipelineOrchestrator:
         self.orchestrator._update_document_states = AsyncMock()
 
         async def fake_stream_batches(
-            filtered_config_arg, batch_size=256, since=None, project_id=None
+            filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True
         ):
             assert filtered_config_arg is filtered_config
             yield mock_documents
@@ -997,7 +997,7 @@ class TestPipelineOrchestrator:
         self.orchestrator._update_document_states = AsyncMock()
 
         async def fake_stream_batches(
-            filtered_config_arg, batch_size=256, since=None, project_id=None
+            filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True
         ):
             if False:
                 yield []
