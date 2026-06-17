@@ -45,6 +45,7 @@ dependencies = [
     "spacy>=3.7.0",
     "sentence-transformers>=2.2.0",
     "qdrant-loader-core==1.0.1",
+    "fastmcp>=3.4,<4",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
