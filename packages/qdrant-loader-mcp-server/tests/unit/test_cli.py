@@ -1,20 +1,12 @@
 """Tests for CLI module."""
 
-import json
 import os
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
-import pytest
 from click.testing import CliRunner
-from qdrant_loader_mcp_server.cli import (
-    _setup_logging,
-    cli,
-    handle_stdio,
-    read_stdin_lines,
-    shutdown,
-)
+from qdrant_loader_mcp_server.cli import _setup_logging, cli
 from qdrant_loader_mcp_server.utils import get_version
 
 
@@ -156,324 +148,6 @@ class TestLoggingSetup:
         )
 
 
-class TestAsyncFunctions:
-    """Test async utility functions."""
-
-    @pytest.mark.asyncio
-    async def test_read_stdin_lines(self):
-        """Test stdin reading functionality as async generator."""
-        with (
-            patch("asyncio.get_event_loop") as mock_get_loop,
-            patch("sys.stdin"),
-        ):
-            mock_loop = AsyncMock()
-            mock_get_loop.return_value = mock_loop
-
-            # Mock readline to return lines then EOF
-            mock_loop.run_in_executor = AsyncMock(
-                side_effect=[
-                    "line1\n",
-                    "line2\n",
-                    "",  # EOF
-                ]
-            )
-
-            lines = []
-            async for line in read_stdin_lines():
-                lines.append(line)
-
-            assert len(lines) == 2
-            assert lines[0] == "line1\n"
-            assert lines[1] == "line2\n"
-            assert mock_loop.run_in_executor.call_count == 3
-
-    @pytest.mark.asyncio
-    async def test_shutdown(self):
-        """Test graceful shutdown functionality."""
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock loop
-            mock_loop = MagicMock()
-
-            # Mock shutdown event
-            mock_shutdown_event = MagicMock()
-
-            await shutdown(mock_loop, mock_shutdown_event)
-
-            # Verify shutdown event was set
-            mock_shutdown_event.set.assert_called_once()
-
-            # Sleep should be called once with 0 (yield control)
-            assert mock_sleep.await_count == 1
-            mock_sleep.assert_awaited_with(0)
-
-            # Verify logging calls
-            assert mock_logging_config.get_logger.call_count >= 1
-            mock_logger.info.assert_any_call("Shutting down...")
-            mock_logger.info.assert_any_call("Shutdown signal dispatched")
-
-    @pytest.mark.asyncio
-    async def test_shutdown_with_exception(self):
-        """Test shutdown with exception during sleep (e.g., cancellation)."""
-        from asyncio import CancelledError
-
-        # Create an async function that raises CancelledError
-        async def mock_sleep_error(*args, **kwargs):
-            raise CancelledError("Sleep cancelled")
-
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch("asyncio.sleep", side_effect=mock_sleep_error),
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock loop
-            mock_loop = MagicMock()
-
-            # Mock shutdown event
-            mock_shutdown_event = MagicMock()
-
-            # The shutdown function should handle CancelledError gracefully
-            await shutdown(mock_loop, mock_shutdown_event)
-
-            # Verify shutdown event was set
-            mock_shutdown_event.set.assert_called_once()
-
-            # Verify logging calls were made
-            mock_logger.info.assert_any_call("Shutting down...")
-
-            # No explicit loop.stop() should be called in cooperative shutdown
-            assert not mock_loop.stop.called
-
-
-class TestStdioHandler:
-    """Test stdio communication handler."""
-
-    @pytest.mark.asyncio
-    async def test_handle_stdio_initialization_error(self):
-        """Test stdio handler with search engine initialization error."""
-
-        # Create an async function that raises an exception
-        async def mock_initialize_error():
-            raise Exception("Init error")
-
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch(
-                "qdrant_loader_mcp_server.cli.SearchEngine"
-            ) as mock_search_engine_class,
-            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
-            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch.dict(os.environ, {}, clear=True),
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock search engine initialization failure
-            mock_search_engine = MagicMock()
-            mock_search_engine.initialize = AsyncMock(side_effect=mock_initialize_error)
-            mock_search_engine_class.return_value = mock_search_engine
-
-            mock_config = MagicMock()
-
-            with pytest.raises(
-                RuntimeError, match="Failed to initialize search engine"
-            ):
-                await handle_stdio(mock_config, "INFO")
-
-    @pytest.mark.asyncio
-    async def test_handle_stdio_json_parse_error(self):
-        """Test stdio handler with JSON parse error."""
-
-        async def mock_stdin_lines():
-            """Mock async generator for invalid JSON."""
-            yield "invalid json\n"
-
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch(
-                "qdrant_loader_mcp_server.cli.SearchEngine"
-            ) as mock_search_engine_class,
-            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
-            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch(
-                "qdrant_loader_mcp_server.cli.read_stdin_lines",
-                return_value=mock_stdin_lines(),
-            ),
-            patch("sys.stdout") as mock_stdout,
-            patch.dict(os.environ, {}, clear=True),
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock successful initialization
-            mock_search_engine = MagicMock()
-            mock_search_engine.initialize = AsyncMock()
-            mock_search_engine.cleanup = AsyncMock()
-            mock_search_engine_class.return_value = mock_search_engine
-
-            mock_config = MagicMock()
-
-            await handle_stdio(mock_config, "INFO")
-
-            # Verify error response was written
-            mock_stdout.write.assert_called()
-            written_response = mock_stdout.write.call_args[0][0]
-            response = json.loads(written_response)
-            assert response["error"]["code"] == -32700
-            assert "Parse error" in response["error"]["message"]
-
-    @pytest.mark.asyncio
-    async def test_handle_stdio_invalid_request_format(self):
-        """Test stdio handler with invalid request format."""
-
-        async def mock_stdin_lines():
-            """Mock async generator for non-object JSON."""
-            yield '"not an object"\n'
-
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch(
-                "qdrant_loader_mcp_server.cli.SearchEngine"
-            ) as mock_search_engine_class,
-            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
-            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch(
-                "qdrant_loader_mcp_server.cli.read_stdin_lines",
-                return_value=mock_stdin_lines(),
-            ),
-            patch("sys.stdout") as mock_stdout,
-            patch.dict(os.environ, {}, clear=True),
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock successful initialization
-            mock_search_engine = MagicMock()
-            mock_search_engine.initialize = AsyncMock()
-            mock_search_engine.cleanup = AsyncMock()
-            mock_search_engine_class.return_value = mock_search_engine
-
-            mock_config = MagicMock()
-
-            await handle_stdio(mock_config, "INFO")
-
-            # Verify error response was written
-            mock_stdout.write.assert_called()
-            written_response = mock_stdout.write.call_args[0][0]
-            response = json.loads(written_response)
-            assert response["error"]["code"] == -32600
-            assert "Invalid Request" in response["error"]["message"]
-
-    @pytest.mark.asyncio
-    async def test_handle_stdio_invalid_jsonrpc_version(self):
-        """Test stdio handler with invalid JSON-RPC version."""
-        invalid_request = {"jsonrpc": "1.0", "method": "test", "id": 1}
-
-        async def mock_stdin_lines():
-            """Mock async generator for invalid JSON-RPC version."""
-            yield json.dumps(invalid_request) + "\n"
-
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch(
-                "qdrant_loader_mcp_server.cli.SearchEngine"
-            ) as mock_search_engine_class,
-            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
-            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
-            patch(
-                "qdrant_loader_mcp_server.cli.read_stdin_lines",
-                return_value=mock_stdin_lines(),
-            ),
-            patch("sys.stdout") as mock_stdout,
-            patch.dict(os.environ, {}, clear=True),
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock successful initialization
-            mock_search_engine = MagicMock()
-            mock_search_engine.initialize = AsyncMock()
-            mock_search_engine.cleanup = AsyncMock()
-            mock_search_engine_class.return_value = mock_search_engine
-
-            mock_config = MagicMock()
-
-            await handle_stdio(mock_config, "INFO")
-
-            # Verify error response was written
-            mock_stdout.write.assert_called()
-            written_response = mock_stdout.write.call_args[0][0]
-            response = json.loads(written_response)
-            assert response["error"]["code"] == -32600
-            assert "Invalid JSON-RPC version" in response["error"]["data"]
-
-    @pytest.mark.asyncio
-    async def test_handle_stdio_successful_request(self):
-        """Test stdio handler with successful request processing."""
-        valid_request = {"jsonrpc": "2.0", "method": "tools/list", "id": 1}
-
-        async def mock_stdin_lines():
-            """Mock async generator for valid request."""
-            yield json.dumps(valid_request) + "\n"
-
-        with (
-            patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch(
-                "qdrant_loader_mcp_server.cli.SearchEngine"
-            ) as mock_search_engine_class,
-            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.read_stdin_lines",
-                return_value=mock_stdin_lines(),
-            ),
-            patch("sys.stdout") as mock_stdout,
-            patch.dict(os.environ, {}, clear=True),
-        ):
-
-            mock_logger = MagicMock()
-            mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock successful initialization
-            mock_search_engine = MagicMock()
-            mock_search_engine.initialize = AsyncMock()
-            mock_search_engine.cleanup = AsyncMock()
-            mock_search_engine_class.return_value = mock_search_engine
-
-            # Mock MCP handler
-            mock_mcp_handler = MagicMock()
-            mock_mcp_handler.handle_request = AsyncMock(
-                return_value={"jsonrpc": "2.0", "id": 1, "result": "success"}
-            )
-            mock_mcp_handler_class.return_value = mock_mcp_handler
-
-            mock_config = MagicMock()
-
-            await handle_stdio(mock_config, "INFO")
-
-            # Verify request was handled
-            mock_mcp_handler.handle_request.assert_called_once_with(valid_request)
-
-            # Verify response was written
-            mock_stdout.write.assert_called()
-            written_response = mock_stdout.write.call_args[0][0]
-            response = json.loads(written_response)
-            assert response["result"] == "success"
-
-
 class TestCLICommand:
     """Test CLI command functionality."""
 
@@ -507,83 +181,53 @@ class TestCLICommand:
 
     @patch("qdrant_loader_mcp_server.cli._setup_logging")
     @patch("qdrant_loader_mcp_server.cli.load_config")
-    @patch("qdrant_loader_mcp_server.cli.handle_stdio")
-    @patch("asyncio.new_event_loop")
-    @patch("asyncio.set_event_loop")
-    @patch("signal.SIGTERM", 15)
-    @patch("signal.SIGINT", 2)
-    def test_cli_successful_execution(
-        self,
-        mock_set_event_loop,
-        mock_new_event_loop,
-        mock_handle_stdio,
-        mock_load_config,
-        mock_setup_logging,
+    @patch("qdrant_loader_mcp_server.fastmcp_app.mcp.run")
+    def test_cli_stdio_uses_fastmcp(
+        self, mock_run, mock_load_config, mock_setup_logging
     ):
-        """Test successful CLI execution."""
-        # Mock event loop
-        mock_loop = MagicMock()
-        mock_new_event_loop.return_value = mock_loop
-        mock_loop.run_until_complete.return_value = None
-
-        # Mock config loader
-        mock_config = MagicMock()
-        mock_effective = {"dummy": True}
-        mock_used_file = None
-        mock_load_config.return_value = (mock_config, mock_effective, mock_used_file)
-
-        # Mock handle_stdio as async function
-        mock_handle_stdio.return_value = AsyncMock()
+        """stdio transport (default) hands off to the FastMCP stdio runner."""
+        mock_load_config.return_value = (MagicMock(), {"dummy": True}, None)
 
         runner = CliRunner()
-        runner.invoke(cli, ["--log-level", "DEBUG"])
+        result = runner.invoke(cli, ["--log-level", "DEBUG"])
 
-        # Verify setup was called with transport parameter (default is stdio)
+        assert result.exit_code == 0
         mock_setup_logging.assert_called_once_with("DEBUG", "stdio")
-        mock_load_config.assert_called_once()
-        mock_new_event_loop.assert_called_once()
-        mock_set_event_loop.assert_called_once_with(mock_loop)
+        mock_run.assert_called_once()
+        assert mock_run.call_args.kwargs.get("transport") == "stdio"
 
     @patch("qdrant_loader_mcp_server.cli._setup_logging")
     @patch("qdrant_loader_mcp_server.cli.load_config")
-    @patch("qdrant_loader_mcp_server.cli.handle_stdio")
-    @patch("asyncio.new_event_loop")
-    @patch("asyncio.set_event_loop")
+    @patch("uvicorn.run")
+    def test_cli_http_uses_fastmcp_app(
+        self, mock_uvicorn_run, mock_load_config, mock_setup_logging
+    ):
+        """http transport serves the module-level FastMCP ASGI app via uvicorn."""
+        mock_load_config.return_value = (MagicMock(), {"dummy": True}, None)
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--transport", "http", "--port", "9999"])
+
+        assert result.exit_code == 0
+        mock_uvicorn_run.assert_called_once()
+        assert (
+            mock_uvicorn_run.call_args.args[0]
+            == "qdrant_loader_mcp_server.fastmcp_app:http_app"
+        )
+
+    @patch("qdrant_loader_mcp_server.cli._setup_logging")
+    @patch("qdrant_loader_mcp_server.cli.load_config")
     @patch("sys.exit")
     def test_cli_exception_handling(
-        self,
-        mock_exit,
-        mock_set_event_loop,
-        mock_new_event_loop,
-        mock_handle_stdio,
-        mock_load_config,
-        mock_setup_logging,
+        self, mock_exit, mock_load_config, mock_setup_logging
     ):
-        """Test CLI exception handling."""
-        # Mock config loader to raise exception
+        """Config resolution failure exits with code 1."""
         mock_load_config.side_effect = Exception("Config error")
-
-        # Mock event loop - use a simple class to avoid async confusion
-        class MockLoop:
-            def close(self):
-                pass
-
-            def run_until_complete(self, coro):
-                pass
-
-            def add_signal_handler(self, sig, handler):
-                pass
-
-        mock_loop = MockLoop()
-        mock_new_event_loop.return_value = mock_loop
 
         runner = CliRunner()
         runner.invoke(cli, [])
 
-        # Verify exit was called with error code - the CLI may call exit multiple times
-        # once for the actual error and once during cleanup/normal exit flow
         assert mock_exit.call_count >= 1
-        # Check that at least one call was with error code 1
         exit_calls = [call[0][0] for call in mock_exit.call_args_list if call[0]]
         assert 1 in exit_calls
 
@@ -605,135 +249,3 @@ class TestCLICommand:
         result = runner.invoke(cli, ["--config", "nonexistent.toml"])
 
         assert result.exit_code != 0
-        assert "does not exist" in result.output
-
-
-class TestReadStdinLinesClosedStdin:
-    """read_stdin_lines should handle closed stdin gracefully."""
-
-    @pytest.mark.asyncio
-    async def test_breaks_on_value_error(self):
-        """When stdin is closed, readline raises ValueError -- should break."""
-        mock_executor = MagicMock()
-
-        async def mock_run_in_executor(executor, func):
-            raise ValueError("I/O operation on closed file")
-
-        with patch("asyncio.get_event_loop") as mock_loop:
-            mock_loop.return_value.run_in_executor = mock_run_in_executor
-            lines = []
-            async for line in read_stdin_lines(mock_executor):
-                lines.append(line)
-            assert lines == []
-
-    @pytest.mark.asyncio
-    async def test_breaks_on_os_error(self):
-        """When stdin is closed, readline may raise OSError -- should break."""
-        mock_executor = MagicMock()
-
-        async def mock_run_in_executor(executor, func):
-            raise OSError("Bad file descriptor")
-
-        with patch("asyncio.get_event_loop") as mock_loop:
-            mock_loop.return_value.run_in_executor = mock_run_in_executor
-            lines = []
-            async for line in read_stdin_lines(mock_executor):
-                lines.append(line)
-            assert lines == []
-
-    @pytest.mark.asyncio
-    async def test_breaks_on_eof(self):
-        """When stdin returns empty string (EOF), should break."""
-        call_count = 0
-
-        async def mock_run_in_executor(executor, func):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return '{"method": "test"}\n'
-            return ""
-
-        with patch("asyncio.get_event_loop") as mock_loop:
-            mock_loop.return_value.run_in_executor = mock_run_in_executor
-            lines = []
-            async for line in read_stdin_lines():
-                lines.append(line)
-            assert len(lines) == 1
-
-
-class TestSignalHandlerCancelsMainTask:
-    """Signal handler should cancel the main handle_stdio task."""
-
-    @patch("qdrant_loader_mcp_server.cli._setup_logging")
-    @patch("qdrant_loader_mcp_server.cli.load_config")
-    @patch("qdrant_loader_mcp_server.cli.handle_stdio")
-    @patch("asyncio.new_event_loop")
-    @patch("asyncio.set_event_loop")
-    @patch("signal.SIGTERM", 15)
-    @patch("signal.SIGINT", 2)
-    def test_signal_handler_creates_task_and_cancels(
-        self,
-        mock_set_event_loop,
-        mock_new_event_loop,
-        mock_handle_stdio,
-        mock_load_config,
-        mock_setup_logging,
-    ):
-        """Test that stdio transport wraps handle_stdio in a task (cancellable)."""
-        mock_loop = MagicMock()
-        mock_new_event_loop.return_value = mock_loop
-        mock_loop.run_until_complete.return_value = None
-
-        # Track create_task calls
-        mock_task = MagicMock()
-        mock_task.done.return_value = False
-        mock_loop.create_task.return_value = mock_task
-
-        mock_config = MagicMock()
-        mock_load_config.return_value = (mock_config, {}, None)
-        mock_handle_stdio.return_value = AsyncMock()
-
-        runner = CliRunner()
-        runner.invoke(cli, ["--log-level", "DEBUG"])
-
-        # Verify create_task was called (handle_stdio wrapped as task)
-        assert mock_loop.create_task.called
-        # Verify run_until_complete receives the task, not raw coroutine
-        mock_loop.run_until_complete.assert_called()
-
-    @patch("qdrant_loader_mcp_server.cli._setup_logging")
-    @patch("qdrant_loader_mcp_server.cli.load_config")
-    @patch("qdrant_loader_mcp_server.cli.handle_stdio")
-    @patch("asyncio.new_event_loop")
-    @patch("asyncio.set_event_loop")
-    @patch("signal.SIGTERM", 15)
-    @patch("signal.SIGINT", 2)
-    def test_signal_handler_registered(
-        self,
-        mock_set_event_loop,
-        mock_new_event_loop,
-        mock_handle_stdio,
-        mock_load_config,
-        mock_setup_logging,
-    ):
-        """Test that signal handlers are registered for SIGINT and SIGTERM."""
-        mock_loop = MagicMock()
-        mock_new_event_loop.return_value = mock_loop
-        mock_loop.run_until_complete.return_value = None
-
-        mock_task = MagicMock()
-        mock_task.done.return_value = True
-        mock_loop.create_task.return_value = mock_task
-
-        mock_config = MagicMock()
-        mock_load_config.return_value = (mock_config, {}, None)
-        mock_handle_stdio.return_value = AsyncMock()
-
-        runner = CliRunner()
-        runner.invoke(cli, ["--log-level", "INFO"])
-
-        # Verify add_signal_handler was called for both signals
-        signal_calls = list(mock_loop.add_signal_handler.call_args_list)
-        registered_signals = [call[0][0] for call in signal_calls]
-        assert 15 in registered_signals  # SIGTERM
-        assert 2 in registered_signals  # SIGINT
