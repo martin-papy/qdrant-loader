@@ -401,6 +401,17 @@ def cli(
                 access_log=(log_level.upper() == "DEBUG"),
             )
         elif transport.lower() == "stdio":
+            # FastMCP migration path (opt-in). Bypassing legacy hand-rooled
+            # stdio loop; FastMCP owns its event loop + signal handling
+            if os.getenv("MCP_USE_FASTMCP", "").lower() in ("1", "true", "yes"):
+                logger = LoggingConfig.get_logger(__name__)
+                logger.info("Starting stdio transport via FastMCP")
+                from .fastmcp_app import mcp
+
+                mcp.run(transport="stdio", show_banner=False)
+                return
+
+            # ---- legacy stdio path ---------------------------
             # stdio needs its own event loop and signal handling
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
