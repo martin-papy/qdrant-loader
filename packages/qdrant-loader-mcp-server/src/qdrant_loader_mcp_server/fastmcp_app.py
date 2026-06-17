@@ -34,6 +34,7 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     from .config_loader import load_config
     from .mcp.protocol import MCPProtocol
     from .mcp.search_handler import SearchHandler
+    from .mcp.intelligence_handler import IntelligenceHandler
     from .search.engine import SearchEngine
     from .search.processor import QueryProcessor
 
@@ -46,6 +47,7 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     try:
         await search_engine.initialize(config.qdrant, config.openai, config.search)
         logger.info("FastMCP search engine initialized", pid=os.getpid())
+
         # Reuse the existing handler for its reranker
         # Built after initialize() so the hybrid pipeline exists
         search_handler = SearchHandler(
@@ -54,11 +56,17 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
             protocol=MCPProtocol(),
             reranking_config=config.reranking,
         )
+
+        # Stateful: holds the cluster store shared with expand_cluster
+        # build one instance for reuse
+        intelligence_handler = IntelligenceHandler(search_engine=search_engine, protocol=MCPProtocol())
+
         yield {
             "search_engine": search_engine,
             "query_processor": query_processor,
             "config": config,
             "search_handler": search_handler,
+            "intelligence_handler": intelligence_handler,
         }
     finally:
         try:
