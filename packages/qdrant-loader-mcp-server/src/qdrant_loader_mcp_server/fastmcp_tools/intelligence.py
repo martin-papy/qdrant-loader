@@ -13,13 +13,9 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context, FastMCP
-from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-# Sentinel id for delegated handler calls. The handler uses it only to build a
-# JSON-RPC envelope we immediately unwrap; any non-None value works (None would
-# signal a notification and yield an empty response).
-_REQUEST_ID = "fastmcp"
+from ._common import REQUEST_ID, unwrap
 
 SimilarityMetric = Literal[
     "entity_overlap",
@@ -37,16 +33,6 @@ ClusterStrategy = Literal[
     "hierarchical",
     "adaptive",
 ]
-
-
-def _unwrap(response: dict[str, Any]) -> dict[str, Any]:
-    """Return structuredContent from a legacy handler response, or raise."""
-    if "error" in response:
-        err = response.get("error") or {}
-        msg = err.get("message", "Tool error")
-        data = err.get("data")
-        raise ToolError(f"{msg}: {data}" if data else msg)
-    return response.get("result", {}).get("structuredContent", {})
 
 
 def register_intelligence_tools(mcp: FastMCP) -> None:
@@ -97,8 +83,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "max_pairs_total": max_pairs_total,
             "text_window_chars": text_window_chars,
         }
-        return _unwrap(
-            await handler.handle_analyze_document_relationships(_REQUEST_ID, params)
+        return unwrap(
+            await handler.handle_analyze_document_relationships(REQUEST_ID, params)
         )
 
     @mcp.tool(annotations={"readOnlyHint": True})
@@ -133,7 +119,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "source_types": source_types,
             "project_ids": project_ids,
         }
-        return _unwrap(await handler.handle_find_similar_documents(_REQUEST_ID, params))
+        return unwrap(await handler.handle_find_similar_documents(REQUEST_ID, params))
 
     @mcp.tool(annotations={"readOnlyHint": True})
     async def detect_conflicts(
@@ -159,8 +145,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "source_types": source_types,
             "project_ids": project_ids,
         }
-        return _unwrap(
-            await handler.handle_detect_document_conflicts(_REQUEST_ID, params)
+        return unwrap(
+            await handler.handle_detect_document_conflicts(REQUEST_ID, params)
         )
 
     @mcp.tool(annotations={"readOnlyHint": True})
@@ -191,8 +177,8 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "source_types": source_types,
             "project_ids": project_ids,
         }
-        return _unwrap(
-            await handler.handle_find_complementary_content(_REQUEST_ID, params)
+        return unwrap(
+            await handler.handle_find_complementary_content(REQUEST_ID, params)
         )
 
     @mcp.tool(annotations={"readOnlyHint": True})
@@ -232,4 +218,4 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             "source_types": source_types,
             "project_ids": project_ids,
         }
-        return _unwrap(await handler.handle_cluster_documents(_REQUEST_ID, params))
+        return unwrap(await handler.handle_cluster_documents(REQUEST_ID, params))
