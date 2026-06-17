@@ -122,7 +122,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         return unwrap(await handler.handle_find_similar_documents(REQUEST_ID, params))
 
     @mcp.tool(annotations={"readOnlyHint": True})
-    async def detect_conflicts(
+    async def detect_document_conflicts(
         ctx: Context,
         query: Annotated[
             str, Field(description="Search query to get documents for conflict analysis")
