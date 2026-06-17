@@ -2,6 +2,9 @@
 
 from pydantic import BaseModel, Field
 
+from qdrant_loader.core.conversion.engine import EngineKind
+from qdrant_loader.core.conversion.settings import DoclingConversionSettings
+
 
 class MarkItDownConfig(BaseModel):
     """Configuration for MarkItDown-specific settings."""
@@ -41,8 +44,22 @@ class FileConversionConfig(BaseModel):
         le=3600,  # 1 hour
     )
 
+    engine: EngineKind = Field(
+        default=EngineKind.MARKITDOWN,
+        description=(
+            "Which conversion engine to use: 'markitdown' (legacy, markdown-string "
+            "path) or 'docling' (structure-aware, full Option B). Config-driven, not a "
+            "feature flag."
+        ),
+    )
+
     markitdown: MarkItDownConfig = Field(
         default_factory=MarkItDownConfig, description="MarkItDown specific settings"
+    )
+
+    docling: DoclingConversionSettings = Field(
+        default_factory=DoclingConversionSettings,
+        description="Docling engine settings (used when engine='docling')",
     )
 
     def get_max_file_size_mb(self) -> float:

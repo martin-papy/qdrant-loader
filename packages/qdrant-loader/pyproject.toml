@@ -61,8 +61,20 @@ dependencies = [
     "faiss-cpu>=1.7.4",
     "psutil>=5.9.0",
     "tree-sitter-languages>=1.10.0",
-    "tree-sitter<0.21",
+    # Bumped from <0.21 to satisfy docling-core[chunking] (needs >=0.25,<0.27). The
+    # installed env already runs 0.25.2 with a green code-chunking suite — our code
+    # chunks via langchain splitters, not tree-sitter-languages' (0.25-incompatible)
+    # get_parser, so the bump is safe.
+    "tree-sitter>=0.25,<0.27",
     "markitdown[all]>=0.1.3",
+    # docling's DocumentConverter eagerly imports every format backend (pdf, office,
+    # email, latex, ...) at construction, so the engine needs all of their deps even
+    # to be built. The `standard` extra is docling's complete, non-exotic backend +
+    # models bundle (pdf parser, layout/table models via torch, office, email, html,
+    # latex, image, rapidocr). It pulls torch + models, so expect a larger image.
+    # (`all` would additionally bring easyocr/tesseract/whisper/VLM/playwright — not needed.)
+    "docling-slim[standard]>=2.97.0",
+    "docling-core>=2.78.0",
     "networkx>=3.0.0",
     "rich>=13.0.0",
     "questionary>=2.0.0",

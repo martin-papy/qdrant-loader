@@ -97,6 +97,14 @@ global:
         header_analysis_threshold_h3: 8 # H3 header count threshold for split level decisions
         enable_hierarchical_metadata: true # Enable extraction of hierarchical section metadata
 
+      # Docling structure-aware chunking strategy (used for files converted by the
+      # docling engine, i.e. file_conversion.engine: docling). Sizes chunks by a TOKEN
+      # budget aligned to the embedding tokenizer — not the character chunk_size above.
+      docling:
+        # max_tokens: 512 # Per-chunk token budget. Omit to inherit embedding.max_tokens_per_chunk.
+        include_context_in_embed: false # true => prepend the heading breadcrumb to each chunk's content (and its embedding)
+        table_serialization: "triplets" # how tables become chunk text: "triplets" ('row, column = value' — embedding-friendly) or "markdown" (pipe rows — LLM/display-friendly)
+
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
@@ -214,6 +222,38 @@ global:
 
     # Timeout for conversion operations (in seconds)
     conversion_timeout: 300 # 5 minutes
+
+    # Conversion engine: "markitdown" (default) or "docling".
+    # Docling converts files into a structured document (headings, tables, pages,
+    # bounding boxes) that flows into the structure-aware docling chunking strategy
+    # (see chunking.strategies.docling above). MarkItDown produces plain markdown.
+    engine: "markitdown"
+
+    # Docling engine settings (used when engine: docling)
+    docling:
+      # Baseline cost/fidelity bundle: "fast" (no OCR, fast tables), "accurate"
+      # (accurate table structure), or "scanned" (full-page OCR, longer timeout).
+      profile: "fast"
+      # Optional overrides — omit to inherit from the profile baseline:
+      # max_file_size: 52428800 # Maximum file size in bytes (50MB)
+      # document_timeout: 300 # Per-document wall-clock timeout in seconds
+      # enabled_formats: [pdf, docx, pptx, xlsx, image, csv] # Input formats to convert
+      # device: "auto" # Inference device: auto, cpu, cuda, mps
+      # num_threads: 4 # CPU threads for model inference
+      # compile_models: false # torch.compile the models (slower start, faster runs)
+      # artifacts_path: null # Pre-downloaded model dir (air-gapped/read-only deploys)
+
+      # API image captioning (off by default). When enabled, docling sends each
+      # picture to an OpenAI-compatible chat endpoint and the description flows
+      # into the converted document (and into docling chunk text).
+      picture:
+        enabled: false
+        # url: "https://api.openai.com/v1/chat/completions" # OpenAI-compatible endpoint
+        # model: "gpt-4o-mini"
+        # api_key: "${OPENAI_API_KEY}"
+        # prompt: "Describe this image in a few sentences."
+        # timeout: 60.0 # Per-image request timeout in seconds
+        # concurrency: 1 # Parallel captioning requests
 
     # MarkItDown specific settings
     markitdown:
