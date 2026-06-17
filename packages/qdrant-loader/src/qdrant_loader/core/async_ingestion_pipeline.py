@@ -1,5 +1,6 @@
 """Refactored async ingestion pipeline using the new modular architecture."""
 
+import asyncio
 from pathlib import Path
 
 from qdrant_loader.config import Settings, SourcesConfig
@@ -140,6 +141,12 @@ class AsyncIngestionPipeline:
         logger.debug("Starting pipeline initialization")
 
         try:
+            # Ensure the Qdrant collection and its payload indexes exist.
+            # create_collection() is idempotent: it returns early when the
+            # collection already exists, but now also ensures indexes are
+            # present on existing collections (required for filter-based deletes).
+            await asyncio.to_thread(self.qdrant_manager.create_collection)
+
             # Initialize state manager first
             if not self.state_manager.is_initialized:
                 logger.debug("Initializing state manager")
