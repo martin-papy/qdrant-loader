@@ -32,6 +32,8 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """
     # Lazy imports keep module import cheap
     from .config_loader import load_config
+    from .mcp.protocol import MCPProtocol
+    from .mcp.search_handler import SearchHandler
     from .search.engine import SearchEngine
     from .search.processor import QueryProcessor
 
@@ -44,17 +46,32 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     try:
         await search_engine.initialize(config.qdrant, config.openai, config.search)
         logger.info("FastMCP search engine initialized", pid=os.getpid())
+        # Reuse the existing handler for its reranker
+        # Built after initialize() so the hybrid pipeline exists
+        search_handler = SearchHandler(
+            search_engine=search_engine,
+            query_processor=query_processor,
+            protocol=MCPProtocol(),
+            reranking_config=config.reranking,
+        )
         yield {
             "search_engine": search_engine,
             "query_processor": query_processor,
             "config": config,
+            "search_handler": search_handler,
         }
     finally:
         try:
             await search_engine.cleanup()
         except Exception:
-            logger.error("Error during FastMCP search engine cleanup", exec_info=True)
+            logger.error("Error during FastMCP search engine cleanup", exc_info=True)
 
 
 # The FastMCP app. Imported by entry points later
 mcp = FastMCP("Qdrant Loader MCP Server", lifespan=_lifespan)
+
+# Register tools onto the instance
+# tool modules pull only fastmcp/pydantic, not the search engine
+from .fastmcp_tools import register_all  # noqa: E402
+
+register_all(mcp)
