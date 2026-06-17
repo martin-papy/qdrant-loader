@@ -36,8 +36,9 @@ async def run_ingest_command(
     log_level: str,
     profile: bool,
     force: bool,
+    resume: bool = True,
 ) -> None:
-    """Implementation for the `ingest` CLI command with identical behavior."""
+    """Implementation for the `ingest` CLI command with checkpoint resume support (WS-2)."""
 
     ingest_start_time = time.perf_counter()
 
@@ -89,6 +90,7 @@ async def run_ingest_command(
                 source_type=source_type,
                 source=source,
                 force=force,
+                resume=resume,
                 metrics_dir=(
                     str(workspace_config.metrics_path) if workspace_config else None
                 ),
