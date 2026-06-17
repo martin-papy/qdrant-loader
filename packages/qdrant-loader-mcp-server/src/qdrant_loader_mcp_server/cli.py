@@ -376,13 +376,18 @@ def cli(
             return
 
         if transport.lower() == "http":
-            # Delegate to server.py's app via uvicorn.run() — single app,
-            # no duplicate FastAPI instance.  uvicorn handles signals natively.
             import uvicorn
 
             os.environ["MCP_LOG_LEVEL"] = log_level
             os.environ["MCP_HOST"] = host
             os.environ["MCP_PORT"] = str(port)
+
+            use_fastmcp = os.getenv("MCP_USE_FASTMCP", "").lower() in ("1", "true", "yes")
+            app_path = (
+                "qdrant_loader_mcp_server.fastmcp_app:http_app"
+                if use_fastmcp
+                else "qdrant_loader_mcp_server.server:app" # fallback to server.py
+            )
 
             logger = LoggingConfig.get_logger(__name__)
             logger.info(
@@ -390,16 +395,18 @@ def cli(
                 host=host,
                 port=port,
                 log_level=log_level,
+                app=app_path,
             )
 
             uvicorn.run(
-                "qdrant_loader_mcp_server.server:app",
+                app_path,
                 host=host,
                 port=port,
                 workers=workers,
                 log_level=log_level.lower(),
                 access_log=(log_level.upper() == "DEBUG"),
             )
+
         elif transport.lower() == "stdio":
             # FastMCP migration path (opt-in). Bypassing legacy hand-rooled
             # stdio loop; FastMCP owns its event loop + signal handling

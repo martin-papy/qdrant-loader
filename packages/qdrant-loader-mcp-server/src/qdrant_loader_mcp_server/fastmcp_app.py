@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from .utils import LoggingConfig
 
@@ -32,9 +35,9 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """
     # Lazy imports keep module import cheap
     from .config_loader import load_config
+    from .mcp.intelligence_handler import IntelligenceHandler
     from .mcp.protocol import MCPProtocol
     from .mcp.search_handler import SearchHandler
-    from .mcp.intelligence_handler import IntelligenceHandler
     from .search.engine import SearchEngine
     from .search.processor import QueryProcessor
 
@@ -83,3 +86,37 @@ mcp = FastMCP("Qdrant Loader MCP Server", lifespan=_lifespan)
 from .fastmcp_tools import register_all  # noqa: E402
 
 register_all(mcp)
+
+
+# ---- HTTP transport surface (used only when served as an ASGI app) ----
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request):
+    """Liveness probe. The lifespan completes before uvicorn serves traffic,
+    so reaching this means the engine is initialized."""
+    return JSONResponse(
+        {"status": "healthy", "transport": "http", "protocol": "mcp", "pid": os.getpid()}
+    )
+
+
+# CORS, secure-by-default
+_cors_origins = os.getenv("CORS_ORIGINS", "")
+if _cors_origins.strip():
+    _allow_origins = [o.strip() for o in _cors_origins.split(",") if o.strip()]
+else:
+    _allow_origins = ["http://localhost", "http://127.0.0.1"]
+
+_http_middleware = [
+    Middleware(
+        CORSMiddleware,
+        allow_origins=_allow_origins,
+        allow_credentials=("*" not in _allow_origins),
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allow_headers=["*"],
+    )
+]
+
+# Module-level ASGI app so uvicorn can import it with workers=N
+# Tools and /health route must be registered first
+http_app = mcp.http_app(path="/mcp", middleware=_http_middleware)
