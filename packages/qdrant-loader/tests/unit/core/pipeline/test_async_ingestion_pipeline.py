@@ -277,6 +277,7 @@ class TestAsyncIngestionPipeline:
                 source="test_repo",
                 project_id=None,
                 force=False,
+                resume=True,
             )
 
             # Verify metrics were handled

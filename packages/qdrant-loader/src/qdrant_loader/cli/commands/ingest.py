@@ -15,6 +15,7 @@ async def run_pipeline_ingestion(
     source_type: str | None,
     source: str | None,
     force: bool,
+    resume: bool = True,
     metrics_dir: str | None = None,
 ) -> None:
     from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
@@ -32,6 +33,7 @@ async def run_pipeline_ingestion(
             source_type=source_type,
             source=source,
             force=force,
+            resume=resume,
         )
     except Exception as e:
         ingestion_error = e
