@@ -26,6 +26,7 @@ authors = [
     { name = "Martin Papy", email = "martin.papy@cbtw.tech" },
 ]
 dependencies = [
+    "fastmcp>=3.4, <4",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
     "qdrant-client>=1.10.0",
@@ -45,7 +46,6 @@ dependencies = [
     "spacy>=3.7.0",
     "sentence-transformers>=2.2.0",
     "qdrant-loader-core==1.0.1",
-    "fastmcp>=3.4,<4",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

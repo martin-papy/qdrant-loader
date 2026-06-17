@@ -106,3 +106,5 @@ internal/
 # FalkorDB / Redis snapshots
 packages/qdrant-loader-core/data/*.rdb
 
+# local workspaces
+*-qdrant-workspace
