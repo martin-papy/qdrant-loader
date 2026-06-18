@@ -15,6 +15,13 @@ from click.types import Path as ClickPath
 
 from qdrant_loader.config.workspace import validate_workspace_flags
 
+# Max time to wait for background tasks (scheduler, workers, uvicorn) to stop
+# gracefully on shutdown before cancelling them outright. Webhook requests are
+# enqueue-only (they don't block on ingestion), so this only needs to cover
+# uvicorn's own connection drain; kept short to leave headroom for
+# state_manager.dispose() before an orchestrator's SIGKILL grace period expires.
+SHUTDOWN_TIMEOUT_SECONDS = 10
+
 
 @click.command(
     "serve", help="Run the qdrant-loader service (scheduler, workers, HTTP server)"
@@ -44,7 +51,7 @@ from qdrant_loader.config.workspace import validate_workspace_flags
 )
 @click.option(
     "--host",
-    default="0.0.0.0",
+    default="127.0.0.1",
     show_default=True,
     help="Webhook HTTP server host.",
 )
@@ -72,7 +79,7 @@ async def _serve_main(
     config: Path | None,
     env: Path | None,
     log_level: str,
-    host: str = "0.0.0.0",
+    host: str = "127.0.0.1",
     port: int = 8081,
 ):
     import uvicorn
@@ -282,14 +289,25 @@ async def _serve_main(
         for task in (scheduler_runner, worker_runner, stop_waiter):
             if task is not None:
                 task.cancel()
-        await asyncio.gather(
-            *(
-                t
-                for t in (scheduler_runner, worker_runner, stop_waiter, http_runner)
-                if t is not None
-            ),
-            return_exceptions=True,
-        )
+        remaining_tasks = [
+            t
+            for t in (scheduler_runner, worker_runner, stop_waiter, http_runner)
+            if t is not None
+        ]
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*remaining_tasks, return_exceptions=True),
+                timeout=SHUTDOWN_TIMEOUT_SECONDS,
+            )
+        except TimeoutError:
+            # uvicorn didn't honour should_exit (e.g. stuck request or lifespan
+            # hook); cancel everything outright so the process can still exit.
+            logger.warning(
+                "serve.shutdown_timeout", timeout=SHUTDOWN_TIMEOUT_SECONDS
+            )
+            for task in remaining_tasks:
+                task.cancel()
+            await asyncio.gather(*remaining_tasks, return_exceptions=True)
         if state_manager is not None:
             await state_manager.dispose()
         logger.info("serve.shutdown_complete")

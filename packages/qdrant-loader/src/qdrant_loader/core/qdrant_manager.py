@@ -205,6 +205,13 @@ class QdrantManager:
             )
         return cast(QdrantClient, self.client)
 
+    # Indexes that filter-based deletes (delete_points_by_document_id, etc.)
+    # depend on. A silent failure here would surface later as a confusing
+    # Qdrant error mid-delete, so these must raise instead of just warning.
+    _REQUIRED_PAYLOAD_INDEXES = frozenset(
+        {"document_id", "project_id", "source_type", "source"}
+    )
+
     def _ensure_payload_indexes(self, client: QdrantClient) -> None:
         """Ensure all required payload indexes exist on the collection.
 
@@ -248,6 +255,17 @@ class QdrantManager:
                 "Some indexes failed to create but collection is functional",
                 failed_details=failed_indexes,
             )
+            required_failures = {
+                name: err
+                for name, err in failed_indexes
+                if name in self._REQUIRED_PAYLOAD_INDEXES
+            }
+            if required_failures:
+                raise RuntimeError(
+                    "Failed to create required payload index(es): "
+                    f"{required_failures}. These are required for filter-based "
+                    "deletes; refusing to continue with a collection in this state."
+                )
 
         self.logger.info(
             "Payload indexes ensured",
