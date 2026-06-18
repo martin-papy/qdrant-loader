@@ -15,7 +15,11 @@ model's tokenizer — see :meth:`DoclingChunkingStrategy._build_config`.
 
 NLP enrichment parity with the markdown path is provided by the shared
 :class:`~qdrant_loader.core.text_processing.chunk_enricher.ChunkEnricher`, which writes
-the entities/topics/key_phrases (+ enhanced) keys onto each chunk ``Document``.
+the entities/topics/key_phrases (+ enhanced) keys onto each chunk ``Document``. One
+intentional divergence: this path front-loads a per-*document* LDA topic model
+(``ChunkEnricher.fit_topics``) before enriching, whereas markdown still trains a
+per-*chunk* model — see :meth:`chunk_document`. Parity is the floor; docling is allowed
+to exceed it on topic quality.
 """
 
 from __future__ import annotations
@@ -120,6 +124,9 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
         # Front-load the topic model on this document's chunks, so each chunk's
         # topics are inferred against one model instead of a degenerate per-chunk
         # single-document LDA. Must run before the enrich loop below.
+        #
+        # NOTE: this intentionally diverges from the markdown path, which still
+        # trains a per-chunk LDA.
         self._enricher.fit_topics([chunk_doc.content for chunk_doc in documents])
 
         # NLP enrichment parity with the markdown path: the shared ChunkEnricher
@@ -136,3 +143,14 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
         """Release the enricher's analyzer resources (spaCy/LDA)."""
         if getattr(self, "_enricher", None) is not None:
             self._enricher.shutdown()
+
+    def __del__(self) -> None:
+        """Release per-document NLP resources on GC.
+
+        The service builds a fresh strategy per document (see
+        ``ChunkingService._get_strategy``), so without this the spaCy/LDA model
+        each instance loads would linger until GC ran its finalizer-free path.
+        Mirrors the markdown strategy's ``__del__`` so both paths free the
+        enricher the same way.
+        """
+        self.shutdown()

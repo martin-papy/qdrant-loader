@@ -104,3 +104,35 @@ async def test_docling_document_chunks_into_structured_chunks(tmp_path, test_set
         structure = chunk.metadata["structure"]
         assert isinstance(structure, dict)
         assert "heading_path" in structure  # engine-neutral provenance block
+
+
+@pytest.mark.asyncio
+async def test_docling_chunks_carry_real_semantic_enrichment(tmp_path, test_settings):
+    """The parity goal, asserted end-to-end against the *real* enricher.
+
+    Unit tests cover the enrich loop with a fake enricher; this exercises the live
+    ``ChunkEnricher`` (real spaCy + LDA) over a real docling-converted document and
+    asserts the enrichment keys actually land on the chunk ``Document``s — and are
+    *populated*, which distinguishes the live path from the disabled empty-shape
+    fallback (which would also produce the keys, but empty).
+    """
+    shutil.copy(FIXTURE, tmp_path / "lorem_ipsum.docx")
+    doc = await _convert_via_localfile(tmp_path)
+
+    # Self-contained: force semantic analysis on rather than depending on the test
+    # config's default, and don't mutate the shared session-scoped settings.
+    settings = test_settings.model_copy(deep=True)
+    settings.global_config.chunking.enable_semantic_analysis = True
+
+    chunks = ChunkingService(settings.global_config, settings).chunk_document(doc)
+
+    assert chunks, "docling chunking produced no chunks"
+    for chunk in chunks:
+        for key in ("entities", "topics", "key_phrases"):
+            assert key in chunk.metadata, f"missing enrichment key {key!r}"
+            assert isinstance(chunk.metadata[key], list)
+
+    # The live analyzer actually ran (not the disabled empty-shape): real prose yields
+    # noun-chunk key_phrases and a fitted per-document topic on at least one chunk.
+    assert any(chunk.metadata["key_phrases"] for chunk in chunks)
+    assert any(chunk.metadata["topics"] for chunk in chunks)

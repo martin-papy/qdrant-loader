@@ -128,6 +128,9 @@ class _NoopEnricher:
     def enrich(self, content, doc_id):
         return {}
 
+    def shutdown(self):
+        return None
+
 
 def _capped_strategy(
     chunker, mapper, max_chunks: int, enricher=None
@@ -192,6 +195,10 @@ class _RecordingEnricher:
         self.calls.append((content, doc_id))
         self.events.append("enrich")
         return dict(self._payload)
+
+    def shutdown(self):
+        # Pure no-op: events records fit/enrich ordering only, so don't pollute it.
+        return None
 
 
 def test_chunk_document_enriches_each_chunk_metadata():
