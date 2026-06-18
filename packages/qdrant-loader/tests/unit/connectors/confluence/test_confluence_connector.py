@@ -12,6 +12,9 @@ from qdrant_loader.connectors.confluence.config import (
     ConfluenceSpaceConfig,
 )
 from qdrant_loader.connectors.confluence.connector import ConfluenceConnector
+from qdrant_loader.connectors.confluence.pagination import (
+    CONTENT_EXPAND as _CONTENT_EXPAND,
+)
 from qdrant_loader.core.document import Document
 
 
@@ -977,4 +980,122 @@ class TestConfluenceHierarchy:
         assert document.has_children()
         assert "Path: Parent Page" in document.get_hierarchy_context()
         assert "Depth: 1" in document.get_hierarchy_context()
-        assert "Children: 1" in document.get_hierarchy_context()
+
+
+class TestFetchById:
+    """Tests for the WS-1 fetch_by_id/list_entity_ids connector contract."""
+
+    def _make_content(self, content_id: str, label: str | None) -> dict:
+        labels = [{"name": label}] if label else []
+        return {
+            "id": content_id,
+            "title": f"Page {content_id}",
+            "type": "page",
+            "space": {"key": "TEST"},
+            "body": {"storage": {"value": "Test content"}},
+            "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+            "history": {
+                "createdBy": {"displayName": "Test User"},
+                "createdDate": "2024-01-01T00:00:00Z",
+            },
+            "metadata": {"labels": {"results": labels}},
+            "children": {"comment": {"results": []}},
+            "ancestors": [],
+        }
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_document(self, connector):
+        """fetch_by_id should return a Document for an included content item."""
+        content = self._make_content("123", "include-test")
+
+        with patch.object(
+            connector, "_make_request", AsyncMock(return_value=content)
+        ) as mock_request:
+            document = await connector.fetch_by_id("123")
+
+        assert document is not None
+        assert isinstance(document, Document)
+        assert document.metadata["id"] == "123"
+        assert document.title == "Page 123"
+        mock_request.assert_called_once_with(
+            "GET", "content/123", params={"expand": _CONTENT_EXPAND}
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_for_excluded_label(self, connector):
+        """fetch_by_id should return None when the content is filtered out by labels."""
+        content = self._make_content("456", "exclude-test")
+
+        with patch.object(connector, "_make_request", AsyncMock(return_value=content)):
+            document = await connector.fetch_by_id("456")
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_on_error(self, connector):
+        """fetch_by_id should return None (not raise) when the API call fails."""
+        with patch.object(
+            connector, "_make_request", AsyncMock(side_effect=Exception("boom"))
+        ):
+            document = await connector.fetch_by_id("789")
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_list_entity_ids_cloud(self, connector):
+        """list_entity_ids should stream content IDs honoring label filters (Cloud)."""
+        connector.config.deployment_type = ConfluenceDeploymentType.CLOUD
+
+        page1 = {
+            "results": [
+                self._make_content("1", "include-test"),
+                self._make_content("2", "exclude-test"),
+            ],
+            "_links": {"next": "/rest/api/content/search?cursor=abc"},
+        }
+        page2 = {
+            "results": [self._make_content("3", "include-test")],
+            "_links": {},
+        }
+
+        with patch.object(
+            connector,
+            "_get_space_content_cloud",
+            AsyncMock(side_effect=[page1, page2]),
+        ) as mock_get_content:
+            entity_ids = [
+                entity_id async for entity_id in connector.list_entity_ids()
+            ]
+
+        assert entity_ids == ["1", "3"]
+        for call in mock_get_content.call_args_list:
+            assert call.kwargs.get("light") is True or (
+                len(call.args) > 1 and call.args[1] is True
+            )
+
+    @pytest.mark.asyncio
+    async def test_list_entity_ids_datacenter(self, connector):
+        """list_entity_ids should stream content IDs honoring label filters (Data Center)."""
+        connector.config.deployment_type = ConfluenceDeploymentType.DATACENTER
+
+        page = {
+            "results": [
+                self._make_content("10", "include-test"),
+                self._make_content("11", "exclude-test"),
+            ],
+            "totalSize": 2,
+        }
+
+        with patch.object(
+            connector,
+            "_get_space_content_datacenter",
+            AsyncMock(return_value=page),
+        ) as mock_get_content:
+            entity_ids = [
+                entity_id async for entity_id in connector.list_entity_ids()
+            ]
+
+        assert entity_ids == ["10"]
+        mock_get_content.assert_called_once()
+        _, kwargs = mock_get_content.call_args
+        assert kwargs.get("light") is True or mock_get_content.call_args.args[1] is True

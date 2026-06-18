@@ -312,9 +312,11 @@ class TestAsyncIngestionPipeline:
             # Setup mocks
             mock_orchestrator = Mock()
             mock_orchestrator.process_documents = AsyncMock(
-                return_value=sample_documents
+                return_value=len(sample_documents)
             )
-            mock_orchestrator.last_pipeline_result = Mock(success_count=5)
+            mock_orchestrator.last_pipeline_result = Mock(
+                success_count=5, total_size_bytes=0
+            )
             mock_orchestrator_class.return_value = mock_orchestrator
 
             mock_monitor = Mock()
@@ -357,7 +359,7 @@ class TestAsyncIngestionPipeline:
                 total_size_bytes=0,
             )
 
-            assert result == sample_documents
+            assert result == len(sample_documents)
 
     @pytest.mark.asyncio
     async def test_process_documents_uses_metadata_size_for_total_size_bytes(
@@ -412,9 +414,11 @@ class TestAsyncIngestionPipeline:
 
             mock_orchestrator = Mock()
             mock_orchestrator.process_documents = AsyncMock(
-                return_value=documents_with_size
+                return_value=len(documents_with_size)
             )
-            mock_orchestrator.last_pipeline_result = Mock(success_count=7)
+            mock_orchestrator.last_pipeline_result = Mock(
+                success_count=7, total_size_bytes=350
+            )
             mock_orchestrator_class.return_value = mock_orchestrator
 
             mock_monitor = Mock()
@@ -441,7 +445,7 @@ class TestAsyncIngestionPipeline:
                 total_chunks=7,
                 total_size_bytes=350,
             )
-            assert result == documents_with_size
+            assert result == len(documents_with_size)
 
     @pytest.mark.asyncio
     async def test_process_documents_error_handling(
