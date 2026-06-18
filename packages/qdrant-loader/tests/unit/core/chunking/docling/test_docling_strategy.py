@@ -9,10 +9,14 @@ the contextual-embedding flag — without needing a full Settings tree or doclin
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest import mock
 
 from qdrant_loader.config.chunking import DoclingStrategyConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.core.chunking.docling import TokenizerKind
+from qdrant_loader.core.chunking.strategy import (
+    docling_strategy as docling_strategy_module,
+)
 from qdrant_loader.core.chunking.strategy.docling_strategy import (
     DoclingChunkingStrategy,
 )
@@ -150,32 +154,37 @@ def _capped_strategy(
     return strategy
 
 
-def test_chunk_document_caps_at_max_chunks_per_document(caplog):
+def test_chunk_document_caps_at_max_chunks_per_document():
     """Like every other strategy, docling caps output at max_chunks_per_document so a
-    huge document cannot emit unbounded chunks — and the drop is logged, not silent."""
+    huge document cannot emit unbounded chunks — and the drop is logged, not silent.
+
+    The warning is asserted by patching the module logger rather than via ``caplog``:
+    the cap and the warning come from the same ``if`` branch, and the strategy logs
+    through structlog whose global filtering level / stdlib propagation is not isolated
+    across tests — so ``caplog`` capture flakes under xdist. Patching is deterministic.
+    """
     mapper = _EchoMapper()
     strategy = _capped_strategy(_FakeChunker(count=10), mapper, max_chunks=3)
 
-    with caplog.at_level("WARNING"):
+    with mock.patch.object(docling_strategy_module, "logger") as logger:
         result = strategy.chunk_document(_DocStub())
 
     assert len(result) == 3
     assert mapper.received is not None and len(mapper.received) == 3
-    assert any("max_chunks_per_document" in r.getMessage() for r in caplog.records)
+    logger.warning.assert_called_once()
+    assert "max_chunks_per_document" in logger.warning.call_args.args[0]
 
 
-def test_chunk_document_keeps_all_chunks_when_under_cap(caplog):
+def test_chunk_document_keeps_all_chunks_when_under_cap():
     """Under the cap, every chunk is mapped and nothing is logged about limiting."""
     mapper = _EchoMapper()
     strategy = _capped_strategy(_FakeChunker(count=2), mapper, max_chunks=500)
 
-    with caplog.at_level("WARNING"):
+    with mock.patch.object(docling_strategy_module, "logger") as logger:
         result = strategy.chunk_document(_DocStub())
 
     assert len(result) == 2
-    assert not any(
-        "max_chunks_per_document" in r.getMessage() for r in caplog.records
-    )
+    logger.warning.assert_not_called()
 
 
 class _RecordingEnricher:
