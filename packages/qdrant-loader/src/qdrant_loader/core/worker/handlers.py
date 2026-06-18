@@ -156,6 +156,7 @@ class IngestionJobHandler(BaseJobHandler):
         payload: dict[str, Any],
     ) -> tuple[str | None, str | None, str | None]:
         """Extract source fields that may be absent (blank string → None = 'all')."""
+
         def _clean(key: str) -> str | None:
             v = payload.get(key)
             return v.strip() or None if isinstance(v, str) else None

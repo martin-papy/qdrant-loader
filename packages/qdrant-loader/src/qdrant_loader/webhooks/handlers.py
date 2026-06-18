@@ -172,11 +172,13 @@ async def enqueue_ingest_request(
 
     # source_lock serialises concurrent ingest requests for the same scope.
     # Use "*" as a wildcard token when a field is absent (meaning "all").
-    source_lock = ":".join([
-        project_id or "*",
-        normalized_source_type or "*",
-        source or "*",
-    ])
+    source_lock = ":".join(
+        [
+            project_id or "*",
+            normalized_source_type or "*",
+            source or "*",
+        ]
+    )
     payload: dict[str, Any] = {
         "project_id": project_id or "",
         "source_type": normalized_source_type or "",

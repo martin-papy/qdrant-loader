@@ -7,18 +7,20 @@ These are regression tests for the WS-2 checkpoint feature, covering:
      connector factory as checkpoint_cursor.
 """
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from pydantic import HttpUrl
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.cloud_connector import JiraCloudConnector
 from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
-from qdrant_loader.connectors.jira.models import JiraAttachment, JiraComment, JiraIssue, JiraUser
+from qdrant_loader.connectors.jira.models import (
+    JiraAttachment,
+    JiraIssue,
+    JiraUser,
+)
 from qdrant_loader.core.document import Document
-
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -54,8 +56,8 @@ def _make_issue(issue_id: str = "10001", key: str = "TEST-1") -> JiraIssue:
         status="Open",
         priority="High",
         project_key="TEST",
-        created=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        updated=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        created=datetime(2024, 1, 1, tzinfo=UTC),
+        updated=datetime(2024, 1, 2, tzinfo=UTC),
         reporter=reporter,
     )
 
@@ -78,7 +80,9 @@ async def test_checkpoint_propagated_to_issue_document(jira_config):
     }
 
     docs: list[Document] = []
-    async for doc in connector._stream_issues_to_documents([issue], include_attachments=False):
+    async for doc in connector._stream_issues_to_documents(
+        [issue], include_attachments=False
+    ):
         docs.append(doc)
 
     assert len(docs) == 1
@@ -97,7 +101,9 @@ async def test_no_checkpoint_when_issue_has_none(jira_config):
     # No ingestion_checkpoint set
 
     docs: list[Document] = []
-    async for doc in connector._stream_issues_to_documents([issue], include_attachments=False):
+    async for doc in connector._stream_issues_to_documents(
+        [issue], include_attachments=False
+    ):
         docs.append(doc)
 
     assert len(docs) == 1
@@ -137,7 +143,7 @@ async def test_checkpoint_not_on_attachment_documents(jira_config):
         size=100,
         mime_type="text/plain",
         content_url=HttpUrl("https://test.atlassian.net/attachments/report.txt"),
-        created=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        created=datetime(2024, 1, 1, tzinfo=UTC),
         author=reporter,
     )
     issue.attachments = [att]
@@ -149,10 +155,10 @@ async def test_checkpoint_not_on_attachment_documents(jira_config):
         content_type="text",
         source="test-jira",
         source_type=SourceType.JIRA,
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
         url="https://test.atlassian.net/attachments/report.txt",
         title="report.txt",
-        updated_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        updated_at=datetime(2024, 1, 2, tzinfo=UTC),
         is_deleted=False,
         metadata={},  # No checkpoint in attachment doc
     )
@@ -162,7 +168,9 @@ async def test_checkpoint_not_on_attachment_documents(jira_config):
     connector.attachment_reader = mock_reader
 
     docs: list[Document] = []
-    async for doc in connector._stream_issues_to_documents([issue], include_attachments=True):
+    async for doc in connector._stream_issues_to_documents(
+        [issue], include_attachments=True
+    ):
         docs.append(doc)
 
     assert len(docs) == 2, "Expected 1 issue doc + 1 attachment doc"
@@ -172,9 +180,9 @@ async def test_checkpoint_not_on_attachment_documents(jira_config):
     assert issue_doc.metadata.get("__ingestion_checkpoint") is not None
 
     # Attachment document does NOT have checkpoint
-    assert "__ingestion_checkpoint" not in (attachment_doc.metadata or {}), (
-        "Attachment documents must not carry __ingestion_checkpoint"
-    )
+    assert "__ingestion_checkpoint" not in (
+        attachment_doc.metadata or {}
+    ), "Attachment documents must not carry __ingestion_checkpoint"
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +196,10 @@ async def test_resume_cursor_passed_to_connector_factory():
     pass its cursor_value as checkpoint_cursor to the connector factory."""
     from qdrant_loader.config import Settings, SourcesConfig
     from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline
-    from qdrant_loader.core.pipeline.orchestrator import PipelineComponents, PipelineOrchestrator
+    from qdrant_loader.core.pipeline.orchestrator import (
+        PipelineComponents,
+        PipelineOrchestrator,
+    )
     from qdrant_loader.core.pipeline.source_filter import SourceFilter
     from qdrant_loader.core.pipeline.source_processor import SourceProcessor
     from qdrant_loader.core.qdrant_manager import QdrantManager
@@ -268,6 +279,6 @@ async def test_resume_cursor_passed_to_connector_factory():
     # The factory must have been called with checkpoint_cursor=saved_cursor
     mock_factory.assert_called_once()
     _, call_kwargs = mock_factory.call_args
-    assert call_kwargs.get("checkpoint_cursor") == saved_cursor, (
-        "get_connector_instance must receive the saved checkpoint cursor on resume"
-    )
+    assert (
+        call_kwargs.get("checkpoint_cursor") == saved_cursor
+    ), "get_connector_instance must receive the saved checkpoint cursor on resume"

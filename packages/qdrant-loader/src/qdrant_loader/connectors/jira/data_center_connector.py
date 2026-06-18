@@ -49,7 +49,7 @@ class JiraDataCenterConnector(BaseJiraConnector):
             start_at = int(self._checkpoint_cursor) if self._checkpoint_cursor else 0
         except (ValueError, TypeError):
             start_at = 0
-            
+
         page_size = self.config.page_size
         total_issues = 0
         processed_count = 0
