@@ -117,6 +117,11 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
         documents = self._mapper.to_documents(chunks, document)
 
+        # Front-load the topic model on this document's chunks, so each chunk's
+        # topics are inferred against one model instead of a degenerate per-chunk
+        # single-document LDA. Must run before the enrich loop below.
+        self._enricher.fit_topics([chunk_doc.content for chunk_doc in documents])
+
         # NLP enrichment parity with the markdown path: the shared ChunkEnricher
         # writes entities/topics/key_phrases (+ enhanced when enabled), or the
         # empty-shape keys when disabled. Runs on the stored chunk content.

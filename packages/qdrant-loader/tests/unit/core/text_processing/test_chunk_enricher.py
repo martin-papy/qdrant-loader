@@ -111,3 +111,38 @@ def test_empty_shape_results_do_not_share_list_instances():
         b = enricher.enrich("y", doc_id="b")
         a["entities"].append("mutated")
         assert b["entities"] == []
+
+
+def test_fit_topics_delegates_to_analyzer():
+    """fit_topics front-loads the document-level topic model via the analyzer."""
+    settings = _make_settings(
+        enable_semantic_analysis=True, enable_enhanced_semantic_analysis=False
+    )
+    with patch(PATCH_TARGET) as mock_analyzer:
+        enricher = ChunkEnricher(settings)
+        enricher.fit_topics(["chunk one text", "chunk two text"])
+        mock_analyzer.return_value.fit_topic_model.assert_called_once_with(
+            ["chunk one text", "chunk two text"]
+        )
+
+
+def test_fit_topics_noop_when_disabled():
+    """With semantic analysis disabled there is no analyzer; fit_topics is a no-op."""
+    settings = _make_settings(
+        enable_semantic_analysis=False, enable_enhanced_semantic_analysis=False
+    )
+    with patch(PATCH_TARGET):
+        enricher = ChunkEnricher(settings)
+        # Must not raise even though no analyzer exists.
+        enricher.fit_topics(["a", "b"])
+
+
+def test_fit_topics_swallows_analyzer_errors():
+    """A fit failure must not propagate; chunks fall back to per-chunk topics."""
+    settings = _make_settings(
+        enable_semantic_analysis=True, enable_enhanced_semantic_analysis=False
+    )
+    with patch(PATCH_TARGET) as mock_analyzer:
+        mock_analyzer.return_value.fit_topic_model.side_effect = RuntimeError("boom")
+        enricher = ChunkEnricher(settings)
+        enricher.fit_topics(["a", "b"])  # does not raise

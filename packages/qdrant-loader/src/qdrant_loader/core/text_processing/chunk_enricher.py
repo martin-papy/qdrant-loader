@@ -42,6 +42,24 @@ class ChunkEnricher:
     def enabled(self) -> bool:
         return self._analyzer is not None
 
+    def fit_topics(self, contents: list[str]) -> None:
+        """Front-load the document-level topic model on a document's chunk contents.
+
+        Training one model over all chunks lets each subsequent :meth:`enrich` call
+        infer the chunk's topics against it, instead of training a degenerate
+        single-chunk model each time. No-op when semantic analysis is disabled; a
+        fit failure is swallowed so chunks simply fall back to per-chunk topics.
+        """
+        if self._analyzer is None:
+            return
+        try:
+            self._analyzer.fit_topic_model(contents)
+        except Exception:
+            logger.warning(
+                "Topic model fit failed; chunks will fall back to per-chunk topics",
+                exc_info=True,
+            )
+
     def enrich(self, content: str, doc_id: str) -> dict[str, Any]:
         if self._analyzer is None:
             return _empty()

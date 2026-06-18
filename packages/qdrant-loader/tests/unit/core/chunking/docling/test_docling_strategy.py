@@ -122,6 +122,9 @@ class _DocStub:
 class _NoopEnricher:
     """Returns no enrichment keys; used where the cap logic is what's under test."""
 
+    def fit_topics(self, contents):
+        return None
+
     def enrich(self, content, doc_id):
         return {}
 
@@ -173,14 +176,21 @@ def test_chunk_document_keeps_all_chunks_when_under_cap(caplog):
 
 
 class _RecordingEnricher:
-    """Records each enrich() call and returns a fixed payload."""
+    """Records fit_topics()/enrich() calls (and their order) and returns a payload."""
 
     def __init__(self, payload: dict) -> None:
         self._payload = payload
         self.calls: list[tuple[str, str]] = []
+        self.fit_calls: list[list[str]] = []
+        self.events: list[str] = []
+
+    def fit_topics(self, contents):
+        self.fit_calls.append(list(contents))
+        self.events.append("fit")
 
     def enrich(self, content, doc_id):
         self.calls.append((content, doc_id))
+        self.events.append("enrich")
         return dict(self._payload)
 
 
@@ -218,3 +228,25 @@ def test_chunk_document_attaches_empty_shape_when_enrichment_disabled():
     assert result[0].metadata["entities"] == []
     assert result[0].metadata["topics"] == []
     assert result[0].metadata["key_phrases"] == []
+
+
+def test_chunk_document_fits_topics_before_enriching():
+    """The document-level topic model is trained on ALL chunk contents once, before
+    any per-chunk enrichment — so each chunk infers against one front-loaded model
+    instead of training a degenerate single-chunk LDA."""
+    mapper = _EchoMapper()
+    enricher = _RecordingEnricher(
+        {"entities": [], "topics": [], "key_phrases": []}
+    )
+    strategy = _capped_strategy(
+        _FakeChunker(count=3), mapper, max_chunks=500, enricher=enricher
+    )
+
+    strategy.chunk_document(_DocStub())
+
+    # fit_topics is called exactly once, with every chunk's content...
+    assert enricher.fit_calls == [["chunk-0", "chunk-1", "chunk-2"]]
+    # ...and strictly before the per-chunk enrich calls.
+    assert enricher.events[0] == "fit"
+    assert enricher.events.count("fit") == 1
+    assert all(event == "enrich" for event in enricher.events[1:])
