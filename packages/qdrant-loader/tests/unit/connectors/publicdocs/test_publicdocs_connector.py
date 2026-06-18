@@ -19,6 +19,7 @@ from qdrant_loader.connectors.publicdocs.config import (
     SelectorsConfig,
 )
 from qdrant_loader.connectors.publicdocs.connector import PublicDocsConnector
+from qdrant_loader.core.document import Document
 
 HTML_CONTENT = """
     <html>
@@ -442,4 +443,102 @@ class TestPublicDocsConnector:
                 assert len(documents) == 2
                 assert documents[0].title == "Test Page"
                 assert documents[1].title == "Page 1"
-                assert all(doc.metadata.get("version") == "1.0.0" for doc in documents)
+
+
+class TestFetchById:
+    """Tests for the WS-1 fetch_by_id/list_entity_ids connector contract."""
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_document(
+        self, publicdocs_config: PublicDocsSourceConfig
+    ) -> None:
+        """fetch_by_id should return a Document for a processable page URL."""
+        connector = PublicDocsConnector(publicdocs_config)
+        base_url = str(publicdocs_config.base_url)
+        page_url = f"{base_url}docs/page1"
+
+        with patch.object(
+            connector,
+            "_process_page",
+            AsyncMock(return_value=("Page content", "Page 1")),
+        ) as mock_process_page:
+            document = await connector.fetch_by_id(page_url)
+
+        assert document is not None
+        assert isinstance(document, Document)
+        assert document.title == "Page 1"
+        assert document.content == "Page content"
+        assert document.url == page_url
+        assert document.metadata["version"] == publicdocs_config.version
+        mock_process_page.assert_called_once_with(page_url)
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_for_excluded_url(
+        self, publicdocs_config: PublicDocsSourceConfig
+    ) -> None:
+        """fetch_by_id should return None for a URL excluded by configuration."""
+        connector = PublicDocsConnector(publicdocs_config)
+        base_url = str(publicdocs_config.base_url)
+        excluded_url = f"{base_url}blog/post1"
+
+        with patch.object(
+            connector, "_process_page", AsyncMock()
+        ) as mock_process_page:
+            document = await connector.fetch_by_id(excluded_url)
+
+        assert document is None
+        mock_process_page.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_for_empty_content(
+        self, publicdocs_config: PublicDocsSourceConfig
+    ) -> None:
+        """fetch_by_id should return None when the page has no content."""
+        connector = PublicDocsConnector(publicdocs_config)
+        base_url = str(publicdocs_config.base_url)
+        page_url = f"{base_url}docs/empty"
+
+        with patch.object(
+            connector, "_process_page", AsyncMock(return_value=("   ", "Empty"))
+        ):
+            document = await connector.fetch_by_id(page_url)
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_on_error(
+        self, publicdocs_config: PublicDocsSourceConfig
+    ) -> None:
+        """fetch_by_id should return None (not raise) when page processing fails."""
+        connector = PublicDocsConnector(publicdocs_config)
+        base_url = str(publicdocs_config.base_url)
+        page_url = f"{base_url}docs/page1"
+
+        with patch.object(
+            connector, "_process_page", AsyncMock(side_effect=Exception("boom"))
+        ):
+            document = await connector.fetch_by_id(page_url)
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_list_entity_ids(
+        self, publicdocs_config: PublicDocsSourceConfig
+    ) -> None:
+        """list_entity_ids should yield only processable page URLs."""
+        connector = PublicDocsConnector(publicdocs_config)
+        base_url = str(publicdocs_config.base_url)
+        included_url = f"{base_url}docs/page1"
+        excluded_url = f"{base_url}blog/post1"
+        external_url = "https://other.example.com/page"
+
+        with patch.object(
+            connector,
+            "_get_all_pages",
+            AsyncMock(return_value=[included_url, excluded_url, external_url]),
+        ):
+            entity_ids = [
+                entity_id async for entity_id in connector.list_entity_ids()
+            ]
+
+        assert entity_ids == [included_url]

@@ -23,6 +23,14 @@ from .workers.upsert_worker import PipelineResult
 logger = LoggingConfig.get_logger(__name__)
 
 
+def _safe_document_size(doc: Document) -> int:
+    """Best-effort byte size of a document for metrics purposes."""
+    try:
+        return int(doc.metadata.get("size", 0))
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
 class PipelineComponents:
     """Container for pipeline components."""
 
@@ -233,7 +241,7 @@ class PipelineOrchestrator:
         force: bool = False,
         since: datetime | None = None,
         resume: bool = True,
-    ) -> list[Document]:
+    ) -> int:
         """Main entry point for document processing.
 
         Args:
@@ -248,7 +256,7 @@ class PipelineOrchestrator:
             resume: Whether to resume from the last checkpoint when available.
 
         Returns:
-            List of processed documents
+            Number of documents successfully processed.
         """
         logger.info("🚀 Starting document ingestion")
         self.last_pipeline_result = None
@@ -310,9 +318,11 @@ class PipelineOrchestrator:
 
             # Stream documents in bounded micro-batches and process each batch
             total_documents = 0
-            processed_documents: list[Document] = []
+            processed_count = 0
             aggregated_result = PipelineResult()
             batch_count = 0
+            counted_success_doc_ids: set[str] = set()
+            counted_failed_doc_ids: set[str] = set()
             checkpoint_sources_to_clear: set[tuple[str, str]] = set()
             streamed_checkpoint_sources: set[tuple[str, str]] = set()
 
@@ -326,24 +336,14 @@ class PipelineOrchestrator:
                     self.components.state_manager
                 ).__aenter__()
 
-            seen_uris: set[str] = set()
             try:
-                # Prefer calling the new signature but fall back to the
-                # legacy 3-arg signature for backwards compatibility / tests.
-                try:
-                    stream_iter = self._stream_batches_from_sources(
-                        filtered_config,
-                        256,
-                        since,
-                        project_id=current_project_id,
-                        seen_uris=seen_uris,
-                        resume=resume,
-                    )
-                except TypeError:
-                    # Callable likely expects the old signature
-                    stream_iter = self._stream_batches_from_sources(
-                        filtered_config, 256, since
-                    )
+                stream_iter = self._stream_batches_from_sources(
+                    filtered_config,
+                    256,
+                    since,
+                    project_id=current_project_id,
+                    resume=resume,
+                )
 
                 async for batch in stream_iter:
                     total_documents += len(batch)
@@ -369,11 +369,21 @@ class PipelineOrchestrator:
                     aggregated_result.success_count += batch_result.success_count
                     aggregated_result.error_count += batch_result.failure_count
                     aggregated_result.errors.extend(batch_result.errors)
-                    aggregated_result.successfully_processed_documents.update(
+                    new_success_doc_ids = (
                         batch_result.successfully_processed_documents
+                        - counted_success_doc_ids
                     )
-                    aggregated_result.failed_document_ids.update(
-                        batch_result.failed_document_ids
+                    counted_success_doc_ids.update(new_success_doc_ids)
+                    aggregated_result.processed_document_count = len(
+                        counted_success_doc_ids
+                    )
+
+                    new_failed_doc_ids = (
+                        batch_result.failed_document_ids - counted_failed_doc_ids
+                    )
+                    counted_failed_doc_ids.update(new_failed_doc_ids)
+                    aggregated_result.failed_document_count = len(
+                        counted_failed_doc_ids
                     )
 
                     if batch_result.successfully_processed_documents:
@@ -382,14 +392,17 @@ class PipelineOrchestrator:
                             batch_result.successfully_processed_documents,
                             current_project_id,
                         )
-                        processed_documents.extend(
-                            [
-                                doc
-                                for doc in batch
-                                if doc.id
-                                in batch_result.successfully_processed_documents
-                            ]
-                        )
+                        batch_counted_doc_ids: set[str] = set()
+                        for doc in batch:
+                            if (
+                                doc.id in new_success_doc_ids
+                                and doc.id not in batch_counted_doc_ids
+                            ):
+                                batch_counted_doc_ids.add(doc.id)
+                                processed_count += 1
+                                aggregated_result.total_size_bytes += (
+                                    _safe_document_size(doc)
+                                )
                         # Persist checkpoints found on documents (WS-2).
                         # Save once per source with the furthest-advanced cursor
                         # in this batch, not once per document.
@@ -400,9 +413,6 @@ class PipelineOrchestrator:
                                     Checkpoint,
                                 )
 
-                                # Iteration order is the streaming order, so the
-                                # last cp_info seen per source is the furthest
-                                # along (later cursor overwrites earlier ones).
                                 checkpoints_to_save: dict[tuple[str, str], Checkpoint] = {}
                                 for doc in batch:
                                     if doc.id not in batch_result.successfully_processed_documents:
@@ -444,7 +454,7 @@ class PipelineOrchestrator:
 
                 if total_documents == 0 and force:
                     logger.info("✅ No documents found from sources")
-                    return []
+                    return 0
 
                 sources_to_clear = (
                     checkpoint_sources_to_clear | streamed_checkpoint_sources
@@ -484,7 +494,7 @@ class PipelineOrchestrator:
                             error=str(e),
                         )
 
-                if not force and not processed_documents:
+                if not force and processed_count == 0:
                     self.last_pipeline_result = aggregated_result
                     if aggregated_result.error_count > 0:
                         logger.error(
@@ -493,28 +503,13 @@ class PipelineOrchestrator:
                         )
                     else:
                         logger.info("No new or updated documents to process")
-                    return []
-
-                    # Deletion detection / reconciliation note:
-                    # Streaming classification only detects new/updated documents
-                    # per-batch. Full deletion detection (documents present in the
-                    # state DB but absent from the current snapshot across all
-                    # batches) requires a post-stream reconciliation (WS-3).
-                    # For now we only log that reconciliation is possible and
-                    # record the set of seen URIs; implementors can enable a
-                    # reconciliation pass that compares previous state URIs to
-                    # `seen_uris` and call `_process_deleted_documents`.
-                    if not force:
-                        logger.debug(
-                            "Post-stream reconciliation not enabled. Seen URIs collected for potential WS-3 reconciliation",
-                            seen_count=len(seen_uris),
-                        )
+                    return 0
 
                 self.last_pipeline_result = aggregated_result
                 logger.info(
                     f"✅ Ingestion completed: {aggregated_result.success_count} chunks processed successfully"
                 )
-                return processed_documents
+                return processed_count
             finally:
                 if change_detector is not None:
                     await change_detector.__aexit__(None, None, None)
@@ -533,12 +528,12 @@ class PipelineOrchestrator:
         source: str | None = None,
         force: bool = False,
         since: datetime | None = None,
-    ) -> list[Document]:
+    ) -> int:
         """Process documents from all configured projects."""
         if not self.project_manager:
             raise ValueError("Project manager not available")
 
-        all_documents = []
+        total_processed_count = 0
         aggregated_result = PipelineResult()
         failed_projects: list[str] = []
         project_ids = self.project_manager.list_project_ids()
@@ -556,21 +551,24 @@ class PipelineOrchestrator:
                     since=since,
                 )
                 project_result = self.last_pipeline_result
-                all_documents.extend(project_documents)
+                total_processed_count += project_documents
 
                 if project_result is not None:
                     aggregated_result.success_count += project_result.success_count
                     aggregated_result.error_count += project_result.error_count
-                    aggregated_result.successfully_processed_documents.update(
-                        project_result.successfully_processed_documents
+                    aggregated_result.processed_document_count += (
+                        project_result.processed_document_count
                     )
-                    aggregated_result.failed_document_ids.update(
-                        project_result.failed_document_ids
+                    aggregated_result.failed_document_count += (
+                        project_result.failed_document_count
+                    )
+                    aggregated_result.total_size_bytes += (
+                        project_result.total_size_bytes
                     )
                     aggregated_result.errors.extend(project_result.errors)
 
                 logger.debug(
-                    f"Processed {len(project_documents)} documents from project: {project_id}"
+                    f"Processed {project_documents} documents from project: {project_id}"
                 )
             except ConnectorConfigurationError as e:
                 logger.error(
@@ -626,9 +624,9 @@ class PipelineOrchestrator:
             )
         else:
             logger.info(
-                f"Completed processing all projects: {len(all_documents)} total documents"
+                f"Completed processing all projects: {total_processed_count} total documents"
             )
-        return all_documents
+        return total_processed_count
 
     async def _collect_documents_from_sources(
         self,

@@ -1,3 +1,4 @@
+import os
 import warnings
 from collections.abc import AsyncIterator
 from datetime import datetime
@@ -5,6 +6,22 @@ from datetime import datetime
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
+
+
+def resolve_safe_path(base_dir: str, entity_id: str) -> str | None:
+    """Resolve ``entity_id`` (a ``/``-separated relative path) under ``base_dir``.
+
+    Returns the resolved absolute path, or ``None`` if it would escape
+    ``base_dir`` (e.g. via ``../`` segments), guarding against path traversal.
+    """
+    candidate = os.path.join(base_dir, *entity_id.split("/"))
+    base_real = os.path.realpath(base_dir)
+    candidate_real = os.path.realpath(candidate)
+    if candidate_real != base_real and not candidate_real.startswith(
+        base_real + os.sep
+    ):
+        return None
+    return candidate
 
 
 class ConnectorConfigurationError(Exception):
@@ -50,26 +67,15 @@ class BaseConnector:
     ) -> AsyncIterator[Document]:
         """Stream documents from the source (WS-1 connector contract).
 
-        This default implementation bridges legacy connectors by calling
-        :meth:`get_documents` and yielding documents from the returned list.
-
-        Args:
-            since: Optional datetime to fetch documents updated after this time.
-
-        Yields:
-            Document objects from the source.
+        Connectors must implement true streaming. This default raises
+        NotImplementedError to prevent silently materializing the full
+        document list via get_documents().
         """
-        if (
-            type(self).get_documents is BaseConnector.get_documents
-            and type(self).stream_documents is BaseConnector.stream_documents
-        ):
-            raise NotImplementedError(
-                f"{type(self).__name__} does not implement stream_documents or get_documents"
-            )
-
-        documents = await self.get_documents()
-        for document in documents:
-            yield document
+        if False:  # pragma: no cover - makes this function an async generator
+            yield ""  # type: ignore
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement stream_documents"
+        )
 
     async def get_documents(self) -> list[Document]:
         """Get documents from the source (DEPRECATED - use stream_documents)."""

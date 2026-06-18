@@ -188,3 +188,172 @@ class TestGitConnector:
                 }
                 assert "test.md" in processed_files
                 assert "test.txt" in processed_files
+
+
+class TestFetchById:
+    """Tests for the WS-1 fetch_by_id/list_entity_ids connector contract."""
+
+    @pytest.fixture
+    def mock_config(self):
+        """Fixture providing a mock Git repository configuration."""
+        return GitRepoConfig(
+            base_url=HttpUrl("https://github.com/test/repo.git"),
+            branch="main",
+            file_types=["*.md", "*.txt"],
+            token="test_token",
+            source="test_source",
+            source_type=SourceType.GIT,
+            temp_dir=None,
+        )
+
+    @pytest.fixture
+    def mock_repo(self):
+        """Fixture creating a mock Git repository."""
+        repo = MagicMock(spec=Repo)
+        repo.git.status.return_value = "On branch main"
+        return repo
+
+    @pytest.fixture
+    def mock_git_ops(self, mock_repo):
+        """Fixture creating mock Git operations."""
+        git_ops = MagicMock(spec=GitOperations)
+        git_ops.repo = mock_repo
+        git_ops.clone.return_value = None
+        git_ops.get_file_content.return_value = "Test content"
+        git_ops.get_last_commit_date.return_value = datetime.now()
+        git_ops.get_first_commit_date.return_value = datetime.now()
+        return git_ops
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_document(self, mock_config, mock_git_ops):
+        """fetch_by_id should return a Document for an existing, processable file."""
+        with (
+            patch(
+                "qdrant_loader.connectors.git.connector.GitOperations",
+                return_value=mock_git_ops,
+            ),
+            patch(
+                "qdrant_loader.connectors.git.connector.FileProcessor.should_process_file",
+                return_value=True,
+            ),
+            patch(
+                "qdrant_loader.connectors.git.connector.GitMetadataExtractor"
+            ) as mock_extractor_class,
+        ):
+            mock_extractor = MagicMock()
+            mock_extractor.extract_all_metadata.return_value = {
+                "file_name": "test.md",
+                "file_type": ".md",
+                "repository_name": "repo",
+            }
+            mock_extractor_class.return_value = mock_extractor
+
+            connector = GitConnector(mock_config)
+
+            async with connector:
+                file_path = os.path.join(connector.temp_dir, "test.md")
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write("Test content")
+
+                document = await connector.fetch_by_id("test.md")
+
+        assert document is not None
+        assert isinstance(document, Document)
+        assert document.content == "Test content"
+        assert document.title == "test.md"
+        assert document.url.endswith("/blob/main/test.md")
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_for_nonexistent_file(
+        self, mock_config, mock_git_ops
+    ):
+        """fetch_by_id should return None when the file does not exist on disk."""
+        with (
+            patch(
+                "qdrant_loader.connectors.git.connector.GitOperations",
+                return_value=mock_git_ops,
+            ),
+            patch(
+                "qdrant_loader.connectors.git.connector.FileProcessor.should_process_file",
+                return_value=True,
+            ),
+        ):
+            connector = GitConnector(mock_config)
+
+            async with connector:
+                document = await connector.fetch_by_id("does/not/exist.md")
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_blocks_path_traversal(self, mock_config, mock_git_ops):
+        """fetch_by_id should reject path traversal attempts."""
+        with (
+            patch(
+                "qdrant_loader.connectors.git.connector.GitOperations",
+                return_value=mock_git_ops,
+            ),
+        ):
+            connector = GitConnector(mock_config)
+
+            async with connector:
+                document = await connector.fetch_by_id("../../etc/passwd")
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_fetch_by_id_returns_none_when_filtered(
+        self, mock_config, mock_git_ops
+    ):
+        """fetch_by_id should return None when the file is excluded by the file processor."""
+        with (
+            patch(
+                "qdrant_loader.connectors.git.connector.GitOperations",
+                return_value=mock_git_ops,
+            ),
+            patch(
+                "qdrant_loader.connectors.git.connector.FileProcessor.should_process_file",
+                return_value=False,
+            ),
+        ):
+            connector = GitConnector(mock_config)
+
+            async with connector:
+                file_path = os.path.join(connector.temp_dir, "ignored.bin")
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write("binary-ish")
+
+                document = await connector.fetch_by_id("ignored.bin")
+
+        assert document is None
+
+    @pytest.mark.asyncio
+    async def test_list_entity_ids(self, mock_config, mock_git_ops):
+        """list_entity_ids should yield repo-relative, forward-slash paths for processable files."""
+        with (
+            patch(
+                "qdrant_loader.connectors.git.connector.GitOperations",
+                return_value=mock_git_ops,
+            ),
+        ):
+            connector = GitConnector(mock_config)
+
+            async with connector:
+                included = os.path.join(connector.temp_dir, "docs", "test.md")
+                excluded = os.path.join(connector.temp_dir, "docs", "test.bin")
+                os.makedirs(os.path.dirname(included), exist_ok=True)
+                mock_git_ops.list_files.return_value = [included, excluded]
+
+                def should_process(file_path):
+                    return file_path.endswith(".md")
+
+                with patch.object(
+                    connector.file_processor,
+                    "should_process_file",
+                    side_effect=should_process,
+                ):
+                    entity_ids = [
+                        entity_id async for entity_id in connector.list_entity_ids()
+                    ]
+
+        assert entity_ids == ["docs/test.md"]
