@@ -7,9 +7,8 @@ engine behind this Protocol (the markitdown path is handled directly by
 through an engine adapter). Keeping callers on the Protocol (not on docling) is what
 makes the swap reversible.
 
-Per ``docling/conversion/03-converter-design-and-rationale.md`` §H, collapse this
-Protocol once docling is the only engine — a one-implementation interface is just
-ceremony, the very Java-ism this redesign avoids.
+Once docling is the only engine, this Protocol can be collapsed — a
+one-implementation interface is just ceremony.
 """
 
 from __future__ import annotations

@@ -102,7 +102,7 @@ def test_markitdown_failure_uses_fallback_document_and_fallback_method():
     assert converter.fallback_calls == [("/docs/broken.pdf", boom)]
 
 
-# -- docling path: FIX 1 (PARTIAL is usable but must be flagged) -----------------
+# -- docling path: PARTIAL is usable but must be flagged -------------------------
 def test_docling_success_returns_docling_content_without_warning(caplog):
     doc = _StubConvertedDocument("# Full document\n\nall content present")
     outcome = ConversionOutcome(status=ConversionStatus.SUCCESS, document=doc)
@@ -144,7 +144,7 @@ def test_docling_partial_logs_warning_but_still_returns_usable_content(caplog):
 
 
 def test_docling_failure_uses_canonical_fallback_document():
-    """FIX 2(b): the docling FAILURE path must reuse FileConverter's canonical
+    """The docling FAILURE path must reuse FileConverter's canonical
     create_fallback_document, not a divergent local stub."""
     outcome = ConversionOutcome(
         status=ConversionStatus.FAILED, error="docling exploded"
@@ -178,7 +178,7 @@ def test_docling_failure_uses_canonical_fallback_document():
 
 
 def test_docling_original_file_type_uses_filedetector_classification(tmp_path):
-    """FIX 2(a): original_file_type on the docling path is FileDetector's normalized
+    """original_file_type on the docling path is FileDetector's normalized
     type (the same type the rest of the system stamps), not a raw suffix."""
     pdf = tmp_path / "report.pdf"
     pdf.write_bytes(b"%PDF-1.4 stub")
@@ -191,7 +191,7 @@ def test_docling_original_file_type_uses_filedetector_classification(tmp_path):
     assert result.original_file_type == "pdf"
 
 
-# -- FIX 4: engine-aware is_supported gate ---------------------------------------
+# -- engine-aware is_supported gate ----------------------------------------------
 def _service_for(engine: str) -> ConversionService:
     return ConversionService(FileConversionConfig(engine=engine))
 

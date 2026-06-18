@@ -8,7 +8,7 @@ selects and constructs the implementation, importing docling lazily.
 
 This consumes the :class:`~..conversion.ConvertedDocument` the conversion layer
 produces — the structured ``DoclingDocument``, never a re-parsed markdown string —
-which is what makes Option B (structure-aware chunking, doc 03 §5–6) possible.
+which is what makes structure-aware chunking possible.
 """
 
 from __future__ import annotations

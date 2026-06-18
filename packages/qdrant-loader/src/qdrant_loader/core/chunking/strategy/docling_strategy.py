@@ -29,6 +29,9 @@ from qdrant_loader.core.chunking.docling import (
     build_chunker,
 )
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
@@ -60,8 +63,8 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
         The chunk-size budget is ``chunking.strategies.docling.max_tokens`` when set,
         otherwise the embedding model's ``max_tokens_per_chunk``. The tokenizer
-        identity (how tokens are counted, doc 03 §5.4) always comes from
-        ``embedding.tokenizer`` — the override changes the budget, never the counter.
+        identity (how tokens are counted) always comes from ``embedding.tokenizer`` —
+        the override changes the budget, never the counter.
         """
         max_tokens = (
             docling.max_tokens
@@ -92,6 +95,18 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
             )
 
         chunks = self._chunker.chunk(converted)
+
+        # Configuration-driven safety limit, in parity with the other strategies: a
+        # huge document must not emit unbounded chunks and overwhelm embedding/upsert.
+        max_chunks = self.settings.global_config.chunking.max_chunks_per_document
+        if len(chunks) > max_chunks:
+            logger.warning(
+                f"Docling chunking produced {len(chunks)} chunks, limiting to "
+                f"{max_chunks} per max_chunks_per_document. Consider raising "
+                f"max_chunks_per_document or the token budget. Document: {document.title}"
+            )
+            chunks = chunks[:max_chunks]
+
         return self._mapper.to_documents(chunks, document)
 
         # TODO: parity with the markdown path — NLP enrichment keys

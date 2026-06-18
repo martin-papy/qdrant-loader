@@ -56,6 +56,38 @@ async def test_localfile_connector_converts_with_docling_engine(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_localfile_skips_files_unsupported_by_the_configured_engine(tmp_path):
+    """The conversion gate must track the *active* engine (ConversionService.is_supported),
+    not a static MIME table. A file the docling engine can't accept (here: a docx that
+    exceeds docling's max_file_size) is read as-is, not routed to docling and silently
+    turned into a fallback document."""
+    shutil.copy(FIXTURE, tmp_path / "lorem_ipsum.docx")
+
+    config = LocalFileConfig(
+        base_url=AnyUrl(f"file://{tmp_path}"),
+        source="docling-gate",
+        source_type=SourceType.LOCALFILE,
+        file_types=[],
+        include_paths=["*"],
+        exclude_paths=[],
+        enable_file_conversion=True,
+    )
+    file_conversion = FileConversionConfig(engine="docling")
+    # Shrink docling's size cap below the docx so the engine reports it unsupported.
+    file_conversion.docling.max_file_size = 4
+    connector = LocalFileConnector(config)
+    connector.set_file_conversion_config(file_conversion)
+
+    async with connector:
+        documents = await connector.get_documents()
+    doc = next(d for d in documents if d.title.endswith(".docx"))
+
+    # Not routed to docling: read as-is, no conversion metadata, no structured artifact.
+    assert doc.metadata.get("conversion_method") is None
+    assert doc.converted_document is None
+
+
+@pytest.mark.asyncio
 async def test_docling_document_chunks_into_structured_chunks(tmp_path, test_settings):
     shutil.copy(FIXTURE, tmp_path / "lorem_ipsum.docx")
     doc = await _convert_via_localfile(tmp_path)

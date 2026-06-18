@@ -103,4 +103,6 @@ internal/
 # Beads issue tracking
 .beads/
 
-docling/
+docs/
+testing/
+.mcp.json

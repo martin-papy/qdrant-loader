@@ -3,7 +3,7 @@
 :class:`ChunkDocumentMapper` is the docling-free half of the layer: it takes the
 :class:`~.outcome.Chunk` objects the chunker emits plus the parent ``Document`` and
 produces the chunk ``Document`` list the rest of the pipeline already consumes. Two
-contracts meet here (doc 03 §5.2-5.3):
+contracts meet here:
 
 * the new ``metadata.structure`` block (engine-neutral provenance), plus
   ``chunk_schema_version`` so a future re-index is detectable; and
@@ -35,13 +35,13 @@ class ChunkDocumentMapper:
         self._config = config
 
     def to_documents(self, chunks: list[Chunk], parent: Document) -> list[Document]:
-        """Map chunks into chunk ``Document``s carrying the redesigned contract.
+        """Map chunks into chunk ``Document``s carrying the chunk payload contract.
 
         Per chunk: a deterministic id via ``Document.generate_chunk_id``; the
         ``metadata.structure`` block flattened from :class:`~.structure.ChunkStructure`
         plus ``chunk_schema_version``; and the back-compat ``metadata.*`` keys derived
-        from it. ``content`` is the chunk body — contextual embedding (§5.1) is
-        deferred, so no heading prefix is folded into the embedded text yet.
+        from it. ``content`` is the chunk body — contextual embedding is deferred, so
+        no heading prefix is folded into the embedded text yet.
         """
         total = len(chunks)
         return [
@@ -72,7 +72,7 @@ class ChunkDocumentMapper:
                 ),
             }
         )
-        # §5.1 contextual embedding: when enabled, the contextualized embed text (heading
+        # Contextual embedding: when enabled, the contextualized embed text (heading
         # breadcrumb + body) becomes the stored content, so it flows into both the payload
         # and the vector (the embedder embeds Document.content). Off => the bare body.
         content = (
@@ -91,7 +91,7 @@ class ChunkDocumentMapper:
 
     @staticmethod
     def _structure_block(structure: ChunkStructure) -> dict[str, Any]:
-        """Flatten :class:`ChunkStructure` into a JSON-safe payload block (§5.2).
+        """Flatten :class:`ChunkStructure` into a JSON-safe payload block.
 
         Tuples become lists and the bbox dataclasses become dicts so the payload is
         plain JSON — no docling objects, no dataclasses reach Qdrant.

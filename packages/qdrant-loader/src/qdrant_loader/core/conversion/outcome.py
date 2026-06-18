@@ -2,8 +2,8 @@
 
 Conversion produces a *structured* artifact — a ``DoclingDocument`` wrapped in
 :class:`ConvertedDocument` — or a typed :class:`ConversionOutcome`. It never
-returns a fake markdown stub carrying an error string (the A7 anti-pattern):
-failure is a value the caller inspects, not content that flows into embedding.
+returns a fake markdown stub carrying an error string: failure is a value the caller
+inspects, not content that flows into embedding.
 
 Per the conversion/chunking boundary, the structured document is the contract;
 ``to_markdown`` is a convenience for the prose path, and the chunker chooses its
@@ -33,7 +33,7 @@ class ConvertedDocument:
     """The canonical conversion artifact handed to the chunking layer.
 
     Holds the structured ``DoclingDocument`` so consumers can read cells/tables
-    directly — no serialize-then-reparse round-trip (the A1 anti-pattern).
+    directly — no serialize-then-reparse round-trip.
     """
 
     document: DoclingDocument

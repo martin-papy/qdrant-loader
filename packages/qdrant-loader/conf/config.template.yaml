@@ -227,6 +227,9 @@ global:
     # Docling converts files into a structured document (headings, tables, pages,
     # bounding boxes) that flows into the structure-aware docling chunking strategy
     # (see chunking.strategies.docling above). MarkItDown produces plain markdown.
+    # NOTE: the docling engine currently applies to the localfile connector only;
+    # other connectors (git, confluence, jira, publicdocs) still use MarkItDown
+    # regardless of this setting.
     engine: "markitdown"
 
     # Docling engine settings (used when engine: docling)

@@ -4,9 +4,8 @@ Frozen dataclasses describing *our* conversion knobs — never docling types. Th
 option builder in :mod:`.options` is the single place that translates this into
 docling objects, which keeps the config swappable and the engine behind a seam.
 
-Every field's default and rationale is documented in
-``docling/conversion/05-optimal-baseline-config.md``; the defaults below ARE the
-``fast`` profile (CPU-only, born-digital corpus, conversion opt-in per source).
+The defaults below ARE the ``fast`` profile (CPU-only, born-digital corpus,
+conversion opt-in per source); each field documents its own rationale inline.
 """
 
 from __future__ import annotations

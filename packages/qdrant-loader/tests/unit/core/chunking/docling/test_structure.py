@@ -1,7 +1,7 @@
 """Behaviour tests for the structure anti-corruption layer.
 
 These assert that ``StructureProjector`` turns *real* docling chunk metadata into
-our engine-neutral :class:`ChunkStructure` — the §5.2 contract — and, crucially,
+our engine-neutral :class:`ChunkStructure` and, crucially,
 that no docling type leaks across the boundary (labels become plain strings, the
 coord-origin enum becomes a string, boxes become floats). They are not a re-test of
 docling's own metadata extraction.
@@ -17,7 +17,7 @@ from qdrant_loader.core.chunking.docling.structure import (
 
 
 def test_projects_heading_path_from_real_docling_meta(header_doc_chunks):
-    """The headline §5.2 field: a chunk's heading path becomes heading_path, and
+    """The headline field: a chunk's heading path becomes heading_path, and
     heading_level reflects its nesting depth."""
     projector = StructureProjector()
 

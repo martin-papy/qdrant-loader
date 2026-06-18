@@ -2,14 +2,12 @@
 
 :class:`DoclingConverter` is a thin facade over a single docling
 ``DocumentConverter``. It owns construction *once* via ``cached_property`` (a
-class-enforced lazy-once, replacing the lazy-null-singleton A4 anti-pattern) and
-composes the pure :class:`~.options.DoclingOptionsBuilder` and
-:class:`~.formats.FormatPolicy` rather than inlining their logic.
+class-enforced lazy-once, not a lazy-null singleton) and composes the pure
+:class:`~.options.DoclingOptionsBuilder` and :class:`~.formats.FormatPolicy` rather
+than inlining their logic.
 
 It structurally satisfies :class:`~.engine.ConversionEngine` — no base class, no
-registration. Method bodies are scaffolding stubs; the cited sections of
-``docling/conversion/03-converter-design-and-rationale.md`` (§C.2, §F) and
-``05-optimal-baseline-config.md`` (§5) specify the implementations.
+registration.
 """
 
 from __future__ import annotations

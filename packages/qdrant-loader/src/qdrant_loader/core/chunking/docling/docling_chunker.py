@@ -6,9 +6,9 @@ lazy-null singleton) and composes the pure :class:`~.tokenizer.TokenizerFactory`
 :class:`~.structure.StructureProjector` rather than inlining their logic.
 
 It structurally satisfies :class:`~.chunker.DocumentChunker` — no base class, no
-registration. doc 03 §3.3 (the two-pass split/merge), §5.1 (``contextualize`` ->
-``embed_text``) and the §3.3 caveat (post-context budget check, surfaced via
-``_warn_if_over_budget``) specify the chunking behaviour.
+registration. It runs HybridChunker's two-pass split/merge, maps ``contextualize``
+output to ``embed_text``, and surfaces the post-context budget check via
+``_warn_if_over_budget``.
 """
 
 from __future__ import annotations
@@ -102,9 +102,9 @@ class DoclingChunker:
         :class:`EmptyDocumentError` rather than emitting a fake empty chunk.
 
         ``embed_text`` mirrors the body while contextual embedding is disabled (the
-        deferred §5.1 toggle); once enabled it becomes ``contextualize`` output and the
+        deferred toggle); once enabled it becomes ``contextualize`` output and the
         ``enforce_token_budget`` check (which HybridChunker cannot guarantee for
-        prepended context, §3.3) becomes reachable.
+        prepended context) becomes reachable.
         """
         chunker = self._chunker
         chunks = []
@@ -123,7 +123,7 @@ class DoclingChunker:
 
         HybridChunker only guarantees the budget for the bare body; ``contextualize``
         (when ``include_context_in_embed`` is on) and atomic oversized doc items can
-        push a chunk over (the §3.3 caveat). The overflow is allowed; when
+        push a chunk over. The overflow is allowed; when
         ``enforce_token_budget`` is set we log it, because the embedder may silently
         truncate or reject oversized input.
         """

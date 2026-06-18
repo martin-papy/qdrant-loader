@@ -8,8 +8,9 @@ through every call.
 
 docling is imported lazily inside the methods so this module stays importable when
 only the markitdown engine is present (the package must load without docling until
-the engine is flipped). The numbered fixes neutralise docling's expensive defaults;
-see ``docling/conversion/05-optimal-baseline-config.md`` §5.
+the engine is flipped). The overrides below neutralise docling's expensive or
+auto-resolving defaults to keep conversion fast and deterministic on a born-digital
+corpus.
 """
 
 from __future__ import annotations
@@ -53,7 +54,7 @@ class DoclingOptionsBuilder:
         excel = self._config.excel
         pdf_pipeline_options = self._build_pdf_pipeline_options()
         return {
-            # FIX 2: pin the docling-parse backend so it never auto-resolves.
+            # Pin the docling-parse backend so it never auto-resolves.
             # docling 2.74.0 demoted ``DoclingParseV4DocumentBackend`` to a
             # deprecation shim that only emits a FutureWarning before delegating to
             # this same class; pin the parent directly to keep behaviour and silence
@@ -86,7 +87,7 @@ class DoclingOptionsBuilder:
         pipeline_options = PdfPipelineOptions()
 
         pipeline_options.do_ocr = config.ocr.enabled
-        if config.ocr.enabled:  # FIX 1: pin the OCR engine, never let it auto-resolve
+        if config.ocr.enabled:  # pin the OCR engine, never let it auto-resolve
             pipeline_options.ocr_options = RapidOcrOptions(
                 lang=list(config.ocr.languages),
                 backend=config.ocr.backend,
@@ -94,7 +95,7 @@ class DoclingOptionsBuilder:
             )
 
         pipeline_options.do_table_structure = config.table.enabled
-        pipeline_options.table_structure_options.mode = TableFormerMode(  # FIX 3
+        pipeline_options.table_structure_options.mode = TableFormerMode(
             config.table.mode
         )
         pipeline_options.table_structure_options.do_cell_matching = (
@@ -107,10 +108,10 @@ class DoclingOptionsBuilder:
             device=config.device,
             num_threads=config.num_threads,
         )
-        pipeline_options.document_timeout = config.document_timeout  # FIX 4: wall-clock
+        pipeline_options.document_timeout = config.document_timeout  # wall-clock cap
         pipeline_options.artifacts_path = config.artifacts_path
 
-        if config.picture.enabled:  # FIX 5: declarative API captioning
+        if config.picture.enabled:  # declarative API captioning
             pipeline_options.enable_remote_services = True
             pipeline_options.do_picture_description = True
             # The enrichment stage only captions pictures whose crops were rendered;

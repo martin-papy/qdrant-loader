@@ -6,8 +6,8 @@ analogue of the conversion option builder. It is a small pure class holding the
 injected config and imports docling lazily, so importing this package costs nothing
 until a chunk is actually sized.
 
-Aligning the chunk budget to the *embedding* model's tokenizer is doc 03 §5.4; a
-mismatched tokenizer is the §2.2 character-budget mistake this layer exists to fix.
+Aligning the chunk budget to the *embedding* model's tokenizer is the whole point of
+this layer; a mismatched tokenizer is the character-budget mistake it exists to fix.
 """
 
 from __future__ import annotations

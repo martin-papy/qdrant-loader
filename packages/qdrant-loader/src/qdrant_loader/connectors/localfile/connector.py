@@ -113,12 +113,14 @@ class LocalFileConnector(BaseConnector):
                         )
                         continue
 
-                    # Check if file needs conversion
+                    # Check if file needs conversion. The eligibility gate is the
+                    # ConversionService (engine-aware): for docling it also enforces
+                    # the enabled-format + size policy, so a file the active engine
+                    # can't convert is skipped here instead of falling into a fallback.
                     needs_conversion = (
                         self.config.enable_file_conversion
-                        and self.file_detector
-                        and self.conversion_service
-                        and self.file_detector.is_supported_for_conversion(file_path)
+                        and self.conversion_service is not None
+                        and self.conversion_service.is_supported(file_path)
                     )
 
                     converted_document = None

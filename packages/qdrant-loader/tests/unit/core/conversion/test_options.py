@@ -1,8 +1,9 @@
 """Regression locks for the config -> docling option mapping.
 
 These assert the *options we hand docling* — no conversion, no models — so they
-are fast and pin the five "footgun fixes" from doc 05 §5. If a docling upgrade
-or a refactor silently changes one of these defaults, these tests catch it.
+are fast and pin the overrides that neutralise docling's expensive or auto-resolving
+defaults. If a docling upgrade or a refactor silently changes one of these defaults,
+these tests catch it.
 """
 
 from __future__ import annotations

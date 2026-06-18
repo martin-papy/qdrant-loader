@@ -2,9 +2,9 @@
 
 :class:`FormatPolicy` is the single source of truth for "should we convert this?".
 It filters docling's ``FormatToMimeType`` table by our enabled-formats list plus a
-size cap, instead of duplicating a hand-maintained MIME dict (the A6 anti-pattern:
-two sources of truth that drift). Like the option builder, it is a small pure class
-holding the injected config and imports docling lazily.
+size cap, instead of duplicating a hand-maintained MIME dict (two sources of truth
+that drift). Like the option builder, it is a small pure class holding the injected
+config and imports docling lazily.
 """
 
 from __future__ import annotations

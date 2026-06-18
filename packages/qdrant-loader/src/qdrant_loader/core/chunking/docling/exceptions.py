@@ -1,7 +1,7 @@
 """Errors the chunking layer raises — loud by design.
 
 The legacy markdown chunker degrades *silently*: a shape mismatch falls through to
-a fallback splitter or returns one giant chunk with no signal (doc 03 §2.5, R10).
+a fallback splitter or returns one giant chunk with no signal.
 This layer rejects that — when an invariant the contract depends on breaks, it
 raises. These are the cases the chunker refuses to paper over.
 """

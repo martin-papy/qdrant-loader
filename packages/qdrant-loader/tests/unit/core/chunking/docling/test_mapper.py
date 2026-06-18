@@ -2,8 +2,8 @@
 
 The mapper is the docling-free half of the layer, so these are fully offline: we
 hand-build engine-neutral Chunks and assert the produced chunk Documents carry the
-redesigned contract (doc 03 §5.2-5.3) — the structure block, the back-compat
-metadata keys derived from it, deterministic ids, and JSON-safe payloads.
+chunk payload contract — the structure block, the back-compat metadata keys derived
+from it, deterministic ids, and JSON-safe payloads.
 """
 
 from __future__ import annotations

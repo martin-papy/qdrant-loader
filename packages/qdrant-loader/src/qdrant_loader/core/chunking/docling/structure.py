@@ -2,11 +2,10 @@
 
 Docling computes layout/provenance during conversion (heading paths, page numbers,
 bounding boxes, char spans, element labels). The legacy chunker throws this away and
-*re-derives* a thin version with regex over markdown (doc 03 §2.3). This module
-projects docling's typed metadata into a small, frozen, JSON-serialisable
-:class:`ChunkStructure` — the §5.2 block — so docling classes never reach the Qdrant
-payload schema and the engine stays swappable (the same boundary discipline as
-``docling/conversion/03``'s converter design).
+*re-derives* a thin version with regex over markdown. This module projects docling's
+typed metadata into a small, frozen, JSON-serialisable :class:`ChunkStructure` so
+docling classes never reach the Qdrant payload schema and the engine stays swappable
+(the same boundary discipline the conversion engine uses).
 
 Docling types are confined to this module and :mod:`.docling_chunker`; everything
 downstream (the mapper, the payload) sees only :class:`ChunkStructure`.
@@ -39,11 +38,11 @@ class BoundingBoxSpan:
 
 @dataclass(frozen=True, slots=True)
 class ChunkStructure:
-    """Engine-neutral structure/provenance for one chunk (doc 03 §5.2).
+    """Engine-neutral structure/provenance for one chunk.
 
-    Every field maps to a docling source documented in the redesign's §5.2 table.
-    Defaults are the "absent" case (native markdown, no layout) so a chunk with no
-    provenance is representable without ``None``-checking each field at the call site.
+    Every field maps to a docling metadata source (noted inline below). Defaults are
+    the "absent" case (native markdown, no layout) so a chunk with no provenance is
+    representable without ``None``-checking each field at the call site.
     """
 
     heading_path: tuple[str, ...] = ()  # meta.headings — also the embed-time prefix
@@ -55,7 +54,7 @@ class ChunkStructure:
     page_end: int | None = None  # max(prov.page_no)
     bbox: tuple[BoundingBoxSpan, ...] = ()  # prov.bbox — payload-only (high cardinality)
     charspan: tuple[int, int] | None = None  # prov.charspan — source-span citation
-    caption: str | None = None  # Table/PictureItem.captions (best-effort, §3.4 caveat)
+    caption: str | None = None  # Table/PictureItem.captions (best-effort)
     dl_meta_version: str | None = None  # DocMeta.version — reproducibility
 
 
@@ -63,10 +62,9 @@ class StructureProjector:
     """Projects a docling chunk's ``meta`` into a :class:`ChunkStructure`.
 
     Stateless — it holds no docling object, only the projection rules, so one
-    instance is shared across all chunks of a document. ``project`` is a scaffolding
-    stub; the §5.2 mapping table specifies the field-by-field translation the TDD
-    pass will drive (headings, ``SectionHeaderItem.level``, the ``doc_items[].label``
-    rollup, the ``prov`` page/bbox/charspan aggregation).
+    instance is shared across all chunks of a document. ``project`` performs the
+    field-by-field translation (headings, ``SectionHeaderItem.level``, the
+    ``doc_items[].label`` rollup, the ``prov`` page/bbox/charspan aggregation).
     """
 
     def project(self, chunk: BaseChunk) -> ChunkStructure:
@@ -92,8 +90,8 @@ class StructureProjector:
                 [prov.charspan for prov in provenances if prov.charspan is not None]
             ),
             # caption is deferred: DocMeta.captions is deprecated and not carried
-            # through merge paths (doc 03 §3.4). Populate from picture/table captions
-            # if/when that enrichment lands; until then it stays best-effort-absent.
+            # through merge paths. Populate from picture/table captions if/when that
+            # enrichment lands; until then it stays best-effort-absent.
             caption=None,
             dl_meta_version=str(meta.version) if meta.version else None,
         )

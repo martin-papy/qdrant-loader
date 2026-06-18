@@ -8,6 +8,8 @@ the contextual-embedding flag — without needing a full Settings tree or doclin
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from qdrant_loader.config.chunking import DoclingStrategyConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.core.chunking.docling import TokenizerKind
@@ -68,3 +70,81 @@ def test_tokenizer_identity_comes_from_embedding():
     )
     assert config.tokenizer.kind == TokenizerKind.OPENAI
     assert config.tokenizer.model == "cl100k_base"
+
+
+# -- max_chunks_per_document safety cap (parity with the other strategies) --------
+class _FakeChunker:
+    """Returns a fixed number of opaque chunks, so chunk_document's cap logic is
+    exercised without running the real HybridChunker over a fixture."""
+
+    def __init__(self, count: int) -> None:
+        self._chunks = [f"chunk-{i}" for i in range(count)]
+
+    def chunk(self, converted):
+        return list(self._chunks)
+
+
+class _EchoMapper:
+    """Maps each chunk 1:1 (the real mapper's shape), recording what it received so the
+    cap can be asserted on the mapper's input as well as the returned list."""
+
+    def __init__(self) -> None:
+        self.received: list | None = None
+
+    def to_documents(self, chunks, document):
+        self.received = list(chunks)
+        return self.received
+
+
+class _DocStub:
+    """Minimal Document for chunk_document: a non-None converted_document passes the
+    wiring guard; title feeds the cap warning."""
+
+    def __init__(self) -> None:
+        self.id = "doc-1"
+        self.title = "huge.pdf"
+        self.metadata: dict = {}
+        self.converted_document = object()
+
+
+def _capped_strategy(chunker, mapper, max_chunks: int) -> DoclingChunkingStrategy:
+    """A strategy with collaborators injected, bypassing the heavy __init__
+    (HybridChunker + tokenizer + spaCy). Mirrors test_service.py pre-seeding a fake
+    engine: we drive chunk_document's real cap logic, not the chunker itself."""
+    strategy = object.__new__(DoclingChunkingStrategy)
+    strategy._chunker = chunker
+    strategy._mapper = mapper
+    strategy.settings = SimpleNamespace(
+        global_config=SimpleNamespace(
+            chunking=SimpleNamespace(max_chunks_per_document=max_chunks)
+        )
+    )
+    return strategy
+
+
+def test_chunk_document_caps_at_max_chunks_per_document(caplog):
+    """Like every other strategy, docling caps output at max_chunks_per_document so a
+    huge document cannot emit unbounded chunks — and the drop is logged, not silent."""
+    mapper = _EchoMapper()
+    strategy = _capped_strategy(_FakeChunker(count=10), mapper, max_chunks=3)
+
+    with caplog.at_level("WARNING"):
+        result = strategy.chunk_document(_DocStub())
+
+    assert len(result) == 3
+    assert mapper.received is not None and len(mapper.received) == 3
+    assert any("max_chunks_per_document" in r.getMessage() for r in caplog.records)
+
+
+def test_chunk_document_keeps_all_chunks_when_under_cap(caplog):
+    """Under the cap, every chunk is mapped and nothing is logged about limiting."""
+    mapper = _EchoMapper()
+    strategy = _capped_strategy(_FakeChunker(count=2), mapper, max_chunks=500)
+
+    with caplog.at_level("WARNING"):
+        result = strategy.chunk_document(_DocStub())
+
+    assert len(result) == 2
+    assert not any(
+        "max_chunks_per_document" in r.getMessage() for r in caplog.records
+    )

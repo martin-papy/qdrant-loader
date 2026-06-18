@@ -4,10 +4,10 @@ Frozen dataclasses describing *our* chunking knobs — never docling types. The
 tokenizer factory in :mod:`.tokenizer` is the single place that turns this into a
 docling tokenizer, which keeps the chunker behind the seam in :mod:`.chunker`.
 
-The rationale for each default lives in
-``docling/chunking/03-best-practices-and-contract-redesign.md``: §3.3/§5.4 (token
-budget + the embedding model's own tokenizer), §3.3 (the HybridChunker merge pass),
-§5.1 (embed the heading-path-prefixed text), §5.3 (``chunk_schema_version``).
+The defaults encode the chunking design: size the token budget against the embedding
+model's own tokenizer, let HybridChunker merge undersized peers, optionally embed the
+heading-path-prefixed text, and stamp a ``chunk_schema_version`` so a future re-index
+is detectable.
 """
 
 from __future__ import annotations
@@ -46,11 +46,12 @@ class TableSerialization(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class TokenizerConfig:
-    """How to count tokens, aligned to the *embedding* model (doc 03 §5.4).
+    """How to count tokens, aligned to the *embedding* model.
 
     ``HybridChunker`` requires a real tokenizer to size chunks; counting against a
-    tokenizer unrelated to the embedder is the §2.2 char-budget mistake. ``model``
-    is a tiktoken encoding name for ``OPENAI`` or a HF model id for ``HUGGINGFACE``.
+    tokenizer unrelated to the embedder is the character-budget mistake this layer
+    avoids. ``model`` is a tiktoken encoding name for ``OPENAI`` or a HF model id for
+    ``HUGGINGFACE``.
     """
 
     kind: TokenizerKind = TokenizerKind.OPENAI
@@ -76,22 +77,22 @@ class ChunkingConfig:
     table_serialization: TableSerialization = TableSerialization.TRIPLETS
 
     # ── contract shaping ──
-    # §5.1 contextual embedding: when on, the chunk's contextualized text (heading_path
+    # Contextual embedding: when on, the chunk's contextualized text (heading_path
     # + body) becomes the embedded text AND the stored content. Opt-in (default off) via
     # ``chunking.strategies.docling.include_context_in_embed``; the seam is wired through
     # the chunker (contextualize) and the mapper (content = embed_text).
     include_context_in_embed: bool = False
-    # §3.3 caveat: contextualize() can push a chunk past max_tokens (HybridChunker only
+    # Caveat: contextualize() can push a chunk past max_tokens (HybridChunker only
     # guarantees the budget for the bare body). When True, the chunker logs a warning on
     # overflow rather than failing — the embedder may truncate oversized input.
     enforce_token_budget: bool = True
-    chunk_schema_version: str = "1"  # §5.3: lets a future re-index be detected
+    chunk_schema_version: str = "1"  # lets a future re-index be detected
 
     @classmethod
     def from_embedding(
         cls, *, tokenizer: str, max_tokens: int, **overrides: Any
     ) -> ChunkingConfig:
-        """Derive a config from the loader's embedding settings (doc 03 §5.4).
+        """Derive a config from the loader's embedding settings.
 
         ``tokenizer`` is the ``embedding.tokenizer`` string the loader already
         carries; ``max_tokens`` is its ``max_tokens_per_chunk``. Top-level overrides
