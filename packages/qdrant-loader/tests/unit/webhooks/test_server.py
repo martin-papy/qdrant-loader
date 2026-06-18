@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 from fastapi.testclient import TestClient
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.webhooks.queue_backend import ChangeEvent, QueueBackendManager
 from qdrant_loader.webhooks.server import app
 
@@ -20,12 +21,29 @@ class FakeQueueBackend:
         return None
 
 
+class FakeJob:
+    def __init__(self, job_id: int) -> None:
+        self.id = job_id
+
+
+class FakeJobQueue:
+    """Fakes the SQLiteJobQueue used by the direct /ingest route."""
+
+    def __init__(self) -> None:
+        self.jobs: list[tuple[str, dict]] = []
+
+    async def enqueue(self, job_type: str, payload: dict) -> FakeJob:
+        self.jobs.append((job_type, payload))
+        return FakeJob(len(self.jobs))
+
+
 @pytest.fixture
 def mock_queue_backend(monkeypatch):
     backend = FakeQueueBackend()
+    backend.job_queue = FakeJobQueue()
 
     async def fake_initialize():
-        QueueBackendManager.set_backend(backend)
+        QueueBackendManager.set_backend(backend, backend.job_queue)
         return backend
 
     async def fake_shutdown():
@@ -119,14 +137,15 @@ def test_ingest_route_enqueues_full_scan(mock_queue_backend, monkeypatch):
     assert response.status_code == 202
     body = response.json()
     assert body["status"] == "accepted"
-    assert body["operation"] == "FULL_SCAN"
+    assert body["operation"] == JobType.BULK_INGEST
     assert body["force"] is True
-    assert len(mock_queue_backend.events) == 1
-    event = mock_queue_backend.events[0]
-    assert event.project_id == "project1"
-    assert event.source_type == "jira"
-    assert event.source == "my-source"
-    assert event.force is True
+    assert len(mock_queue_backend.job_queue.jobs) == 1
+    job_type, payload = mock_queue_backend.job_queue.jobs[0]
+    assert job_type == JobType.BULK_INGEST
+    assert payload["project_id"] == "project1"
+    assert payload["source_type"] == "jira"
+    assert payload["source"] == "my-source"
+    assert payload["force"] is True
 
 
 def test_ingest_route_accepts_bearer_auth(mock_queue_backend, monkeypatch):
