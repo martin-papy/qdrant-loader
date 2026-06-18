@@ -369,7 +369,11 @@ class TestQdrantManager:
     def test_create_collection_exists(
         self, mock_settings, mock_qdrant_client, mock_global_config
     ):
-        """Test creating collection when it already exists."""
+        """Test creating collection when it already exists.
+
+        Payload indexes must still be ensured on pre-existing collections,
+        since older collections may predate newer index fields.
+        """
         existing_collection = Mock()
         existing_collection.name = "test_collection"
         mock_qdrant_client.get_collections.return_value = Mock(
@@ -390,7 +394,7 @@ class TestQdrantManager:
             manager.create_collection()
 
             mock_qdrant_client.create_collection.assert_not_called()
-            mock_qdrant_client.create_payload_index.assert_not_called()
+            mock_qdrant_client.create_payload_index.assert_called()
 
     def test_create_collection_no_vector_size(
         self, mock_settings, mock_qdrant_client, mock_global_config

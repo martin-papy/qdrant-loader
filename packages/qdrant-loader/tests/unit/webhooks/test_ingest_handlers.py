@@ -1,12 +1,12 @@
 import asyncio
 
 import pytest
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.webhooks.handlers import (
     enqueue_ingest_request,
     normalize_ingest_source_type,
 )
 from qdrant_loader.webhooks.queue_backend import (
-    FULL_SCAN,
     ChangeEvent,
     QueueBackendManager,
 )
@@ -24,10 +24,27 @@ class FakeQueueBackend:
         return None
 
 
+class FakeJob:
+    def __init__(self, job_id: int) -> None:
+        self.id = job_id
+
+
+class FakeJobQueue:
+    """Fakes the SQLiteJobQueue used by enqueue_ingest_request."""
+
+    def __init__(self) -> None:
+        self.jobs: list[tuple[str, dict]] = []
+
+    async def enqueue(self, job_type: str, payload: dict) -> FakeJob:
+        self.jobs.append((job_type, payload))
+        return FakeJob(len(self.jobs))
+
+
 @pytest.fixture
 def fake_queue():
     backend = FakeQueueBackend()
-    QueueBackendManager.set_backend(backend)
+    backend.job_queue = FakeJobQueue()
+    QueueBackendManager.set_backend(backend, backend.job_queue)
     yield backend
     QueueBackendManager.reset()
 
@@ -52,9 +69,11 @@ def test_enqueue_ingest_all_projects(fake_queue):
             force=False,
         )
     )
-    assert result["operation"] == FULL_SCAN
-    assert fake_queue.events[0].project_id is None
-    assert fake_queue.events[0].source_type is None
+    assert result["operation"] == JobType.BULK_INGEST
+    job_type, payload = fake_queue.job_queue.jobs[0]
+    assert job_type == JobType.BULK_INGEST
+    assert payload["project_id"] == ""
+    assert payload["source_type"] == ""
 
 
 def test_enqueue_ingest_requires_source_type_when_source_set(fake_queue):
