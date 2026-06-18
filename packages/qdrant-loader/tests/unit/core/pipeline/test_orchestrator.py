@@ -373,10 +373,17 @@ class TestPipelineOrchestrator:
         )
 
     @pytest.mark.asyncio
-    async def test_process_documents_clears_checkpoint_for_streamed_source_when_batch_is_filtered_out(self):
+    async def test_process_documents_clears_checkpoint_for_streamed_source_when_batch_is_filtered_out(
+        self,
+    ):
         """A clean run should clear stale checkpoints even when all documents were filtered out."""
         doc = Mock(spec=Document, id="doc1", source_type="jira", source="jira-main")
-        doc.metadata = {"__ingestion_checkpoint": {"cursor_kind": "batch", "cursor_value": "cursor-1"}}
+        doc.metadata = {
+            "__ingestion_checkpoint": {
+                "cursor_kind": "batch",
+                "cursor_value": "cursor-1",
+            }
+        }
 
         filtered_config = Mock(spec=SourcesConfig)
         filtered_config.git = None
@@ -395,7 +402,14 @@ class TestPipelineOrchestrator:
         self.orchestrator._update_document_states = AsyncMock()
         self.state_manager._initialized = True
 
-        async def fake_stream_batches(filtered_config_arg, batch_size=256, since=None, project_id=None, seen_uris=None, resume=True):
+        async def fake_stream_batches(
+            filtered_config_arg,
+            batch_size=256,
+            since=None,
+            project_id=None,
+            seen_uris=None,
+            resume=True,
+        ):
             assert filtered_config_arg is filtered_config
             yield [doc]
 
@@ -1068,7 +1082,10 @@ class TestStreamBatchesCheckpointBehavior:
 
     def _install_stream(self, orchestrator: PipelineOrchestrator, docs: list):
         """Replace stream_source_documents with an async generator that yields docs."""
-        async def fake_stream(source_configs, connector_factory, source_type, since=None):
+
+        async def fake_stream(
+            source_configs, connector_factory, source_type, since=None
+        ):
             for doc in docs:
                 yield doc
 
@@ -1105,9 +1122,9 @@ class TestStreamBatchesCheckpointBehavior:
         first_batch = batches[0]
         assert len(first_batch) == batch_size
         for doc in first_batch:
-            assert "__ingestion_checkpoint" not in (doc.metadata or {}), (
-                "Mid-page size flush must not carry __ingestion_checkpoint"
-            )
+            assert "__ingestion_checkpoint" not in (
+                doc.metadata or {}
+            ), "Mid-page size flush must not carry __ingestion_checkpoint"
 
     @pytest.mark.asyncio
     async def test_page_boundary_flush_preserves_checkpoint(self):
@@ -1132,9 +1149,9 @@ class TestStreamBatchesCheckpointBehavior:
         page1_batch = batches[0]
         assert len(page1_batch) == 3
         for doc in page1_batch:
-            assert doc.metadata.get("__ingestion_checkpoint") is not None, (
-                "Page-boundary flush must preserve __ingestion_checkpoint"
-            )
+            assert (
+                doc.metadata.get("__ingestion_checkpoint") is not None
+            ), "Page-boundary flush must preserve __ingestion_checkpoint"
 
     @pytest.mark.asyncio
     async def test_midpage_overflow_warning_logged_once(self):
@@ -1154,12 +1171,13 @@ class TestStreamBatchesCheckpointBehavior:
                 pass
 
         overflow_warnings = [
-            c for c in mock_logger.warning.call_args_list
+            c
+            for c in mock_logger.warning.call_args_list
             if "exceeds batch_size" in str(c)
         ]
-        assert len(overflow_warnings) == 1, (
-            "Warning should be emitted exactly once per overflowing page"
-        )
+        assert (
+            len(overflow_warnings) == 1
+        ), "Warning should be emitted exactly once per overflowing page"
 
     @pytest.mark.asyncio
     async def test_checkpoint_stripped_then_preserved_across_two_pages(self):

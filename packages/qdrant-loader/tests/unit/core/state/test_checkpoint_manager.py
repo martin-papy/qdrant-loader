@@ -1,9 +1,7 @@
 """Unit tests for CheckpointManager (WS-2 checkpointing)."""
 
 import pytest
-import pytest_asyncio
-
-from qdrant_loader.core.state.checkpoint_manager import CheckpointManager, Checkpoint
+from qdrant_loader.core.state.checkpoint_manager import Checkpoint, CheckpointManager
 
 
 @pytest.mark.asyncio
