@@ -119,4 +119,9 @@ _http_middleware = [
 
 # Module-level ASGI app so uvicorn can import it with workers=N
 # Tools and /health route must be registered first
-http_app = mcp.http_app(path="/mcp", middleware=_http_middleware)
+http_app = mcp.http_app(
+    path="/mcp",
+    middleware=_http_middleware,
+    json_response=True,   # for testing using Postman
+    stateless_http=True,  # no initialize/session handshake required
+)
