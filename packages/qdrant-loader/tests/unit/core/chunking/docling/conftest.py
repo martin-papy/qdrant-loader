@@ -42,16 +42,27 @@ def _raw_chunker():
     return HybridChunker(tokenizer=tokenizer, merge_peers=True)
 
 
+def _convert_or_fail(engine, path: Path):
+    """Convert a fixture and fail loudly if the engine did not succeed, so a broken
+    conversion surfaces here rather than as an opaque ``NoneType`` access downstream."""
+    outcome = engine.convert(path)
+    assert outcome.succeeded and outcome.document is not None, (
+        f"fixture conversion failed for {path.name}: "
+        f"status={outcome.status}, error={outcome.error}"
+    )
+    return outcome.document
+
+
 @pytest.fixture(scope="session")
 def converted_headers(_engine):
     """The nested-headings docx, as a ConvertedDocument (the chunker's input type)."""
-    return _engine.convert(FIXTURE_DIR / "unit_test_headers.docx").document
+    return _convert_or_fail(_engine, FIXTURE_DIR / "unit_test_headers.docx")
 
 
 @pytest.fixture(scope="session")
 def converted_xlsx(_engine):
     """The table-bearing xlsx, as a ConvertedDocument."""
-    return _engine.convert(FIXTURE_DIR / "xlsx_05_table_with_title.xlsx").document
+    return _convert_or_fail(_engine, FIXTURE_DIR / "xlsx_05_table_with_title.xlsx")
 
 
 @pytest.fixture(scope="session")

@@ -240,10 +240,10 @@ class TestDoclingStrategyConfig:
 
     def test_max_tokens_must_be_positive(self):
         """max_tokens is a token budget — zero or negative is meaningless."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="greater than 0"):
             DoclingStrategyConfig(max_tokens=0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="greater than 0"):
             DoclingStrategyConfig(max_tokens=-10)
 
     def test_table_serialization_accepts_known_modes_only(self):
@@ -254,7 +254,7 @@ class TestDoclingStrategyConfig:
             == "markdown"
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r"should be 'triplets' or 'markdown'"):
             DoclingStrategyConfig(table_serialization="csv")
 
 

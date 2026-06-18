@@ -56,24 +56,26 @@ class TokenizerFactory:
         )
 
     def _build_openai(self) -> BaseTokenizer:
-        import tiktoken
-        from docling_core.transforms.chunker.tokenizer.openai import OpenAITokenizer
-
         try:
+            import tiktoken
+            from docling_core.transforms.chunker.tokenizer.openai import (
+                OpenAITokenizer,
+            )
+
             encoding = tiktoken.get_encoding(self._config.model)
-        except Exception as error:  # unknown encoding name / no cached BPE
+        except Exception as error:  # missing dep / unknown encoding / no cached BPE
             raise TokenizerUnavailableError("openai", str(error)) from error
         return OpenAITokenizer(tokenizer=encoding, max_tokens=self._config.max_tokens)
 
     def _build_huggingface(self) -> BaseTokenizer:
-        from docling_core.transforms.chunker.tokenizer.huggingface import (
-            HuggingFaceTokenizer,
-        )
-
         try:
+            from docling_core.transforms.chunker.tokenizer.huggingface import (
+                HuggingFaceTokenizer,
+            )
+
             return HuggingFaceTokenizer.from_pretrained(
                 model_name=self._config.model,
                 max_tokens=self._config.max_tokens,
             )
-        except Exception as error:  # model not present / offline hub
+        except Exception as error:  # missing dep / model not present / offline hub
             raise TokenizerUnavailableError("huggingface", str(error)) from error

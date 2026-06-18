@@ -28,11 +28,15 @@ class FormatPolicy:
         from docling.datamodel.base_models import InputFormat
 
         formats_by_name = {fmt.value: fmt for fmt in InputFormat}
-        return [
-            formats_by_name[name]
-            for name in self._config.enabled_formats
-            if name in formats_by_name
+        unknown = [
+            name for name in self._config.enabled_formats if name not in formats_by_name
         ]
+        if unknown:
+            raise ValueError(
+                f"Unknown conversion format(s) {unknown!r}; valid formats are "
+                f"{sorted(formats_by_name)}."
+            )
+        return [formats_by_name[name] for name in self._config.enabled_formats]
 
     def supported_mime_types(self) -> set[str]:
         """Accepted MIME types = docling's table filtered to the enabled formats."""
