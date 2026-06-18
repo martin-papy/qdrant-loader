@@ -205,6 +205,75 @@ class QdrantManager:
             )
         return cast(QdrantClient, self.client)
 
+    # Indexes that filter-based deletes (delete_points_by_document_id, etc.)
+    # depend on. A silent failure here would surface later as a confusing
+    # Qdrant error mid-delete, so these must raise instead of just warning.
+    _REQUIRED_PAYLOAD_INDEXES = frozenset(
+        {"document_id", "project_id", "source_type", "source"}
+    )
+
+    def _ensure_payload_indexes(self, client: QdrantClient) -> None:
+        """Ensure all required payload indexes exist on the collection.
+
+        Safe to call on both new and existing collections — Qdrant ignores
+        duplicate index creation requests.
+        """
+        indexes_to_create = [
+            ("document_id", {"type": "keyword"}),
+            ("project_id", {"type": "keyword"}),
+            ("source_type", {"type": "keyword"}),
+            ("source", {"type": "keyword"}),
+            ("title", {"type": "keyword"}),
+            ("created_at", {"type": "keyword"}),
+            ("updated_at", {"type": "keyword"}),
+            ("is_attachment", {"type": "bool"}),
+            ("parent_document_id", {"type": "keyword"}),
+            ("original_file_type", {"type": "keyword"}),
+            ("is_converted", {"type": "bool"}),
+        ]
+
+        created_indexes = []
+        failed_indexes = []
+
+        for field_name, field_schema in indexes_to_create:
+            try:
+                client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field_name,
+                    field_schema=field_schema,  # type: ignore
+                )
+                created_indexes.append(field_name)
+                self.logger.debug(f"Ensured payload index for field: {field_name}")
+            except Exception as e:
+                failed_indexes.append((field_name, str(e)))
+                self.logger.warning(
+                    f"Failed to create index for {field_name}", error=str(e)
+                )
+
+        if failed_indexes:
+            self.logger.warning(
+                "Some indexes failed to create but collection is functional",
+                failed_details=failed_indexes,
+            )
+            required_failures = {
+                name: err
+                for name, err in failed_indexes
+                if name in self._REQUIRED_PAYLOAD_INDEXES
+            }
+            if required_failures:
+                raise RuntimeError(
+                    "Failed to create required payload index(es): "
+                    f"{required_failures}. These are required for filter-based "
+                    "deletes; refusing to continue with a collection in this state."
+                )
+
+        self.logger.info(
+            "Payload indexes ensured",
+            collection=self.collection_name,
+            created_indexes=created_indexes,
+            failed_indexes=[name for name, _ in failed_indexes] or None,
+        )
+
     def create_collection(self) -> None:
         """Create a new collection if it doesn't exist."""
         try:
@@ -213,6 +282,7 @@ class QdrantManager:
             collections = client.get_collections()
             if any(c.name == self.collection_name for c in collections.collections):
                 self.logger.info(f"Collection {self.collection_name} already exists")
+                self._ensure_payload_indexes(client)
                 return
 
             # Get vector size from unified LLM settings first, then legacy embedding
@@ -279,66 +349,11 @@ class QdrantManager:
                 has_sparse=self.sparse_runtime.enabled,
             )
 
-            # Create payload indexes for optimal search performance
-            indexes_to_create = [
-                # Essential performance indexes
-                (
-                    "document_id",
-                    {"type": "keyword"},
-                ),  # Existing index, kept for backward compatibility
-                (
-                    "project_id",
-                    {"type": "keyword"},
-                ),  # Critical for multi-tenant filtering
-                ("source_type", {"type": "keyword"}),  # Document type filtering
-                ("source", {"type": "keyword"}),  # Source path filtering
-                ("title", {"type": "keyword"}),  # Title-based search and filtering
-                ("created_at", {"type": "keyword"}),  # Temporal filtering
-                ("updated_at", {"type": "keyword"}),  # Temporal filtering
-                # Secondary performance indexes
-                ("is_attachment", {"type": "bool"}),  # Attachment filtering
-                (
-                    "parent_document_id",
-                    {"type": "keyword"},
-                ),  # Hierarchical relationships
-                ("original_file_type", {"type": "keyword"}),  # File type filtering
-                ("is_converted", {"type": "bool"}),  # Conversion status filtering
-            ]
+            self._ensure_payload_indexes(client)
 
-            # Create indexes with proper error handling
-            created_indexes = []
-            failed_indexes = []
-
-            for field_name, field_schema in indexes_to_create:
-                try:
-                    client.create_payload_index(
-                        collection_name=self.collection_name,
-                        field_name=field_name,
-                        field_schema=field_schema,  # type: ignore
-                    )
-                    created_indexes.append(field_name)
-                    self.logger.debug(f"Created payload index for field: {field_name}")
-                except Exception as e:
-                    failed_indexes.append((field_name, str(e)))
-                    self.logger.warning(
-                        f"Failed to create index for {field_name}", error=str(e)
-                    )
-
-            # Log index creation summary
             self.logger.info(
                 f"Collection {self.collection_name} created with indexes",
-                created_indexes=created_indexes,
-                failed_indexes=(
-                    [name for name, _ in failed_indexes] if failed_indexes else None
-                ),
-                total_indexes_created=len(created_indexes),
             )
-
-            if failed_indexes:
-                self.logger.warning(
-                    "Some indexes failed to create but collection is functional",
-                    failed_details=failed_indexes,
-                )
         except Exception as e:
             self.logger.error("Failed to create collection", error=str(e))
             raise

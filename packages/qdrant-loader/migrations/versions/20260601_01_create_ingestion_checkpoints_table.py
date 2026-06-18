@@ -56,7 +56,7 @@ def upgrade() -> None:
         if "ingestion_checkpoints" in existing_tables
         else set()
     )
-    
+
     if "ix_ingestion_checkpoints_project_source" not in existing_indexes:
         op.create_index(
             "ix_ingestion_checkpoints_project_source",

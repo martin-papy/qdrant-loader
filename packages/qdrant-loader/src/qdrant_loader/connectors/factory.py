@@ -1,5 +1,5 @@
-from typing import Any
 import inspect
+from typing import Any
 
 from .registry import CONNECTOR_REGISTRY
 

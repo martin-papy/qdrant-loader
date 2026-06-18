@@ -106,7 +106,9 @@ class PipelineOrchestrator:
                             CheckpointManager,
                         )
 
-                        async with await self.components.state_manager.get_session() as session:
+                        async with (
+                            await self.components.state_manager.get_session() as session
+                        ):
                             cp_mgr = CheckpointManager(session)
                             cp = await cp_mgr.get_checkpoint(
                                 project_id, source_type_name, src_config.source
@@ -121,9 +123,13 @@ class PipelineOrchestrator:
                         source=src_config.source,
                     )
 
-                return get_connector_instance(src_config, checkpoint_cursor=checkpoint_cursor)
+                return get_connector_instance(
+                    src_config, checkpoint_cursor=checkpoint_cursor
+                )
 
-            async for document in self.components.source_processor.stream_source_documents(
+            async for (
+                document
+            ) in self.components.source_processor.stream_source_documents(
                 source_configs,
                 connector_factory_with_checkpoint,
                 source_type_name,
@@ -351,9 +357,15 @@ class PipelineOrchestrator:
 
                     for doc in batch:
                         metadata = getattr(doc, "metadata", None) or {}
-                        cp_info = metadata.get("__ingestion_checkpoint") if isinstance(metadata, dict) else None
+                        cp_info = (
+                            metadata.get("__ingestion_checkpoint")
+                            if isinstance(metadata, dict)
+                            else None
+                        )
                         if isinstance(cp_info, dict) and cp_info:
-                            streamed_checkpoint_sources.add((doc.source_type, doc.source))
+                            streamed_checkpoint_sources.add(
+                                (doc.source_type, doc.source)
+                            )
 
                     if not force and change_detector is not None:
                         batch = await change_detector.classify_batch(
@@ -409,16 +421,28 @@ class PipelineOrchestrator:
                         if resume and current_project_id is not None and not force:
                             try:
                                 from qdrant_loader.core.state.checkpoint_manager import (
-                                    CheckpointManager,
                                     Checkpoint,
+                                    CheckpointManager,
                                 )
 
-                                checkpoints_to_save: dict[tuple[str, str], Checkpoint] = {}
+                                # Iteration order is the streaming order, so the
+                                # last cp_info seen per source is the furthest
+                                # along (later cursor overwrites earlier ones).
+                                checkpoints_to_save: dict[
+                                    tuple[str, str], Checkpoint
+                                ] = {}
                                 for doc in batch:
-                                    if doc.id not in batch_result.successfully_processed_documents:
+                                    if (
+                                        doc.id
+                                        not in batch_result.successfully_processed_documents
+                                    ):
                                         continue
                                     metadata = getattr(doc, "metadata", None) or {}
-                                    cp_info = metadata.get("__ingestion_checkpoint") if isinstance(metadata, dict) else None
+                                    cp_info = (
+                                        metadata.get("__ingestion_checkpoint")
+                                        if isinstance(metadata, dict)
+                                        else None
+                                    )
                                     if not isinstance(cp_info, dict) or not cp_info:
                                         continue
                                     key = (doc.source_type, doc.source)
@@ -433,7 +457,9 @@ class PipelineOrchestrator:
                                     checkpoint_sources_to_clear.add(key)
 
                                 if checkpoints_to_save:
-                                    async with await self.components.state_manager.get_session() as session:
+                                    async with (
+                                        await self.components.state_manager.get_session() as session
+                                    ):
                                         cp_mgr = CheckpointManager(session)
                                         for checkpoint in checkpoints_to_save.values():
                                             await cp_mgr.save_checkpoint(checkpoint)
@@ -474,7 +500,9 @@ class PipelineOrchestrator:
                             CheckpointManager,
                         )
 
-                        async with await self.components.state_manager.get_session() as session:
+                        async with (
+                            await self.components.state_manager.get_session() as session
+                        ):
                             cp_mgr = CheckpointManager(session)
                             for stype, src in sources_to_clear:
                                 try:
@@ -647,7 +675,9 @@ class PipelineOrchestrator:
                             CheckpointManager,
                         )
 
-                        async with await self.components.state_manager.get_session() as session:
+                        async with (
+                            await self.components.state_manager.get_session() as session
+                        ):
                             cp_mgr = CheckpointManager(session)
                             cp = await cp_mgr.get_checkpoint(
                                 project_id, source_type_name, src_config.source
@@ -660,7 +690,9 @@ class PipelineOrchestrator:
                         source_type=source_type_name,
                         source=getattr(src_config, "source", None),
                     )
-                return get_connector_instance(src_config, checkpoint_cursor=checkpoint_cursor)
+                return get_connector_instance(
+                    src_config, checkpoint_cursor=checkpoint_cursor
+                )
 
             return _factory
 

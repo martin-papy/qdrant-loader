@@ -26,6 +26,7 @@ class QueueWorkerPool:
         lease_seconds: int = 60,
         max_attempts: int = 1,
         retry_backoff_base_seconds: int = 0,
+        job_types: list[str] | None = None,
     ) -> None:
         if worker_count < 1:
             raise ValueError("worker_count must be >= 1")
@@ -42,6 +43,7 @@ class QueueWorkerPool:
         self._lease_seconds = lease_seconds
         self._max_attempts = max_attempts
         self._retry_backoff_base_seconds = retry_backoff_base_seconds
+        self._job_types = job_types
         self._source_locks: dict[str, asyncio.Lock] = {}
         self._source_locks_guard = asyncio.Lock()
         self._queue_io_guard = asyncio.Lock()
@@ -57,7 +59,8 @@ class QueueWorkerPool:
             while True:
                 async with self._queue_io_guard:
                     job = await self._queue.claim_next(
-                        lease_seconds=self._lease_seconds
+                        lease_seconds=self._lease_seconds,
+                        job_types=self._job_types,
                     )
                 if job is None:
                     return

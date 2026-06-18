@@ -5,14 +5,28 @@ from __future__ import annotations
 import asyncio
 import os
 
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.webhooks.event_processor import process_change_event
-from qdrant_loader.webhooks.queue_backend import QueueBackendManager, parse_job_payload
+from qdrant_loader.webhooks.queue_backend import (
+    FULL_SCAN,
+    QueueBackendManager,
+    parse_job_payload,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
 WEBHOOK_WORKER_POLL_SECONDS = float(os.getenv("WEBHOOK_WORKER_POLL_SECONDS", "0.5"))
 WEBHOOK_WORKER_LEASE_SECONDS = int(os.getenv("WEBHOOK_WORKER_LEASE_SECONDS", "120"))
+
+# Job types handled exclusively by the webhook worker.
+# The ingestion QueueWorkerPool claims BULK_INGEST / INCREMENTAL_PULL; these two
+# sets must remain disjoint so neither worker steals the other's jobs.
+WEBHOOK_JOB_TYPES = [
+    JobType.SINGLE_UPSERT.value,
+    JobType.SINGLE_DELETE.value,
+    FULL_SCAN,
+]
 
 
 async def run_webhook_worker(stop_event: asyncio.Event) -> None:
@@ -25,7 +39,10 @@ async def run_webhook_worker(stop_event: asyncio.Event) -> None:
     )
 
     while not stop_event.is_set():
-        job = await job_queue.claim_next(lease_seconds=WEBHOOK_WORKER_LEASE_SECONDS)
+        job = await job_queue.claim_next(
+            lease_seconds=WEBHOOK_WORKER_LEASE_SECONDS,
+            job_types=WEBHOOK_JOB_TYPES,
+        )
         if job is None:
             try:
                 await asyncio.wait_for(

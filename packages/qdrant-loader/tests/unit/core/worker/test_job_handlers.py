@@ -120,17 +120,22 @@ async def test_ingestion_handler_bulk_ingest_calls_orchestrator_with_force_true(
 
 
 @pytest.mark.asyncio
-async def test_ingestion_handler_bulk_ingest_without_project_id_raises_permanent_error():
+async def test_ingestion_handler_bulk_ingest_without_project_id_ingests_all_projects():
+    """project_id is optional for BULK_INGEST: absent means "all projects"."""
     orchestrator = MagicMock()
     orchestrator.process_documents = AsyncMock()
     handler = IngestionJobHandler(orchestrator, MagicMock())
 
-    with pytest.raises(PermanentJobError, match="project_id"):
-        await handler.handle_bulk_ingest(
-            {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
-        )
+    await handler.handle_bulk_ingest(
+        {"source_lock": "git:repo", "source_type": "git", "source": "repo"}
+    )
 
-    orchestrator.process_documents.assert_not_awaited()
+    orchestrator.process_documents.assert_awaited_once_with(
+        source_type="git",
+        source="repo",
+        project_id=None,
+        force=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -209,25 +214,27 @@ async def test_ingestion_handler_incremental_pull_no_history_passes_since_none(
 
 
 @pytest.mark.asyncio
-async def test_bulk_ingest_invalid_required_fields_raise_permanent_error():
+async def test_bulk_ingest_blank_optional_fields_treated_as_all():
+    """A blank/whitespace-only source is optional for BULK_INGEST and means "all"."""
     orchestrator = MagicMock()
     orchestrator.process_documents = AsyncMock()
     handler = IngestionJobHandler(orchestrator, MagicMock())
 
-    with pytest.raises(
-        PermanentJobError,
-        match=r"missing or invalid required field\(s\): source",
-    ):
-        await handler.handle_bulk_ingest(
-            {
-                "source_lock": "git:repo",
-                "source_type": "git",
-                "source": "   ",
-                "project_id": "proj-1",
-            }
-        )
+    await handler.handle_bulk_ingest(
+        {
+            "source_lock": "git:repo",
+            "source_type": "git",
+            "source": "   ",
+            "project_id": "proj-1",
+        }
+    )
 
-    orchestrator.process_documents.assert_not_awaited()
+    orchestrator.process_documents.assert_awaited_once_with(
+        source_type="git",
+        source=None,
+        project_id="proj-1",
+        force=True,
+    )
 
 
 @pytest.mark.asyncio

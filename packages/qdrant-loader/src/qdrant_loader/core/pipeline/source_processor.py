@@ -1,6 +1,7 @@
 """Source processor for handling different source types."""
 
 import asyncio
+import inspect
 from collections.abc import AsyncIterator, Callable, Mapping
 from datetime import datetime
 
@@ -10,8 +11,6 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.utils.sensitive import sanitize_exception_message
-import asyncio
-import inspect
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -61,7 +60,8 @@ class SourceProcessor:
                 maybe_connector = connector_factory(source_config)
                 connector = (
                     await maybe_connector
-                    if asyncio.iscoroutine(maybe_connector) or inspect.isawaitable(maybe_connector)
+                    if asyncio.iscoroutine(maybe_connector)
+                    or inspect.isawaitable(maybe_connector)
                     else maybe_connector
                 )
 
@@ -141,7 +141,8 @@ class SourceProcessor:
                 maybe_connector = connector_factory(source_config)
                 connector = (
                     await maybe_connector
-                    if asyncio.iscoroutine(maybe_connector) or inspect.isawaitable(maybe_connector)
+                    if asyncio.iscoroutine(maybe_connector)
+                    or inspect.isawaitable(maybe_connector)
                     else maybe_connector
                 )
 
