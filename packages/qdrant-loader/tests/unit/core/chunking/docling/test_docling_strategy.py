@@ -84,16 +84,28 @@ class _FakeChunker:
         return list(self._chunks)
 
 
+class _FakeDoc:
+    """Document-shaped enough for the enrichment loop: content, id, metadata dict."""
+
+    def __init__(self, content: str, doc_id: str) -> None:
+        self.content = content
+        self.id = doc_id
+        self.metadata: dict = {}
+
+
 class _EchoMapper:
-    """Maps each chunk 1:1 (the real mapper's shape), recording what it received so the
-    cap can be asserted on the mapper's input as well as the returned list."""
+    """Maps each chunk 1:1 into a _FakeDoc, recording what it received so the cap can
+    be asserted on the mapper's input as well as the returned list."""
 
     def __init__(self) -> None:
         self.received: list | None = None
 
     def to_documents(self, chunks, document):
         self.received = list(chunks)
-        return self.received
+        return [
+            _FakeDoc(content=str(c), doc_id=f"{document.id}_{i}")
+            for i, c in enumerate(self.received)
+        ]
 
 
 class _DocStub:
@@ -107,13 +119,23 @@ class _DocStub:
         self.converted_document = object()
 
 
-def _capped_strategy(chunker, mapper, max_chunks: int) -> DoclingChunkingStrategy:
+class _NoopEnricher:
+    """Returns no enrichment keys; used where the cap logic is what's under test."""
+
+    def enrich(self, content, doc_id):
+        return {}
+
+
+def _capped_strategy(
+    chunker, mapper, max_chunks: int, enricher=None
+) -> DoclingChunkingStrategy:
     """A strategy with collaborators injected, bypassing the heavy __init__
     (HybridChunker + tokenizer + spaCy). Mirrors test_service.py pre-seeding a fake
-    engine: we drive chunk_document's real cap logic, not the chunker itself."""
+    engine: we drive chunk_document's real cap + enrichment logic, not the chunker."""
     strategy = object.__new__(DoclingChunkingStrategy)
     strategy._chunker = chunker
     strategy._mapper = mapper
+    strategy._enricher = enricher if enricher is not None else _NoopEnricher()
     strategy.settings = SimpleNamespace(
         global_config=SimpleNamespace(
             chunking=SimpleNamespace(max_chunks_per_document=max_chunks)
@@ -148,3 +170,51 @@ def test_chunk_document_keeps_all_chunks_when_under_cap(caplog):
     assert not any(
         "max_chunks_per_document" in r.getMessage() for r in caplog.records
     )
+
+
+class _RecordingEnricher:
+    """Records each enrich() call and returns a fixed payload."""
+
+    def __init__(self, payload: dict) -> None:
+        self._payload = payload
+        self.calls: list[tuple[str, str]] = []
+
+    def enrich(self, content, doc_id):
+        self.calls.append((content, doc_id))
+        return dict(self._payload)
+
+
+def test_chunk_document_enriches_each_chunk_metadata():
+    """Every chunk Document gets the enrichment keys merged into its metadata."""
+    mapper = _EchoMapper()
+    enricher = _RecordingEnricher(
+        {"entities": [{"text": "X"}], "topics": [], "key_phrases": []}
+    )
+    strategy = _capped_strategy(
+        _FakeChunker(count=2), mapper, max_chunks=500, enricher=enricher
+    )
+
+    result = strategy.chunk_document(_DocStub())
+
+    assert len(result) == 2
+    assert all(d.metadata["entities"] == [{"text": "X"}] for d in result)
+    assert all(d.metadata["key_phrases"] == [] for d in result)
+    # enrich receives each chunk's content (the mapper echoed "chunk-0"/"chunk-1")
+    assert [content for content, _ in enricher.calls] == ["chunk-0", "chunk-1"]
+
+
+def test_chunk_document_attaches_empty_shape_when_enrichment_disabled():
+    """Parity with markdown: disabled enrichment still yields the empty-shape keys."""
+    mapper = _EchoMapper()
+    enricher = _RecordingEnricher(
+        {"entities": [], "topics": [], "key_phrases": []}
+    )
+    strategy = _capped_strategy(
+        _FakeChunker(count=1), mapper, max_chunks=500, enricher=enricher
+    )
+
+    result = strategy.chunk_document(_DocStub())
+
+    assert result[0].metadata["entities"] == []
+    assert result[0].metadata["topics"] == []
+    assert result[0].metadata["key_phrases"] == []

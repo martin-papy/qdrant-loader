@@ -13,7 +13,9 @@ and contextual-embedding toggle are read from ``chunking.strategies.docling`` (f
 back to the *embedding* settings), and the token counter is aligned to the embedding
 model's tokenizer — see :meth:`DoclingChunkingStrategy._build_config`.
 
-Remaining parity gap vs the markdown path: NLP enrichment keys (see the TODO below).
+NLP enrichment parity with the markdown path is provided by the shared
+:class:`~qdrant_loader.core.text_processing.chunk_enricher.ChunkEnricher`, which writes
+the entities/topics/key_phrases (+ enhanced) keys onto each chunk ``Document``.
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ from qdrant_loader.core.chunking.docling import (
     build_chunker,
 )
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.text_processing.chunk_enricher import ChunkEnricher
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -44,6 +47,10 @@ if TYPE_CHECKING:
 class DoclingChunkingStrategy(BaseChunkingStrategy):
     """Chunks a docling-converted document via its structured ``DoclingDocument``."""
 
+    # This strategy enriches via ChunkEnricher (SemanticAnalyzer), not the base
+    # TextProcessor — so don't let BaseChunkingStrategy load a second spaCy model.
+    _uses_base_text_processor = False
+
     def __init__(self, settings: Settings) -> None:
         super().__init__(settings)
         self._config: ChunkingConfig = self._build_config(
@@ -54,6 +61,7 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
             ChunkerKind.DOCLING, self._config
         )
         self._mapper = ChunkDocumentMapper(self._config)
+        self._enricher = ChunkEnricher(settings)
 
     @staticmethod
     def _build_config(
@@ -107,8 +115,19 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
             )
             chunks = chunks[:max_chunks]
 
-        return self._mapper.to_documents(chunks, document)
+        documents = self._mapper.to_documents(chunks, document)
 
-        # TODO: parity with the markdown path — NLP enrichment keys
-        # (entities/pos_tags/topics) are not produced here; decide whether to run the
-        # TextProcessor over chunk.content.
+        # NLP enrichment parity with the markdown path: the shared ChunkEnricher
+        # writes entities/topics/key_phrases (+ enhanced when enabled), or the
+        # empty-shape keys when disabled. Runs on the stored chunk content.
+        for chunk_doc in documents:
+            chunk_doc.metadata.update(
+                self._enricher.enrich(chunk_doc.content, doc_id=chunk_doc.id)
+            )
+
+        return documents
+
+    def shutdown(self) -> None:
+        """Release the enricher's analyzer resources (spaCy/LDA)."""
+        if getattr(self, "_enricher", None) is not None:
+            self._enricher.shutdown()
