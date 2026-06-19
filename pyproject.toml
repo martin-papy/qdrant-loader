@@ -50,6 +50,10 @@ dev = [
     "requests>=2.28.0",
     "responses>=0.24.1",
     "requests-mock>=1.11.0",
+    # Authored directly by tests to build fixture .xlsx/.docx files; pinned explicitly
+    # so the suite does not rely on docling pulling them in transitively.
+    "openpyxl>=3.1.0",
+    "python-docx>=1.1.0",
     "sqlite-web>=0.6.4",
     "py-spy",
     "snakeviz",

@@ -1,5 +1,7 @@
 """Configuration for text chunking."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
@@ -150,6 +152,33 @@ class MarkdownStrategyConfig(BaseModel):
     )
 
 
+class DoclingStrategyConfig(BaseModel):
+    """Configuration for the docling structure-aware chunking strategy.
+
+    Used for files converted by the docling engine. Unlike the char-based strategies,
+    docling sizes chunks by a *token* budget aligned to the embedding model's tokenizer
+    (the tokenizer identity still comes from ``embedding.tokenizer``).
+    """
+
+    max_tokens: int | None = Field(
+        default=None,
+        gt=0,
+        description="Per-chunk token budget for docling chunking. "
+        "Unset inherits embedding.max_tokens_per_chunk.",
+    )
+    include_context_in_embed: bool = Field(
+        default=False,
+        description="Prepend the heading breadcrumb to each chunk's content (and thus "
+        "its embedding). Adds context for retrieval; may push a chunk past max_tokens.",
+    )
+    table_serialization: Literal["triplets", "markdown"] = Field(
+        default="triplets",
+        description="How tables are rendered into chunk text: 'triplets' "
+        "('row, column = value' lines — docling's embedding-friendly default) or "
+        "'markdown' (pipe-delimited rows — more readable for LLMs and display).",
+    )
+
+
 class StrategySpecificConfig(BaseModel):
     """Strategy-specific configuration settings."""
 
@@ -173,6 +202,10 @@ class StrategySpecificConfig(BaseModel):
     markdown: MarkdownStrategyConfig = Field(
         default_factory=MarkdownStrategyConfig,
         description="Configuration for Markdown chunking strategy",
+    )
+    docling: DoclingStrategyConfig = Field(
+        default_factory=DoclingStrategyConfig,
+        description="Configuration for docling structure-aware chunking strategy",
     )
 
 

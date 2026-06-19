@@ -401,6 +401,14 @@ global:
         header_analysis_threshold_h1: 3
         header_analysis_threshold_h3: 8
         enable_hierarchical_metadata: true
+      # Used for files converted by the docling engine (file_conversion.engine: docling)
+      docling:
+        # Per-chunk token budget; unset inherits embedding.max_tokens_per_chunk
+        max_tokens: null
+        # Prepend the heading breadcrumb to each chunk's embedded content
+        include_context_in_embed: false
+        # Table rendering: "triplets" (embedding-friendly) or "markdown" (readable)
+        table_serialization: triplets
 ```
 
 **Strategy-Specific Configuration Details:**
@@ -459,6 +467,14 @@ The `strategies` section allows you to fine-tune how different content types are
 - `header_analysis_threshold_h3`: H3 header count threshold for split level decisions
 - `enable_hierarchical_metadata`: Extract section relationships and breadcrumb navigation
 
+**Docling Strategy (files converted by the docling engine):**
+
+Applies when `file_conversion.engine: docling`. Unlike the character-based strategies above, docling sizes chunks by a token budget aligned to the embedding model's tokenizer (tokenizer identity comes from `embedding.tokenizer`).
+
+- `max_tokens`: Per-chunk token budget. Unset (`null`) inherits `embedding.max_tokens_per_chunk`
+- `include_context_in_embed`: Prepend the heading breadcrumb to each chunk's embedded content for added retrieval context (may push a chunk past `max_tokens`)
+- `table_serialization`: How tables are rendered into chunk text — `triplets` (`row, column = value` lines, embedding-friendly) or `markdown` (pipe-delimited rows, more readable for LLMs and display)
+
 #### Semantic Analysis Configuration
 
 ```yaml
@@ -507,13 +523,31 @@ global:
     # Optional: Timeout for conversion operations in seconds (default: 300)
     # Range: 0 < conversion_timeout ≤ 3600 seconds
     conversion_timeout: 300
-    # Optional: MarkItDown specific settings
+    # Optional: Conversion engine — "markitdown" (default) or "docling" (default: markitdown)
+    engine: markitdown
+    # Optional: MarkItDown specific settings (used when engine: markitdown)
     markitdown:
       enable_llm_descriptions: false
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
+    # Optional: Docling engine settings (used when engine: docling)
+    docling:
+      # Baseline cost vs. fidelity: fast | accurate | scanned (default: fast)
+      profile: fast
+      # Optional overrides (unset = inherit from the profile baseline)
+      # device: auto                 # auto | cpu | cuda | mps
+      # num_threads: 4
+      # enabled_formats: ["pdf", "docx", "pptx", "xlsx", "image", "csv"]
+      # artifacts_path: null         # offline model dir; null fetches on first run
+      # API image captioning (off by default)
+      picture:
+        enabled: false
+        model: "gpt-4o-mini"
+        api_key: "${LLM_API_KEY}"
 ```
+
+See the [File Conversion guide](../detailed-guides/file-conversion/README.md#docling-engine-settings) for the full docling settings reference and conversion profiles.
 
 #### Worker Scheduling Configuration
 

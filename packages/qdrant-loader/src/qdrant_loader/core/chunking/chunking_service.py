@@ -8,6 +8,7 @@ from qdrant_loader.core.chunking.strategy import (
     BaseChunkingStrategy,
     CodeChunkingStrategy,
     DefaultChunkingStrategy,
+    DoclingChunkingStrategy,
     HTMLChunkingStrategy,
     JSONChunkingStrategy,
     MarkdownChunkingStrategy,
@@ -99,6 +100,17 @@ class ChunkingService:
         """
         # Check if this is a converted file
         conversion_method = document.metadata.get("conversion_method")
+        if conversion_method == "docling":
+            # Files converted with docling carry a structured DoclingDocument; chunk it
+            # natively (structure-aware) rather than re-parsing exported markdown.
+            self.logger.info(
+                "Using docling strategy for converted file",
+                original_file_type=document.metadata.get("original_file_type"),
+                conversion_method=conversion_method,
+                document_id=document.id,
+                document_title=document.title,
+            )
+            return DoclingChunkingStrategy(self.settings)
         if conversion_method == "markitdown":
             # Files converted with MarkItDown are now in markdown format
             self.logger.info(

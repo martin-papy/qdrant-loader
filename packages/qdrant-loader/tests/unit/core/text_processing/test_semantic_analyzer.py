@@ -702,42 +702,6 @@ class TestSemanticAnalyzer:
             assert dependencies[0]["children"] == ["world"]
             assert dependencies[1]["text"] == "runs"
 
-    def test_extract_topics_existing_model(self, mock_nlp):
-        """Test topic extraction with existing LDA model."""
-        with (
-            patch("spacy.load", return_value=mock_nlp),
-            patch(
-                "qdrant_loader.core.text_processing.semantic_analyzer.preprocess_string",
-                return_value=[
-                    "apple",
-                    "company",
-                    "technology",
-                    "innovation",
-                    "business",
-                ],
-            ),
-        ):
-
-            analyzer = SemanticAnalyzer()
-
-            # Set up existing model and dictionary
-            mock_dict = Mock()
-            mock_dict.doc2bow.return_value = [(0, 1), (1, 1)]
-            mock_dict.add_documents = Mock()
-            analyzer.dictionary = mock_dict
-
-            mock_lda = Mock()
-            mock_lda.update = Mock()
-            mock_lda.print_topics.return_value = [(0, '0.5*"apple" + 0.3*"company"')]
-            analyzer.lda_model = mock_lda
-
-            topics = analyzer._extract_topics("Apple is a company")
-
-            # Verify existing model was updated
-            mock_dict.add_documents.assert_called_once()
-            mock_lda.update.assert_called_once()
-            assert len(topics) == 1
-
     def test_extract_key_phrases(self, mock_nlp, mock_doc):
         """Test key phrase extraction."""
         with patch("spacy.load", return_value=mock_nlp):
@@ -1123,6 +1087,84 @@ class TestSemanticAnalyzer:
                     for key in analyzer._doc_cache
                     if isinstance(key, tuple)
                 )
+
+
+class TestFrontLoadedTopicModel:
+    """The front-loaded, per-document topic model.
+
+    ``fit_topic_model`` trains one LDA over all of a document's chunks; subsequent
+    ``_extract_topics`` calls then INFER each chunk's topics against that one model,
+    replacing the degenerate single-chunk LDA. These use real gensim (spaCy mocked),
+    so they exercise the actual train/infer integration, not a mock of it.
+    """
+
+    CORPUS = [
+        "finance budget revenue profit accounting fiscal",
+        "finance revenue profit loss accounting taxation",
+        "sports football team player goal match season",
+        "sports football player score match league tournament",
+        "cooking recipe food ingredient kitchen flavour",
+        "cooking food recipe kitchen ingredient seasoning meal",
+    ]
+
+    def test_fit_trains_model_when_corpus_large_enough(self):
+        with patch("spacy.load", return_value=Mock()):
+            analyzer = SemanticAnalyzer(num_topics=3, passes=1)
+            analyzer.fit_topic_model(self.CORPUS)
+
+            assert analyzer._topic_model_fitted is True
+            assert analyzer.lda_model is not None
+            assert analyzer.dictionary is not None
+
+    def test_fit_skips_when_corpus_too_small(self):
+        with patch("spacy.load", return_value=Mock()):
+            analyzer = SemanticAnalyzer(num_topics=3, passes=1)
+            analyzer.fit_topic_model(self.CORPUS[:2])
+
+            assert analyzer._topic_model_fitted is False
+            assert analyzer.lda_model is None
+            assert analyzer.dictionary is None
+
+    def test_fit_skips_on_empty_corpus(self):
+        with patch("spacy.load", return_value=Mock()):
+            analyzer = SemanticAnalyzer(num_topics=3, passes=1)
+            analyzer.fit_topic_model([])
+
+            assert analyzer._topic_model_fitted is False
+
+    def test_extract_topics_infers_against_fitted_model_without_retraining(self):
+        with patch("spacy.load", return_value=Mock()):
+            analyzer = SemanticAnalyzer(num_topics=3, passes=1)
+            analyzer.fit_topic_model(self.CORPUS)
+            model_before = analyzer.lda_model
+
+            topics = analyzer._extract_topics(
+                "finance revenue profit budget accounting fiscal"
+            )
+
+            # Inference must not swap or retrain the front-loaded model.
+            assert analyzer.lda_model is model_before
+            # Shape parity with the legacy producer: {id, terms:[{term,weight}], coherence}.
+            assert topics
+            for topic in topics:
+                assert set(topic) >= {"id", "terms", "coherence"}
+                for term in topic["terms"]:
+                    assert set(term) >= {"term", "weight"}
+                    assert isinstance(term["weight"], float)
+
+    def test_extract_topics_unfitted_falls_back_to_per_chunk(self):
+        """Without a fitted model (the markdown path), the legacy per-chunk producer
+        still returns a valid topic list — no regression for unfitted callers."""
+        with patch("spacy.load", return_value=Mock()):
+            analyzer = SemanticAnalyzer(num_topics=3, passes=1)
+
+            assert analyzer._topic_model_fitted is False
+            topics = analyzer._extract_topics(
+                "finance revenue profit budget accounting fiscal"
+            )
+
+            assert topics
+            assert all(set(t) >= {"id", "terms", "coherence"} for t in topics)
 
 
 class TestSemanticAnalyzerConcurrency:

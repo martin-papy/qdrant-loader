@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import structlog
 
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
+from qdrant_loader.core.text_processing.chunk_enricher import ChunkEnricher
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
@@ -24,26 +24,9 @@ class ChunkProcessor:
         """
         self.settings = settings
 
-        # Initialize semantic analyzer only if enabled
-        self._semantic_analysis_enabled = (
-            settings.global_config.chunking.enable_semantic_analysis
-        )
-
-        self._enhanced_semantic_analysis_enabled = (
-            settings.global_config.chunking.enable_enhanced_semantic_analysis
-        )
-
-        if self._semantic_analysis_enabled:
-            self.semantic_analyzer = SemanticAnalyzer(
-                spacy_model=settings.global_config.semantic_analysis.spacy_model,
-                num_topics=settings.global_config.semantic_analysis.num_topics,
-                passes=settings.global_config.semantic_analysis.lda_passes,
-            )
-        else:
-            self.semantic_analyzer = None
-            logger.info(
-                "Semantic analysis disabled — skipping spaCy/LDA initialization"
-            )
+        # The shared enricher owns the SemanticAnalyzer (and the enable/enhanced
+        # gating); markdown and docling enrich through the same code path.
+        self._enricher = ChunkEnricher(settings)
 
         # Cache for processed chunks to avoid recomputation
         self._processed_chunks: dict[str, dict[str, Any]] = {}
@@ -51,7 +34,7 @@ class ChunkProcessor:
     def process_chunk(
         self, chunk: str, chunk_index: int, total_chunks: int
     ) -> dict[str, Any]:
-        """Process a single chunk in parallel.
+        """Process a single chunk's semantic enrichment.
 
         Args:
             chunk: The chunk to process
@@ -59,7 +42,7 @@ class ChunkProcessor:
             total_chunks: Total number of chunks
 
         Returns:
-            Dictionary containing processing results
+            Dictionary containing enrichment results
         """
         logger.debug(
             "Processing chunk",
@@ -67,42 +50,8 @@ class ChunkProcessor:
             total_chunks=total_chunks,
             chunk_length=len(chunk),
         )
-
-        # Perform semantic analysis only if enabled
-        if self._semantic_analysis_enabled and self.semantic_analyzer:
-            logger.debug(
-                "Starting semantic analysis for chunk", chunk_index=chunk_index
-            )
-            analysis_result = self.semantic_analyzer.analyze_text(
-                chunk,
-                doc_id=f"chunk_{chunk_index}",
-                include_enhanced=self._enhanced_semantic_analysis_enabled,
-            )
-            results = {
-                "entities": analysis_result.entities,
-                "topics": analysis_result.topics,
-                "key_phrases": analysis_result.key_phrases,
-            }
-            self._processed_chunks[chunk] = results
-            logger.debug(
-                "Completed semantic analysis for chunk", chunk_index=chunk_index
-            )
-            if self._enhanced_semantic_analysis_enabled:
-                results.update(
-                    {
-                        "pos_tags": analysis_result.pos_tags,
-                        "dependencies": analysis_result.dependencies,
-                        "document_similarity": analysis_result.document_similarity,
-                    }
-                )
-        else:
-            results = {
-                "entities": [],
-                "topics": [],
-                "key_phrases": [],
-            }
-            self._processed_chunks[chunk] = results
-            logger.debug("Semantic analysis skipped for chunk", chunk_index=chunk_index)
+        results = self._enricher.enrich(chunk, doc_id=f"chunk_{chunk_index}")
+        self._processed_chunks[chunk] = results
         return results
 
     def create_chunk_document(
@@ -189,8 +138,8 @@ class ChunkProcessor:
 
     def shutdown(self):
         """Shutdown and clean up resources."""
-        if getattr(self, "semantic_analyzer", None) is not None:
-            self.semantic_analyzer.shutdown()
+        if getattr(self, "_enricher", None) is not None:
+            self._enricher.shutdown()
 
     def __del__(self):
         """Cleanup on deletion."""

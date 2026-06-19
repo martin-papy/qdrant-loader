@@ -23,6 +23,11 @@ class BaseChunkingStrategy(ABC):
     into chunks while preserving their semantic meaning and structure.
     """
 
+    # Whether this strategy uses the base TextProcessor (spaCy NER + POS) via
+    # _process_text/_apply_nlp. Strategies that do their own enrichment (docling)
+    # set this False so __init__ does not load a spaCy model they never use.
+    _uses_base_text_processor: bool = True
+
     def __init__(
         self,
         settings: "Settings",
@@ -70,7 +75,9 @@ class BaseChunkingStrategy(ABC):
 
         # Initialize text processor only when NLP metadata extraction is enabled.
         self.text_processor = (
-            TextProcessor(settings) if self._semantic_analysis_enabled else None
+            TextProcessor(settings)
+            if self._semantic_analysis_enabled and self._uses_base_text_processor
+            else None
         )
 
     def _count_tokens(self, text: str) -> int:
