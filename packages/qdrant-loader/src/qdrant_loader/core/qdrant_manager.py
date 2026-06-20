@@ -222,18 +222,28 @@ class QdrantManager:
             vector_size: int | None = None
             try:
                 vs = self.settings.llm_settings.embeddings.vector_size
-                if vs is not None:
+            except AttributeError:
+                vs = None
+            if vs is not None:
+                try:
                     vector_size = int(vs)
-            except Exception:
-                vector_size = None
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(
+                        "Invalid global.llm.embeddings.vector_size; expected an integer"
+                    ) from exc
 
             if vector_size is None:
                 try:
                     legacy_vs = get_global_config().embedding.vector_size
-                    if legacy_vs is not None:
+                except AttributeError:
+                    legacy_vs = None
+                if legacy_vs is not None:
+                    try:
                         vector_size = int(legacy_vs)
-                except Exception:
-                    vector_size = None
+                    except (TypeError, ValueError) as exc:
+                        raise ValueError(
+                            "Invalid embedding.vector_size; expected an integer"
+                        ) from exc
 
             if vector_size is None:
                 self.logger.warning(
