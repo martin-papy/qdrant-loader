@@ -215,27 +215,22 @@ class QdrantManager:
                 self.logger.info(f"Collection {self.collection_name} already exists")
                 return
 
-            # Get vector size from unified LLM settings first, then legacy embedding
+            # Get vector size from unified LLM settings first, then legacy embedding.
+            # global_config.llm is a plain dict, so the unified vector size must be
+            # resolved through llm_settings (which parses global.llm.embeddings),
+            # mirroring EmbeddingService.get_embedding_dimension().
             vector_size: int | None = None
             try:
-                global_cfg = get_global_config()
-                llm_settings = getattr(global_cfg, "llm", None)
-                if llm_settings is not None:
-                    embeddings_cfg = getattr(llm_settings, "embeddings", None)
-                    vs = (
-                        getattr(embeddings_cfg, "vector_size", None)
-                        if embeddings_cfg is not None
-                        else None
-                    )
-                    if isinstance(vs, int):
-                        vector_size = int(vs)
+                vs = self.settings.llm_settings.embeddings.vector_size
+                if vs is not None:
+                    vector_size = int(vs)
             except Exception:
                 vector_size = None
 
             if vector_size is None:
                 try:
                     legacy_vs = get_global_config().embedding.vector_size
-                    if isinstance(legacy_vs, int):
+                    if legacy_vs is not None:
                         vector_size = int(legacy_vs)
                 except Exception:
                     vector_size = None
