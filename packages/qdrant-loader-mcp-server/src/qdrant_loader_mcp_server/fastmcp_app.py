@@ -1,13 +1,11 @@
-"""
-FastMCP application scaffold (migration target).
+"""FastMCP application for the Qdrant Loader MCP server.
 
-This module lives alongside the existing hand-rolled JSON_RPC
-server (server.py/ cli.py) and is not yet wired into any entry point.
-It builds the FastMCP instance and the lifespan that owns heavy resources
-(SearchEngine, QueryProcessor). Tools are registerred later
+This is the entry point for both transports: ``cli.py`` serves it over stdio
+(``mcp.run``) and over HTTP (the module-level ``http_app`` under uvicorn).
 
-Resource lifecycle mirrors server.py: heavy imports and initialization
-happen inside the lifespan (after the event loop is up), not at module import time.
+Heavy resources (SearchEngine, QueryProcessor, the Search/Intelligence handlers)
+are created inside the lifespan — after the event loop is up — not at import time,
+so importing this module stays cheap.
 """
 
 from __future__ import annotations
@@ -46,9 +44,11 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
 
     search_engine = SearchEngine()
     query_processor = QueryProcessor(config.openai)
+    initialized = False
 
     try:
         await search_engine.initialize(config.qdrant, config.openai, config.search)
+        initialized = True
         logger.info("FastMCP search engine initialized", pid=os.getpid())
 
         # Reuse the existing handler for its reranker
@@ -72,10 +72,11 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
             "intelligence_handler": intelligence_handler,
         }
     finally:
-        try:
-            await search_engine.cleanup()
-        except Exception:
-            logger.error("Error during FastMCP search engine cleanup", exc_info=True)
+        if initialized:
+            try:
+                await search_engine.cleanup()
+            except Exception:
+                logger.error("Error during FastMCP search engine cleanup", exc_info=True)
 
 
 # The FastMCP app. Imported by entry points later
@@ -122,6 +123,10 @@ _http_middleware = [
 http_app = mcp.http_app(
     path="/mcp",
     middleware=_http_middleware,
-    json_response=True,   # for testing using Postman
-    stateless_http=True,  # no initialize/session handshake required
+    # HTTP transport profile: plain JSON responses (no SSE) and stateless
+    # request/response (no initialize/session handshake). This is the intended
+    # production behavior for simple HTTP clients; stdio is unaffected.
+    json_response=True,
+    stateless_http=True,
 )
+

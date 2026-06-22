@@ -125,7 +125,7 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def detect_document_conflicts(
         ctx: Context,
         query: Annotated[
-            str, Field(description="Search query to get documents for conflict analysis")
+            str, Field(description="Search query to get documents for conflict analysis", min_length=1)
         ],
         limit: Annotated[
             int, Field(description="Maximum number of documents to analyze")
@@ -153,10 +153,10 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def find_complementary_content(
         ctx: Context,
         target_query: Annotated[
-            str, Field(description="Query to find the target document")
+            str, Field(description="Query to find the target document", min_length=1)
         ],
         context_query: Annotated[
-            str, Field(description="Query to get contextual documents")
+            str, Field(description="Query to get contextual documents", min_length=1)
         ],
         max_recommendations: Annotated[
             int, Field(description="Maximum number of recommendations")

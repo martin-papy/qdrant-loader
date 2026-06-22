@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   JSON Schema, and both stdio and streamable-HTTP transports are provided by the
   framework. All 11 tools are preserved with the same names (including
   `detect_document_conflicts`).
+- The HTTP transport runs in **stateless JSON mode**: it returns
+  `application/json` (not SSE) and does not require an `initialize`/session
+  handshake — each request is an independent `POST /mcp`. Clients must still send
+  `Accept: application/json, text/event-stream`. Tool failures are reported the
+  standard MCP way (`result.isError: true` with the message in
+  `result.content[0].text`), not as a top-level JSON-RPC `error` object. The
+  stdio transport is unaffected.
 
 ### Removed
 
