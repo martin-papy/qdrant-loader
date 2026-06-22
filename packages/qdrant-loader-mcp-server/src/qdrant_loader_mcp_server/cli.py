@@ -1,12 +1,9 @@
 """CLI module for QDrant Loader MCP Server."""
 
-import asyncio
 import json
 import logging
 import os
-import signal
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import click
@@ -15,11 +12,7 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from dotenv import load_dotenv
 
-from .config import Config
 from .config_loader import load_config, redact_effective_config
-from .mcp import MCPHandler
-from .search.engine import SearchEngine
-from .search.processor import QueryProcessor
 from .utils import LoggingConfig, get_version
 
 # Suppress asyncio debug messages to reduce noise in logs.
@@ -68,184 +61,6 @@ def _setup_logging(log_level: str, transport: str | None = None) -> None:
         print(f"Failed to setup logging: {e}", file=sys.stderr)
 
 
-async def read_stdin_lines(executor=None):
-    """Cross-platform async generator that yields lines from stdin."""
-    loop = asyncio.get_event_loop()
-    while True:
-        try:
-            line = await loop.run_in_executor(executor, sys.stdin.readline)
-        except (ValueError, OSError):
-            break  # stdin was closed during shutdown
-        if not line:  # EOF
-            break
-        yield line
-
-
-async def shutdown(
-    loop: asyncio.AbstractEventLoop, shutdown_event: asyncio.Event = None
-):
-    """Handle graceful shutdown."""
-    logger = LoggingConfig.get_logger(__name__)
-    logger.info("Shutting down...")
-
-    # Only signal shutdown; let server/monitor handle draining and cleanup
-    if shutdown_event:
-        shutdown_event.set()
-
-    # Yield control so that other tasks (e.g., shutdown monitor, server) can react
-    try:
-        await asyncio.sleep(0)
-    except asyncio.CancelledError:
-        # If shutdown task is cancelled, just exit quietly
-        return
-
-    logger.info("Shutdown signal dispatched")
-
-
-async def handle_stdio(config: Config, log_level: str, executor=None):
-    """Handle stdio communication with Cursor."""
-    logger = LoggingConfig.get_logger(__name__)
-
-    try:
-        # Check if console logging is disabled
-        disable_console_logging = (
-            os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
-        )
-
-        if not disable_console_logging:
-            logger.info("Setting up stdio handler...")
-
-        # Initialize components
-        search_engine = SearchEngine()
-        query_processor = QueryProcessor(config.openai)
-        mcp_handler = MCPHandler(
-            search_engine, query_processor, reranking_config=config.reranking
-        )
-
-        # Initialize search engine
-        try:
-            await search_engine.initialize(config.qdrant, config.openai, config.search)
-            if not disable_console_logging:
-                logger.info("Search engine initialized successfully")
-        except Exception as e:
-            logger.error("Failed to initialize search engine", exc_info=True)
-            raise RuntimeError("Failed to initialize search engine") from e
-
-        if not disable_console_logging:
-            logger.info("Server ready to handle requests")
-
-        async for line in read_stdin_lines(executor):
-            try:
-                raw_input = line.strip()
-                if not raw_input:
-                    continue
-
-                if not disable_console_logging:
-                    logger.debug("Received raw input", raw_input=raw_input)
-
-                # Parse the request
-                try:
-                    request = json.loads(raw_input)
-                    if not disable_console_logging:
-                        logger.debug("Parsed request", request=request)
-                except json.JSONDecodeError as e:
-                    if not disable_console_logging:
-                        logger.error("Invalid JSON received", error=str(e))
-                    # Send error response for invalid JSON
-                    response = {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {
-                            "code": -32700,
-                            "message": "Parse error",
-                            "data": f"Invalid JSON received: {str(e)}",
-                        },
-                    }
-                    sys.stdout.write(json.dumps(response) + "\n")
-                    sys.stdout.flush()
-                    continue
-
-                # Validate request format
-                if not isinstance(request, dict):
-                    if not disable_console_logging:
-                        logger.error("Request must be a JSON object")
-                    response = {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {
-                            "code": -32600,
-                            "message": "Invalid Request",
-                            "data": "Request must be a JSON object",
-                        },
-                    }
-                    sys.stdout.write(json.dumps(response) + "\n")
-                    sys.stdout.flush()
-                    continue
-
-                if "jsonrpc" not in request or request["jsonrpc"] != "2.0":
-                    if not disable_console_logging:
-                        logger.error("Invalid JSON-RPC version")
-                    response = {
-                        "jsonrpc": "2.0",
-                        "id": request.get("id"),
-                        "error": {
-                            "code": -32600,
-                            "message": "Invalid Request",
-                            "data": "Invalid JSON-RPC version",
-                        },
-                    }
-                    sys.stdout.write(json.dumps(response) + "\n")
-                    sys.stdout.flush()
-                    continue
-
-                # Process the request
-                try:
-                    response = await mcp_handler.handle_request(request)
-                    if not disable_console_logging:
-                        logger.debug("Sending response", response=response)
-                    # Only write to stdout if response is not empty (not a notification)
-                    if response:
-                        sys.stdout.write(json.dumps(response) + "\n")
-                        sys.stdout.flush()
-                except Exception as e:
-                    if not disable_console_logging:
-                        logger.error("Error processing request", exc_info=True)
-                    response = {
-                        "jsonrpc": "2.0",
-                        "id": request.get("id"),
-                        "error": {
-                            "code": -32603,
-                            "message": "Internal error",
-                            "data": str(e),
-                        },
-                    }
-                    sys.stdout.write(json.dumps(response) + "\n")
-                    sys.stdout.flush()
-
-            except asyncio.CancelledError:
-                if not disable_console_logging:
-                    logger.info("Request handling cancelled during shutdown")
-                break
-            except Exception:
-                if not disable_console_logging:
-                    logger.error("Error handling request", exc_info=True)
-                continue
-
-        # Cleanup
-        await search_engine.cleanup()
-
-    except Exception:
-        if not disable_console_logging:
-            logger.error("Error in stdio handler", exc_info=True)
-        raise
-    finally:
-        # Close stdin to unblock the executor thread waiting on readline()
-        try:
-            sys.stdin.close()
-        except Exception:
-            pass
-
-
 @click.command(name="mcp-qdrant-loader")
 @option(
     "--log-level",
@@ -271,7 +86,7 @@ async def handle_stdio(config: Config, log_level: str, executor=None):
     "--transport",
     type=Choice(["stdio", "http"], case_sensitive=False),
     default="stdio",
-    help="Transport protocol to use (stdio for JSON-RPC over stdin/stdout, http for HTTP with SSE)",
+    help="Transport protocol to use (stdio for JSON-RPC over stdin/stdout, http for streamable HTTP)",
 )
 @option(
     "--host",
@@ -315,8 +130,8 @@ def cli(
     A Model Context Protocol (MCP) server that provides RAG capabilities
     to Cursor and other LLM applications using Qdrant vector database.
 
-    The server supports both stdio (JSON-RPC) and HTTP (with SSE) transports
-    for maximum compatibility with different MCP clients.
+    The server is built on FastMCP and supports both stdio (JSON-RPC over
+    stdin/stdout) and HTTP (streamable) transports.
 
     Environment Variables:
         QDRANT_URL: URL of your QDrant instance (required)
@@ -359,7 +174,7 @@ def cli(
             )
 
         # If a config file was provided, propagate it via MCP_CONFIG so that
-        # any internal callers that resolve config without CLI context can find it.
+        # the FastMCP lifespan (which resolves config independently) can find it.
         if config is not None:
             try:
                 os.environ["MCP_CONFIG"] = str(config)
@@ -367,8 +182,8 @@ def cli(
                 # Best-effort; continue without blocking startup
                 pass
 
-        # Initialize configuration (file/env precedence)
-        config_obj, effective_cfg, used_file = load_config(config)
+        # Resolve configuration early (fail fast; also powers --print-config).
+        _, effective_cfg, _ = load_config(config)
 
         if print_config:
             redacted = redact_effective_config(effective_cfg)
@@ -376,8 +191,6 @@ def cli(
             return
 
         if transport.lower() == "http":
-            # Delegate to server.py's app via uvicorn.run() — single app,
-            # no duplicate FastAPI instance.  uvicorn handles signals natively.
             import uvicorn
 
             os.environ["MCP_LOG_LEVEL"] = log_level
@@ -386,14 +199,14 @@ def cli(
 
             logger = LoggingConfig.get_logger(__name__)
             logger.info(
-                "Starting HTTP server",
+                "Starting HTTP server (FastMCP)",
                 host=host,
                 port=port,
                 log_level=log_level,
             )
 
             uvicorn.run(
-                "qdrant_loader_mcp_server.server:app",
+                "qdrant_loader_mcp_server.fastmcp_app:http_app",
                 host=host,
                 port=port,
                 workers=workers,
@@ -401,96 +214,11 @@ def cli(
                 access_log=(log_level.upper() == "DEBUG"),
             )
         elif transport.lower() == "stdio":
-            # stdio needs its own event loop and signal handling
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            logger = LoggingConfig.get_logger(__name__)
+            logger.info("Starting stdio transport (FastMCP)")
+            from .fastmcp_app import mcp
 
-            shutdown_event = asyncio.Event()
-            shutdown_task = None
-            main_task = None
-            stdin_executor = None
-
-            def signal_handler():
-                nonlocal shutdown_task, main_task
-                if shutdown_task is None:
-                    shutdown_task = loop.create_task(shutdown(loop, shutdown_event))
-                if main_task is not None and not main_task.done():
-                    main_task.cancel()
-
-            for sig in (signal.SIGTERM, signal.SIGINT):
-                try:
-                    loop.add_signal_handler(sig, signal_handler)
-                except (NotImplementedError, AttributeError) as e:
-                    try:
-                        logger = LoggingConfig.get_logger(__name__)
-                        logger.debug(
-                            f"Signal handler not supported: {e}; continuing without it."
-                        )
-                    except Exception:
-                        pass
-
-            try:
-                stdin_executor = ThreadPoolExecutor(
-                    max_workers=1, thread_name_prefix="stdin-"
-                )
-                main_task = loop.create_task(
-                    handle_stdio(config_obj, log_level, stdin_executor)
-                )
-                loop.run_until_complete(main_task)
-            except asyncio.CancelledError:
-                pass  # Expected during signal-driven shutdown
-            except Exception:
-                logger = LoggingConfig.get_logger(__name__)
-                logger.error("Error in main", exc_info=True)
-                sys.exit(1)
-            finally:
-                try:
-                    # Wait for the shutdown task if it exists
-                    if shutdown_task is not None and not shutdown_task.done():
-                        try:
-                            logger = LoggingConfig.get_logger(__name__)
-                            logger.debug("Waiting for shutdown task to complete...")
-                            loop.run_until_complete(
-                                asyncio.wait_for(shutdown_task, timeout=5.0)
-                            )
-                            logger.debug("Shutdown task completed successfully")
-                        except TimeoutError:
-                            logger = LoggingConfig.get_logger(__name__)
-                            logger.warning("Shutdown task timed out, cancelling...")
-                            shutdown_task.cancel()
-                            try:
-                                loop.run_until_complete(shutdown_task)
-                            except asyncio.CancelledError:
-                                logger.debug("Shutdown task cancelled successfully")
-                        except Exception as e:
-                            logger = LoggingConfig.get_logger(__name__)
-                            logger.debug(f"Shutdown task completed with: {e}")
-
-                    # Cancel any remaining tasks
-                    all_tasks = list(asyncio.all_tasks(loop))
-                    cancelled_tasks = []
-                    for task in all_tasks:
-                        if not task.done() and task is not shutdown_task:
-                            task.cancel()
-                            cancelled_tasks.append(task)
-
-                    if cancelled_tasks:
-                        logger = LoggingConfig.get_logger(__name__)
-                        logger.info(
-                            f"Cancelled {len(cancelled_tasks)} remaining tasks for cleanup"
-                        )
-                except Exception:
-                    logger = LoggingConfig.get_logger(__name__)
-                    logger.error("Error during final cleanup", exc_info=True)
-                finally:
-                    if stdin_executor is not None:
-                        try:
-                            stdin_executor.shutdown(wait=False)
-                        except Exception:
-                            pass
-                    loop.close()
-                    logger = LoggingConfig.get_logger(__name__)
-                    logger.info("Server shutdown complete")
+            mcp.run(transport="stdio", show_banner=False)
         else:
             raise ValueError(f"Unsupported transport: {transport}")
     except Exception:
