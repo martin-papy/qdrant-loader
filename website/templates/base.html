@@ -271,6 +271,7 @@
         /* Documentation-specific styles */
         .toc-layout {
             display: flex;
+            margin-bottom: 80px;
         }
 
         .toc-sidebar {
@@ -525,7 +526,7 @@
             border-right: none;
             border-bottom: 1px solid #e9ecef;
             background-color: #f8f9fa;
-            margin-bottom: 0.25rem;
+            margin: 0.25rem 0;
             border-radius: 0.25rem;
             padding: 10px;
         }
@@ -533,24 +534,23 @@
         /* Simple numbered list styling */
         .container-content ol.list-group-numbered {
             padding-left: 0;
-            margin-bottom: 2rem;
             list-style: none;
-            counter-reset: step-counter;
         }
 
         .container-content ol.list-group-numbered .list-group-item {
-            counter-increment: step-counter;
             position: relative;
+            list-style: none;
             padding: 15px 20px 15px 60px;
-            margin-bottom: 15px;
+            margin-bottom: 4px;
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 8px;
             border-left: 4px solid var(--primary-color);
+            margin-left: 0;
         }
 
         .container-content ol.list-group-numbered .list-group-item::before {
-            content: counter(step-counter);
+            content: attr(data-step);
             position: absolute;
             left: 20px;
             top: 50%;
@@ -594,7 +594,8 @@
 
         /* Footer section */
         .footer-section {
-            padding: 96px 40px 40px;
+            padding: 80px 40px 40px;
+            border-top: 1px solid #8D8D8D;
         }
 
         .footer-section .row {
@@ -788,7 +789,7 @@
 
         @media (max-width: 768px) {
             .footer-section {
-                padding: 20px;
+                padding: 40px;
             }
 
             .footer-section .doc-links .row {
@@ -857,14 +858,6 @@
                 padding: 3.25rem  2rem;
             }
 
-            .footer-section {
-                margin-top: 24px;
-            }
-
-            .footer-logo img {
-                max-width: 200px;
-                max-height: 200px;
-            }
         }
 
         /* Ensure proper spacing for documentation content */
@@ -990,7 +983,7 @@
                                 </svg>
                                 PyPI
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="pypiDropdown">
                                 <li>
                                     <a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/"
                                         target="_blank">
@@ -1027,7 +1020,7 @@
         <div class="row">
             <div class="col-12 col-lg-6 px-0">
                 <div class="footer-logo">
-                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader"></a>
+                    <a href="{{ base_url }}"><img src="{{ base_url }}assets/logos/qdrant-loader-logo.svg" alt="QDrant Loader" height="60"></a>
                 </div>
                 <p class="doc-description">
                     Enterprise-ready vector database toolkit for building searchable knowledge bases
@@ -1196,6 +1189,53 @@
     <script>
         const items = document.querySelectorAll('.toc .list-group-item');
 
+        function normalizeNumberedLists() {
+            const lists = document.querySelectorAll('.container-content ol.list-group-numbered');
+            let rollingStep = 0;
+
+            const previousElementSibling = (el) => {
+                let node = el.previousElementSibling;
+                while (node && node.matches('script, style')) {
+                    node = node.previousElementSibling;
+                }
+                return node;
+            };
+
+            const canContinueFromPrevious = (list) => {
+                const prev = previousElementSibling(list);
+                if (!prev) {
+                    return false;
+                }
+                return prev.matches('ol.list-group-numbered, .code-block-wrapper, pre, blockquote, table, ul.list-group');
+            };
+
+            lists.forEach((list) => {
+                const items = Array.from(list.querySelectorAll(':scope > li.list-group-item'));
+                if (items.length === 0) {
+                    return;
+                }
+
+                const hasStart = list.hasAttribute('start');
+                const explicitStart = Number.parseInt(list.getAttribute('start') || '', 10);
+                let currentStep;
+
+                if (hasStart && Number.isFinite(explicitStart) && explicitStart > 0) {
+                    currentStep = explicitStart;
+                } else if (canContinueFromPrevious(list) && rollingStep > 0) {
+                    currentStep = rollingStep + 1;
+                } else {
+                    currentStep = 1;
+                }
+
+                items.forEach((item, index) => {
+                    const valueAttr = Number.parseInt(item.getAttribute('value') || '', 10);
+                    const step = Number.isFinite(valueAttr) && valueAttr > 0 ? valueAttr : currentStep + index;
+                    item.setAttribute('data-step', String(step));
+                    rollingStep = step;
+                });
+            });
+        }
+
         function setActiveMenu() {
             const hash = window.location.hash;
 
@@ -1209,6 +1249,7 @@
             }
         }
 
+        normalizeNumberedLists();
         setActiveMenu();
 
         items.forEach(item => {
@@ -1220,44 +1261,82 @@
 
         window.addEventListener('hashchange', setActiveMenu);
     </script>
-    <!-- Simple syntax highlighting -->
+    <!-- Safe syntax highlighting with improved regex patterns -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Simple syntax highlighting for common languages
             const codeBlocks = document.querySelectorAll('.code-block code');
-            
+
             codeBlocks.forEach(function(block) {
                 const language = block.className.match(/language-(\w+)/);
-                if (language) {
-                    highlightCode(block, language[1]);
+                const inferredLanguage = language
+                    ? language[1].toLowerCase()
+                    : inferLanguage(block.textContent || '');
+
+                if (inferredLanguage) {
+                    highlightCode(block, inferredLanguage);
                 }
             });
+
+            function inferLanguage(content) {
+                const text = (content || '').trim();
+                if (!text) {
+                    return null;
+                }
+
+                if ((text.startsWith('{') || text.startsWith('[')) && /"[^"]+"\s*:/.test(text)) {
+                    return 'json';
+                }
+
+                if (/^\s*[a-zA-Z_][\w-]*\s*:\s*.+/m.test(text)) {
+                    return 'yaml';
+                }
+
+                if (/\b(cd|mkdir|pip|install|uv|qdrant-loader|mcp-qdrant-loader|export)\b/.test(text) || /\b[A-Z_][A-Z0-9_]*\s*=/.test(text)) {
+                    return 'bash';
+                }
+
+                return null;
+            }
             
             function highlightCode(block, lang) {
                 let content = block.innerHTML;
                 
                 if (lang === 'bash' || lang === 'sh') {
-                    // Bash highlighting
+                    // Bash highlighting - improved patterns
                     content = content
-                        .replace(/(#[^\n]*)/g, '<span class="c1">$1</span>') // Comments
-                        .replace(/\b(cd|mkdir|pip|install|qdrant-loader|mcp-qdrant-loader|init|ingest)\b/g, '<span class="k">$1</span>') // Commands
-                        .replace(/([A-Z_]+)=/g, '<span class="nv">$1</span>=') // Environment variables
-                        .replace(/(--[\w-]+)/g, '<span class="na">$1</span>'); // Flags
-                } else if (lang === 'yaml') {
-                    // YAML highlighting
+                        // Comments: must start with # and be on its own or after space
+                        .replace(/(^|\s)(#[^\n]*)/gm, '$1<span class="c1">$2</span>')
+                        // Commands: use word boundary to avoid partial matches
+                        .replace(/\b(cd|mkdir|pip|install|qdrant-loader|mcp-qdrant-loader|init|ingest)\b/g, '<span class="k">$1</span>')
+                        // Environment variables: must be followed by = with word boundary
+                        .replace(/\b([A-Z_][A-Z0-9_]*)\s*=/g, '<span class="nv">$1</span>=')
+                        // Flags: only match double dash at start or after space
+                        .replace(/(^|\s)(--[\w-]+)/gm, '$1<span class="na">$2</span>');
+                } else if (lang === 'yaml' || lang === 'yml') {
+                    // YAML highlighting - improved patterns
                     content = content
-                        .replace(/(#[^\n]*)/g, '<span class="c1">$1</span>') // Comments
-                        .replace(/^(\s*)([a-zA-Z_][\w-]*)\s*:/gm, '$1<span class="nt">$2</span>:') // Keys
-                        .replace(/:\s*"([^"]*)"/g, ': <span class="s2">"$1"</span>') // Quoted strings
-                        .replace(/:\s*'([^']*)'/g, ': <span class="s1">\'$1\'</span>') // Single quoted strings
-                        .replace(/:\s*(\d+)/g, ': <span class="m">$1</span>'); // Numbers
+                        // Comments: only at start of line or after space
+                        .replace(/(^|\s)(#[^\n]*)/gm, '$1<span class="c1">$2</span>')
+                        // Keys: word chars followed by colon, at start or after space
+                        .replace(/^(\s*)([a-zA-Z_][\w-]*)\s*:/gm, '$1<span class="nt">$2</span>:')
+                        // Quoted strings
+                        .replace(/(:\s*)"([^"]*)"/g, '$1<span class="s2">"$2"</span>')
+                        .replace(/(:\s*)\'([^\']*)\'/g, '$1<span class="s1">\'$2\'</span>')
+                        // Numbers: only highlight plain numeric scalar values (not numbers inside strings/URLs)
+                        .replace(/^(\s*<span class="nt">[a-zA-Z_][\w-]*<\/span>:\s*)(\d+(?:\.\d+)?)(\s*(?:<span class="c1">.*<\/span>)?)$/gm, '$1<span class="m">$2</span>$3')
+                        // Booleans
+                        .replace(/(:\s*)(true|false|null)\b/g, '$1<span class="k">$2</span>');
                 } else if (lang === 'json') {
-                    // JSON highlighting
+                    // JSON highlighting - improved patterns
                     content = content
-                        .replace(/"([^"]+)":/g, '<span class="nt">"$1"</span>:') // Keys
-                        .replace(/:\s*"([^"]*)"/g, ': <span class="s2">"$1"</span>') // String values
-                        .replace(/:\s*(\d+)/g, ': <span class="m">$1</span>') // Numbers
-                        .replace(/:\s*(true|false|null)/g, ': <span class="k">$1</span>'); // Booleans/null
+                        // Keys: quoted strings followed by colon
+                        .replace(/"([^"]+)"\s*:/g, '<span class="nt">"$1"</span>:')
+                        // String values: quoted strings after colon
+                        .replace(/(:\s*)"([^"]*)"/g, '$1<span class="s2">"$2"</span>')
+                        // Numbers: only highlight plain scalar values after keys
+                        .replace(/^(\s*<span class="nt">"[^"]+"<\/span>:\s*)(-?\d+(?:\.\d+)?)(\s*,?\s*)$/gm, '$1<span class="m">$2</span>$3')
+                        // Booleans and null: only highlight plain scalar values after keys
+                        .replace(/^(\s*<span class="nt">"[^"]+"<\/span>:\s*)(true|false|null)(\s*,?\s*)$/gm, '$1<span class="k">$2</span>$3');
                 }
                 
                 block.innerHTML = content;

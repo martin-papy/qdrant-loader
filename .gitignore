@@ -102,3 +102,9 @@ internal/
 
 # Beads issue tracking
 .beads/
+
+# Claude skills
+docs/superpowers
+
+# Claude mcp
+.mcp.json

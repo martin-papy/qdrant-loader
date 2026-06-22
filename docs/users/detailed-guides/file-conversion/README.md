@@ -1,10 +1,23 @@
 # File Conversion
 
-QDrant Loader supports comprehensive file conversion to extract text content from various file formats using Microsoft's MarkItDown library. This guide covers supported formats, configuration, and best practices.
+QDrant Loader extracts text content from a wide range of binary and document formats so they can be chunked, embedded, and searched. Conversion is performed by one of two engines — **MarkItDown** (the default) or **Docling** — selected with `file_conversion.engine`. This guide covers the engines, supported formats, configuration, and best practices.
+
+## 🔀 Conversion Engines
+
+Two conversion engines are available; choose one per deployment with `global.file_conversion.engine`:
+
+| Engine         | Value                  | When to use                                                                                                                                                                                                          |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MarkItDown** | `markitdown` (default) | Broadest format coverage (audio, archives, many text formats) via Microsoft's MarkItDown. Produces a markdown string that is then chunked by the per-format strategies.                                              |
+| **Docling**    | `docling`              | Structure-aware conversion of office and PDF documents. Preserves headings, tables, and reading order, and feeds the token-budgeted docling chunking strategy. Best for retrieval quality on born-digital PDFs, Word, PowerPoint, and Excel. |
+
+The engine is config-driven, not a feature flag: set `engine: docling` to opt in. The default remains `markitdown`, so existing configurations are unchanged.
+
+Docling converts a focused set of formats — `pdf`, `docx`, `pptx`, `xlsx`, images, and `csv` — and is tuned with a **conversion profile** (`fast`, `accurate`, or `scanned`). See [Docling Engine Settings](#docling-engine-settings) below. The format tables in the next section describe the default MarkItDown engine.
 
 ## 🎯 Supported File Formats
 
-QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of file formats:
+The default **MarkItDown** engine handles a wide variety of file formats:
 
 ### 📄 Document Formats
 
@@ -80,7 +93,10 @@ global:
     # Timeout for conversion operations (in seconds)
     conversion_timeout: 300 # 5 minutes
 
-    # MarkItDown specific settings
+    # Conversion engine: "markitdown" (default) or "docling"
+    engine: markitdown
+
+    # MarkItDown specific settings (used when engine: markitdown)
     markitdown:
       # Enable LLM integration for image descriptions
       enable_llm_descriptions: false
@@ -117,10 +133,11 @@ projects:
 
 #### Global File Conversion Settings
 
-| Option               | Type | Description                                  | Default           |
-| -------------------- | ---- | -------------------------------------------- | ----------------- |
-| `max_file_size`      | int  | Maximum file size in bytes                   | `52428800` (50MB) |
-| `conversion_timeout` | int  | Timeout for conversion operations in seconds | `300` (5 minutes) |
+| Option               | Type   | Description                                          | Default           |
+| -------------------- | ------ | --------------------------------------------------- | ----------------- |
+| `max_file_size`      | int    | Maximum file size in bytes                          | `52428800` (50MB) |
+| `conversion_timeout` | int    | Timeout for conversion operations in seconds        | `300` (5 minutes) |
+| `engine`             | string | Conversion engine: `markitdown` or `docling`        | `markitdown`      |
 
 #### MarkItDown Settings
 
@@ -132,6 +149,58 @@ projects:
 | `llm_model`               | string | LLM model for image descriptions              | `gpt-4o`                    |
 | `llm_endpoint`            | string | LLM endpoint URL                              | `https://api.openai.com/v1` |
 | `llm_api_key`             | string | API key for LLM service                       | `null`                      |
+
+#### Docling Engine Settings
+
+Used when `engine: docling`. A **profile** selects the cost/fidelity baseline; the optional fields below override individual knobs on top of it. Only fields you explicitly set override the profile — unset fields keep the profile's value.
+
+```yaml
+global:
+  file_conversion:
+    engine: docling
+    docling:
+      # Baseline cost vs. fidelity: fast | accurate | scanned
+      profile: fast
+
+      # Optional overrides (unset = inherit from the profile)
+      # max_file_size: 52428800        # bytes
+      # document_timeout: 300.0        # seconds (wall-clock per document)
+      # enabled_formats: ["pdf", "docx", "pptx", "xlsx", "image", "csv"]
+      # device: auto                   # auto | cpu | cuda | mps
+      # num_threads: 4
+      # compile_models: false         # torch.compile warm-up (off on CPU)
+      # artifacts_path: null          # offline model dir; null fetches on first run
+
+      # API image captioning (off by default)
+      picture:
+        enabled: false
+        url: "https://api.openai.com/v1/chat/completions"
+        model: "gpt-4o-mini"
+        api_key: "${LLM_API_KEY}"
+        prompt: "Describe this image in a few sentences."
+        timeout: 60.0
+        concurrency: 1
+```
+
+| Option            | Type        | Description                                                                            | Default                                          |
+| ----------------- | ----------- | ------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `profile`         | string      | Baseline bundle of OCR/table/timeout settings: `fast`, `accurate`, or `scanned`       | `fast`                                           |
+| `max_file_size`   | int         | Override max file size in bytes                                                        | profile value                                    |
+| `document_timeout`| float       | Override per-document wall-clock timeout in seconds                                    | profile value                                    |
+| `enabled_formats` | list        | Override the converted formats                                                         | `[pdf, docx, pptx, xlsx, image, csv]`            |
+| `device`          | string      | Compute device: `auto`, `cpu`, `cuda`, `mps`                                           | `auto`                                           |
+| `num_threads`     | int         | CPU threads for conversion                                                             | `4`                                              |
+| `compile_models`  | bool        | Enable `torch.compile` model warm-up (costly on CPU)                                   | `false`                                          |
+| `artifacts_path`  | string      | Local directory of pre-downloaded models for offline runs                             | `null` (fetch on first run)                      |
+| `picture.*`       | object      | API image-captioning settings (mirrors `markitdown.llm_*`); off by default            | disabled                                         |
+
+**Conversion profiles:**
+
+- **`fast`** (default) — CPU-only, fast table recognition, OCR off. Tuned for born-digital documents.
+- **`accurate`** — Higher-fidelity table structure recognition. Slower, better tables.
+- **`scanned`** — Full-page OCR on, accurate tables, and an extended `document_timeout` (600s). Use for scanned PDFs and image-only documents.
+
+> **Chunking:** Documents converted by docling are chunked by the **docling chunking strategy**, which sizes chunks by a token budget aligned to your embedding model's tokenizer. Tune it under `global.chunking.strategies.docling` — see the [Configuration Reference](../../configuration/config-file-reference.md#chunking-configuration). For exact token budgeting, set `embedding.tokenizer` to match your embedding model.
 
 #### Source-Level Settings
 

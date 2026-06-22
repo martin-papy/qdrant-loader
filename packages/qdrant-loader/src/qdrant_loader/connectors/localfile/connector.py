@@ -5,11 +5,10 @@ from urllib.parse import unquote, urlparse
 
 from qdrant_loader.utils.sensitive import sanitize_exception_message
 from qdrant_loader.connectors.base import BaseConnector, resolve_safe_path
+from qdrant_loader.core.conversion.service import ConversionService
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
     FileConversionConfig,
-    FileConversionError,
-    FileConverter,
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
@@ -34,7 +33,7 @@ class LocalFileConnector(BaseConnector):
         self._initialized = True
 
         # Initialize file conversion components if enabled
-        self.file_converter = None
+        self.conversion_service = None
         self.file_detector = None
         if self.config.enable_file_conversion:
             self.logger.debug("File conversion enabled for LocalFile connector")
@@ -77,8 +76,11 @@ class LocalFileConnector(BaseConnector):
             file_conversion_config: Global file conversion configuration
         """
         if self.config.enable_file_conversion:
-            self.file_converter = FileConverter(file_conversion_config)
-            self.logger.debug("File converter initialized with global config")
+            self.conversion_service = ConversionService(file_conversion_config)
+            self.logger.debug(
+                "Conversion service initialized",
+                engine=str(file_conversion_config.engine),
+            )
 
     def _build_file_document(self, file_path: str) -> Document | None:
         """Build a Document for a local file, or None if the file should be skipped.
@@ -107,42 +109,40 @@ class LocalFileConnector(BaseConnector):
             )
             return None
 
-        # Check if file needs conversion
+        # Check if file needs conversion. The eligibility gate is the
+        # ConversionService (engine-aware): for docling it also enforces
+        # the enabled-format + size policy, so a file the active engine
+        # can't convert is skipped here instead of falling into a fallback.
         needs_conversion = (
             self.config.enable_file_conversion
-            and self.file_detector
-            and self.file_converter
-            and self.file_detector.is_supported_for_conversion(file_path)
+            and self.conversion_service is not None
+            and self.conversion_service.is_supported(file_path)
         )
 
+        converted_document = None
+        original_file_type = None
         if needs_conversion:
             self.logger.debug(
                 "File needs conversion",
                 file_path=rel_path.replace("\\", "/"),
             )
-            try:
-                # Convert file to markdown
-                assert self.file_converter is not None  # Type checker hint
-                content = self.file_converter.convert_file(file_path)
-                content_type = "md"  # Converted files are markdown
-                conversion_method = "markitdown"
-                conversion_failed = False
-                self.logger.info(
-                    "File conversion successful",
-                    file_path=rel_path.replace("\\", "/"),
-                )
-            except FileConversionError as e:
-                self.logger.warning(
-                    "File conversion failed, creating fallback document",
-                    file_path=rel_path.replace("\\", "/"),
-                    error=str(e),
-                )
-                # Create fallback document
-                assert self.file_converter is not None  # Type checker hint
-                content = self.file_converter.create_fallback_document(file_path, e)
-                content_type = "md"  # Fallback is also markdown
-                conversion_method = "markitdown_fallback"
-                conversion_failed = True
+            # ConversionService picks the engine (markitdown|docling) and
+            # returns success or a fallback document — it never raises for a
+            # per-document conversion failure.
+            assert self.conversion_service is not None  # Type checker hint
+            converted = self.conversion_service.convert(file_path)
+            content = converted.content
+            content_type = "md"  # Converted files (and fallbacks) are markdown
+            conversion_method = converted.conversion_method
+            conversion_failed = converted.conversion_failed
+            converted_document = converted.converted_document
+            original_file_type = converted.original_file_type
+            self.logger.info(
+                "File conversion completed",
+                file_path=rel_path.replace("\\", "/"),
+                conversion_method=conversion_method,
+                conversion_failed=conversion_failed,
+            )
         else:
             # Read file content normally
             with open(file_path, encoding="utf-8", errors="ignore") as f:
@@ -164,9 +164,7 @@ class LocalFileConnector(BaseConnector):
                 {
                     "conversion_method": conversion_method,
                     "conversion_failed": conversion_failed,
-                    "original_file_type": os.path.splitext(file)[1]
-                    .lower()
-                    .lstrip("."),
+                    "original_file_type": original_file_type,
                 }
             )
 
@@ -174,7 +172,7 @@ class LocalFileConnector(BaseConnector):
 
         # Create consistent URL with forward slashes for cross-platform compatibility
         normalized_path = os.path.realpath(file_path).replace("\\", "/")
-        return Document(
+        doc = Document(
             title=os.path.basename(file_path),
             content=content,
             content_type=content_type,
@@ -185,6 +183,10 @@ class LocalFileConnector(BaseConnector):
             is_deleted=False,
             updated_at=updated_at,
         )
+        # Carry the structured artifact (docling path) to the chunker,
+        # in-process and by reference — never serialized.
+        doc.converted_document = converted_document
+        return doc
 
     def _is_within_base_path(self, file_path: str) -> bool:
         base_real = os.path.realpath(self.base_path)

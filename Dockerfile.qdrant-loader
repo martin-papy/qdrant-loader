@@ -26,9 +26,16 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git \
+    && apt-get install -y --no-install-recommends \
+        git \
+        libgl1 \
+        libglib2.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+# libgl1 + libglib2.0-0: runtime shared libs for opencv-python, which docling pulls
+# (via rapidocr / docling-ibm-models) for image preprocessing in the PDF layout
+# pipeline. python:slim ships neither, so cv2 import fails with "libGL.so.1: cannot
+# open shared object file" during PDF conversion.
 
 USER appuser
 

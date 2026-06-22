@@ -201,6 +201,27 @@ class TestWebsiteBuilderMarkdown:
         assert 'class="h3 fw-bold text-primary"' in result
         assert 'class="h4 fw-bold"' in result
 
+    def test_add_bootstrap_classes_numbered_step_paragraphs(self):
+        """Regression: numbered step paragraphs should keep list-group styling."""
+        builder = WebsiteBuilder()
+
+        html = (
+            "<p>1. <strong>Fork and Clone</strong></p>"
+            '<div class="code-block-wrapper"><pre class="code-block"><code>cmd</code></pre></div>'
+            "<p>2. <strong>Install Dependencies</strong></p>"
+        )
+        result = builder.add_bootstrap_classes(html)
+
+        assert '<ol start="1" class="list-group list-group-numbered">' in result
+        assert '<ol start="2" class="list-group list-group-numbered">' in result
+        assert (
+            '<li class="list-group-item"><strong>Fork and Clone</strong></li>' in result
+        )
+        assert (
+            '<li class="list-group-item"><strong>Install Dependencies</strong></li>'
+            in result
+        )
+
     def test_markdown_to_html_with_markdown_library(self):
         """Test markdown conversion with markdown library available."""
         builder = WebsiteBuilder()
