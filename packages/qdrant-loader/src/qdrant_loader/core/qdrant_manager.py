@@ -231,6 +231,13 @@ class QdrantManager:
                     raise ValueError(
                         "Invalid global.llm.embeddings.vector_size; expected an integer"
                     ) from exc
+                # Qdrant requires a strictly positive dimensionality; 0/negative
+                # values are rejected at collection creation, so fail early here.
+                if vector_size <= 0:
+                    raise ValueError(
+                        "Invalid global.llm.embeddings.vector_size; "
+                        "expected a positive integer"
+                    )
 
             if vector_size is None:
                 try:
@@ -244,6 +251,11 @@ class QdrantManager:
                         raise ValueError(
                             "Invalid embedding.vector_size; expected an integer"
                         ) from exc
+                    if vector_size <= 0:
+                        raise ValueError(
+                            "Invalid embedding.vector_size; "
+                            "expected a positive integer"
+                        )
 
             if vector_size is None:
                 self.logger.warning(

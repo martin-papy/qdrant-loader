@@ -463,6 +463,35 @@ class TestQdrantManager:
                 sparse_vectors_config={"sparse": models.SparseVectorParams()},
             )
 
+    @pytest.mark.parametrize("invalid_size", [0, -1])
+    def test_create_collection_rejects_non_positive_vector_size(
+        self, mock_settings, mock_qdrant_client, mock_global_config, invalid_size
+    ):
+        """A non-positive vector_size is rejected before reaching Qdrant.
+
+        Qdrant requires a strictly positive dimensionality, so 0/negative
+        values must fail with a clear error instead of a cryptic failure
+        during collection creation.
+        """
+        mock_settings.llm_settings = SimpleNamespace(
+            embeddings=SimpleNamespace(vector_size=invalid_size)
+        )
+        mock_qdrant_client.get_collections.return_value = Mock(collections=[])
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+            with pytest.raises(ValueError, match="positive integer"):
+                manager.create_collection()
+
     def test_create_collection_error(
         self, mock_settings, mock_qdrant_client, mock_global_config
     ):
