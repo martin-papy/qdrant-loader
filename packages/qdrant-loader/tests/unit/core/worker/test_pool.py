@@ -332,7 +332,7 @@ async def test_worker_pool_cancels_handler_and_skips_update_on_claim_loss(
     original_extend = sqlite_job_queue.extend_visibility
 
     async def claim_lost_extend(
-        _job_id: int, _lease_seconds: int, _claim_attempt: int
+        _job_id: int, _lease_seconds: int, claim_attempt: int
     ) -> bool:
         return False  # Signal: claim is no longer ours
 

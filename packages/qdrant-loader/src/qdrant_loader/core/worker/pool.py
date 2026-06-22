@@ -150,6 +150,7 @@ class QueueWorkerPool:
                         current_claim_attempt: int = job.attempts,
                         current_lease_seconds: int = self._lease_seconds,
                         current_renewal_interval: int = renewal_interval,
+                        holder: list[asyncio.Task | None] = _handler_task_holder,
                     ) -> None:
                         nonlocal claim_lost
                         while True:
@@ -169,8 +170,8 @@ class QueueWorkerPool:
                                         job_id=current_job_id,
                                     )
                                     claim_lost = True
-                                    if _handler_task_holder[0] is not None:
-                                        _handler_task_holder[0].cancel()
+                                    if holder[0] is not None:
+                                        holder[0].cancel()
                                     return
                             except Exception as exc:
                                 logger.warning(
