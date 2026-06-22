@@ -25,6 +25,33 @@ class RateLimitPolicy:
 @dataclass
 class EmbeddingPolicy:
     vector_size: int | None = None
+    max_tokens_per_request: int = 8000
+    max_tokens_per_chunk: int = 8000
+
+
+def _to_int_or_none(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
+def _to_int_with_default(value: Any, default: int) -> int:
+    parsed = _to_int_or_none(value)
+    if parsed is None:
+        return default
+    return parsed
 
 
 @dataclass
@@ -47,10 +74,12 @@ class LLMSettings:
 
         Supports two schemas:
         - New: global.llm
-        - Legacy: global.embedding and file_conversion.markitdown
+        - Legacy: global.embedding
         """
         llm = (global_data or {}).get("llm") or {}
         if llm:
+            embeddings_cfg = dict(llm.get("embeddings") or {})
+            request_cfg = dict(llm.get("request") or {})
             return LLMSettings(
                 provider=str(llm.get("provider")),
                 base_url=llm.get("base_url"),
@@ -59,18 +88,27 @@ class LLMSettings:
                 headers=dict(llm.get("headers") or {}),
                 models=dict(llm.get("models") or {}),
                 tokenizer=str(llm.get("tokenizer", "none")),
-                request=RequestPolicy(**(llm.get("request") or {})),
+                request=RequestPolicy(**request_cfg),
                 rate_limits=RateLimitPolicy(**(llm.get("rate_limits") or {})),
-                embeddings=EmbeddingPolicy(**(llm.get("embeddings") or {})),
+                embeddings=EmbeddingPolicy(
+                    vector_size=_to_int_or_none(embeddings_cfg.get("vector_size")),
+                    max_tokens_per_request=_to_int_with_default(
+                        embeddings_cfg.get(
+                            "max_tokens_per_request",
+                            request_cfg.get("max_input_tokens"),
+                        ),
+                        8000,
+                    ),
+                    max_tokens_per_chunk=_to_int_with_default(
+                        embeddings_cfg.get("max_tokens_per_chunk"),
+                        8000,
+                    ),
+                ),
                 provider_options=dict(llm.get("provider_options") or {}),
             )
 
         # Legacy mapping
         embedding = (global_data or {}).get("embedding") or {}
-        file_conv = (global_data or {}).get("file_conversion") or {}
-        markit = (
-            (file_conv.get("markitdown") or {}) if isinstance(file_conv, dict) else {}
-        )
 
         endpoint = embedding.get("endpoint")
         # Detect Azure OpenAI in legacy endpoint to set provider accordingly
@@ -99,17 +137,15 @@ class LLMSettings:
         models = {
             "embeddings": embedding.get("model"),
         }
-        if isinstance(markit.get("llm_model"), str):
-            models["chat"] = markit.get("llm_model")
 
         # Emit deprecation warnings when relying on legacy fields
         try:
-            if embedding or markit:
+            if embedding:
                 warnings.warn(
                     (
                         "Using legacy configuration fields is deprecated. "
                         "Please migrate to 'global.llm' (see docs: configuration reference). "
-                        "Mapped from: global.embedding.* and/or file_conversion.markitdown.*"
+                        "Mapped from: global.embedding.*"
                     ),
                     category=DeprecationWarning,
                     stacklevel=2,
@@ -128,6 +164,16 @@ class LLMSettings:
             tokenizer=str(embedding.get("tokenizer", "none")),
             request=RequestPolicy(),
             rate_limits=RateLimitPolicy(),
-            embeddings=EmbeddingPolicy(vector_size=embedding.get("vector_size")),
+            embeddings=EmbeddingPolicy(
+                vector_size=_to_int_or_none(embedding.get("vector_size")),
+                max_tokens_per_request=_to_int_with_default(
+                    embedding.get("max_tokens_per_request"),
+                    8000,
+                ),
+                max_tokens_per_chunk=_to_int_with_default(
+                    embedding.get("max_tokens_per_chunk"),
+                    8000,
+                ),
+            ),
             provider_options=None,
         )

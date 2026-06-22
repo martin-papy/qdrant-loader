@@ -420,6 +420,37 @@ class TestQdrantManager:
                 sparse_vectors_config={"sparse": models.SparseVectorParams()},
             )
 
+    def test_create_collection_llm_vector_size_string_overrides_legacy(
+        self, mock_settings, mock_qdrant_client, mock_global_config
+    ):
+        """Regression: string env values in global.llm.embeddings.vector_size are honored."""
+        mock_qdrant_client.get_collections.return_value = Mock(collections=[])
+        mock_global_config.embedding.vector_size = 1024
+        mock_settings.llm_settings = SimpleNamespace(
+            embeddings=SimpleNamespace(vector_size="1536")
+        )
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+            manager.create_collection()
+
+            mock_qdrant_client.create_collection.assert_called_once_with(
+                collection_name="test_collection",
+                vectors_config={
+                    "dense": VectorParams(size=1536, distance=Distance.COSINE)
+                },
+                sparse_vectors_config={"sparse": models.SparseVectorParams()},
+            )
+
     def test_create_collection_error(
         self, mock_settings, mock_qdrant_client, mock_global_config
     ):

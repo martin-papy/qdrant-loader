@@ -14,16 +14,18 @@ class MarkItDownConfig(BaseModel):
     )
 
     llm_model: str = Field(
-        default="gpt-4o", description="LLM model for image descriptions (when enabled)"
+        default="gpt-4o",
+        description="Deprecated: use global.llm.models.chat; retained for backward compatibility",
     )
 
     llm_endpoint: str = Field(
-        default="https://api.openai.com/v1", description="LLM endpoint (when enabled)"
+        default="https://api.openai.com/v1",
+        description="Deprecated: use global.llm.base_url; retained for backward compatibility",
     )
 
     llm_api_key: str | None = Field(
         default=None,
-        description="API key for LLM service (required when enable_llm_descriptions is True)",
+        description="Deprecated: use global.llm.api_key; retained for backward compatibility",
     )
 
 

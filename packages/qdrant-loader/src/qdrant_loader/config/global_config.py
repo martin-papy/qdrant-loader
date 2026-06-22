@@ -100,9 +100,6 @@ class GlobalConfig(BaseConfig):
                 "engine": self.file_conversion.engine.value,
                 "markitdown": {
                     "enable_llm_descriptions": self.file_conversion.markitdown.enable_llm_descriptions,
-                    "llm_model": self.file_conversion.markitdown.llm_model,
-                    "llm_endpoint": self.file_conversion.markitdown.llm_endpoint,
-                    "llm_api_key": self.file_conversion.markitdown.llm_api_key,
                 },
                 "docling": self.file_conversion.docling.model_dump(mode="json"),
             },

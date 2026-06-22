@@ -49,7 +49,7 @@ class BaseChunkingStrategy(ABC):
         self.chunk_overlap = (
             chunk_overlap or settings.global_config.chunking.chunk_overlap
         )
-        self.tokenizer = settings.global_config.embedding.tokenizer
+        self.tokenizer = settings.llm_settings.tokenizer
 
         # Initialize tokenizer based on configuration
         if self.tokenizer == "none":

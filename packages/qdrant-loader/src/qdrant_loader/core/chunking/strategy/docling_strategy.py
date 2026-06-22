@@ -43,7 +43,6 @@ logger = LoggingConfig.get_logger(__name__)
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
     from qdrant_loader.config.chunking import DoclingStrategyConfig
-    from qdrant_loader.config.embedding import EmbeddingConfig
     from qdrant_loader.core.chunking.docling import DocumentChunker
     from qdrant_loader.core.document import Document
 
@@ -59,7 +58,8 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
         super().__init__(settings)
         self._config: ChunkingConfig = self._build_config(
             settings.global_config.chunking.strategies.docling,
-            settings.global_config.embedding,
+            settings.llm_settings.tokenizer,
+            settings.llm_settings.embeddings.max_tokens_per_chunk,
         )
         self._chunker: DocumentChunker = build_chunker(
             ChunkerKind.DOCLING, self._config
@@ -69,22 +69,24 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
     @staticmethod
     def _build_config(
-        docling: DoclingStrategyConfig, embedding: EmbeddingConfig
+        docling: DoclingStrategyConfig,
+        llm_tokenizer: str,
+        llm_max_tokens_per_chunk: int,
     ) -> ChunkingConfig:
         """Bridge the YAML knobs into the frozen engine config.
 
         The chunk-size budget is ``chunking.strategies.docling.max_tokens`` when set,
-        otherwise the embedding model's ``max_tokens_per_chunk``. The tokenizer
-        identity (how tokens are counted) always comes from ``embedding.tokenizer`` —
+        otherwise ``global.llm.embeddings.max_tokens_per_chunk``. The tokenizer
+        identity (how tokens are counted) always comes from ``global.llm.tokenizer`` —
         the override changes the budget, never the counter.
         """
         max_tokens = (
             docling.max_tokens
             if docling.max_tokens is not None
-            else embedding.max_tokens_per_chunk
+            else llm_max_tokens_per_chunk
         )
         return ChunkingConfig.from_embedding(
-            tokenizer=embedding.tokenizer,
+            tokenizer=llm_tokenizer,
             max_tokens=max_tokens,
             include_context_in_embed=docling.include_context_in_embed,
             table_serialization=TableSerialization(docling.table_serialization),

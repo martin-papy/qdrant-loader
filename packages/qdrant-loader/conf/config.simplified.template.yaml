@@ -9,7 +9,7 @@
 #   - State DB: ./state.db (or set STATE_DB_PATH env var)
 #
 # Environment Variables (auto-resolved):
-#   - OPENAI_API_KEY  → fills embedding + LLM API key
+#   - OPENAI_API_KEY  → fills global.llm.api_key
 #   - QDRANT_URL      → overrides default Qdrant URL
 #   - QDRANT_API_KEY  → sets Qdrant authentication
 #   - QDRANT_COLLECTION_NAME → overrides default collection name
@@ -51,7 +51,7 @@ sources:
         - "*.md"
         - "*.txt"
         - "*.py"
-      max_file_size: 1048576  # 1MB
+      max_file_size: 1048576 # 1MB
       enable_file_conversion: true
 
   # --- Git Repository (uncomment to enable) ---

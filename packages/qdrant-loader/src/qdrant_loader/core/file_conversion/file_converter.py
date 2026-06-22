@@ -154,30 +154,16 @@ class FileConverter:
                 from markitdown import MarkItDown  # type: ignore
 
                 if self.config.markitdown.enable_llm_descriptions:
+                    llm_model = self._resolve_chat_model()
                     self.logger.debug(
                         "Initializing MarkItDown with LLM configuration",
-                        llm_model=self.config.markitdown.llm_model,
-                        llm_endpoint=self.config.markitdown.llm_endpoint,
+                        llm_model=llm_model,
                     )
-                    try:
-                        if (
-                            self.config.markitdown.llm_model
-                            or self.config.markitdown.llm_endpoint
-                            or self.config.markitdown.llm_api_key
-                        ):
-                            self.logger.warning(
-                                "Using MarkItDown llm_* overrides; prefer configuring global.llm",
-                                llm_model=bool(self.config.markitdown.llm_model),
-                                llm_endpoint=bool(self.config.markitdown.llm_endpoint),
-                                llm_api_key=bool(self.config.markitdown.llm_api_key),
-                            )
-                    except Exception:
-                        pass
 
                     llm_client = self._create_llm_client()
                     self._markitdown = MarkItDown(
                         llm_client=llm_client,
-                        llm_model=self.config.markitdown.llm_model,
+                        llm_model=llm_model,
                     )
                     self.logger.debug("MarkItDown initialized with LLM support")
                 else:
@@ -191,6 +177,20 @@ class FileConverter:
                     Exception("MarkItDown library not available")
                 ) from e
         return self._markitdown
+
+    def _resolve_chat_model(self) -> str:
+        """Resolve chat model from unified LLM settings for MarkItDown captions."""
+        try:
+            from importlib import import_module
+
+            cfg_mod = import_module("qdrant_loader.config")
+            settings = cfg_mod.get_settings()
+            model = (settings.llm_settings.models or {}).get("chat")
+            if isinstance(model, str) and model.strip():
+                return model.strip()
+        except Exception:
+            pass
+        return "gpt-4o"
 
     def _register_custom_converters(self, markitdown_instance) -> None:
         """Register qdrant-loader's custom converters at higher priority than the defaults."""
@@ -214,8 +214,6 @@ class FileConverter:
         """
         # Attempt provider-first wiring using core settings
         try:
-            from dataclasses import replace as _dc_replace
-
             # Lazy import to avoid circular import at module import time
             from importlib import import_module
             from importlib import import_module as _import_module
@@ -228,24 +226,7 @@ class FileConverter:
             create_provider = core_factory_mod.create_provider
 
             base_llm: LLMSettings = settings.llm_settings  # type: ignore
-
-            # Apply legacy MarkItDown overrides (model/endpoint/api_key) when provided
-            md = self.config.markitdown
-            models = dict(getattr(base_llm, "models", {}) or {})
-            if md.llm_model:
-                models["chat"] = md.llm_model
-
-            override_kwargs = {
-                "models": models,
-            }
-            if md.llm_endpoint:
-                override_kwargs["base_url"] = md.llm_endpoint
-            if md.llm_api_key:
-                override_kwargs["api_key"] = md.llm_api_key
-
-            effective_llm = _dc_replace(base_llm, **override_kwargs)
-
-            provider = create_provider(effective_llm)
+            provider = create_provider(base_llm)
             chat_client = provider.chat()
 
             # Build an OpenAI-compatible wrapper for MarkItDown
@@ -307,14 +288,19 @@ class FileConverter:
             try:
                 import json as _json
                 import urllib.request as _urlreq
+                from importlib import import_module as _import_module
 
-                base_url = (self.config.markitdown.llm_endpoint or "").rstrip("/")
+                cfg_mod = _import_module("qdrant_loader.config")
+                settings = cfg_mod.get_settings()
+                llm_settings = settings.llm_settings
+
+                base_url = (llm_settings.base_url or "").rstrip("/")
                 if not base_url:
                     raise RuntimeError(
-                        "No llm_endpoint configured for MarkItDown fallback"
+                        "No global.llm.base_url configured for MarkItDown fallback"
                     )
                 api_key = (
-                    self.config.markitdown.llm_api_key
+                    llm_settings.api_key
                     or os.getenv("OPENAI_API_KEY")
                     or os.getenv("LLM_API_KEY", "")
                 )

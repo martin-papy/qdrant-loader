@@ -46,7 +46,7 @@ class TableSerialization(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class TokenizerConfig:
-    """How to count tokens, aligned to the *embedding* model.
+    """How to count tokens, aligned to the configured embedding model.
 
     ``HybridChunker`` requires a real tokenizer to size chunks; counting against a
     tokenizer unrelated to the embedder is the character-budget mistake this layer
@@ -92,18 +92,18 @@ class ChunkingConfig:
     def from_embedding(
         cls, *, tokenizer: str, max_tokens: int, **overrides: Any
     ) -> ChunkingConfig:
-        """Derive a config from the loader's embedding settings.
+        """Derive a config from the loader's LLM embedding settings.
 
-        ``tokenizer`` is the ``embedding.tokenizer`` string the loader already
-        carries; ``max_tokens`` is its ``max_tokens_per_chunk``. Top-level overrides
-        replace whole fields (pass a built :class:`TokenizerConfig`, not its parts).
+        ``tokenizer`` is the ``global.llm.tokenizer`` string and ``max_tokens`` is
+        ``global.llm.embeddings.max_tokens_per_chunk``. Top-level overrides replace
+        whole fields (pass a built :class:`TokenizerConfig`, not its parts).
         """
         baseline = cls(tokenizer=cls._resolve_tokenizer(tokenizer, max_tokens))
         return dataclasses.replace(baseline, **overrides) if overrides else baseline
 
     @staticmethod
     def _resolve_tokenizer(tokenizer: str, max_tokens: int) -> TokenizerConfig:
-        """Map an ``embedding.tokenizer`` string onto a :class:`TokenizerConfig`.
+        """Map a ``global.llm.tokenizer`` string onto a :class:`TokenizerConfig`.
 
         ``"none"`` (the Ollama-local default, which exposes no tokenizer) falls back
         to tiktoken ``cl100k_base`` as an *approximate counting proxy* — flagged so
