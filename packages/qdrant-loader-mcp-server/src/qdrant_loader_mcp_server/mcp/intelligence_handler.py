@@ -3,7 +3,11 @@
 import asyncio
 import time
 import uuid
+from pathlib import Path
 from typing import Any
+
+from qdrant_loader.config import initialize_config
+from qdrant_loader_core.graph import get_graph_store
 
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
@@ -30,6 +34,30 @@ class IntelligenceHandler:
         self._ttl = 300
         self._max_sessions = 500
         self._lock = asyncio.Lock()
+        self._graph_store = None
+        self._graph_store_lock = asyncio.Lock()
+
+    async def _get_graph_store(self):
+        """Lazy-initialize graph store with proper locking."""
+        async with self._graph_store_lock:
+            if self._graph_store is None:
+                project_root = Path.cwd()
+                initialize_config(
+                    yaml_path=project_root / "config.yaml",
+                    env_path=project_root / ".env",
+                    skip_validation=True,
+                )
+                self._graph_store = await get_graph_store()
+            return self._graph_store
+
+    async def _run_graph_query(
+        self,
+        cypher: str,
+        params: dict | None = None,
+    ):
+
+        store = await self._get_graph_store()
+        return await store.query_cypher(cypher, params or {})
 
     def _get_or_create_document_id(self, doc: Any) -> str:
         return _get_or_create_document_id_fn(doc)
@@ -948,3 +976,105 @@ class IntelligenceHandler:
             overflow = len(self._cluster_store) - self._max_sessions
             for k, _ in sorted_items[:overflow]:
                 self._cluster_store.pop(k, None)
+
+    @staticmethod
+    def _validate_depth(depth: int) -> int:
+        if depth < 1 or depth > 10:
+            raise ValueError("depth must be between 1 and 10")
+        return depth
+
+    async def handle_find_ticket_dependencies(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ):
+        """
+        Traverse Jira blocking dependencies
+        """
+
+        if "ticket_key" not in params:
+            logger.error("Missing required parameter: ticket_key")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: ticket_key",
+                },
+            )
+
+        if "depth" not in params:
+            logger.error("Missing required parameter: depth")
+            return self.protocol.create_response(
+                request_id, error={"code": -32602, "message": "Invalid params"}
+            )
+
+        depth = params.get("depth")
+        ticket_key = params.get("ticket_key")
+
+        if not isinstance(depth, int):
+            logger.error("Invalid depth parameter type")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "depth must be an integer",
+                },
+            )
+
+        query = f"""
+        MATCH path =
+            (start:Document {{id: $ticket_key}})
+            -[:LINKS_TO*1..{depth}]->
+            (target)
+        RETURN
+            nodes(path),
+            relationships(path)
+        """
+
+        query_params = {
+            "ticket_key": ticket_key,
+            "depth": depth,
+        }
+        try:
+            depth = self._validate_depth(depth)
+
+            result = await self._run_graph_query(query, query_params)
+
+            formatted = self.formatters.format_graph(result)
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                f"Found {len(formatted.get('nodes', []))} "
+                                f"nodes and {len(formatted.get('edges', []))} edges"
+                            ),
+                        }
+                    ],
+                    "structuredContent": formatted,
+                    "isError": False,
+                },
+            )
+
+        except ValueError as e:
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": str(e),
+                },
+            )
+
+        except Exception:
+            logger.exception("Error querying graph")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Internal server error",
+                },
+            )

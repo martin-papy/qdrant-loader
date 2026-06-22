@@ -84,11 +84,14 @@ def register_expand_tools(mcp: FastMCP) -> None:
             ),
         ],
         cluster_session_id: Annotated[
-            str, Field(description="UUID representing a clustering session", min_length=1)
+            str,
+            Field(description="UUID representing a clustering session", min_length=1),
         ],
         limit: Annotated[
             int,
-            Field(description="Maximum number of documents to return from cluster", ge=1),
+            Field(
+                description="Maximum number of documents to return from cluster", ge=1
+            ),
         ] = 20,
         offset: Annotated[
             int, Field(description="Number of documents to skip for pagination", ge=0)

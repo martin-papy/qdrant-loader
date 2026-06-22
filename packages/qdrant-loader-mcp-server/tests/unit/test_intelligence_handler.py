@@ -1628,3 +1628,135 @@ class TestIntelligenceHandlerEdgeCasesMalformedData:
             project_ids=None,
             similarity_threshold=0.7,  # Default value when not in params
         )
+
+
+class TestHandleFindTicketDependencies:
+    @pytest.mark.asyncio
+    async def test_find_ticket_dependencies_missing_ticket_key(
+        self,
+        intelligence_handler,
+        mock_protocol,
+    ):
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        await intelligence_handler.handle_find_ticket_dependencies(
+            request_id="req-1",
+            params={"depth": 2},
+        )
+
+        call_kwargs = mock_protocol.create_response.call_args.kwargs
+
+        assert call_kwargs["error"]["code"] == -32602
+        assert "ticket_key" in call_kwargs["error"]["data"]
+
+    @pytest.mark.asyncio
+    async def test_find_ticket_dependencies_missing_depth(
+        self,
+        intelligence_handler,
+        mock_protocol,
+    ):
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        await intelligence_handler.handle_find_ticket_dependencies(
+            request_id="req-1",
+            params={"ticket_key": "ID-123"},
+        )
+
+        call_kwargs = mock_protocol.create_response.call_args.kwargs
+
+        assert call_kwargs["error"]["code"] == -32602
+        assert call_kwargs["error"]["message"] == "Invalid params"
+
+    @pytest.mark.asyncio
+    async def test_find_ticket_dependencies_invalid_depth_type(
+        self,
+        intelligence_handler,
+        mock_protocol,
+    ):
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        await intelligence_handler.handle_find_ticket_dependencies(
+            request_id="req-1",
+            params={
+                "ticket_key": "ID-123",
+                "depth": "2",
+            },
+        )
+
+        call_kwargs = mock_protocol.create_response.call_args.kwargs
+
+        assert call_kwargs["error"]["code"] == -32602
+        assert call_kwargs["error"]["data"] == "depth must be an integer"
+
+    @pytest.mark.asyncio
+    async def test_find_ticket_dependencies_success(
+        self,
+        intelligence_handler,
+        mock_protocol,
+    ):
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        graph_result = [
+            {
+                "nodes(path)": [{"id": "ID-123"}, {"id": "ID-456"}],
+                "relationships(path)": [{"type": "LINKS_TO"}],
+            }
+        ]
+
+        intelligence_handler._run_graph_query = AsyncMock(return_value=graph_result)
+
+        intelligence_handler._validate_depth = MagicMock(return_value=2)
+
+        formatted_graph = {
+            "nodes": [{"id": "ID-123"}, {"id": "ID-456"}],
+            "edges": [{"edge_type": "LINKS_TO"}],
+        }
+
+        intelligence_handler.formatters.format_graph = MagicMock(
+            return_value=formatted_graph
+        )
+
+        await intelligence_handler.handle_find_ticket_dependencies(
+            request_id="req-1",
+            params={
+                "ticket_key": "ID-123",
+                "depth": 2,
+            },
+        )
+
+        intelligence_handler._run_graph_query.assert_awaited_once()
+
+        call_kwargs = mock_protocol.create_response.call_args.kwargs
+
+        result = call_kwargs["result"]
+
+        assert result["isError"] is False
+        assert result["content"][0]["text"] == "Found 2 nodes and 1 edges"
+        assert result["structuredContent"] == formatted_graph
+
+    @pytest.mark.asyncio
+    async def test_find_ticket_dependencies_graph_query_failure(
+        self,
+        intelligence_handler,
+        mock_protocol,
+    ):
+        mock_protocol.create_response.return_value = {"result": "success"}
+
+        intelligence_handler._validate_depth = MagicMock(return_value=2)
+
+        intelligence_handler._run_graph_query = AsyncMock(
+            side_effect=Exception("graph failed")
+        )
+
+        await intelligence_handler.handle_find_ticket_dependencies(
+            request_id="req-1",
+            params={
+                "ticket_key": "ID-123",
+                "depth": 2,
+            },
+        )
+
+        call_kwargs = mock_protocol.create_response.call_args.kwargs
+
+        assert call_kwargs["error"]["code"] == -32603
+        assert call_kwargs["error"]["message"] == "Internal server error"

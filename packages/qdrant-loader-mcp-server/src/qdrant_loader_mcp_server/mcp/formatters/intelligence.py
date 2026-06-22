@@ -404,3 +404,136 @@ class IntelligenceResultFormatters:
             formatted += f"• Original Query: {original_query}\n"
 
         return formatted
+
+    @staticmethod
+    def _safe_attr(obj, attr, default=None):
+        return getattr(obj, attr, default)
+
+    @staticmethod
+    def _get_property(obj, key):
+        properties = IntelligenceResultFormatters._safe_attr(obj, "properties", {})
+
+        if not isinstance(properties, dict):
+            try:
+                properties = dict(properties)
+            except Exception:
+                return None
+
+        return properties.get(key)
+
+    @staticmethod
+    def _get_label(node):
+        labels = IntelligenceResultFormatters._safe_attr(
+            node,
+            "labels",
+            None,
+        )
+
+        if isinstance(labels, (list, tuple)):
+            return ", ".join(map(str, labels)) if labels else "Unknown"
+
+        return str(labels) if labels is not None else "Unknown"
+
+    @staticmethod
+    def format_graph(result) -> dict[str, Any]:
+        nodes = {}
+        edges = []
+        edge_keys = set()
+        internal_node_id_map = {}
+
+        for row in result:
+            if not row:
+                continue
+
+            path_nodes = row[0] if len(row) > 0 else []
+            path_edges = row[1] if len(row) > 1 else []
+
+            for n in path_nodes:
+                node_id = IntelligenceResultFormatters._get_property(n, "id")
+                node_label = IntelligenceResultFormatters._get_label(n)
+
+                if node_id is None:
+                    continue
+
+                internal_id = getattr(n, "id", None)
+                if isinstance(internal_id, int):
+                    internal_node_id_map[internal_id] = node_id
+
+                if node_id not in nodes:
+                    properties = IntelligenceResultFormatters._safe_attr(
+                        n, "properties", {}
+                    )
+
+                    try:
+                        properties = dict(properties)
+                    except Exception:
+                        properties = {}
+
+                    nodes[node_id] = {
+                        "id": node_id,
+                        "label": node_label,
+                        "project": properties.get("project"),
+                        "properties": properties,
+                    }
+
+            for r in path_edges:
+                source = None
+                target = None
+
+                src_node = getattr(r, "src_node", None)
+                if src_node is not None:
+                    source = (
+                        internal_node_id_map.get(src_node)
+                        if isinstance(src_node, int)
+                        else IntelligenceResultFormatters._get_property(src_node, "id")
+                    )
+
+                dest_node = getattr(r, "dest_node", None)
+                if dest_node is not None:
+                    target = (
+                        internal_node_id_map.get(dest_node)
+                        if isinstance(dest_node, int)
+                        else IntelligenceResultFormatters._get_property(dest_node, "id")
+                    )
+
+                if source is None or target is None:
+                    continue
+
+                edge_type = getattr(r, "edge_type", None)
+
+                if callable(edge_type):
+                    edge_type = edge_type()
+
+                if edge_type is None:
+                    edge_type = getattr(r, "relation", "UNKNOWN")
+
+                edge_key = (source, target, str(edge_type))
+
+                if edge_key in edge_keys:
+                    continue
+
+                edge_keys.add(edge_key)
+
+                properties = IntelligenceResultFormatters._safe_attr(
+                    r, "properties", {}
+                )
+
+                try:
+                    properties = dict(properties)
+                except Exception:
+                    properties = {}
+
+                edges.append(
+                    {
+                        "source": source,
+                        "target": target,
+                        "edge_type": edge_type,
+                        "project": properties.get("project"),
+                        "properties": properties,
+                    }
+                )
+
+        return {
+            "nodes": list(nodes.values()),
+            "edges": edges,
+        }

@@ -51,6 +51,7 @@ class MCPFormatters:
     format_document_clusters = staticmethod(
         IntelligenceResultFormatters.format_document_clusters
     )
+    format_graph = staticmethod(IntelligenceResultFormatters.format_graph)
 
     # Lightweight result methods
     create_lightweight_similar_documents_results = staticmethod(

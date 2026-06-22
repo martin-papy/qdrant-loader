@@ -42,7 +42,7 @@ class PersonInfo:
 @dataclass
 class GraphNode:
     id: str
-    label: CoreNodeLabel
+    label: str
     project: str | None = None
     properties: dict[str, Any] = field(default_factory=dict)
 
@@ -51,7 +51,7 @@ class GraphNode:
 class GraphEdge:
     source: str
     target: str
-    edge_type: CoreEdgeType
+    edge_type: str
     project: str | None = None
     properties: dict[str, Any] = field(default_factory=dict)
 

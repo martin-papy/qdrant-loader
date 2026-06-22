@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 SourceType = Literal["git", "confluence", "jira", "documentation", "localfile"]
 
+
 class HierarchyFilter(BaseModel):
     """Hierarchy-aware filters for Confluence/localfile navigation."""
 
@@ -150,14 +151,16 @@ def register_search_tools(mcp: FastMCP) -> None:
         ] = None,
         include_parent_context: Annotated[
             bool, Field(description="Include parent document information in results")
-        ] = True, # TODO: Add behavior; logged-only for now
+        ] = True,  # TODO: Add behavior; logged-only for now
         limit: Annotated[
             int, Field(description="Maximum number of results to return", ge=1)
         ] = 10,
     ) -> dict[str, Any]:
         """Search for file attachments and their parent documents."""
         handler = ctx.lifespan_context["search_handler"]
-        af = attachment_filter.model_dump(exclude_none=True) if attachment_filter else {}
+        af = (
+            attachment_filter.model_dump(exclude_none=True) if attachment_filter else {}
+        )
 
         processed = await handler.query_processor.process_query(query)
         results = await handler.search_engine.search(
