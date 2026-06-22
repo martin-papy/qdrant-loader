@@ -26,13 +26,14 @@ venv/
 env/
 ENV/
 
-# IDE
+# IDE + AI tools
 .idea/
 .vscode/
 .cursor/*
 !.cursor/rules/
 *.swp
 *.swo
+.claude/
 
 # Environment variables
 .env
