@@ -354,6 +354,35 @@ async def test_extend_visibility_on_pending_job_fails(
 
 
 @pytest.mark.asyncio
+async def test_extend_visibility_rejects_stale_claim_attempt(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """A stale worker must not renew a lease after reclaim increments attempts."""
+    job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "test"})
+
+    first_claim = await sqlite_job_queue.claim_next(lease_seconds=1)
+    assert first_claim is not None
+
+    await asyncio.sleep(1.1)
+
+    second_claim = await sqlite_job_queue.claim_next(lease_seconds=60)
+    assert second_claim is not None
+    assert second_claim.attempts == first_claim.attempts + 1
+
+    # First claimant is stale now and must not be able to renew.
+    stale_extended = await sqlite_job_queue.extend_visibility(
+        job.id, lease_seconds=30, claim_attempt=first_claim.attempts
+    )
+    assert stale_extended is False
+
+    # Current claimant can still renew.
+    current_extended = await sqlite_job_queue.extend_visibility(
+        job.id, lease_seconds=30, claim_attempt=second_claim.attempts
+    )
+    assert current_extended is True
+
+
+@pytest.mark.asyncio
 async def test_list_with_offset_and_limit_pagination(sqlite_job_queue: SQLiteJobQueue):
     """Test pagination using offset and limit parameters."""
     # Create 25 jobs
