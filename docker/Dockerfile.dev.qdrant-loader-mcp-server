@@ -37,4 +37,6 @@ COPY --chown=appuser:appuser packages/qdrant-loader-mcp-server /qdrant-loader-mc
 
 ENV PATH="/qdrant-loader-mcp-server/.venv/bin:$PATH"
 
+EXPOSE 8080
+
 CMD ["mcp-qdrant-loader", "--transport", "http", "--port", "8080", "--host", "0.0.0.0"]

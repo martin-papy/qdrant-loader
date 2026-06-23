@@ -66,6 +66,9 @@ jira_cloud_connector.JiraCloudConnector.get_issues = _limited_cloud_get_issues
 
 
 # Normal qdrant-loader CLI run
+# Note: sys.argv is mutated here to simulate CLI execution.
+# This is intentional because certain features
+# are only available when running through the CLI, and are not fully supported via direct function calls.
 from qdrant_loader.cli.cli import cli  # noqa: E402, I001
 
 sys.argv = ["qdrant-loader", "serve", "--config", "config.yaml", "--env", ".env", "--host", "0.0.0.0"]

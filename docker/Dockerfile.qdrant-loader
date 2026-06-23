@@ -34,4 +34,9 @@ RUN if [ "$QDRANT_LOADER_VERSION" = "latest" ]; then \
 
 ENV PATH=$PATH:/home/appuser/.local/bin
 
+EXPOSE 8081
+
+# The init command is safe to run on every startup.
+# It checks if the collection already exists and skips creation if it does,
+# so it does not drop or recreate existing data.
 CMD ["sh", "-c", "qdrant-loader init --config config.yaml --env .env && qdrant-loader serve --config config.yaml --env .env --host 0.0.0.0"]

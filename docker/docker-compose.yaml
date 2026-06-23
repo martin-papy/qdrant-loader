@@ -9,7 +9,7 @@
 #
 # ▶ Run data ingestion (pilot mode) (EXPERIMENT with Jira DC / Jira Cloud):
 #    ⚠ Make sure to set the number of issues to ingest in the env file (MAX_ISSUES)
-#    docker compose -f docker/docker-compose.yaml up -d qdrant-loader-pilot
+#    docker compose -f docker/docker-compose.yaml --profile pilot up -d qdrant-loader-pilot
 #
 # ▶ Start MCP server:
 #    docker compose -f docker/docker-compose.yaml up -d qdrant-loader-mcp-server
@@ -29,6 +29,7 @@ services:
       - QDRANT__LOG_LEVEL=INFO
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
+    # QDrant DB doesn't have curl and wget available in the image
     healthcheck:
       test: bash -c ':> /dev/tcp/localhost/6333'
       interval: 30s
@@ -75,6 +76,7 @@ services:
 
   # EXPERIMENT with Jira DC / Jira Cloud
   qdrant-loader-pilot:
+    profiles: ["pilot"]
     container_name: qdrant-loader-pilot
     build:
       context: ..

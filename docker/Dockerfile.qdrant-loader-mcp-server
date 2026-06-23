@@ -19,4 +19,6 @@ RUN if [ "$QDRANT_LOADER_MCP_SERVER_VERSION" = "latest" ]; then \
 
 ENV PATH=$PATH:/home/appuser/.local/bin
 
+EXPOSE 8080
+
 CMD ["mcp-qdrant-loader", "--transport", "http", "--host", "0.0.0.0", "--port", "8080"]
