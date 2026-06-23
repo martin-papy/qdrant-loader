@@ -41,33 +41,50 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
         ctx: Context,
         query: Annotated[
             str,
-            Field(description="Search query to get documents for analysis", min_length=1),
+            Field(
+                description="Search query to get documents for analysis", min_length=1
+            ),
         ],
         limit: Annotated[
-            int, Field(description="Maximum number of documents to analyze", ge=1, le=1000)
+            int,
+            Field(description="Maximum number of documents to analyze", ge=1, le=1000),
         ] = 20,
         source_types: Annotated[
-            list[str] | None, Field(description="Optional list of source types to filter by")
+            list[str] | None,
+            Field(description="Optional list of source types to filter by"),
         ] = None,
         project_ids: Annotated[
-            list[str] | None, Field(description="Optional list of project IDs to filter by")
+            list[str] | None,
+            Field(description="Optional list of project IDs to filter by"),
         ] = None,
         use_llm: Annotated[
             bool, Field(description="Enable LLM validation for top pairs (budgeted)")
         ] = False,
         max_llm_pairs: Annotated[
-            int, Field(description="Maximum number of pairs to analyze with LLM", ge=0, le=100)
+            int,
+            Field(
+                description="Maximum number of pairs to analyze with LLM", ge=0, le=100
+            ),
         ] = 5,
         overall_timeout_s: Annotated[
-            float, Field(description="Overall analysis budget in seconds", ge=0, le=3600)
+            float,
+            Field(description="Overall analysis budget in seconds", ge=0, le=3600),
         ] = 60,
         max_pairs_total: Annotated[
             int,
-            Field(description="Maximum candidate pairs to analyze after tiering", ge=0, le=100000),
+            Field(
+                description="Maximum candidate pairs to analyze after tiering",
+                ge=0,
+                le=100000,
+            ),
         ] = 1000,
         text_window_chars: Annotated[
             int,
-            Field(description="Per-document text window size for lexical analysis", ge=0, le=10000),
+            Field(
+                description="Per-document text window size for lexical analysis",
+                ge=0,
+                le=10000,
+            ),
         ] = 1000,
     ) -> dict[str, Any]:
         """Analyze relationships between documents."""
@@ -94,19 +111,25 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             str, Field(description="Query to find the target document", min_length=1)
         ],
         comparison_query: Annotated[
-            str, Field(description="Query to get documents to compare against", min_length=1)
+            str,
+            Field(
+                description="Query to get documents to compare against", min_length=1
+            ),
         ],
         similarity_metrics: Annotated[
-            list[SimilarityMetric] | None, Field(description="Similarity metrics to use")
+            list[SimilarityMetric] | None,
+            Field(description="Similarity metrics to use"),
         ] = None,
         max_similar: Annotated[
             int, Field(description="Maximum number of similar documents to return")
         ] = 5,
         source_types: Annotated[
-            list[str] | None, Field(description="Optional list of source types to filter by")
+            list[str] | None,
+            Field(description="Optional list of source types to filter by"),
         ] = None,
         project_ids: Annotated[
-            list[str] | None, Field(description="Optional list of project IDs to filter by")
+            list[str] | None,
+            Field(description="Optional list of project IDs to filter by"),
         ] = None,
     ) -> dict[str, Any]:
         """Find documents similar to a target document using multiple similarity metrics."""
@@ -125,16 +148,22 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def detect_document_conflicts(
         ctx: Context,
         query: Annotated[
-            str, Field(description="Search query to get documents for conflict analysis", min_length=1)
+            str,
+            Field(
+                description="Search query to get documents for conflict analysis",
+                min_length=1,
+            ),
         ],
         limit: Annotated[
             int, Field(description="Maximum number of documents to analyze")
         ] = 10,
         source_types: Annotated[
-            list[str] | None, Field(description="Optional list of source types to filter by")
+            list[str] | None,
+            Field(description="Optional list of source types to filter by"),
         ] = None,
         project_ids: Annotated[
-            list[str] | None, Field(description="Optional list of project IDs to filter by")
+            list[str] | None,
+            Field(description="Optional list of project IDs to filter by"),
         ] = None,
     ) -> dict[str, Any]:
         """Detect conflicts and contradictions between documents."""
@@ -162,10 +191,12 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
             int, Field(description="Maximum number of recommendations")
         ] = 5,
         source_types: Annotated[
-            list[str] | None, Field(description="Optional list of source types to filter by")
+            list[str] | None,
+            Field(description="Optional list of source types to filter by"),
         ] = None,
         project_ids: Annotated[
-            list[str] | None, Field(description="Optional list of project IDs to filter by")
+            list[str] | None,
+            Field(description="Optional list of project IDs to filter by"),
         ] = None,
     ) -> dict[str, Any]:
         """Find content that complements a target document."""
@@ -185,26 +216,35 @@ def register_intelligence_tools(mcp: FastMCP) -> None:
     async def cluster_documents(
         ctx: Context,
         query: Annotated[
-            str, Field(description="Search query to get documents for clustering", min_length=1)
+            str,
+            Field(
+                description="Search query to get documents for clustering", min_length=1
+            ),
         ],
         strategy: Annotated[
             ClusterStrategy,
-            Field(description="Clustering strategy (adaptive auto-selects the best one)"),
+            Field(
+                description="Clustering strategy (adaptive auto-selects the best one)"
+            ),
         ] = "mixed_features",
         max_clusters: Annotated[
-            int, Field(description="Maximum number of clusters to create", ge=1, le=1000)
+            int,
+            Field(description="Maximum number of clusters to create", ge=1, le=1000),
         ] = 10,
         min_cluster_size: Annotated[
             int, Field(description="Minimum size for a cluster", ge=1, le=1000)
         ] = 2,
         limit: Annotated[
-            int, Field(description="Maximum number of documents to cluster", ge=1, le=1000)
+            int,
+            Field(description="Maximum number of documents to cluster", ge=1, le=1000),
         ] = 25,
         source_types: Annotated[
-            list[str] | None, Field(description="Optional list of source types to filter by")
+            list[str] | None,
+            Field(description="Optional list of source types to filter by"),
         ] = None,
         project_ids: Annotated[
-            list[str] | None, Field(description="Optional list of project IDs to filter by")
+            list[str] | None,
+            Field(description="Optional list of project IDs to filter by"),
         ] = None,
     ) -> dict[str, Any]:
         """Cluster documents based on similarity and relationships."""

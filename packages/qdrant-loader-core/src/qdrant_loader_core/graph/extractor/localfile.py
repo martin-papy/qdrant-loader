@@ -52,7 +52,7 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
 
         return GraphNode(
             id=f"dir:{directory}",
-            label=CoreNodeLabel.CONTAINER,
+            label=CoreNodeLabel.CONTAINER.value,
             project=None,
             properties={
                 "kind": "filesystem_dir",
@@ -74,7 +74,7 @@ class LocalFileEntityExtractor(BaseEntityExtractor):
 
         return GraphNode(
             id=doc.id,
-            label=CoreNodeLabel.DOCUMENT,
+            label=CoreNodeLabel.DOCUMENT.value,
             project=project,
             properties={
                 "title": file_name,

@@ -33,6 +33,21 @@ class GitEntityExtractor(BaseEntityExtractor):
     ) -> str | None:
         return doc.metadata.get("repository_name")
 
+    def _build_document_node(
+        self,
+        doc: Document,
+        project: str | None,
+    ) -> GraphNode:
+        return GraphNode(
+            id=doc.id,
+            label=CoreNodeLabel.DOCUMENT.value,
+            project=project,
+            properties={
+                "title": doc.title,
+                "source_type": self.source_type,
+            },
+        )
+
     def _extract_people(
         self,
         doc: Document,
@@ -63,7 +78,7 @@ class GitEntityExtractor(BaseEntityExtractor):
 
         return GraphNode(
             id=f"git:{repo_name}",
-            label=CoreNodeLabel.CONTAINER,
+            label=CoreNodeLabel.CONTAINER.value,
             project=repo_name,
             properties={
                 "kind": "repository",

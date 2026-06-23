@@ -48,6 +48,24 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
         return parsed.netloc
 
     # ------------------------------------------------------------------
+    # Build Document Node
+    # ------------------------------------------------------------------
+    def _build_document_node(
+        self,
+        doc: Document,
+        project: str | None,
+    ) -> GraphNode:
+        return GraphNode(
+            id=doc.id,
+            label=CoreNodeLabel.DOCUMENT.value,
+            project=project,
+            properties={
+                "title": doc.title,
+                "source_type": self.source_type,
+            },
+        )
+
+    # ------------------------------------------------------------------
     # People
     # ------------------------------------------------------------------
 
@@ -79,7 +97,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
 
         return GraphNode(
             id=f"site:{domain}",
-            label=CoreNodeLabel.CONTAINER,
+            label=CoreNodeLabel.CONTAINER.value,
             project=domain,
             properties={
                 "kind": "website",
@@ -96,7 +114,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
         return [
             GraphNode(
                 id=f"label:{tag}",
-                label=CoreNodeLabel.LABEL,
+                label=CoreNodeLabel.LABEL.value,
                 project=project,
                 properties={"name": tag},
             )
@@ -125,7 +143,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
                 GraphEdge(
                     source=doc.id,
                     target=link,
-                    edge_type=CoreEdgeType.LINKS_TO,
+                    edge_type=CoreEdgeType.LINKS_TO.value,
                     project=project,
                 )
             )
@@ -143,7 +161,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
             nodes.append(
                 GraphNode(
                     id=f"attachment:{attachment_id}",
-                    label=CoreNodeLabel.ATTACHMENT,
+                    label=CoreNodeLabel.ATTACHMENT.value,
                     project=project,
                     properties={
                         "filename": attachment.get("filename"),
@@ -157,7 +175,7 @@ class PublicDocsEntityExtractor(BaseEntityExtractor):
                 GraphEdge(
                     source=doc.id,
                     target=f"attachment:{attachment_id}",
-                    edge_type=CoreEdgeType.HAS_ATTACHMENT,
+                    edge_type=CoreEdgeType.HAS_ATTACHMENT.value,
                     project=project,
                 )
             )

@@ -21,6 +21,7 @@ EXPECTED_TOOLS = {
     "expand_document",
     "expand_cluster",
     "expand_chunk_context",
+    "find_ticket_dependencies",
 }
 
 
@@ -31,7 +32,7 @@ def _list_tools():
 def test_all_tools_registered():
     tools = _list_tools()
     assert set(tools) == EXPECTED_TOOLS
-    assert len(tools) == 11
+    assert len(tools) == 12
 
 
 def test_conflict_tool_keeps_legacy_name():

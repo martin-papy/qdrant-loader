@@ -62,7 +62,9 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
 
         # Stateful: holds the cluster store shared with expand_cluster
         # build one instance for reuse
-        intelligence_handler = IntelligenceHandler(search_engine=search_engine, protocol=MCPProtocol())
+        intelligence_handler = IntelligenceHandler(
+            search_engine=search_engine, protocol=MCPProtocol()
+        )
 
         yield {
             "search_engine": search_engine,
@@ -76,7 +78,9 @@ async def _lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
             try:
                 await search_engine.cleanup()
             except Exception:
-                logger.error("Error during FastMCP search engine cleanup", exc_info=True)
+                logger.error(
+                    "Error during FastMCP search engine cleanup", exc_info=True
+                )
 
 
 # The FastMCP app. Imported by entry points later
@@ -97,7 +101,12 @@ async def health_check(request):
     """Liveness probe. The lifespan completes before uvicorn serves traffic,
     so reaching this means the engine is initialized."""
     return JSONResponse(
-        {"status": "healthy", "transport": "http", "protocol": "mcp", "pid": os.getpid()}
+        {
+            "status": "healthy",
+            "transport": "http",
+            "protocol": "mcp",
+            "pid": os.getpid(),
+        }
     )
 
 
@@ -129,4 +138,3 @@ http_app = mcp.http_app(
     json_response=True,
     stateless_http=True,
 )
-

@@ -40,6 +40,30 @@ class ConfluenceEntityExtractor(BaseEntityExtractor):
     ) -> str | None:
         return doc.metadata.get("space_key")
 
+    def _build_document_node(
+        self,
+        doc: Document,
+        project: str | None,
+    ) -> GraphNode:
+        """
+        Build a document node enriched with filesystem metadata.
+        """
+
+        file_name = doc.metadata.get("file_name")
+
+        return GraphNode(
+            id=doc.id,
+            label=CoreNodeLabel.DOCUMENT.value,
+            project=project,
+            properties={
+                "title": file_name,
+                "url": doc.url,
+                "created_at": doc.metadata.get("created_at"),
+                "updated_at": doc.metadata.get("updated_at"),
+                "source_type": self.source_type,
+            },
+        )
+
     # ------------------------------------------------------------------
     # People
     # ------------------------------------------------------------------
@@ -78,7 +102,7 @@ class ConfluenceEntityExtractor(BaseEntityExtractor):
 
         return GraphNode(
             id=f"space:{space_key}",
-            label=CoreNodeLabel.CONTAINER,
+            label=CoreNodeLabel.CONTAINER.value,
             project=space_key,
             properties={
                 "kind": "confluence_space",
@@ -101,7 +125,7 @@ class ConfluenceEntityExtractor(BaseEntityExtractor):
         return [
             GraphNode(
                 id=f"label:{label}",
-                label=CoreNodeLabel.LABEL,
+                label=CoreNodeLabel.LABEL.value,
                 project=project,
                 properties={
                     "name": label,
@@ -129,7 +153,7 @@ class ConfluenceEntityExtractor(BaseEntityExtractor):
                 GraphEdge(
                     source=doc.id,
                     target=str(parent_id),
-                    edge_type=CoreEdgeType.PART_OF,
+                    edge_type=CoreEdgeType.PART_OF.value,
                     project=project,
                     properties={
                         "kind": "page_child",
@@ -147,7 +171,7 @@ class ConfluenceEntityExtractor(BaseEntityExtractor):
                 GraphEdge(
                     source=doc.id,
                     target=str(child_id),
-                    edge_type=CoreEdgeType.HAS_CHILD,
+                    edge_type=CoreEdgeType.HAS_CHILD.value,
                     project=project,
                     properties={
                         "kind": "page_child",
