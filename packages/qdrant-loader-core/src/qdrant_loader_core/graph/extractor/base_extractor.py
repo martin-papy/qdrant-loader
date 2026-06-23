@@ -139,7 +139,11 @@ class BaseEntityExtractor(EntityExtractor):
 
             edges.append(
                 GraphEdge(
-                    source=doc.metadata.get("key"),
+                    source=(
+                        doc.metadata.get("key")
+                        if self.get_source_type() == "jira"
+                        else doc.id
+                    ),
                     target=label.id,
                     edge_type=CoreEdgeType.HAS_LABEL.value,
                     project=project,
