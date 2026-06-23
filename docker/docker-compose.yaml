@@ -1,3 +1,20 @@
+# ============================================================================
+# Docker Compose (Production Environment)
+#
+# ▶ Start local Qdrant database:
+#    docker compose -f docker/docker-compose.yaml up -d qdrant
+#
+# ▶ Run data ingestion (full mode):
+#    docker compose -f docker/docker-compose.yaml up -d qdrant-loader
+#
+# ▶ Run data ingestion (pilot mode) (EXPERIMENT with Jira DC / Jira Cloud):
+#    ⚠ Make sure to set the number of issues to ingest in the env file (MAX_ISSUES)
+#    docker compose -f docker/docker-compose.yaml up -d qdrant-loader-pilot
+#
+# ▶ Start MCP server:
+#    docker compose -f docker/docker-compose.yaml up -d qdrant-loader-mcp-server
+# ============================================================================
+
 services:
   qdrant:
     container_name: qdrant
@@ -29,19 +46,63 @@ services:
   qdrant-loader:
     container_name: qdrant-loader
     build:
-      context: .
-      dockerfile: Dockerfile.qdrant-loader
+      context: ..
+      dockerfile: docker/Dockerfile.qdrant-loader
     image: qdrant-loader:latest
     restart: unless-stopped
     ports:
-      - 8081:8081
-    # Ensure .env and config.yaml exist on the host
-    volumes:
-      - ./.env:/qdrant-loader/.env
-      - ./config.yaml:/qdrant-loader/config.yaml
+      - "8081:8081"
     depends_on: 
       qdrant:
         condition: service_healthy
+    volumes:
+      - ../.env:/qdrant-loader/.env
+      - ../config.yaml:/qdrant-loader/config.yaml
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8081/healthz').getcode() == 200 else 1)"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s   
+    networks:
+      - qdrant-net
+
+  # EXPERIMENT with Jira DC / Jira Cloud
+  qdrant-loader-pilot:
+    container_name: qdrant-loader-pilot
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.qdrant-loader
+    image: qdrant-loader-pilot:latest
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+    volumes:
+      - ../.env:/qdrant-loader/.env
+      - ../config.yaml:/qdrant-loader/config.yaml
+      - ../docker/pilot_ingest.py:/qdrant-loader/pilot_ingest.py      
+    command: ["sh", "-c", "qdrant-loader init --config config.yaml --env .env && python /qdrant-loader/pilot_ingest.py"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8081/healthz').getcode() == 200 else 1)"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - qdrant-net
 
@@ -56,24 +117,14 @@ services:
   qdrant-loader-mcp-server:
     container_name: qdrant-loader-mcp-server
     build:
-      context: .
-      dockerfile: Dockerfile.qdrant-loader-mcp-server
+      context: ..
+      dockerfile: docker/Dockerfile.qdrant-loader-mcp-server
     image: qdrant-loader-mcp-server:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
-      - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME}
-      - LLM_PROVIDER=${LLM_PROVIDER}
-      - LLM_BASE_URL=${LLM_BASE_URL}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_EMBEDDING_MODEL=${LLM_EMBEDDING_MODEL}
-      - LLM_CHAT_MODEL=${LLM_CHAT_MODEL}
-      - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
-      - MCP_LOG_FILE=${MCP_LOG_FILE:-mcp.log}
-      - MCP_DISABLE_CONSOLE_LOGGING=${MCP_DISABLE_CONSOLE_LOGGING:-false}
+    env_file:
+      - ../.env
     depends_on: 
       qdrant:
         condition: service_healthy
@@ -83,7 +134,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').getcode() == 200 else 1)"
         ]
       interval: 30s
       timeout: 5s
