@@ -96,6 +96,9 @@ server = [
     "uvicorn>=0.24.0 ; sys_platform == 'win32'",
     "PyJWT[crypto]>=2.8.0",
 ]
+dev = [
+    "testcontainers[postgres]>=4.0",
+]
 
 [project.urls]
 Homepage = "https://qdrant-loader.net"
