@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse
 
 
 @dataclass
@@ -23,7 +22,7 @@ class RateLimitPolicy:
 
 @dataclass
 class EmbeddingPolicy:
-    vector_size: int | None = None,
+    vector_size: int | None = (None,)
     batch_size: int = 100
     max_tokens_per_request: int = 8000
     max_tokens_per_chunk: int = 8000
@@ -80,10 +79,10 @@ class LLMSettings:
 
         # Emit deprecation warnings when relying on legacy fields
         if embedding:
-                raise ValueError(
+            raise ValueError(
                 "Configuration error: 'global.embedding' is no longer supported. "
                 "Please migrate your configuration to the 'global.llm' format."
-        )
+            )
 
         if not llm:
             raise ValueError(
@@ -91,7 +90,7 @@ class LLMSettings:
                 "'global.embedding' is no longer supported. "
                 "Please migrate your configuration to the new 'global.llm' format."
             )
-        
+
         embeddings_cfg = dict(llm.get("embeddings") or {})
         request_cfg = dict(llm.get("request") or {})
         return LLMSettings(
@@ -106,7 +105,7 @@ class LLMSettings:
             rate_limits=RateLimitPolicy(**(llm.get("rate_limits") or {})),
             embeddings=EmbeddingPolicy(
                 vector_size=_to_int_or_none(embeddings_cfg.get("vector_size")),
-                batch_size = _to_int_with_default(embeddings_cfg.get("batch_size"),100),
+                batch_size=_to_int_with_default(embeddings_cfg.get("batch_size"), 100),
                 max_tokens_per_request=_to_int_with_default(
                     embeddings_cfg.get(
                         "max_tokens_per_request",
