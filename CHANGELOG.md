@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### State Management
+
+- Optional **PostgreSQL** backend for the state database, alongside the default
+  SQLite. Set `STATE_DB_URL` (or `state_management.database_url`) to a full
+  SQLAlchemy URL — e.g. `postgresql+asyncpg://user:pass@host:5432/db` — to switch
+  backends; SQLite remains the default when `STATE_DB_URL` is unset. A bare
+  `postgresql://` is auto-normalized to the async `asyncpg` driver. Postgres uses
+  a real connection pool (sized from `state_management.connection_pool`) with
+  `pool_pre_ping` + `pool_recycle` for AWS RDS resilience.
+- `docker-compose.yaml` now bundles a `postgres:16` service and defaults the
+  Docker deployment's state DB to Postgres (override `STATE_DB_URL` to point at
+  AWS RDS later with no code change). Local/CLI usage without Docker stays SQLite.
+- Alembic migrations are now Postgres-capable (async `env.py`, reusing `asyncpg`).
+
 ### Changed
 
 #### MCP Server
