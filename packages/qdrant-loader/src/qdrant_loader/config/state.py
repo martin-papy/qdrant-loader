@@ -37,6 +37,15 @@ class StateManagementConfig(BaseConfig):
     database_path: str = Field(
         default="./state.db", description="Path to SQLite database file"
     )
+    database_url: str | None = Field(
+        default=None,
+                description=(
+            "Full SQLAlchemy database URL, e.g. "
+            "postgresql+asyncpg://user:pass@host:5432/dbname. When set, "
+            "overrides database_path and selects the backend by dialect. Leave "
+            "unset to use the SQLite database_path (community default)."
+        ),
+    )
     table_prefix: str = Field(
         default="qdrant_loader_", description="Prefix for database tables"
     )
@@ -110,6 +119,15 @@ class StateManagementConfig(BaseConfig):
             pass
 
         # Return the original value to preserve any environment variables
+        return v
+
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, v: str | None) -> str | None:
+        if v is not None and "://" not in v:
+            raise ValueError(
+                "database_url must be a a full SQLAlchemy URL (schema://...)"
+            )
         return v
 
     @field_validator("table_prefix")
