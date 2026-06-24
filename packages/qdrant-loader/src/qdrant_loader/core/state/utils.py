@@ -6,6 +6,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qdrant_loader.config.state import StateManagementConfig
 
 from sqlalchemy import select
 
@@ -51,6 +55,34 @@ def generate_sqlite_aiosqlite_url(database_path: str) -> str:
     db_url_path = db_path.as_posix()
     # Absolute and relative are handled similarly here (three slashes)
     return f"sqlite+aiosqlite:///{db_url_path}"
+
+
+def _normalize_async_url(url: str) -> str:
+    """Ensure a database URL uses an async driver SQLAlchemy can use.
+
+    - postgres:// / postgresql://  -> postgresql+asyncpg://  (so a standard RDS/psql
+      URL works unchanged)
+    - sqlite://                    -> sqlite+aiosqlite://
+    - anything already carrying a driver (e.g. postgresql+asyncpg://) passes through.
+    """
+    if url.startswith(("postgresql://", "postgres://")):
+        return "postgresql+asyncpg://" + url.split("://", 1)[1]
+    if url.startswith("sqlite://") and "+aiosqlite" not in url:
+        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    return url
+
+
+def generate_database_url(config: StateManagementConfig) -> str:
+    """Build the async SQLAlchemy URL for the configured state backend.
+
+    Precedence: ``config.database_url`` (Postgres or any full SQLAlchemy URL) wins
+    and selects the backend by dialect; otherwise fall back to the SQLite
+    ``database_path`` (community default).
+    """
+    database_url = getattr(config, "database_url", None)
+    if database_url:
+        return _normalize_async_url(database_url)
+    return generate_sqlite_aiosqlite_url(config.database_path)
 
 
 def build_ingestion_history_select(
