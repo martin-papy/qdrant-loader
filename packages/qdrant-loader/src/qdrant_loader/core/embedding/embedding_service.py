@@ -30,14 +30,10 @@ class EmbeddingService:
         factory_mod = import_module("qdrant_loader_core.llm.factory")
         create_provider = factory_mod.create_provider
         self.provider = create_provider(llm_settings)
-        self.model = llm_settings.models.get("embeddings") or (
-            settings.global_config.embedding.model if not self._has_llm_config else ""
-        )
-        self.tokenizer = llm_settings.tokenizer or (
-            settings.global_config.embedding.tokenizer
-            if not self._has_llm_config
-            else "none"
-        )
+        self.model = llm_settings.models.get("embeddings", "")
+        self.tokenizer = llm_settings.tokenizer or "none"
+
+        self.batch_size = llm_settings.embeddings.batch_size
 
         # Initialize tokenizer based on configuration
         if self.tokenizer == "none":
@@ -405,8 +401,6 @@ class EmbeddingService:
         """Get the dimension of the embedding vectors."""
         # Prefer vector size from unified settings when available.
         dimension = self.settings.llm_settings.embeddings.vector_size
-        if dimension is None and not self._has_llm_config:
-            dimension = self.settings.global_config.embedding.vector_size
         if not dimension:
             logger.warning(
                 "Embedding dimension not set in config; using 1024 (deprecated default). Set global.llm.embeddings.vector_size."

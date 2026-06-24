@@ -1,5 +1,6 @@
 """Unit tests for modernized HTML chunking strategy."""
 
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
@@ -49,7 +50,19 @@ def mock_settings():
 
     global_config.chunking = chunking_config
     global_config.semantic_analysis = semantic_analysis_config
-    global_config.embedding = embedding_config
+    settings.llm_settings = SimpleNamespace(
+        provider="openai",
+        base_url="https://api.openai.com/v1",
+        api_key="test-key",
+        models={"embeddings": "text-embedding-3-small"},
+        tokenizer="cl100k_base",
+        embeddings=SimpleNamespace(
+            vector_size=1536,
+            batch_size=10,
+            max_tokens_per_chunk=8000,
+            max_tokens_per_request=8000,
+        ),
+    )
     settings.global_config = global_config
 
     return settings

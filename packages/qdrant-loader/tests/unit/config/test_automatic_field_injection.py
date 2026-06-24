@@ -16,6 +16,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "test_injection"
+  llm:
+    provider: openai
+    api_key: test_key
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        vector_size: 1536
 
 projects:
   test-project:
@@ -63,6 +72,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "test_injection_git"
+  llm:
+    provider: openai
+    api_key: test_key
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        vector_size: 1536
 
 projects:
   test-project:
@@ -111,6 +129,15 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "test_multiple_sources"
+  llm:
+    provider: openai
+    api_key: test_key
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        vector_size: 1536
 
 projects:
   test-project:

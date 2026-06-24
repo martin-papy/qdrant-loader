@@ -26,9 +26,6 @@ global:
   file_conversion:
     markitdown:
       enable_llm_descriptions: true
-      llm_model: "gpt-4o"
-      llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "fake-test-api-key-for-testing-only"
 
 projects:
   default:
@@ -50,48 +47,6 @@ projects:
         if temp_path.exists():
             temp_path.unlink()
 
-    def test_markitdown_uses_configured_api_key(self, temp_config_file):
-        """Test that MarkItDown client uses the API key from configuration."""
-        # Set different environment variable to ensure config takes precedence
-        os.environ["OPENAI_API_KEY"] = "fake-env-api-key-for-testing"
-
-        try:
-            # Initialize configuration
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Create FileConverter with the configuration
-            file_converter = FileConverter(settings.global_config.file_conversion)
-
-            # Test that the configuration has the correct API key
-            configured_api_key = (
-                settings.global_config.file_conversion.markitdown.llm_api_key
-            )
-            assert configured_api_key == "fake-test-api-key-for-testing-only"
-
-            # Mock the OpenAI client to capture the API key being used
-            with patch("openai.OpenAI") as mock_openai:
-                mock_client = MagicMock()
-                mock_openai.return_value = mock_client
-
-                # This should trigger the creation of the LLM client
-                client = file_converter._create_llm_client()
-
-                if mock_openai.called:
-                    call_args = mock_openai.call_args
-                    assert "api_key" in call_args.kwargs
-                    used_api_key = call_args.kwargs["api_key"]
-                    assert used_api_key == configured_api_key
-                else:
-                    # Provider-backed client path; no OpenAI instantiation occurs
-                    assert hasattr(client, "chat") and hasattr(
-                        client.chat, "completions"
-                    )
-
-        finally:
-            if "OPENAI_API_KEY" in os.environ:
-                del os.environ["OPENAI_API_KEY"]
-
     def test_markitdown_fallback_to_environment_variable(self, temp_config_file):
         """Test that MarkItDown falls back to environment variable when config API key is None."""
         # Modify config to have None API key
@@ -102,12 +57,20 @@ global:
     api_key: null
     collection_name: "test_markitdown_fallback"
 
+  llm:
+    provider: openai
+    api_key: null
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+        chat: "gpt-4o"
+    embeddings:
+        vector_size: 1536
+
   file_conversion:
     markitdown:
       enable_llm_descriptions: true
-      llm_model: "gpt-4o"
-      llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: null
 
 projects:
   default:
@@ -152,81 +115,6 @@ projects:
                 del os.environ["OPENAI_API_KEY"]
             if fallback_config_path.exists():
                 fallback_config_path.unlink()
-
-    def test_markitdown_api_key_precedence(self, temp_config_file):
-        """Test that configured API key takes precedence over environment variable."""
-        # Set environment variable with different value
-        os.environ["OPENAI_API_KEY"] = "fake-env-key-should-not-be-used"
-
-        try:
-            # Initialize configuration
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Create FileConverter
-            file_converter = FileConverter(settings.global_config.file_conversion)
-
-            # The configured API key should take precedence
-            configured_key = (
-                settings.global_config.file_conversion.markitdown.llm_api_key
-            )
-            assert configured_key == "fake-test-api-key-for-testing-only"
-
-            # Mock OpenAI to verify the correct key is used
-            with patch("openai.OpenAI") as mock_openai:
-                mock_client = MagicMock()
-                mock_openai.return_value = mock_client
-
-                client = file_converter._create_llm_client()
-
-                if mock_openai.called:
-                    call_args = mock_openai.call_args
-                    used_api_key = call_args.kwargs.get("api_key")
-                    assert used_api_key == "fake-test-api-key-for-testing-only"
-                    assert used_api_key != "fake-env-key-should-not-be-used"
-                else:
-                    assert hasattr(client, "chat") and hasattr(
-                        client.chat, "completions"
-                    )
-
-        finally:
-            if "OPENAI_API_KEY" in os.environ:
-                del os.environ["OPENAI_API_KEY"]
-
-    def test_markitdown_openai_endpoint_configuration(self, temp_config_file):
-        """Test that MarkItDown client uses the configured OpenAI endpoint."""
-        try:
-            # Initialize configuration
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Create FileConverter
-            file_converter = FileConverter(settings.global_config.file_conversion)
-
-            # Test that the configuration has the correct endpoint
-            configured_endpoint = (
-                settings.global_config.file_conversion.markitdown.llm_endpoint
-            )
-            assert configured_endpoint == "https://api.openai.com/v1"
-
-            # Mock the OpenAI client to capture the endpoint being used
-            with patch("openai.OpenAI") as mock_openai:
-                mock_client = MagicMock()
-                mock_openai.return_value = mock_client
-
-                client = file_converter._create_llm_client()
-
-                if mock_openai.called:
-                    call_args = mock_openai.call_args
-                    used_endpoint = call_args.kwargs.get("base_url")
-                    assert used_endpoint == configured_endpoint
-                else:
-                    assert hasattr(client, "chat") and hasattr(
-                        client.chat, "completions"
-                    )
-
-        finally:
-            pass
 
     def test_markitdown_without_llm_descriptions(self):
         """Test that MarkItDown works without LLM descriptions enabled."""

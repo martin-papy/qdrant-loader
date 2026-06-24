@@ -10,7 +10,6 @@ from pydantic import Field
 
 from qdrant_loader.config.base import BaseConfig
 from qdrant_loader.config.chunking import ChunkingConfig
-from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
@@ -37,7 +36,6 @@ class GlobalConfig(BaseConfig):
     """Global configuration settings."""
 
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
-    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     llm: dict[str, Any] | None = Field(
         default=None, description="Unified LLM configuration (provider-agnostic)"
     )
@@ -83,7 +81,6 @@ class GlobalConfig(BaseConfig):
                 "enable_semantic_analysis": self.chunking.enable_semantic_analysis,
                 "enable_enhanced_semantic_analysis": self.chunking.enable_enhanced_semantic_analysis,
             },
-            "embedding": self.embedding.model_dump(),
             "llm": self.llm,
             "semantic_analysis": {
                 "num_topics": self.semantic_analysis.num_topics,

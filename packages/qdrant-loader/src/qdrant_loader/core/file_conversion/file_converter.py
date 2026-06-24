@@ -188,8 +188,17 @@ class FileConverter:
             model = (settings.llm_settings.models or {}).get("chat")
             if isinstance(model, str) and model.strip():
                 return model.strip()
-        except Exception:
-            pass
+        except (
+            ImportError,
+            RuntimeError,
+            AttributeError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            self.logger.warning(
+                "Failed to resolve global.llm.models.chat; using fallback model",
+                error=str(exc),
+            )
         return "gpt-4o"
 
     def _register_custom_converters(self, markitdown_instance) -> None:

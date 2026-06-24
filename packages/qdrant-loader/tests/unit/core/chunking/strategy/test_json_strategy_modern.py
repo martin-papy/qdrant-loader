@@ -53,8 +53,8 @@ class TestJSONChunkingStrategyModern:
         )
 
         # Embedding config (needed to avoid tokenizer errors)
-        settings.global_config.embedding = Mock()
-        settings.global_config.embedding.tokenizer = "cl100k_base"  # Real string value
+        settings.llm_settings.embeddings = Mock()
+        settings.llm_settings.tokenizer = "cl100k_base"  # Real string value
 
         return settings
 

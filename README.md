@@ -105,15 +105,15 @@ pip install qdrant-loader-mcp-server  # MCP server only
    QDRANT_URL=http://localhost:6333
    QDRANT_COLLECTION_NAME=my_docs
 
-  # LLM provider (unified configuration)
-  LLM_API_KEY=your_openai_key
-   LLM_PROVIDER=openai
-   LLM_BASE_URL=https://api.openai.com/v1
-   LLM_EMBEDDING_MODEL=text-embedding-3-small
-   LLM_CHAT_MODEL=gpt-4o-mini
+    # LLM provider (unified configuration)
+    LLM_API_KEY=your_openai_key
+    LLM_PROVIDER=openai
+    LLM_BASE_URL=https://api.openai.com/v1
+    LLM_EMBEDDING_MODEL=text-embedding-3-small
+    LLM_CHAT_MODEL=gpt-4o-mini
 
-  # Optional legacy fallback (kept for backward compatibility)
-  # OPENAI_API_KEY=your_openai_key
+    # Optional legacy fallback (kept for backward compatibility)
+    # OPENAI_API_KEY=your_openai_key
    ```
 
 4. **Configure data sources** (edit `config.yaml`)
@@ -154,7 +154,7 @@ pip install qdrant-loader-mcp-server  # MCP server only
 6. **Start the MCP server**
 
    ```bash
-  mcp-qdrant-loader --env /path/to/your/.env
+   mcp-qdrant-loader --env /path/to/your/.env
    ```
 
 ## 🔧 MCP-Compatible IDE Setup

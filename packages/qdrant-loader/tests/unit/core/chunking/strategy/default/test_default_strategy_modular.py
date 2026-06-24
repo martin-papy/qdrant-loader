@@ -43,8 +43,8 @@ class TestDefaultChunkingStrategyModular:
         settings.global_config.semantic_analysis.topic_modeling.n_topics = 5
 
         # Embedding config
-        settings.global_config.embedding = Mock()
-        settings.global_config.embedding.tokenizer = "cl100k_base"
+        settings.llm_settings.embeddings = Mock()
+        settings.llm_settings.tokenizer = "cl100k_base"
 
         return settings
 

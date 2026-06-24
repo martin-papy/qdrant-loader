@@ -136,7 +136,9 @@ class LocalFileConnector(BaseConnector):
                         assert self.conversion_service is not None  # Type checker hint
                         converted = self.conversion_service.convert(file_path)
                         content = converted.content
-                        content_type = "md"  # Converted files (and fallbacks) are markdown
+                        content_type = (
+                            "md"  # Converted files (and fallbacks) are markdown
+                        )
                         conversion_method = converted.conversion_method
                         conversion_failed = converted.conversion_failed
                         converted_document = converted.converted_document

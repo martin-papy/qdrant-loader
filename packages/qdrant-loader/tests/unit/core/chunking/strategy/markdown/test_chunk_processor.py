@@ -35,7 +35,9 @@ def test_process_chunk_delegates_to_enricher_with_chunk_doc_id():
             "key_phrases": [],
         }
         result = processor.process_chunk("some text", 2, 5)
-        processor._enricher.enrich.assert_called_once_with("some text", doc_id="chunk_2")
+        processor._enricher.enrich.assert_called_once_with(
+            "some text", doc_id="chunk_2"
+        )
         assert result == {"entities": [{"text": "X"}], "topics": [], "key_phrases": []}
     finally:
         processor.shutdown()

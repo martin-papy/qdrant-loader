@@ -80,8 +80,6 @@ class TestGlobalConfigFileConversion:
 
         markitdown_dict = config_dict["file_conversion"]["markitdown"]
         assert "enable_llm_descriptions" in markitdown_dict
-        assert "llm_model" in markitdown_dict
-        assert "llm_endpoint" in markitdown_dict
 
     def test_file_conversion_config_validation(self):
         """Test that file conversion config validation works."""
@@ -103,7 +101,6 @@ class TestGlobalConfig:
 
         # Check that all sections are present with defaults
         assert config.chunking is not None
-        assert config.embedding is not None
         assert config.semantic_analysis is not None
         assert config.sources is not None
         assert config.state_management is not None

@@ -22,15 +22,20 @@ def test_config_path(tmp_path: Path) -> Path:
                 "chunk_size": 1000,
                 "chunk_overlap": 200,
             },
-            "embedding": {
-                "model": "text-embedding-3-small",
+            "llm": {
+                "provider": "openai",
+                "base_url": "https://api.openai.com/v1",
                 "api_key": "${OPENAI_API_KEY}",
-                "batch_size": 100,
-                "endpoint": "https://api.openai.com/v1",
                 "tokenizer": "cl100k_base",
-                "vector_size": 1536,
-                "max_tokens_per_request": 8000,
-                "max_tokens_per_chunk": 8000,
+                "models": {
+                    "embeddings": "text-embedding-3-small",
+                },
+                "embeddings": {
+                    "vector_size": 1536,
+                    "batch_size": 100,
+                    "max_tokens_per_request": 8000,
+                    "max_tokens_per_chunk": 8000,
+                },
             },
             "state_management": {
                 "database_path": "${STATE_DB_PATH}",
@@ -120,14 +125,14 @@ def test_config_initialization(test_config_path: Path, test_env_path: Path):
         # Verify basic settings
         assert settings.qdrant_url == "http://localhost:6333"
         assert settings.qdrant_collection_name == "test_collection"
-        assert settings.global_config.embedding.api_key == "test_key"
+        assert settings.llm_settings.api_key == "test_key"
         assert settings.state_db_path == "./data/state.db"
 
         # Verify global config
         assert settings.global_config.chunking.chunk_size == 1000
         assert settings.global_config.chunking.chunk_overlap == 200
-        assert settings.global_config.embedding.model == "text-embedding-3-small"
-        assert settings.global_config.embedding.vector_size == 1536
+        assert settings.llm_settings.models["embeddings"] == "text-embedding-3-small"
+        assert settings.llm_settings.embeddings.vector_size == 1536
 
         # Verify sources config - access through projects
         default_project = settings.projects_config.projects.get("default")
@@ -157,9 +162,8 @@ def test_missing_required_fields(test_config_path: Path):
                 "chunk_size": 1000,
                 "chunk_overlap": 200,
             },
-            "embedding": {
-                "model": "text-embedding-3-small",
-                "vector_size": 1536,
+            "llm": {
+                "bare_url": "https://api.openai.com/v1",
                 # Missing required api_key field
             },
             "state_management": {

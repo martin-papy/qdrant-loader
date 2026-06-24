@@ -389,12 +389,12 @@ class TestConfigurationFieldValidation:
 
             # All fields should have descriptions
             for field_name, field_info in schema.get("properties", {}).items():
-                assert "description" in field_info, (
-                    f"Field '{field_name}' in {config_class.__name__} missing description"
-                )
-                assert len(field_info["description"]) > 10, (
-                    f"Field '{field_name}' description too short"
-                )
+                assert (
+                    "description" in field_info
+                ), f"Field '{field_name}' in {config_class.__name__} missing description"
+                assert (
+                    len(field_info["description"]) > 10
+                ), f"Field '{field_name}' description too short"
 
     def test_validation_constraints(self):
         """Test that validation constraints are properly defined."""
@@ -418,9 +418,9 @@ class TestConfigurationFieldValidation:
         percentage_fields = ["max_overlap_percentage", "estimation_buffer"]
         for field in percentage_fields:
             field_props = markdown_schema["properties"][field]
-            assert field_props.get("minimum") == 0.0, (
-                f"Field '{field}' should have minimum 0.0"
-            )
-            assert field_props.get("maximum") == 1.0, (
-                f"Field '{field}' should have maximum 1.0"
-            )
+            assert (
+                field_props.get("minimum") == 0.0
+            ), f"Field '{field}' should have minimum 0.0"
+            assert (
+                field_props.get("maximum") == 1.0
+            ), f"Field '{field}' should have maximum 1.0"

@@ -34,7 +34,9 @@ def test_convert_xlsx_yields_success_outcome_with_structured_tables(xlsx_path):
     assert tables, "expected at least one structured table"
     grid = tables[0].data.grid
     assert grid and grid[0], "expected a 2-D grid of cells"
-    assert any(cell.text for row in grid for cell in row), "expected non-empty cell text"
+    assert any(
+        cell.text for row in grid for cell in row
+    ), "expected non-empty cell text"
 
 
 def test_convert_corrupt_file_yields_failed_outcome_not_a_fake_document(

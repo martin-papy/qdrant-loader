@@ -65,8 +65,8 @@ class TestChunkingConsistency:
             True
         )
 
-        settings.global_config.embedding = Mock()
-        settings.global_config.embedding.tokenizer = "cl100k_base"
+        settings.llm_settings.embeddings = Mock()
+        settings.llm_settings.tokenizer = "cl100k_base"
 
         settings.global_config.semantic_analysis = Mock()
         settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
@@ -265,7 +265,7 @@ This concludes the documentation with a summary of all the topics covered and re
         """Test that tokenizer boundary detection doesn't violate character-based sizing."""
 
         # Enable tokenizer
-        mock_settings.global_config.embedding.tokenizer = "cl100k_base"
+        mock_settings.llm_settings.tokenizer = "cl100k_base"
         mock_settings.global_config.chunking.chunk_size = 200  # characters
 
         # Content with clear word boundaries

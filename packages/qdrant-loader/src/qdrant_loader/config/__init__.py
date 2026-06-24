@@ -6,6 +6,7 @@ It combines global settings with source-specific configurations.
 
 import os
 import re
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 
@@ -13,6 +14,7 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from qdrant_loader_core.llm.settings import LLMSettings
 
 from ..utils.logging import LoggingConfig
 from ..utils.sensitive import sanitize_exception_message
@@ -259,6 +261,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "Qdrant URL is required but was not provided or substituted"
             )
+        # if not self.global_config.llm:
+        #     raise ValueError(
+        #         "Missing required 'global.llm' configuration. "
+        #         "'global.embedding' is no longer supported. "
+        #         "Please migrate your configuration to the new 'global.llm' format."
+        #     )
 
         if not self.global_config.qdrant.collection_name:
             raise ValueError(
@@ -281,11 +289,9 @@ class Settings(BaseSettings):
         config value equal to the default (e.g. url: http://localhost:6333)
         will still be overridden by the environment variable.
         """
-        # OPENAI_API_KEY → embedding.api_key and llm.api_key
+        # OPENAI_API_KEY → llm.api_key
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
-            if not self.global_config.embedding.api_key:
-                self.global_config.embedding.api_key = openai_key
             if self.global_config.llm and isinstance(self.global_config.llm, dict):
                 if not self.global_config.llm.get("api_key"):
                     self.global_config.llm["api_key"] = openai_key
@@ -331,11 +337,11 @@ class Settings(BaseSettings):
 
     @property
     def openai_api_key(self) -> str:
-        """Get the OpenAI API key from embedding configuration."""
-        api_key = self.global_config.embedding.api_key
+        """Get the OpenAI API key from llm configuration."""
+        api_key = self.llm_settings.api_key
         if not api_key:
             raise ValueError(
-                "OpenAI API key is required but was not provided or substituted in embedding configuration"
+                "OpenAI API key is required but was not provided or substituted in llm configuration"
             )
         return api_key
 
@@ -344,12 +350,9 @@ class Settings(BaseSettings):
         """Get the state database path from global configuration."""
         return self.global_config.state_management.database_path
 
-    @property
-    def llm_settings(self):
-        """Provider-agnostic LLM settings derived from global configuration.
-
-        Uses `global.llm` when present; otherwise maps legacy fields.
-        """
+    @cached_property
+    def llm_settings(self) -> LLMSettings:
+        """Provider-agnostic LLM settings derived from global configuration."""
         # Import lazily to avoid hard dependency issues in environments without core installed
         from importlib import import_module
 

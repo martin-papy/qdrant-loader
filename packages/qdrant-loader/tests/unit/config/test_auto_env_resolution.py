@@ -20,21 +20,29 @@ def _write_minimal_config(
     qdrant_url: str = "http://localhost:6333",
     qdrant_collection: str = "documents",
     qdrant_api_key=None,
-    embedding_api_key=None,
+    llm_api_key=None,
 ) -> Path:
     """Write a minimal valid config YAML to a temp file and return its Path."""
     qdrant_section: dict = {"url": qdrant_url, "collection_name": qdrant_collection}
     if qdrant_api_key is not None:
         qdrant_section["api_key"] = qdrant_api_key
 
-    embedding_section: dict = {"model": "text-embedding-3-small"}
-    if embedding_api_key is not None:
-        embedding_section["api_key"] = embedding_api_key
+    llm_section = {
+        "provider": "openai",
+        "models": {
+            "embeddings": "text-embedding-3-small",
+        },
+        "embeddings": {
+            "vector_size": 1536,
+        },
+    }
+    if llm_api_key is not None:
+        llm_section["api_key"] = llm_api_key
 
     config_data = {
         "global": {
             "qdrant": qdrant_section,
-            "embedding": embedding_section,
+            "llm": llm_section,
         },
         "projects": {
             "default": {
@@ -74,19 +82,19 @@ class TestAutoEnvResolution:
             clean["OPENAI_API_KEY"] = "sk-auto-filled-key"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
-            assert settings.global_config.embedding.api_key == "sk-auto-filled-key"
+            assert settings.llm_settings.api_key == "sk-auto-filled-key"
         finally:
             os.unlink(config_path)
 
     def test_openai_key_does_not_override_config_value(self, tmp_path):
         """If embedding.api_key is set in config, OPENAI_API_KEY does not override it."""
-        config_path = _write_minimal_config(embedding_api_key="sk-from-config")
+        config_path = _write_minimal_config(llm_api_key="sk-from-config")
         try:
             clean = _clean_env("OPENAI_API_KEY")
             clean["OPENAI_API_KEY"] = "sk-from-env"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
-            assert settings.global_config.embedding.api_key == "sk-from-config"
+            assert settings.llm_settings.api_key == "sk-from-config"
         finally:
             os.unlink(config_path)
 
@@ -169,8 +177,8 @@ class TestAutoEnvResolution:
                 settings.global_config.qdrant.api_key is None
             ), "qdrant.api_key should be None when no env vars are set"
             assert (
-                settings.global_config.embedding.api_key is None
-            ), "embedding.api_key should be None when no env vars are set"
+                settings.llm_settings.api_key is None
+            ), "llm.api_key should be None when no env vars are set"
         finally:
             os.unlink(config_path)
 

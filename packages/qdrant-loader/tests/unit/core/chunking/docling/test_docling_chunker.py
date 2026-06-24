@@ -76,7 +76,8 @@ def test_chunker_is_built_once_and_reused(converted_headers, converted_xlsx):
 def test_build_chunker_memoizes_per_config():
     """build_chunker returns the SAME DoclingChunker for equal configs (so the
     HybridChunker + tokenizer are built once process-wide, not per document) and a
-    DIFFERENT instance for a different config — mirroring the NER _EXTRACTOR_REGISTRY."""
+    DIFFERENT instance for a different config — mirroring the NER _EXTRACTOR_REGISTRY.
+    """
     config_a = ChunkingConfig()
     config_a_equal = ChunkingConfig()
     config_b = ChunkingConfig.from_embedding(tokenizer="cl100k_base", max_tokens=123)

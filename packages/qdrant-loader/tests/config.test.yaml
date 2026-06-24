@@ -15,6 +15,9 @@ global:
     tokenizer: "cl100k_base"
     embeddings:
       vector_size: 1536
+      batch_size: 100 # Number of chunks to process in one batch
+      max_tokens_per_request: 8000 # Maximum total tokens per API request (leave buffer below model limit)
+      max_tokens_per_chunk: 8000 # Maximum tokens per individual chunk (should match model's context limit)
   # Qdrant configuration
   qdrant:
     url: "https://4f2a12b9-a595-491c-ba55-9ae23e21e02a.europe-west3-0.gcp.cloud.qdrant.io"
@@ -35,16 +38,7 @@ global:
       # Options: en_core_web_sm (15MB, no vectors)
       #          en_core_web_md (50MB, 20k vectors) - recommended
       #          en_core_web_lg (750MB, 514k vectors)
-  # Default embedding configuration
-  # Controls how text is converted to vectors
-  embedding:
-    endpoint: "https://api.openai.com/v1" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
-    model: "text-embedding-3-small" # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
-    batch_size: 100 # Number of chunks to process in one batch
-    vector_size: 1536 # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI text-embedding-3-small)
-    tokenizer: "cl100k_base" # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
-    max_tokens_per_request: 8000 # Maximum total tokens per API request (leave buffer below model limit)
-    max_tokens_per_chunk: 8000 # Maximum tokens per individual chunk (should match model's context limit)
+
   # File conversion configuration
   # Controls how non-text files (PDF, Office docs, etc.) are converted to text
   file_conversion:

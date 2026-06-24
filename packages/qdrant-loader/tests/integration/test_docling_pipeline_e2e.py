@@ -20,7 +20,9 @@ from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 
-FIXTURE = Path(__file__).parents[1] / "fixtures" / "unit" / "conversion" / "lorem_ipsum.docx"
+FIXTURE = (
+    Path(__file__).parents[1] / "fixtures" / "unit" / "conversion" / "lorem_ipsum.docx"
+)
 
 
 async def _convert_via_localfile(source_dir: Path) -> Document:

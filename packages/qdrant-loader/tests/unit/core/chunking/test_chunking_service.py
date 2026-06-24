@@ -33,8 +33,8 @@ class TestChunkingService:
         """Create mock settings."""
         settings = Mock(spec=Settings)
         settings.global_config = Mock()
-        settings.global_config.embedding = Mock()
-        settings.global_config.embedding.tokenizer = None
+        settings.llm_settings = Mock()
+        settings.llm_settings.tokenizer = None
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 1000
         settings.global_config.chunking.chunk_overlap = 100

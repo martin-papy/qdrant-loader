@@ -44,7 +44,7 @@ class QdrantManager:
         self.client = None
         self.collection_name = self.settings.qdrant_collection_name
         self.logger = LoggingConfig.get_logger(__name__)
-        self.batch_size = get_global_config().embedding.batch_size
+        self.batch_size = self.settings.llm_settings.embeddings.batch_size
         self.sparse_runtime = self._resolve_sparse_runtime_config()
         self._collection_vector_capabilities: CollectionVectorCapabilities | None = None
         self._sparse_fallback_warning_emitted = False
@@ -238,11 +238,6 @@ class QdrantManager:
             vector_size = self._coerce_positive_int(
                 getattr(self.settings.llm_settings.embeddings, "vector_size", None)
             )
-
-            if vector_size is None:
-                vector_size = self._coerce_positive_int(
-                    getattr(get_global_config().embedding, "vector_size", None)
-                )
 
             if vector_size is None:
                 self.logger.warning(

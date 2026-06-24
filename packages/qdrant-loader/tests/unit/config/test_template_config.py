@@ -25,15 +25,16 @@ global:
     chunk_size: 1500
     chunk_overlap: 200
 
-  embedding:
-    endpoint: "http://localhost:8080/v1"
-    model: "BAAI/bge-small-en-v1.5"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    vector_size: 384
+  llm:
+    provider: openai
+    api_key: "test_api_key"
+    base_url: "https://api.openai.com/v1"
     tokenizer: "none"
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 100
+        vector_size: 1536
 
   state_management:
     database_path: "${STATE_DB_PATH}"
@@ -110,13 +111,13 @@ projects:
             settings = get_settings()
 
             # Test embedding configuration
-            assert settings.global_config.embedding.model == "BAAI/bge-small-en-v1.5"
             assert (
-                settings.global_config.embedding.endpoint == "http://localhost:8080/v1"
+                settings.llm_settings.models["embeddings"] == "text-embedding-3-small"
             )
-            assert settings.global_config.embedding.vector_size == 384
-            assert settings.global_config.embedding.tokenizer == "none"
-            assert settings.global_config.embedding.api_key == "test_embedding_key"
+            assert settings.llm_settings.base_url == "https://api.openai.com/v1"
+            assert settings.llm_settings.embeddings.vector_size == 1536
+            assert settings.llm_settings.tokenizer == "none"
+            assert settings.llm_settings.api_key == "test_api_key"
 
         finally:
             if "OPENAI_API_KEY" in os.environ:
@@ -173,7 +174,7 @@ projects:
         """Test that template variables are properly substituted."""
         # Set environment variables with specific values
         os.environ["STATE_DB_PATH"] = ":memory:"  # Use in-memory database for tests
-        os.environ["OPENAI_API_KEY"] = "custom_api_key_xyz"
+        os.environ["OPENAI_API_KEY"] = "test_api_key"
 
         try:
             initialize_config(temp_config_file, skip_validation=True)
@@ -181,10 +182,10 @@ projects:
 
             # Verify variable substitution worked
             assert settings.state_db_path == ":memory:"
-            assert settings.global_config.embedding.api_key == "custom_api_key_xyz"
+            assert settings.llm_settings.api_key == "test_api_key"
             assert (
                 settings.global_config.file_conversion.markitdown.llm_api_key
-                == "custom_api_key_xyz"
+                == "test_api_key"
             )
 
         finally:
