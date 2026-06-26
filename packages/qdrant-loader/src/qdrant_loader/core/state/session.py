@@ -28,6 +28,16 @@ def initialize_engine_and_session(
             echo=False,
         )
     else:
+        # asyncpg is an optional dependency (the `postgres` extra), imported
+        # lazily only on the Postgres path so SQLite installs don't need it.
+        try:
+            import asyncpg  # noqa: F401
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "PostgreSQL state backend requires the 'postgres' extra: "
+                "install with `pip install qdrant-loader[postgres]`."
+            ) from exc
+
         pool = config.connection_pool or {}
         engine = create_async_engine(
             database_url,
