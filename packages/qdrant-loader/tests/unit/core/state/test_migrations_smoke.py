@@ -21,6 +21,9 @@ def test_jobs_migration_smoke_upgrade_and_downgrade(
     """Ensure WS-4.1 migration creates and removes jobs schema artifacts."""
     # Keep this test isolated from developer shell env overrides.
     monkeypatch.delenv("STATE_DB_PATH", raising=False)
+    # STATE_DB_URL takes precedence in env.py; clear it so downgrade("base")
+    # can never run against a developer/CI Postgres instead of the temp SQLite DB.
+    monkeypatch.delenv("STATE_DB_URL", raising=False)
 
     package_root = Path(__file__).resolve().parents[4]
     db_path = tmp_path / "state_ws41.db"

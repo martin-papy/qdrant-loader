@@ -39,7 +39,8 @@ class StateManagementConfig(BaseConfig):
     )
     database_url: str | None = Field(
         default=None,
-                description=(
+        repr=False,  # may embed credentials; keep out of repr/logs/tracebacks
+        description=(
             "Full SQLAlchemy database URL, e.g. "
             "postgresql+asyncpg://user:pass@host:5432/dbname. When set, "
             "overrides database_path and selects the backend by dialect. Leave "
@@ -126,7 +127,7 @@ class StateManagementConfig(BaseConfig):
     def validate_database_url(cls, v: str | None) -> str | None:
         if v is not None and "://" not in v:
             raise ValueError(
-                "database_url must be a a full SQLAlchemy URL (schema://...)"
+                "database_url must be a full SQLAlchemy URL (scheme://...)"
             )
         return v
 

@@ -30,7 +30,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (see .env.example)}
       - POSTGRES_DB=${POSTGRES_DB:-qdrant_loader}
     ports:
-      - "5432:5432"
+      # Bind to loopback only: internal services reach Postgres over qdrant-net;
+      # this avoids exposing the DB to the host's network.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -80,11 +82,8 @@ services:
       - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
       - MCP_LOG_FILE=${MCP_LOG_FILE:-mcp.log}
       - MCP_DISABLE_CONSOLE_LOGGING=${MCP_DISABLE_CONSOLE_LOGGING:-false}
-      - STATE_DB_URL=${STATE_DB_URL:-postgresql+asyncpg://${POSTGRES_USER:-qdrant_loader}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qdrant_loader}}
     depends_on:
       qdrant:
-        condition: service_healthy
-      postgres:
         condition: service_healthy
     healthcheck:
       test:
