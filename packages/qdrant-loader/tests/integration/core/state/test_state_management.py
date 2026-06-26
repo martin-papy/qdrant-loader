@@ -17,7 +17,7 @@ def mock_config(request):
     'postgres' param — the 'sqlite' param always runs.
     """
     if request.param == "sqlite":
-        return StateManagementConfig(database_path="sqlite:///:memory:")
+        return StateManagementConfig(database_url="sqlite+aiosqlite:///:memory:")
     postgres_url = request.getfixturevalue("postgres_url")
     return StateManagementConfig(database_url=postgres_url)
 

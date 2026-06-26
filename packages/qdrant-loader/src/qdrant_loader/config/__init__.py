@@ -321,6 +321,7 @@ class Settings(BaseSettings):
         state_database_url = os.getenv("STATE_DB_URL")
         if state_database_url and not self.global_config.state_management.database_url:
             self.global_config.state_management.database_url = state_database_url
+
     @property
     def qdrant_url(self) -> str:
         """Get the Qdrant URL from global configuration."""

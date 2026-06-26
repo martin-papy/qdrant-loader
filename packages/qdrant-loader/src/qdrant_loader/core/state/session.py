@@ -38,11 +38,11 @@ def initialize_engine_and_session(
                 "install with `pip install qdrant-loader[postgres]`."
             ) from exc
 
-        pool = config.connection_pool or {}
+        pool_cfg = config.connection_pool or {}
         engine = create_async_engine(
             database_url,
-            pool_size=pool.get("size", 5),
-            pool_timeout=pool.get("timeout", 30),
+            pool_size=pool_cfg.get("size", 5),
+            pool_timeout=pool_cfg.get("timeout", 30),
             pool_pre_ping=True,
             pool_recycle=1800,  # recycle connections every 30 min (RDS-friendly)
             echo=False,
