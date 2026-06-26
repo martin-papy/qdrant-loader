@@ -21,6 +21,29 @@ services:
     networks:
       - qdrant-net
   
+  postgres:
+    container_name: qdrant-loader-postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-qdrant_loader}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (see .env.example)}
+      - POSTGRES_DB=${POSTGRES_DB:-qdrant_loader}
+    ports:
+      # Bind to loopback only: internal services reach Postgres over qdrant-net;
+      # this avoids exposing the DB to the host's network.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-qdrant_loader} -d ${POSTGRES_DB:-qdrant_loader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - qdrant-net
+
   qdrant-loader:
     container_name: qdrant-loader
     build:
@@ -28,8 +51,12 @@ services:
       dockerfile: Dockerfile.qdrant-loader
     image: qdrant-loader:latest
     restart: unless-stopped
-    depends_on: 
+    environment:
+      - STATE_DB_URL=${STATE_DB_URL:-postgresql+asyncpg://${POSTGRES_USER:-qdrant_loader}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qdrant_loader}}
+    depends_on:
       qdrant:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - qdrant-net
@@ -55,7 +82,7 @@ services:
       - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
       - MCP_LOG_FILE=${MCP_LOG_FILE:-mcp.log}
       - MCP_DISABLE_CONSOLE_LOGGING=${MCP_DISABLE_CONSOLE_LOGGING:-false}
-    depends_on: 
+    depends_on:
       qdrant:
         condition: service_healthy
     healthcheck:
@@ -75,6 +102,8 @@ services:
 
 volumes:
   qdrant_data:
+    driver: local
+  postgres_data:
     driver: local
 
 networks:

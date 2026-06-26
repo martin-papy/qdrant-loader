@@ -2,8 +2,6 @@
 Tests for state management extensions - file conversion and attachment metadata tracking.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
 import pytest_asyncio
 from qdrant_loader.config.state import StateManagementConfig
@@ -11,13 +9,17 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.state_manager import StateManager
 
 
-@pytest.fixture
-def mock_config():
-    """Create mock state management configuration."""
-    config = MagicMock(spec=StateManagementConfig)
-    config.database_path = "sqlite:///:memory:"
-    config.connection_pool = {"size": 5, "timeout": 30}
-    return config
+@pytest.fixture(params=["sqlite", "postgres"])
+def mock_config(request):
+    """State config parametrized over both backends.
+
+    postgres_url is resolved lazily so its skip-when-unavailable only affects the
+    'postgres' param — the 'sqlite' param always runs.
+    """
+    if request.param == "sqlite":
+        return StateManagementConfig(database_url="sqlite+aiosqlite:///:memory:")
+    postgres_url = request.getfixturevalue("postgres_url")
+    return StateManagementConfig(database_url=postgres_url)
 
 
 @pytest_asyncio.fixture

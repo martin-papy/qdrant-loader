@@ -248,6 +248,25 @@ sources:
       token: "${CONFLUENCE_TOKEN}"
 ```
 
+## 🗄️ State Database Backend (`STATE_DB_URL`)
+
+By default the state database is **SQLite** (`STATE_DB_PATH`, default `./state.db`).
+For an enterprise/multi-writer deployment you can switch to **PostgreSQL** by
+setting `STATE_DB_URL` to a full SQLAlchemy URL:
+
+```bash
+# PostgreSQL (overrides STATE_DB_PATH when set)
+STATE_DB_URL=postgresql+asyncpg://qdrant_loader:secret@db-host:5432/qdrant_loader
+```
+
+- When `STATE_DB_URL` is **unset**, SQLite (`STATE_DB_PATH`) is used — unchanged
+  for community/local use.
+- A bare `postgresql://...` is automatically normalized to `postgresql+asyncpg://`.
+- Pool sizing comes from `state_management.connection_pool` (`size`, `timeout`).
+- For **AWS RDS**, point `STATE_DB_URL` at the RDS endpoint; no other change is
+  needed. The Docker Compose setup runs a local `postgres` service by default —
+  swap it for RDS by overriding `STATE_DB_URL`.
+
 ## 📋 Environment File Templates
 
 ### Basic .env Template
