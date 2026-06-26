@@ -32,6 +32,7 @@ RUN apt-get update \
         libglib2.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+# git must be available at runtime
 # libgl1 + libglib2.0-0: runtime shared libs for opencv-python, which docling pulls
 # (via rapidocr / docling-ibm-models) for image preprocessing in the PDF layout
 # pipeline. python:slim ships neither, so cv2 import fails with "libGL.so.1: cannot
@@ -43,8 +44,11 @@ COPY --chown=appuser:appuser --from=base /qdrant-loader/.venv /qdrant-loader/.ve
 COPY --chown=appuser:appuser packages/qdrant-loader-core /qdrant-loader/packages/qdrant-loader-core
 COPY --chown=appuser:appuser packages/qdrant-loader /qdrant-loader/packages/qdrant-loader
 
-RUN chmod +x /qdrant-loader/packages/qdrant-loader/entrypoint.sh
-
 ENV PATH="/qdrant-loader/.venv/bin:$PATH"
 
-CMD ["/qdrant-loader/packages/qdrant-loader/entrypoint.sh"]
+EXPOSE 8081
+
+# The init command is safe to run on every startup.
+# It checks if the collection already exists and skips creation if it does,
+# so it does not drop or recreate existing data.
+CMD ["sh", "-c", "qdrant-loader init --config config.yaml --env .env && qdrant-loader serve --config config.yaml --env .env --host 0.0.0.0"]

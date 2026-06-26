@@ -1,0 +1,42 @@
+FROM python:3.12-slim
+
+WORKDIR /qdrant-loader
+
+RUN useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /qdrant-loader
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        libgl1 \
+        libglib2.0-0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+# git must be available at runtime
+# libgl1 + libglib2.0-0: runtime shared libs for opencv-python, which docling pulls
+# (via rapidocr / docling-ibm-models) for image preprocessing in the PDF layout
+# pipeline. python:slim ships neither, so cv2 import fails with "libGL.so.1: cannot
+# open shared object file" during PDF conversion.
+
+USER appuser
+
+ARG QDRANT_LOADER_VERSION=latest
+
+RUN if [ "$QDRANT_LOADER_VERSION" = "latest" ]; then \
+       pip install --no-cache-dir qdrant-loader; \
+     else \
+       pip install --no-cache-dir "qdrant-loader==${QDRANT_LOADER_VERSION}"; \
+     fi && \
+     python -m spacy download en_core_web_md
+
+ENV PATH=$PATH:/home/appuser/.local/bin
+
+EXPOSE 8081
+
+# The init command is safe to run on every startup.
+# It checks if the collection already exists and skips creation if it does,
+# so it does not drop or recreate existing data.
+CMD ["sh", "-c", "qdrant-loader init --config config.yaml --env .env && qdrant-loader serve --config config.yaml --env .env --host 0.0.0.0"]
