@@ -188,6 +188,18 @@ class TestSettings:
                 collection_name="test_collection",
                 api_key=None,
             ),
+            llm={
+                "provider": "openai",
+                "api_key": "test-key",
+                "base_url": "https://api.openai.com/v1",
+                "tokenizer": "cl100k_base",
+                "models": {
+                    "embeddings": "text-embedding-3-small",
+                },
+                "embeddings": {
+                    "vector_size": 1536,
+                },
+            },
         )
 
         settings = Settings(global_config=custom_global_config)
@@ -242,7 +254,7 @@ class TestSettings:
         """Test that Settings provides default Qdrant configuration."""
         # Qdrant config now has sensible defaults (url=localhost:6333, collection=documents)
         # Note: env vars like QDRANT_URL, QDRANT_COLLECTION_NAME may override defaults
-        settings = Settings(global_config=GlobalConfig())
+        settings = Settings(global_config=GlobalConfig(), skip_validation=True)
         assert settings.global_config.qdrant is not None
         assert settings.global_config.qdrant.url is not None
         assert settings.global_config.qdrant.collection_name is not None

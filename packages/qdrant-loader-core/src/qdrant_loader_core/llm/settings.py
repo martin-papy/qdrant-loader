@@ -22,7 +22,7 @@ class RateLimitPolicy:
 
 @dataclass
 class EmbeddingPolicy:
-    vector_size: int | None = (None,)
+    vector_size: int | None = None
     batch_size: int = 100
     max_tokens_per_request: int = 8000
     max_tokens_per_chunk: int = 8000

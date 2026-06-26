@@ -59,10 +59,16 @@ def test_from_global_config_new_schema_vector_size_from_string():
             "api_key": "key",
             "tokenizer": "cl100k_base",
             "models": {"embeddings": "text-embedding-3-small"},
-            "embeddings": {"vector_size": "1536"},
+            "embeddings": {
+                "vector_size": "1536",
+                "max_tokens_per_request": 0,
+                "max_tokens_per_chunk": -10,
+            },
         },
     }
     s = LLMSettings.from_global_config(cfg)
     assert s.provider == "openai"
     assert s.models["embeddings"] == "text-embedding-3-small"
     assert s.embeddings.vector_size == 1536
+    assert s.embeddings.max_tokens_per_request == 8000
+    assert s.embeddings.max_tokens_per_chunk == 8000

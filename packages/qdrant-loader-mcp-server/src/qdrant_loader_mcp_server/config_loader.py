@@ -139,10 +139,10 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     qdrant = dict(global_data.get("qdrant") or {})
     search = dict(config_data.get("search") or {})
 
-    # Deprecation: detect legacy blocks and log a warning once
-    legacy_embedding = global_data.get("embedding")
+    # Reject legacy configuration blocks
+    has_legacy_embedding = "embedding" in global_data
 
-    if legacy_embedding:
+    if has_legacy_embedding:
         raise ValueError(
             "Configuration error: 'global.embedding' is no longer supported. "
             "Please migrate your configuration to 'global.llm'."

@@ -247,6 +247,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow",
     )
+    skip_validation: bool = Field(default=False, exclude=True)
 
     @model_validator(mode="after")  # type: ignore
     def validate_source_configs(self) -> "Settings":
@@ -256,17 +257,20 @@ class Settings(BaseSettings):
         # Auto-resolve environment variables as fallbacks
         self._auto_resolve_env_vars()
 
+        if self.skip_validation:
+            return self
+
         # Validate that required fields are not empty after variable substitution
         if not self.global_config.qdrant.url:
             raise ValueError(
                 "Qdrant URL is required but was not provided or substituted"
             )
-        # if not self.global_config.llm:
-        #     raise ValueError(
-        #         "Missing required 'global.llm' configuration. "
-        #         "'global.embedding' is no longer supported. "
-        #         "Please migrate your configuration to the new 'global.llm' format."
-        #     )
+        if not self.global_config.llm:
+            raise ValueError(
+                "Missing required 'global.llm' configuration. "
+                "'global.embedding' is no longer supported. "
+                "Please migrate your configuration to the new 'global.llm' format."
+            )
 
         if not self.global_config.qdrant.collection_name:
             raise ValueError(
@@ -487,6 +491,7 @@ class Settings(BaseSettings):
             settings = cls(
                 global_config=parsed_config.global_config,
                 projects_config=parsed_config.projects_config,
+                skip_validation=skip_validation,
             )
 
             _get_logger().debug("Successfully created Settings instance")
