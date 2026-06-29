@@ -241,9 +241,9 @@ class QdrantManager:
 
             if vector_size is None:
                 self.logger.warning(
-                    "No vector_size specified in config; falling back to 1024 (deprecated default). Set global.llm.embeddings.vector_size."
+                    "No vector_size specified in config; falling back to 1536 (deprecated default). Set global.llm.embeddings.vector_size."
                 )
-                vector_size = 1024
+                vector_size = 1536
 
             # sparse.enabled is a strict declaration. If True, the collection
             # is created with a sparse vector; failures propagate. If False,

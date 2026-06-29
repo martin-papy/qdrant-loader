@@ -308,12 +308,37 @@ class Settings(BaseSettings):
         config value equal to the default (e.g. url: http://localhost:6333)
         will still be overridden by the environment variable.
         """
-        # OPENAI_API_KEY → llm.api_key
+        # If users omit global.llm entirely in simplified config, create a minimal
+        # provider-agnostic LLM config from known environment variables.
         openai_key = os.getenv("OPENAI_API_KEY")
-        if openai_key:
-            if self.global_config.llm and isinstance(self.global_config.llm, dict):
-                if not self.global_config.llm.get("api_key"):
+        llm_api_key = os.getenv("LLM_API_KEY")
+        llm_provider = os.getenv("LLM_PROVIDER")
+        llm_embedding_model = os.getenv("LLM_EMBEDDING_MODEL")
+
+        if not isinstance(self.global_config.llm, dict):
+            if openai_key or llm_api_key or llm_provider or llm_embedding_model:
+                self.global_config.llm = {}
+
+        if isinstance(self.global_config.llm, dict):
+            if (
+                "provider" not in self.global_config.llm
+                or not self.global_config.llm.get("provider")
+            ):
+                self.global_config.llm["provider"] = llm_provider or "openai"
+
+            if not self.global_config.llm.get("api_key"):
+                if openai_key:
                     self.global_config.llm["api_key"] = openai_key
+                elif llm_api_key:
+                    self.global_config.llm["api_key"] = llm_api_key
+
+            models = self.global_config.llm.setdefault("models", {})
+            if "embeddings" not in models:
+                models["embeddings"] = llm_embedding_model or "text-embedding-3-small"
+
+            embeddings = self.global_config.llm.setdefault("embeddings", {})
+            if "vector_size" not in embeddings:
+                embeddings["vector_size"] = 1536
 
         # QDRANT_URL → qdrant.url (override only if still default)
         qdrant_url = os.getenv("QDRANT_URL")

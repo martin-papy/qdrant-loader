@@ -78,7 +78,7 @@ class TestAutoEnvResolution:
         """OPENAI_API_KEY env var fills embedding.api_key when not set in config."""
         config_path = _write_minimal_config()
         try:
-            clean = _clean_env("OPENAI_API_KEY")
+            clean = _clean_env("OPENAI_API_KEY", "LLM_API_KEY")
             clean["OPENAI_API_KEY"] = "sk-auto-filled-key"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
@@ -86,11 +86,41 @@ class TestAutoEnvResolution:
         finally:
             os.unlink(config_path)
 
+    def test_simplified_config_without_global_llm_uses_env_vars(self, tmp_path):
+        """Simplified config with no global.llm can still initialize from env vars."""
+        config_data = {
+            "projects": {
+                "default": {
+                    "display_name": "Default Project",
+                    "sources": {},
+                }
+            }
+        }
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False)
+        yaml.dump(config_data, tmp)
+        tmp.close()
+        config_path = Path(tmp.name)
+
+        try:
+            clean = _clean_env("OPENAI_API_KEY", "LLM_API_KEY")
+            clean["OPENAI_API_KEY"] = "sk-simplified-key"
+            with patch.dict(os.environ, clean, clear=True):
+                settings = Settings.from_yaml(config_path, skip_validation=True)
+
+            assert settings.llm_settings.api_key == "sk-simplified-key"
+            assert settings.llm_settings.provider == "openai"
+            assert (
+                settings.llm_settings.models["embeddings"] == "text-embedding-3-small"
+            )
+            assert settings.llm_settings.embeddings.vector_size == 1536
+        finally:
+            os.unlink(config_path)
+
     def test_openai_key_does_not_override_config_value(self, tmp_path):
         """If embedding.api_key is set in config, OPENAI_API_KEY does not override it."""
         config_path = _write_minimal_config(llm_api_key="sk-from-config")
         try:
-            clean = _clean_env("OPENAI_API_KEY")
+            clean = _clean_env("OPENAI_API_KEY", "LLM_API_KEY")
             clean["OPENAI_API_KEY"] = "sk-from-env"
             with patch.dict(os.environ, clean, clear=True):
                 settings = Settings.from_yaml(config_path, skip_validation=True)
@@ -162,6 +192,7 @@ class TestAutoEnvResolution:
         try:
             clean = _clean_env(
                 "OPENAI_API_KEY",
+                "LLM_API_KEY",
                 "QDRANT_URL",
                 "QDRANT_API_KEY",
                 "QDRANT_COLLECTION_NAME",

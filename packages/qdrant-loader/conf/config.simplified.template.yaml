@@ -41,6 +41,11 @@
 #         enabled: false
 #         interval: 5s
 
+# If you omit global.llm, provide LLM settings through environment variables:
+#   OPENAI_API_KEY → provider=openai default
+#   LLM_PROVIDER → override provider
+#   LLM_EMBEDDING_MODEL → override embeddings model
+
 # Define your data sources directly (no 'global' or 'projects' wrapper needed):
 sources:
   # --- Local Files ---
