@@ -215,30 +215,47 @@ class QdrantManager:
                 self.logger.info(f"Collection {self.collection_name} already exists")
                 return
 
-            # Get vector size from unified LLM settings first, then legacy embedding
+            # Get vector size from unified LLM settings first, then legacy embedding.
+            # global_config.llm is a plain dict, so the unified vector size must be
+            # resolved through llm_settings (which parses global.llm.embeddings),
+            # mirroring EmbeddingService.get_embedding_dimension().
             vector_size: int | None = None
             try:
-                global_cfg = get_global_config()
-                llm_settings = getattr(global_cfg, "llm", None)
-                if llm_settings is not None:
-                    embeddings_cfg = getattr(llm_settings, "embeddings", None)
-                    vs = (
-                        getattr(embeddings_cfg, "vector_size", None)
-                        if embeddings_cfg is not None
-                        else None
+                vs = self.settings.llm_settings.embeddings.vector_size
+            except AttributeError:
+                vs = None
+            if vs is not None:
+                try:
+                    vector_size = int(vs)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(
+                        "Invalid global.llm.embeddings.vector_size; expected an integer"
+                    ) from exc
+                # Qdrant requires a strictly positive dimensionality; 0/negative
+                # values are rejected at collection creation, so fail early here.
+                if vector_size <= 0:
+                    raise ValueError(
+                        "Invalid global.llm.embeddings.vector_size; "
+                        "expected a positive integer"
                     )
-                    if isinstance(vs, int):
-                        vector_size = int(vs)
-            except Exception:
-                vector_size = None
 
             if vector_size is None:
                 try:
                     legacy_vs = get_global_config().embedding.vector_size
-                    if isinstance(legacy_vs, int):
+                except AttributeError:
+                    legacy_vs = None
+                if legacy_vs is not None:
+                    try:
                         vector_size = int(legacy_vs)
-                except Exception:
-                    vector_size = None
+                    except (TypeError, ValueError) as exc:
+                        raise ValueError(
+                            "Invalid embedding.vector_size; expected an integer"
+                        ) from exc
+                    if vector_size <= 0:
+                        raise ValueError(
+                            "Invalid embedding.vector_size; "
+                            "expected a positive integer"
+                        )
 
             if vector_size is None:
                 self.logger.warning(
