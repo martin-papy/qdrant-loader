@@ -114,8 +114,6 @@ class TestFileConversionIntegration:
         # Test with custom MarkItDown config
         markitdown_config = MarkItDownConfig(
             enable_llm_descriptions=False,  # No LLM for basic conversion
-            llm_model="gpt-4o",  # Default model
-            llm_endpoint="https://api.openai.com/v1",  # Default endpoint
         )
 
         config = FileConversionConfig(

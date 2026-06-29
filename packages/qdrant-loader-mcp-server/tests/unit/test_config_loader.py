@@ -129,10 +129,14 @@ class TestLegacyEmbeddingMigration:
         monkeypatch.delenv("LLM_API_KEY", raising=False)
         config_data = {
             "global": {
-                "embedding": {
-                    "model": "text-embedding-ada-002",
-                    "vector_size": 1536,
+                "llm": {
+                    "models": {
+                        "embeddings": "text-embedding-ada-002",
+                    },
                     "api_key": "sk-legacy",
+                    "embeddings": {
+                        "vector_size": 1536,
+                    },
                 }
             }
         }
@@ -151,11 +155,9 @@ class TestLegacyEmbeddingMigration:
                 "llm": {
                     "api_key": "sk-new",
                     "models": {"embeddings": "text-embedding-3-small"},
-                },
-                "embedding": {
-                    "model": "text-embedding-ada-002",
-                    "api_key": "sk-legacy",
-                    "vector_size": 512,
+                    "embedding": {
+                        "vector_size": 512,
+                    },
                 },
             }
         }

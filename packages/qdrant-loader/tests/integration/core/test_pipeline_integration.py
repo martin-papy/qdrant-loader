@@ -72,7 +72,20 @@ def sample_multi_project_settings():
     }
 
     # Create global configuration
-    global_config = GlobalConfig()
+    global_config = GlobalConfig(
+        llm={
+            "provider": "openai",
+            "base_url": "https://api.openai.com/v1",
+            "models": {
+                "embeddings": "text-embedding-3-small",
+                "chat": "gpt-4o",
+            },
+            "tokenizer": "cl100k_base",
+            "embeddings": {
+                "vector_size": 1536,
+            },
+        }
+    )
     global_config.qdrant = QdrantConfig(
         url="http://localhost:6333",
         collection_name="global_collection",
@@ -84,15 +97,6 @@ def sample_multi_project_settings():
         global_config=global_config,
         projects_config=projects_config,
     )
-
-    # Provide unified LLM configuration to avoid legacy deprecation warnings
-    settings.global_config.llm = {
-        "provider": "openai",
-        "base_url": "https://api.openai.com/v1",
-        "models": {"embeddings": "text-embedding-3-small", "chat": "gpt-4o"},
-        "tokenizer": "cl100k_base",
-        "embeddings": {"vector_size": 1536},
-    }
 
     return settings
 

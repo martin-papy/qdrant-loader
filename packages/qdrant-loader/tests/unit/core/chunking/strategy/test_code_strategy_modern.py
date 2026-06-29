@@ -43,13 +43,8 @@ def mock_settings():
     semantic_analysis_config = Mock()
     semantic_analysis_config.spacy_model = "en_core_web_sm"
 
-    # Mock embedding config
-    embedding_config = Mock()
-    embedding_config.tokenizer = "cl100k_base"
-
     global_config.chunking = chunking_config
     global_config.semantic_analysis = semantic_analysis_config
-    global_config.embedding = embedding_config
     settings.global_config = global_config
 
     return settings

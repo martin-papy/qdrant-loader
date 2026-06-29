@@ -15,8 +15,14 @@ def _settings():
                 chunk_overlap=200,
                 enable_semantic_analysis=True,
             ),
-            embedding=SimpleNamespace(tokenizer="none"),
-        )
+        ),
+        llm_settings=SimpleNamespace(
+            tokenizer="none",
+            embeddings=SimpleNamespace(
+                max_tokens_per_chunk=8000,
+                vector_size=1536,
+            ),
+        ),
     )
 
 

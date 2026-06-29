@@ -21,7 +21,9 @@ class OcrConfig:
     """OCR settings. Off in the baseline — the corpus is born-digital."""
 
     enabled: bool = False
-    backend: str = "torch"  # the only rapidocr backend in the slim image (no onnxruntime)
+    backend: str = (
+        "torch"  # the only rapidocr backend in the slim image (no onnxruntime)
+    )
     languages: tuple[str, ...] = ("english",)  # rapidocr supports english | chinese
     full_page: bool = False
 

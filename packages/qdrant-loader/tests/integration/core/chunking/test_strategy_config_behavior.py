@@ -49,9 +49,7 @@ class TestMarkdownStrategyConfigBehavior:
             metadata={"file_name": "test.md"},
         )
 
-    @patch(
-        "qdrant_loader.core.text_processing.chunk_enricher.SemanticAnalyzer"
-    )
+    @patch("qdrant_loader.core.text_processing.chunk_enricher.SemanticAnalyzer")
     def test_min_content_length_for_nlp_affects_processing(
         self, mock_semantic_analyzer
     ):
@@ -100,9 +98,7 @@ class TestMarkdownStrategyConfigBehavior:
 
         assert short_skip_nlp_low is True  # Still skipped due to other criteria
 
-    @patch(
-        "qdrant_loader.core.text_processing.chunk_enricher.SemanticAnalyzer"
-    )
+    @patch("qdrant_loader.core.text_processing.chunk_enricher.SemanticAnalyzer")
     def test_min_word_count_for_nlp_affects_processing(self, mock_semantic_analyzer):
         """Test that min_word_count_for_nlp controls NLP processing."""
         # Create content with specific word counts
@@ -217,7 +213,7 @@ class TestChunkingSizeConfigBehavior:
         settings.global_config.chunking.max_chunks_per_document = max_chunks
 
         # Set up other required configs
-        settings.global_config.embedding.tokenizer = "cl100k_base"
+        settings.llm_settings.tokenizer = "cl100k_base"
 
         return settings
 

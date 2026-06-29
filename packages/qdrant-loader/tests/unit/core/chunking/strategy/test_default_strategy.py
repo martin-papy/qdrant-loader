@@ -21,6 +21,7 @@ class TestDefaultChunkingStrategy:
         """Create mock settings."""
         settings = Mock(spec=Settings)
         settings.global_config = Mock()
+        settings.llm_settings = Mock()
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 100
         settings.global_config.chunking.chunk_overlap = 20
@@ -36,8 +37,8 @@ class TestDefaultChunkingStrategy:
             True
         )
 
-        settings.global_config.embedding = Mock()
-        settings.global_config.embedding.tokenizer = "cl100k_base"
+        settings.llm_settings.embeddings = Mock()
+        settings.llm_settings.tokenizer = "cl100k_base"
         return settings
 
     @pytest.fixture
@@ -45,6 +46,7 @@ class TestDefaultChunkingStrategy:
         """Create mock settings without tokenizer."""
         settings = Mock(spec=Settings)
         settings.global_config = Mock()
+        settings.llm_settings = Mock()
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 50
         settings.global_config.chunking.chunk_overlap = 10
@@ -60,8 +62,8 @@ class TestDefaultChunkingStrategy:
             True
         )
 
-        settings.global_config.embedding = Mock()
-        settings.global_config.embedding.tokenizer = "none"
+        settings.llm_settings.embeddings = Mock()
+        settings.llm_settings.tokenizer = "none"
         return settings
 
     @pytest.fixture

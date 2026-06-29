@@ -25,10 +25,16 @@ class TestTestTemplateConfiguration:
     chunk_size: 500
     chunk_overlap: 50
 
-  embedding:
-    model: text-embedding-3-small
+  llm:
+    provider: openai
     api_key: "${OPENAI_API_KEY}"
-    batch_size: 10
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 10
+        vector_size: 1536
 
   state_management:
     database_path: ":memory:"
@@ -107,10 +113,16 @@ projects:
     chunk_size: 500
     chunk_overlap: 50
 
-  embedding:
-    model: text-embedding-3-small
+  llm:
+    provider: openai
     api_key: "${OPENAI_API_KEY}"
-    batch_size: 10
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 10
+        vector_size: 1536
 
   state_management:
     database_path: ":memory:"
@@ -216,12 +228,13 @@ sources: {}
 
                 # Test embedding configuration (smaller values for tests)
                 assert (
-                    settings.global_config.embedding.model == "text-embedding-3-small"
+                    settings.llm_settings.models["embeddings"]
+                    == "text-embedding-3-small"
                 )
                 assert (
-                    settings.global_config.embedding.batch_size == 10
+                    settings.llm_settings.embeddings.batch_size == 10
                 )  # Smaller for tests
-                assert settings.global_config.embedding.api_key == "test_key"
+                assert settings.llm_settings.api_key == "test_key"
 
     def test_test_template_chunking_configuration(
         self, simple_test_template_config_content, basic_env_vars
@@ -339,4 +352,4 @@ sources: {}
                 # Verify variable substitution worked
                 assert settings.qdrant_url == "http://test-qdrant:6333"
                 assert settings.qdrant_collection_name == "custom_test_collection"
-                assert settings.global_config.embedding.api_key == "custom_test_api_key"
+                assert settings.llm_settings.api_key == "custom_test_api_key"

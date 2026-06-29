@@ -52,7 +52,9 @@ class ChunkStructure:
     is_picture: bool = False
     page_start: int | None = None  # min(prov.page_no) — page-scoped filter / citation
     page_end: int | None = None  # max(prov.page_no)
-    bbox: tuple[BoundingBoxSpan, ...] = ()  # prov.bbox — payload-only (high cardinality)
+    bbox: tuple[
+        BoundingBoxSpan, ...
+    ] = ()  # prov.bbox — payload-only (high cardinality)
     charspan: tuple[int, int] | None = None  # prov.charspan — source-span citation
     caption: str | None = None  # Table/PictureItem.captions (best-effort)
     dl_meta_version: str | None = None  # DocMeta.version — reproducibility

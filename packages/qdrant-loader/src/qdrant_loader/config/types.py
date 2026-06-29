@@ -111,7 +111,7 @@ class GlobalConfigDict(TypedDict):
     """Global configuration settings."""
 
     chunking: dict[str, Any]
-    embedding: dict[str, Any]
+    llm: dict[str, Any]
     semantic_analysis: SemanticAnalysisConfigDict
     sources: dict[str, Any]
     state_management: dict[str, Any]

@@ -12,7 +12,6 @@ from types import SimpleNamespace
 from unittest import mock
 
 from qdrant_loader.config.chunking import DoclingStrategyConfig
-from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.core.chunking.docling import TokenizerKind
 from qdrant_loader.core.chunking.strategy import (
     docling_strategy as docling_strategy_module,
@@ -22,12 +21,17 @@ from qdrant_loader.core.chunking.strategy.docling_strategy import (
 )
 
 
+def build_config(docling):
+    return DoclingChunkingStrategy._build_config(
+        docling,
+        "cl100k_base",
+        512,
+    )
+
+
 def test_docling_max_tokens_override_wins_over_embedding():
     """A set chunking.strategies.docling.max_tokens is the chunk-size budget."""
-    config = DoclingChunkingStrategy._build_config(
-        DoclingStrategyConfig(max_tokens=256),
-        EmbeddingConfig(tokenizer="cl100k_base", max_tokens_per_chunk=512),
-    )
+    config = build_config(DoclingStrategyConfig(max_tokens=256))
     assert config.tokenizer.max_tokens == 256
 
 
@@ -35,19 +39,16 @@ def test_docling_max_tokens_inherits_embedding_when_unset():
     """Unset docling.max_tokens falls back to embedding.max_tokens_per_chunk."""
     config = DoclingChunkingStrategy._build_config(
         DoclingStrategyConfig(),
-        EmbeddingConfig(tokenizer="cl100k_base", max_tokens_per_chunk=777),
+        "cl100k_base",
+        777,
     )
     assert config.tokenizer.max_tokens == 777
 
 
 def test_include_context_in_embed_threads_through():
     """The flag flows from YAML config into the frozen ChunkingConfig."""
-    on = DoclingChunkingStrategy._build_config(
-        DoclingStrategyConfig(include_context_in_embed=True), EmbeddingConfig()
-    )
-    off = DoclingChunkingStrategy._build_config(
-        DoclingStrategyConfig(), EmbeddingConfig()
-    )
+    on = build_config(DoclingStrategyConfig(include_context_in_embed=True))
+    off = build_config(DoclingStrategyConfig())
     assert on.include_context_in_embed is True
     assert off.include_context_in_embed is False
 
@@ -56,22 +57,15 @@ def test_table_serialization_threads_through():
     """The YAML table_serialization string maps onto the engine enum."""
     from qdrant_loader.core.chunking.docling import TableSerialization
 
-    markdown = DoclingChunkingStrategy._build_config(
-        DoclingStrategyConfig(table_serialization="markdown"), EmbeddingConfig()
-    )
-    default = DoclingChunkingStrategy._build_config(
-        DoclingStrategyConfig(), EmbeddingConfig()
-    )
+    markdown = build_config(DoclingStrategyConfig(table_serialization="markdown"))
+    default = build_config(DoclingStrategyConfig())
     assert markdown.table_serialization is TableSerialization.MARKDOWN
     assert default.table_serialization is TableSerialization.TRIPLETS
 
 
 def test_tokenizer_identity_comes_from_embedding():
     """The counter is always the embedding model's tokenizer, never the override."""
-    config = DoclingChunkingStrategy._build_config(
-        DoclingStrategyConfig(max_tokens=256),
-        EmbeddingConfig(tokenizer="cl100k_base", max_tokens_per_chunk=512),
-    )
+    config = build_config(DoclingStrategyConfig(max_tokens=256))
     assert config.tokenizer.kind == TokenizerKind.OPENAI
     assert config.tokenizer.model == "cl100k_base"
 
@@ -232,9 +226,7 @@ def test_chunk_document_enriches_each_chunk_metadata():
 def test_chunk_document_attaches_empty_shape_when_enrichment_disabled():
     """Parity with markdown: disabled enrichment still yields the empty-shape keys."""
     mapper = _EchoMapper()
-    enricher = _RecordingEnricher(
-        {"entities": [], "topics": [], "key_phrases": []}
-    )
+    enricher = _RecordingEnricher({"entities": [], "topics": [], "key_phrases": []})
     strategy = _capped_strategy(
         _FakeChunker(count=1), mapper, max_chunks=500, enricher=enricher
     )
@@ -251,9 +243,7 @@ def test_chunk_document_fits_topics_before_enriching():
     any per-chunk enrichment — so each chunk infers against one front-loaded model
     instead of training a degenerate single-chunk LDA."""
     mapper = _EchoMapper()
-    enricher = _RecordingEnricher(
-        {"entities": [], "topics": [], "key_phrases": []}
-    )
+    enricher = _RecordingEnricher({"entities": [], "topics": [], "key_phrases": []})
     strategy = _capped_strategy(
         _FakeChunker(count=3), mapper, max_chunks=500, enricher=enricher
     )

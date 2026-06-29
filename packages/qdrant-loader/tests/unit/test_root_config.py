@@ -188,6 +188,17 @@ class TestConfigSerialization:
         config = GlobalConfig(
             chunking=ChunkingConfig(chunk_size=3000),
             semantic_analysis=SemanticAnalysisConfig(num_topics=8),
+            llm={
+                "provider": "openai",
+                "api_key": "test-key",
+                "base_url": "https://api.openai.com/v1",
+                "models": {
+                    "embeddings": "text-embedding-3-small",
+                },
+                "embeddings": {
+                    "vector_size": 1536,
+                },
+            },
         )
 
         # Test model_dump
@@ -218,6 +229,7 @@ class TestRootConfigModuleImports:
         from qdrant_loader.config import (
             ChunkingConfig,
             GlobalConfig,
+            LLMSettings,
             SemanticAnalysisConfig,
         )
 
@@ -225,6 +237,7 @@ class TestRootConfigModuleImports:
         assert ChunkingConfig is not None
         assert GlobalConfig is not None
         assert SemanticAnalysisConfig is not None
+        assert LLMSettings is not None
 
         # Create instances to ensure they work
         chunking_config = ChunkingConfig()

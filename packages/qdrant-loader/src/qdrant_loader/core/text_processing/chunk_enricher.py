@@ -26,7 +26,7 @@ def _empty() -> dict[str, Any]:
 class ChunkEnricher:
     """Owns a ``SemanticAnalyzer`` and maps ``(content, doc_id)`` to chunk metadata."""
 
-    def __init__(self, settings: "Settings") -> None:
+    def __init__(self, settings: Settings) -> None:
         chunking = settings.global_config.chunking
         self._enhanced = bool(chunking.enable_enhanced_semantic_analysis)
         self._analyzer: SemanticAnalyzer | None = None

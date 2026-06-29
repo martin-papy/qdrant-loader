@@ -80,9 +80,9 @@ def test_merged_cell_text_appears_once_in_markdown(merged_cell_workbook):
     converted = _convert(merged_cell_workbook)
     markdown = converted.converted_document.to_markdown()
 
-    assert markdown.count(MERGED_TITLE) == 1, (
-        f"merged title duplicated: appeared {markdown.count(MERGED_TITLE)}x"
-    )
+    assert (
+        markdown.count(MERGED_TITLE) == 1
+    ), f"merged title duplicated: appeared {markdown.count(MERGED_TITLE)}x"
 
 
 def test_table_cells_retain_span_metadata(merged_cell_workbook):
@@ -113,12 +113,12 @@ def test_each_sheet_name_is_a_markdown_heading(merged_cell_workbook):
     heading_lines = {
         line.strip() for line in markdown.splitlines() if line.lstrip().startswith("#")
     }
-    assert any(SHEET_ONE in line for line in heading_lines), (
-        f"sheet one heading missing; headings were {heading_lines}"
-    )
-    assert any(SHEET_TWO in line for line in heading_lines), (
-        f"sheet two heading missing; headings were {heading_lines}"
-    )
+    assert any(
+        SHEET_ONE in line for line in heading_lines
+    ), f"sheet one heading missing; headings were {heading_lines}"
+    assert any(
+        SHEET_TWO in line for line in heading_lines
+    ), f"sheet two heading missing; headings were {heading_lines}"
 
 
 def test_headings_use_sheet_prefix(merged_cell_workbook):
@@ -181,15 +181,15 @@ def test_chunks_do_not_duplicate_merged_text_and_carry_sheet_context(
 
     assert chunks, "expected at least one chunk"
     for chunk in chunks:
-        assert chunk.content.count(MERGED_TITLE) <= 1, (
-            "merged title duplicated within a chunk"
-        )
+        assert (
+            chunk.content.count(MERGED_TITLE) <= 1
+        ), "merged title duplicated within a chunk"
 
     heading_blobs = [
         " ".join(chunk.metadata.get("structure", {}).get("heading_path", []))
         for chunk in chunks
     ]
     joined = " ".join(heading_blobs)
-    assert SHEET_ONE in joined or SHEET_TWO in joined, (
-        f"no chunk carried a sheet name in heading_path; got {heading_blobs}"
-    )
+    assert (
+        SHEET_ONE in joined or SHEET_TWO in joined
+    ), f"no chunk carried a sheet name in heading_path; got {heading_blobs}"

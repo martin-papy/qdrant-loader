@@ -8,6 +8,7 @@ import pytest
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
+from qdrant_loader_core.llm.settings import EmbeddingPolicy
 
 
 @pytest.fixture
@@ -15,20 +16,6 @@ def mock_settings():
     """Create mock settings for testing."""
     # Create mock for global config
     global_config = MagicMock()
-
-    # Create mock for embedding config
-    embedding_config = MagicMock()
-    embedding_config.endpoint = "https://api.openai.com/v1"
-    embedding_config.model = "text-embedding-3-small"
-    embedding_config.tokenizer = "cl100k_base"
-    embedding_config.batch_size = 10
-    embedding_config.vector_size = 1536
-    embedding_config.max_tokens_per_request = 8000
-    embedding_config.max_tokens_per_chunk = 8000
-    embedding_config.api_key = "test-key"
-
-    # Attach embedding config to global config
-    global_config.embedding = embedding_config
 
     # Create main settings mock
     settings = MagicMock(spec=Settings)
@@ -41,7 +28,12 @@ def mock_settings():
         api_key="test-key",
         models={"embeddings": "text-embedding-3-small"},
         tokenizer="cl100k_base",
-        embeddings=SimpleNamespace(vector_size=1536),
+        embeddings=SimpleNamespace(
+            vector_size=1536,
+            batch_size=10,
+            max_tokens_per_chunk=8000,
+            max_tokens_per_request=8000,
+        ),
     )
 
     return settings
@@ -81,9 +73,6 @@ def test_init_tokenizer_none():
     """Tokenizer 'none' disables encoding."""
     # settings with tokenizer none
     global_config = MagicMock()
-    embedding_config = MagicMock()
-    embedding_config.tokenizer = "none"
-    global_config.embedding = embedding_config
     settings = MagicMock(spec=Settings)
     settings.global_config = global_config
     settings.llm_settings = SimpleNamespace(
@@ -92,7 +81,12 @@ def test_init_tokenizer_none():
         api_key=None,
         models={"embeddings": "nomic-embed-text"},
         tokenizer="none",
-        embeddings=SimpleNamespace(vector_size=768),
+        embeddings=SimpleNamespace(
+            vector_size=1536,
+            batch_size=10,
+            max_tokens_per_chunk=8000,
+            max_tokens_per_request=8000,
+        ),
     )
     with patch(
         "qdrant_loader.core.embedding.embedding_service.import_module",
@@ -107,9 +101,6 @@ def test_init_tokenizer():
     with patch("tiktoken.get_encoding") as mock_get_encoding:
         # Create proper mock settings structure
         global_config = MagicMock()
-        embedding_config = MagicMock()
-        embedding_config.tokenizer = "cl100k_base"
-        global_config.embedding = embedding_config
 
         settings = MagicMock(spec=Settings)
         settings.global_config = global_config
@@ -119,8 +110,13 @@ def test_init_tokenizer():
             base_url=None,
             api_key=None,
             models={},
-            tokenizer=None,
-            embeddings=SimpleNamespace(vector_size=None),
+            tokenizer="cl100k_base",
+            embeddings=SimpleNamespace(
+                vector_size=1536,
+                batch_size=10,
+                max_tokens_per_chunk=8000,
+                max_tokens_per_request=8000,
+            ),
         )
 
         with patch(
@@ -137,9 +133,22 @@ def test_init_tokenizer_fallback():
     with patch("tiktoken.get_encoding", side_effect=Exception("Test error")):
         # Create proper mock settings structure
         global_config = MagicMock()
-        embedding_config = MagicMock()
-        embedding_config.tokenizer = "invalid_tokenizer"
-        global_config.embedding = embedding_config
+        # Create main settings mock
+        settings = MagicMock(spec=Settings)
+        settings.global_config = global_config
+        settings.llm_settings = SimpleNamespace(
+            provider="openai_compat",
+            base_url=None,
+            api_key=None,
+            models={},
+            tokenizer="invalid_tokenizer",
+            embeddings=SimpleNamespace(
+                vector_size=1536,
+                batch_size=10,
+                max_tokens_per_chunk=8000,
+                max_tokens_per_request=8000,
+            ),
+        )
 
         settings = MagicMock(spec=Settings)
         settings.global_config = global_config
@@ -236,10 +245,23 @@ async def test_rate_limiting():
     """Test rate limiting between requests."""
     # Create proper mock settings structure
     global_config = MagicMock()
-    embedding_config = MagicMock()
-    embedding_config.endpoint = "http://localhost:8000"
-    global_config.embedding = embedding_config
-
+    # Create main settings mock
+    settings = MagicMock(spec=Settings)
+    settings.global_config = global_config
+    settings.llm_settings = SimpleNamespace(
+        provider="openai",
+        base_url="http://localhost:8000",
+        api_key="test-key",
+        models={"embeddings": "text-embedding-3-small"},
+        tokenizer="cl100k_base",
+        embeddings=SimpleNamespace(
+            vector_size=1536,
+            batch_size=10,
+            max_tokens_per_chunk=8000,
+            max_tokens_per_request=8000,
+        ),
+    )
+    global_config.llm = settings.llm_settings
     settings = MagicMock(spec=Settings)
     settings.global_config = global_config
 
@@ -278,9 +300,6 @@ def test_count_tokens_fallback():
     """Test token counting fallback to character count."""
     # Tokenizer none was already tested above
     global_config = MagicMock()
-    embedding_config = MagicMock()
-    embedding_config.tokenizer = "none"
-    global_config.embedding = embedding_config
     settings = MagicMock(spec=Settings)
     settings.global_config = global_config
     settings.llm_settings = SimpleNamespace(
@@ -289,7 +308,7 @@ def test_count_tokens_fallback():
         api_key=None,
         models={"embeddings": "nomic-embed-text"},
         tokenizer="none",
-        embeddings=SimpleNamespace(vector_size=768),
+        embeddings=EmbeddingPolicy(vector_size=768),
     )
     with patch(
         "qdrant_loader.core.embedding.embedding_service.import_module",

@@ -26,16 +26,14 @@ class EmbeddingService:
         self.settings = settings
         # Build LLM settings from global config and create provider
         llm_settings = settings.llm_settings
+        self._has_llm_config = bool(settings.global_config.llm)
         factory_mod = import_module("qdrant_loader_core.llm.factory")
         create_provider = factory_mod.create_provider
         self.provider = create_provider(llm_settings)
-        self.model = llm_settings.models.get(
-            "embeddings", settings.global_config.embedding.model
-        )
-        self.tokenizer = (
-            llm_settings.tokenizer or settings.global_config.embedding.tokenizer
-        )
-        self.batch_size = settings.global_config.embedding.batch_size
+        self.model = llm_settings.models.get("embeddings", "")
+        self.tokenizer = llm_settings.tokenizer or "none"
+
+        self.batch_size = llm_settings.embeddings.batch_size
 
         # Initialize tokenizer based on configuration
         if self.tokenizer == "none":
@@ -193,10 +191,10 @@ class EmbeddingService:
         # Validate and split content based on token limits
         # Use configurable token limits from settings
         MAX_TOKENS_PER_REQUEST = (
-            self.settings.global_config.embedding.max_tokens_per_request
+            self.settings.llm_settings.embeddings.max_tokens_per_request
         )
         MAX_TOKENS_PER_CHUNK = (
-            self.settings.global_config.embedding.max_tokens_per_chunk
+            self.settings.llm_settings.embeddings.max_tokens_per_chunk
         )
 
         validated_contents = []
@@ -401,11 +399,8 @@ class EmbeddingService:
 
     def get_embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors."""
-        # Prefer vector size from unified settings when available
-        dimension = (
-            self.settings.llm_settings.embeddings.vector_size
-            or self.settings.global_config.embedding.vector_size
-        )
+        # Prefer vector size from unified settings when available.
+        dimension = self.settings.llm_settings.embeddings.vector_size
         if not dimension:
             logger.warning(
                 "Embedding dimension not set in config; using 1024 (deprecated default). Set global.llm.embeddings.vector_size."

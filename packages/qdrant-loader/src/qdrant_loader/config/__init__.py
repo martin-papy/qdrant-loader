@@ -6,6 +6,7 @@ It combines global settings with source-specific configurations.
 
 import os
 import re
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 
@@ -13,6 +14,7 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from qdrant_loader_core.llm.settings import LLMSettings
 
 from ..utils.logging import LoggingConfig
 from ..utils.sensitive import sanitize_exception_message
@@ -245,6 +247,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow",
     )
+    skip_validation: bool = Field(default=False, exclude=True)
 
     @model_validator(mode="after")  # type: ignore
     def validate_source_configs(self) -> "Settings":
@@ -254,10 +257,33 @@ class Settings(BaseSettings):
         # Auto-resolve environment variables as fallbacks
         self._auto_resolve_env_vars()
 
-        # Validate that required fields are not empty after variable substitution
+        # Validate that required fields are not empty after variable substitution.
+        # skip_validation only bypasses directory creation/placeholder checks,
+        # not required field validation for a usable runtime config.
         if not self.global_config.qdrant.url:
             raise ValueError(
                 "Qdrant URL is required but was not provided or substituted"
+            )
+        if not self.global_config.llm:
+            raise ValueError(
+                "Missing required 'global.llm' configuration.\n\n"
+                "'global.embedding' is no longer supported. "
+                "Please migrate your configuration to the new 'global.llm' format.\n\n"
+                "Migration guide:\n"
+                "  OLD (deprecated):\n"
+                "    global:\n"
+                "      embedding:\n"
+                "        model: text-embedding-3-small\n"
+                "        api_key: ${OPENAI_API_KEY}\n\n"
+                "  NEW (required):\n"
+                "    global:\n"
+                "      llm:\n"
+                "        provider: openai\n"
+                "        api_key: ${OPENAI_API_KEY}\n"
+                "        models:\n"
+                "          embeddings: text-embedding-3-small\n"
+                "        embeddings:\n"
+                "          vector_size: 1536\n"
             )
 
         if not self.global_config.qdrant.collection_name:
@@ -281,14 +307,37 @@ class Settings(BaseSettings):
         config value equal to the default (e.g. url: http://localhost:6333)
         will still be overridden by the environment variable.
         """
-        # OPENAI_API_KEY → embedding.api_key and llm.api_key
+        # If users omit global.llm entirely in simplified config, create a minimal
+        # provider-agnostic LLM config from known environment variables.
         openai_key = os.getenv("OPENAI_API_KEY")
-        if openai_key:
-            if not self.global_config.embedding.api_key:
-                self.global_config.embedding.api_key = openai_key
-            if self.global_config.llm and isinstance(self.global_config.llm, dict):
-                if not self.global_config.llm.get("api_key"):
+        llm_api_key = os.getenv("LLM_API_KEY")
+        llm_provider = os.getenv("LLM_PROVIDER")
+        llm_embedding_model = os.getenv("LLM_EMBEDDING_MODEL")
+
+        if not isinstance(self.global_config.llm, dict):
+            if openai_key or llm_api_key or llm_provider or llm_embedding_model:
+                self.global_config.llm = {}
+
+        if isinstance(self.global_config.llm, dict):
+            if (
+                "provider" not in self.global_config.llm
+                or not self.global_config.llm.get("provider")
+            ):
+                self.global_config.llm["provider"] = llm_provider or "openai"
+
+            if not self.global_config.llm.get("api_key"):
+                if openai_key:
                     self.global_config.llm["api_key"] = openai_key
+                elif llm_api_key:
+                    self.global_config.llm["api_key"] = llm_api_key
+
+            models = self.global_config.llm.setdefault("models", {})
+            if "embeddings" not in models:
+                models["embeddings"] = llm_embedding_model or "text-embedding-3-small"
+
+            embeddings = self.global_config.llm.setdefault("embeddings", {})
+            if "vector_size" not in embeddings:
+                embeddings["vector_size"] = 1536
 
         # QDRANT_URL → qdrant.url (override only if still default)
         qdrant_url = os.getenv("QDRANT_URL")
@@ -331,11 +380,11 @@ class Settings(BaseSettings):
 
     @property
     def openai_api_key(self) -> str:
-        """Get the OpenAI API key from embedding configuration."""
-        api_key = self.global_config.embedding.api_key
+        """Get the OpenAI API key from llm configuration."""
+        api_key = self.llm_settings.api_key
         if not api_key:
             raise ValueError(
-                "OpenAI API key is required but was not provided or substituted in embedding configuration"
+                "OpenAI API key is required but was not provided or substituted in llm configuration"
             )
         return api_key
 
@@ -344,12 +393,9 @@ class Settings(BaseSettings):
         """Get the state database path from global configuration."""
         return self.global_config.state_management.database_path
 
-    @property
-    def llm_settings(self):
-        """Provider-agnostic LLM settings derived from global configuration.
-
-        Uses `global.llm` when present; otherwise maps legacy fields.
-        """
+    @cached_property
+    def llm_settings(self) -> LLMSettings:
+        """Provider-agnostic LLM settings derived from global configuration."""
         # Import lazily to avoid hard dependency issues in environments without core installed
         from importlib import import_module
 
@@ -484,6 +530,7 @@ class Settings(BaseSettings):
             settings = cls(
                 global_config=parsed_config.global_config,
                 projects_config=parsed_config.projects_config,
+                skip_validation=skip_validation,
             )
 
             _get_logger().debug("Successfully created Settings instance")

@@ -44,11 +44,28 @@ class QdrantManager:
         self.client = None
         self.collection_name = self.settings.qdrant_collection_name
         self.logger = LoggingConfig.get_logger(__name__)
-        self.batch_size = get_global_config().embedding.batch_size
+        self.batch_size = self.settings.llm_settings.embeddings.batch_size
         self.sparse_runtime = self._resolve_sparse_runtime_config()
         self._collection_vector_capabilities: CollectionVectorCapabilities | None = None
         self._sparse_fallback_warning_emitted = False
         self.connect()
+
+    @staticmethod
+    def _coerce_positive_int(value: Any) -> int | None:
+        if isinstance(value, bool) or value is None:
+            return None
+        if isinstance(value, int):
+            return value if value > 0 else None
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return None
+            try:
+                parsed = int(text)
+            except ValueError:
+                return None
+            return parsed if parsed > 0 else None
+        return None
 
     def _is_api_key_present(self) -> bool:
         """
@@ -215,36 +232,18 @@ class QdrantManager:
                 self.logger.info(f"Collection {self.collection_name} already exists")
                 return
 
-            # Get vector size from unified LLM settings first, then legacy embedding
-            vector_size: int | None = None
-            try:
-                global_cfg = get_global_config()
-                llm_settings = getattr(global_cfg, "llm", None)
-                if llm_settings is not None:
-                    embeddings_cfg = getattr(llm_settings, "embeddings", None)
-                    vs = (
-                        getattr(embeddings_cfg, "vector_size", None)
-                        if embeddings_cfg is not None
-                        else None
-                    )
-                    if isinstance(vs, int):
-                        vector_size = int(vs)
-            except Exception:
-                vector_size = None
-
-            if vector_size is None:
-                try:
-                    legacy_vs = get_global_config().embedding.vector_size
-                    if isinstance(legacy_vs, int):
-                        vector_size = int(legacy_vs)
-                except Exception:
-                    vector_size = None
+            # Use provider-agnostic LLM settings as the source of truth.
+            # Legacy embedding.vector_size is consulted only when llm vector_size
+            # is not set, to preserve backward compatibility.
+            vector_size = self._coerce_positive_int(
+                getattr(self.settings.llm_settings.embeddings, "vector_size", None)
+            )
 
             if vector_size is None:
                 self.logger.warning(
-                    "No vector_size specified in config; falling back to 1024 (deprecated default). Set global.llm.embeddings.vector_size."
+                    "No vector_size specified in config; falling back to 1536 (deprecated default). Set global.llm.embeddings.vector_size."
                 )
-                vector_size = 1024
+                vector_size = 1536
 
             # sparse.enabled is a strict declaration. If True, the collection
             # is created with a sparse vector; failures propagate. If False,

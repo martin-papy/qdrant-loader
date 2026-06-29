@@ -139,36 +139,42 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
     qdrant = dict(global_data.get("qdrant") or {})
     search = dict(config_data.get("search") or {})
 
-    # Deprecation: detect legacy blocks and log a warning once
-    legacy_embedding = global_data.get("embedding")
+    # Reject legacy configuration blocks
+    has_legacy_embedding = "embedding" in global_data
+
+    if has_legacy_embedding:
+        raise ValueError(
+            "Configuration error: 'global.embedding' is no longer supported.\n\n"
+            "Please migrate your configuration to 'global.llm'.\n\n"
+            "Migration guide:\n"
+            "  OLD (deprecated):\n"
+            "    global:\n"
+            "      embedding:\n"
+            "        model: text-embedding-3-small\n"
+            "        api_key: ${OPENAI_API_KEY}\n\n"
+            "  NEW (required):\n"
+            "    global:\n"
+            "      llm:\n"
+            "        provider: openai\n"
+            "        api_key: ${OPENAI_API_KEY}\n"
+            "        models:\n"
+            "          embeddings: text-embedding-3-small\n"
+            "        embeddings:\n"
+            "          vector_size: 1536\n"
+        )
     legacy_markit = (
         (config_data.get("file_conversion") or {}).get("markitdown")
         if isinstance(config_data.get("file_conversion"), dict)
         else None
     )
     try:
-        if legacy_embedding or legacy_markit:
+        if legacy_markit:
             logger.warning(
                 "Legacy configuration fields detected; please migrate to global.llm",
-                legacy_embedding=bool(legacy_embedding),
                 legacy_markitdown=bool(legacy_markit),
             )
     except Exception:
         pass
-
-    # Migrate legacy global.embedding → global.llm (backward compat)
-    if legacy_embedding:
-        if not llm.get("api_key") and legacy_embedding.get("api_key"):
-            llm["api_key"] = legacy_embedding["api_key"]
-        models_cfg = dict(llm.get("models") or {})
-        if not models_cfg.get("embeddings") and legacy_embedding.get("model"):
-            models_cfg["embeddings"] = legacy_embedding["model"]
-        llm["models"] = models_cfg
-        # Migrate vector_size for use in OpenAIConfig
-        if not llm.get("vector_size") and isinstance(
-            legacy_embedding.get("vector_size"), int
-        ):
-            llm["vector_size"] = legacy_embedding["vector_size"]
 
     # Extract vector_size from new format: global.llm.embeddings.vector_size
     # (different from models.embeddings which is a model name string)

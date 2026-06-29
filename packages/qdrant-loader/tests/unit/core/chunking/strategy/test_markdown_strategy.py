@@ -16,7 +16,7 @@ def settings():
     mock_settings.global_config.chunking.chunk_size = 1000
     mock_settings.global_config.chunking.chunk_overlap = 100
     mock_settings.global_config.chunking.max_chunks_per_document = 50
-    mock_settings.global_config.embedding.tokenizer = "none"
+    mock_settings.llm_settings.tokenizer = "none"
     mock_settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
     mock_settings.global_config.semantic_analysis.enable_entity_extraction = True
 

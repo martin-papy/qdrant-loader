@@ -30,10 +30,16 @@ global:
     chunk_size: 1000
     chunk_overlap: 200
 
-  embedding:
-    model: "text-embedding-3-small"
+  llm:
+    provider: openai
     api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 100
+        vector_size: 1536
 
   state_management:
     database_path: "${STATE_DB_PATH}"

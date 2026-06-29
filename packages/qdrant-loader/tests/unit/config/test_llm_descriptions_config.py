@@ -25,15 +25,18 @@ global:
     chunk_size: 1000
     chunk_overlap: 200
 
-  embedding:
-    model: "text-embedding-3-small"
+  llm:
+    provider: openai
     api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    endpoint: "https://api.openai.com/v1"
+    base_url: "https://api.openai.com/v1"
     tokenizer: "cl100k_base"
-    vector_size: 1536
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 100
+        vector_size: 1536
+        max_tokens_per_request: 8000
+        max_tokens_per_chunk: 8000
 
   state_management:
     database_path: ":memory:"
@@ -72,10 +75,16 @@ global:
     chunk_size: 1000
     chunk_overlap: 200
 
-  embedding:
-    model: "text-embedding-3-small"
+  llm:
+    provider: openai
     api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 100
+        vector_size: 1536
 
   state_management:
     database_path: ":memory:"
@@ -273,8 +282,10 @@ projects:
             # Test all configuration sections
             assert settings.qdrant_collection_name == "test_llm"
             assert settings.global_config.chunking.chunk_size == 1000
-            assert settings.global_config.embedding.model == "text-embedding-3-small"
-            assert settings.global_config.embedding.api_key == "comprehensive_test_key"
+            assert (
+                settings.llm_settings.models["embeddings"] == "text-embedding-3-small"
+            )
+            assert settings.llm_settings.api_key == "comprehensive_test_key"
 
             # Test file conversion configuration
             file_conv = settings.global_config.file_conversion

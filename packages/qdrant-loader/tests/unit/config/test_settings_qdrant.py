@@ -17,7 +17,17 @@ class TestSettingsQdrantIntegration:
         config_data = {
             "global": {
                 "chunking": {"chunk_size": 500},
-                "embedding": {"model": "test-model"},
+                "llm": {
+                    "provider": "openai",
+                    "api_key": "test-key",
+                    "base_url": "https://api.openai.com/v1",
+                    "models": {
+                        "embeddings": "text-embedding-3-small",
+                    },
+                    "embeddings": {
+                        "vector_size": 1536,
+                    },
+                },
             },
             "projects": {
                 "default": {
@@ -65,7 +75,17 @@ class TestSettingsQdrantIntegration:
                     "collection_name": "test_collection",
                 },
                 "chunking": {"chunk_size": 500},
-                "embedding": {"model": "test-model"},
+                "llm": {
+                    "provider": "openai",
+                    "api_key": "test-key",
+                    "base_url": "https://api.openai.com/v1",
+                    "models": {
+                        "embeddings": "text-embedding-3-small",
+                    },
+                    "embeddings": {
+                        "vector_size": 1536,
+                    },
+                },
             },
             "projects": {
                 "default": {
@@ -110,7 +130,17 @@ class TestSettingsQdrantIntegration:
                     "collection_name": "production_collection",
                 },
                 "chunking": {"chunk_size": 500},
-                "embedding": {"model": "test-model"},
+                "llm": {
+                    "provider": "openai",
+                    "api_key": "test-key",
+                    "base_url": "https://api.openai.com/v1",
+                    "models": {
+                        "embeddings": "text-embedding-3-small",
+                    },
+                    "embeddings": {
+                        "vector_size": 1536,
+                    },
+                },
             },
             "projects": {
                 "default": {
@@ -157,7 +187,17 @@ class TestSettingsQdrantIntegration:
                     "collection_name": "${TEST_COLLECTION_NAME}",
                 },
                 "chunking": {"chunk_size": 500},
-                "embedding": {"model": "test-model"},
+                "llm": {
+                    "provider": "openai",
+                    "api_key": "test-key",
+                    "base_url": "https://api.openai.com/v1",
+                    "models": {
+                        "embeddings": "text-embedding-3-small",
+                    },
+                    "embeddings": {
+                        "vector_size": 1536,
+                    },
+                },
             },
             "projects": {
                 "default": {

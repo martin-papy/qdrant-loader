@@ -71,7 +71,10 @@ class ConversionOutcome:
         """Translate a docling ``ConversionResult`` into our typed outcome."""
         from docling.datamodel.base_models import ConversionStatus as DoclingStatus
 
-        if docling_result.status in (DoclingStatus.SUCCESS, DoclingStatus.PARTIAL_SUCCESS):
+        if docling_result.status in (
+            DoclingStatus.SUCCESS,
+            DoclingStatus.PARTIAL_SUCCESS,
+        ):
             status = (
                 ConversionStatus.SUCCESS
                 if docling_result.status is DoclingStatus.SUCCESS

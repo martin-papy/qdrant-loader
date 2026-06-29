@@ -25,10 +25,16 @@ global:
     chunk_size: 1500
     chunk_overlap: 200
 
-  embedding:
-    model: "text-embedding-3-small"
+  llm:
+    provider: openai
     api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
+    base_url: "https://api.openai.com/v1"
+    tokenizer: "cl100k_base"
+    models:
+        embeddings: "text-embedding-3-small"
+    embeddings:
+        batch_size: 100
+        vector_size: 1536
 
   state_management:
     database_path: ":memory:"
@@ -84,9 +90,9 @@ sources: {}
         assert settings.state_db_path == ":memory:"
 
         # Test embedding configuration
-        assert settings.global_config.embedding.api_key == "traditional_test_key"
-        assert settings.global_config.embedding.model == "text-embedding-3-small"
-        assert settings.global_config.embedding.batch_size == 100
+        assert settings.llm_settings.api_key == "traditional_test_key"
+        assert settings.llm_settings.models["embeddings"] == "text-embedding-3-small"
+        assert settings.llm_settings.embeddings.batch_size == 100
 
         # Test chunking configuration
         assert settings.global_config.chunking.chunk_size == 1500
@@ -105,7 +111,7 @@ sources: {}
             # Test that configuration is loaded correctly
             assert settings.qdrant_collection_name == "traditional_test"
             assert settings.state_db_path == ":memory:"
-            assert settings.global_config.embedding.api_key == "home_expansion_test_key"
+            assert settings.llm_settings.api_key == "home_expansion_test_key"
 
         finally:
             # Clean up environment variables

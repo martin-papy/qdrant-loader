@@ -99,36 +99,14 @@ global:
 
       # Docling structure-aware chunking strategy (used for files converted by the
       # docling engine, i.e. file_conversion.engine: docling). Sizes chunks by a TOKEN
-      # budget aligned to the embedding tokenizer — not the character chunk_size above.
+      # budget aligned to global.llm.tokenizer — not the character chunk_size above.
       docling:
-        # max_tokens: 512 # Per-chunk token budget. Omit to inherit embedding.max_tokens_per_chunk.
+        # max_tokens: 512 # Per-chunk token budget. Omit to inherit global.llm.embeddings.max_tokens_per_chunk.
         include_context_in_embed: false # true => prepend the heading breadcrumb to each chunk's content (and its embedding)
         table_serialization: "triplets" # how tables become chunk text: "triplets" ('row, column = value' — embedding-friendly) or "markdown" (pipe rows — LLM/display-friendly)
 
-  # Default embedding configuration
-  # Controls how text is converted to vectors
-  embedding:
-    endpoint: "${LLM_BASE_URL}"
-    # Ollama: Local Ollama OpenAI-compatible endpoint
-    # OpenAI equivalent: https://api.openai.com/v1
-    model: "${LLM_EMBEDDING_MODEL}"
-    # Ollama: Local embedding model name
-    # OpenAI equivalent: text-embedding-3-small   (1536 dimensions, cheaper)
-    api_key: "${LLM_API_KEY}"
-    # Ollama: Use the fixed value "ollama" (no real auth)
-    # OpenAI: Your real API key (e.g. sk-xxxx)
-    batch_size: 100
-    vector_size: ${VECTOR_SIZE}
-    # MUST match model output dimension
-    # OpenAI: text-embedding-3-small → 1536
-    tokenizer: "none"
-    # Ollama: "none"
-    # OpenAI: "cl100k_base"
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
-
   # Unified LLM configuration (provider-agnostic)
-  # New preferred configuration block; legacy embedding/markitdown fields still work
+  # Single source of truth for embedding/chat provider settings.
   llm:
     provider: "${LLM_PROVIDER}" # openai | ollama | azure_openai | custom
     base_url: "${LLM_BASE_URL}" # OpenAI: https://api.openai.com/v1
@@ -152,6 +130,9 @@ global:
       vector_size: ${VECTOR_SIZE}
       # MUST match model output dimension
       # OpenAI: text-embedding-3-small → 1536
+      batch_size: 100 # Number of chunks sent per embedding call (tune for throughput/memory)
+      max_tokens_per_request: 8000
+      max_tokens_per_chunk: 8000
     # Hybrid retrieval config. The `sparse` key name reflects that this block
     # is only consulted when sparse vectors are in play — once `enabled: true`,
     # Qdrant requires every vector slot in the collection to be named, so the
@@ -253,7 +234,7 @@ global:
         enabled: false
         # url: "https://api.openai.com/v1/chat/completions" # OpenAI-compatible endpoint
         # model: "gpt-4o-mini"
-        # api_key: "${OPENAI_API_KEY}"
+        # api_key: "${LLM_API_KEY}"
         # prompt: "Describe this image in a few sentences."
         # timeout: 60.0 # Per-image request timeout in seconds
         # concurrency: 1 # Parallel captioning requests
@@ -262,12 +243,7 @@ global:
     markitdown:
       # Enable LLM integration for image descriptions
       enable_llm_descriptions: false
-      # LLM model for image descriptions (when enabled)
-      llm_model: "gpt-4o"
-      # LLM endpoint (when enabled)
-      llm_endpoint: "https://api.openai.com/v1"
-      # API key for LLM service (required when enable_llm_descriptions is True)
-      llm_api_key: "${OPENAI_API_KEY}"
+      # Uses global.llm.models.chat + global.llm.base_url + global.llm.api_key when enabled
 
   # Worker queue runtime and scheduling configuration
   # Controls concurrent workers, retry behavior, and periodic incremental jobs
