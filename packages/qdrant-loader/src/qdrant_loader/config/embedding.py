@@ -1,4 +1,26 @@
-"""Configuration for embedding generation."""
+"""DEPRECATED: Configuration for embedding generation.
+
+WARNING: This module is deprecated and should not be used.
+The EmbeddingConfig class is no longer part of the application configuration.
+
+Migration required:
+  OLD (deprecated):\n    global:
+      embedding:
+        model: text-embedding-3-small
+        api_key: ${OPENAI_API_KEY}
+
+  NEW (required):
+    global:
+      llm:
+        provider: openai
+        api_key: ${OPENAI_API_KEY}
+        models:
+          embeddings: text-embedding-3-small
+        embeddings:
+          vector_size: 1536
+
+Please update your configuration.yaml to use global.llm instead of global.embedding.
+"""
 
 from pydantic import Field
 
@@ -6,7 +28,11 @@ from qdrant_loader.config.base import BaseConfig
 
 
 class EmbeddingConfig(BaseConfig):
-    """Configuration for embedding generation."""
+    """DEPRECATED: Configuration for embedding generation.
+
+    This class is deprecated and retained only for reference.
+    Use global.llm configuration instead.
+    """
 
     batch_size: int = Field(
         default=100, description="Number of texts to embed in a single batch"

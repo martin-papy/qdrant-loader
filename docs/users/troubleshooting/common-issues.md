@@ -350,28 +350,29 @@ ls -la .env
 qdrant-loader config --workspace .
 ```
 
-### Issue: LLM Configuration Migration (v0.7.1+)
+### Issue: LLM Configuration Migration (BREAKING CHANGE - v1.0.0+)
 
 **Symptoms:**
 
-- Deprecation warnings about `global.embedding.*`
-- Configuration validation errors
-- "Legacy configuration fields detected" warnings
+- Configuration error: `'global.embedding' is no longer supported`
+- Command fails: `qdrant-loader config --workspace .`
+- Error message: "Please migrate your configuration to the 'global.llm' format"
+
+**Why This Changed:**
+
+`global.embedding.*` configuration is **no longer supported**. All LLM providers (OpenAI, Ollama, Azure, Gemini, etc.) must now use the unified `global.llm.*` format.
 
 **Solutions:**
 
 ```bash
-# Check current configuration for legacy fields
-qdrant-loader config --workspace . | grep -E "(embedding|openai):"
-
 # Update configuration to new LLM syntax
-# OLD (deprecated):
+# OLD (deprecated - WILL FAIL):
 # global:
 #   embedding:
 #     api_key: "${OPENAI_API_KEY}"
 #     model: "text-embedding-3-small"
 
-# NEW (recommended):
+# NEW (required):
 # global:
 #   llm:
 #     provider: "openai"
@@ -389,11 +390,11 @@ qdrant-loader config --workspace .
 
 **Migration Checklist:**
 
-- [ ] Replace `global.embedding.*` with `global.llm.*`
-- [ ] Add `provider` field (openai, azure_openai, ollama)
-- [ ] Add `base_url` field for API endpoint
-- [ ] Update `models` structure (embeddings, chat)
-- [ ] Add `embeddings.vector_size` field
+- [ ] **Remove** `global.embedding.*` completely
+- [ ] Add `global.llm.provider` field (openai, azure_openai, ollama, gemini, openai_compat)
+- [ ] Add `global.llm.base_url` field for API endpoint
+- [ ] Update `global.llm.models` structure (embeddings, chat)
+- [ ] Add `global.llm.embeddings.vector_size` field
 - [ ] Update environment variables to use `LLM_API_KEY`
 - [ ] Test configuration with `qdrant-loader config --workspace .`
 

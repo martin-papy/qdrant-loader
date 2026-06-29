@@ -45,7 +45,7 @@ def test_from_global_config_rejects_legacy_embedding():
 
     with pytest.raises(
         ValueError,
-        match="Configuration error: 'global.embedding' is no longer supported. Please migrate your configuration to the 'global.llm' format",
+        match="Configuration error: 'global.embedding' is no longer supported[\\s\\S]*Please migrate your configuration to the 'global.llm' format",
     ):
         LLMSettings.from_global_config(cfg)
 

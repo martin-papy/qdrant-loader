@@ -144,8 +144,23 @@ def build_config_from_dict(config_data: dict[str, Any]) -> Config:
 
     if has_legacy_embedding:
         raise ValueError(
-            "Configuration error: 'global.embedding' is no longer supported. "
-            "Please migrate your configuration to 'global.llm'."
+            "Configuration error: 'global.embedding' is no longer supported.\n\n"
+            "Please migrate your configuration to 'global.llm'.\n\n"
+            "Migration guide:\n"
+            "  OLD (deprecated):\n"
+            "    global:\n"
+            "      embedding:\n"
+            "        model: text-embedding-3-small\n"
+            "        api_key: ${OPENAI_API_KEY}\n\n"
+            "  NEW (required):\n"
+            "    global:\n"
+            "      llm:\n"
+            "        provider: openai\n"
+            "        api_key: ${OPENAI_API_KEY}\n"
+            "        models:\n"
+            "          embeddings: text-embedding-3-small\n"
+            "        embeddings:\n"
+            "          vector_size: 1536\n"
         )
     legacy_markit = (
         (config_data.get("file_conversion") or {}).get("markitdown")

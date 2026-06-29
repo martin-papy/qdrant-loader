@@ -325,9 +325,34 @@ global:
       max_retries: 3
     embeddings:
       vector_size: ${VECTOR_SIZE}
-
-> Deprecation: `global.embedding.*` is still honored but will be removed in a future release. Migrate to `global.llm.*`.
 ```
+
+> **⚠️ BREAKING CHANGE:** `global.embedding.*` is **NO LONGER SUPPORTED**.
+> You must migrate to `global.llm.*` format.
+>
+> **Migration Required:**
+>
+> ```yaml
+> # OLD (deprecated - WILL FAIL):
+> global:
+>   embedding:
+>     model: text-embedding-3-small
+>     api_key: ${OPENAI_API_KEY}
+>
+> # NEW (required):
+> global:
+>   llm:
+>     provider: openai
+>     api_key: ${OPENAI_API_KEY}
+>     models:
+>       embeddings: text-embedding-3-small
+>     embeddings:
+>       vector_size: 1536
+> ```
+>
+> **Error message if not migrated:** `Configuration error: 'global.embedding' is no longer supported. Please migrate your configuration to the 'global.llm' format.`
+
+````
 
 **Required Fields:**
 
@@ -409,7 +434,7 @@ global:
         include_context_in_embed: false
         # Table rendering: "triplets" (embedding-friendly) or "markdown" (readable)
         table_serialization: triplets
-```
+````
 
 **Strategy-Specific Configuration Details:**
 

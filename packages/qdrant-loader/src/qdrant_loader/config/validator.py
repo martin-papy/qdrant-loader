@@ -206,6 +206,28 @@ class ConfigValidator:
         if not isinstance(global_data, dict):
             raise ValueError("'global' section must be a dictionary")
 
+        # Check for legacy embedding configuration
+        if "embedding" in global_data:
+            raise ValueError(
+                "Configuration error: 'global.embedding' is no longer supported. "
+                "Please migrate your configuration to the 'global.llm' format.\n\n"
+                "Migration guide:\n"
+                "  OLD (deprecated):\n"
+                "    global:\n"
+                "      embedding:\n"
+                "        model: text-embedding-3-small\n"
+                "        api_key: ${OPENAI_API_KEY}\n\n"
+                "  NEW (required):\n"
+                "    global:\n"
+                "      llm:\n"
+                "        provider: openai\n"
+                "        api_key: ${OPENAI_API_KEY}\n"
+                "        models:\n"
+                "          embeddings: text-embedding-3-small\n"
+                "        embeddings:\n"
+                "          vector_size: 1536\n"
+            )
+
         # The actual validation of global config fields will be handled
         # by the GlobalConfig pydantic model, so we just do basic structure checks here
 
