@@ -116,6 +116,40 @@ class TestAutoEnvResolution:
         finally:
             os.unlink(config_path)
 
+    def test_simplified_config_without_global_llm_requires_env_vars(self, tmp_path):
+        """Simplified config with no global.llm should fail when no env vars are set."""
+        config_data = {
+            "projects": {
+                "default": {
+                    "display_name": "Default Project",
+                    "sources": {},
+                }
+            }
+        }
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False)
+        yaml.dump(config_data, tmp)
+        tmp.close()
+        config_path = Path(tmp.name)
+
+        try:
+            clean = _clean_env(
+                "OPENAI_API_KEY",
+                "LLM_API_KEY",
+                "QDRANT_URL",
+                "QDRANT_API_KEY",
+                "QDRANT_COLLECTION_NAME",
+            )
+            with patch.dict(os.environ, clean, clear=True):
+                try:
+                    Settings.from_yaml(config_path, skip_validation=True)
+                    raise AssertionError(
+                        "Expected missing global.llm and env vars to raise an error"
+                    )
+                except ValueError as e:
+                    assert "Missing required 'global.llm'" in str(e)
+        finally:
+            os.unlink(config_path)
+
     def test_openai_key_does_not_override_config_value(self, tmp_path):
         """If embedding.api_key is set in config, OPENAI_API_KEY does not override it."""
         config_path = _write_minimal_config(llm_api_key="sk-from-config")

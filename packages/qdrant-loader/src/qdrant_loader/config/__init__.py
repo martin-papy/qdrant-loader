@@ -257,10 +257,9 @@ class Settings(BaseSettings):
         # Auto-resolve environment variables as fallbacks
         self._auto_resolve_env_vars()
 
-        if self.skip_validation:
-            return self
-
-        # Validate that required fields are not empty after variable substitution
+        # Validate that required fields are not empty after variable substitution.
+        # skip_validation only bypasses directory creation/placeholder checks,
+        # not required field validation for a usable runtime config.
         if not self.global_config.qdrant.url:
             raise ValueError(
                 "Qdrant URL is required but was not provided or substituted"
