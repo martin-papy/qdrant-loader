@@ -11,6 +11,9 @@ running real docling over a fixture.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
+import pytest
 from qdrant_loader.core.conversion.outcome import (
     ConversionOutcome,
     ConversionStatus,
@@ -18,6 +21,17 @@ from qdrant_loader.core.conversion.outcome import (
 from qdrant_loader.core.conversion.service import ConversionService, ConvertedFile
 from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.file_conversion.exceptions import FileConversionError
+
+try:
+    import docling as _docling  # noqa: F401
+    _docling_available = True
+except ModuleNotFoundError:
+    _docling_available = False
+
+_skip_no_docling = pytest.mark.skipif(
+    not _docling_available,
+    reason="docling optional dependency is not installed",
+)
 
 
 class _StubConvertedDocument:
@@ -103,30 +117,34 @@ def test_markitdown_failure_uses_fallback_document_and_fallback_method():
 
 
 # -- docling path: PARTIAL is usable but must be flagged -------------------------
-def test_docling_success_returns_docling_content_without_warning(caplog):
+def test_docling_success_returns_docling_content_without_warning():
+    import qdrant_loader.core.conversion.service as conv_module
+
     doc = _StubConvertedDocument("# Full document\n\nall content present")
     outcome = ConversionOutcome(status=ConversionStatus.SUCCESS, document=doc)
     service = _docling_service(outcome)
 
-    with caplog.at_level("WARNING"):
+    with patch.object(conv_module, "logger") as mock_logger:
         result = service.convert("/docs/report.pdf")
 
     assert result.content == "# Full document\n\nall content present"
     assert result.conversion_method == "docling"
     assert result.conversion_failed is False
     assert result.converted_document is doc
-    assert caplog.records == []  # a clean SUCCESS must not warn
+    assert mock_logger.warning.call_count == 0  # a clean SUCCESS must not warn
 
 
-def test_docling_partial_logs_warning_but_still_returns_usable_content(caplog):
+def test_docling_partial_logs_warning_but_still_returns_usable_content():
     """A PARTIAL outcome (e.g. document_timeout mid-document -> truncated content) is
     still usable, so we index it as docling content — but it must NOT pass silently:
     a distinct warning naming the file + that content is truncated/partial fires."""
+    import qdrant_loader.core.conversion.service as conv_module
+
     doc = _StubConvertedDocument("# Truncated document\n\npartial content")
     outcome = ConversionOutcome(status=ConversionStatus.PARTIAL, document=doc)
     service = _docling_service(outcome)
 
-    with caplog.at_level("WARNING"):
+    with patch.object(conv_module, "logger") as mock_logger:
         result = service.convert("/docs/huge.pdf")
 
     # content is still usable docling output, indexed as a real (not fallback) doc
@@ -136,11 +154,11 @@ def test_docling_partial_logs_warning_but_still_returns_usable_content(caplog):
     assert result.converted_document is doc
 
     # but a distinct warning must have fired, naming the file
-    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
-    assert len(warnings) == 1
-    message = warnings[0].getMessage().lower()
-    assert "/docs/huge.pdf" in warnings[0].getMessage()
-    assert "partial" in message or "truncat" in message
+    assert mock_logger.warning.call_count == 1
+    call_args = mock_logger.warning.call_args
+    event_msg = call_args[0][0]  # first positional arg is the event string
+    assert "/docs/huge.pdf" in str(call_args)
+    assert "partial" in event_msg.lower() or "truncat" in event_msg.lower()
 
 
 def test_docling_failure_uses_canonical_fallback_document():
@@ -209,6 +227,7 @@ def test_markitdown_is_supported_delegates_to_file_detector(tmp_path):
     assert service.is_supported(str(md)) is False
 
 
+@_skip_no_docling
 def test_docling_is_supported_true_for_pdf_within_policy(tmp_path):
     """For docling, a PDF is supported: FileDetector says convertible AND it falls
     within docling's FormatPolicy."""
@@ -229,6 +248,7 @@ def test_docling_is_supported_false_when_file_detector_rejects(tmp_path):
     assert service.is_supported(str(md)) is False
 
 
+@_skip_no_docling
 def test_docling_is_supported_false_when_outside_format_policy(tmp_path):
     """A file the FileDetector accepts but whose format is NOT in docling's
     FormatPolicy (e.g. epub — MarkItDown-supported, not a docling enabled format)
@@ -243,6 +263,7 @@ def test_docling_is_supported_false_when_outside_format_policy(tmp_path):
     assert service.is_supported(str(epub)) is False
 
 
+@_skip_no_docling
 def test_docling_is_supported_false_when_over_size_limit(tmp_path):
     """A convertible, in-policy file that exceeds docling's max_file_size is rejected."""
     big = tmp_path / "huge.pdf"
