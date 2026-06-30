@@ -61,7 +61,7 @@ class JobQueue(Protocol):
         """Extend the visibility deadline of a RUNNING job by lease_seconds.
 
         Used to prevent lease expiration during long-running handler execution.
-        Returns True if successfully extended, False if job is no longer RUNNING.
+        Returns True if successfully extended, False if claim ownership changed.
         """
 
     async def list(
@@ -258,7 +258,7 @@ class SQLiteJobQueue:
         """Extend the visibility deadline of a RUNNING job by lease_seconds.
 
         Used to prevent lease expiration during long-running handler execution.
-        Returns True if successfully extended, False if job is no longer RUNNING.
+        Returns True if successfully extended, False if claim ownership changed.
         """
         now = datetime.now(UTC)
         new_deadline = now + timedelta(seconds=lease_seconds)

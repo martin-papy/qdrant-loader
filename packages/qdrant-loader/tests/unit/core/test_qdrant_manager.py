@@ -55,6 +55,12 @@ class TestQdrantManager:
         settings.qdrant_url = "http://localhost:6333"
         settings.qdrant_api_key = None
         settings.qdrant_collection_name = "test_collection"
+        # By default the unified LLM embeddings vector size is unset so the
+        # legacy global.embedding.vector_size path is exercised. Individual
+        # tests override embeddings.vector_size to assert the new key wins.
+        settings.llm_settings = SimpleNamespace(
+            embeddings=SimpleNamespace(vector_size=None)
+        )
         return settings
 
     @pytest.fixture
@@ -423,6 +429,72 @@ class TestQdrantManager:
                 },
                 sparse_vectors_config={"sparse": models.SparseVectorParams()},
             )
+
+    def test_create_collection_honors_llm_embeddings_vector_size(
+        self, mock_settings, mock_qdrant_client, mock_global_config
+    ):
+        """global.llm.embeddings.vector_size must take precedence over the legacy key.
+
+        Regression test for #301: the unified LLM embeddings vector size was
+        ignored and the collection fell back to the legacy/default dimension.
+        """
+        # New unified key set to 1536, legacy key set to a different value to
+        # prove precedence (the new key must win, not the legacy 768).
+        mock_settings.llm_settings = SimpleNamespace(
+            embeddings=SimpleNamespace(vector_size=1536)
+        )
+        mock_global_config.embedding.vector_size = 768
+        mock_qdrant_client.get_collections.return_value = Mock(collections=[])
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+            manager.create_collection()
+
+            mock_qdrant_client.create_collection.assert_called_once_with(
+                collection_name="test_collection",
+                vectors_config={
+                    "dense": VectorParams(size=1536, distance=Distance.COSINE)
+                },
+                sparse_vectors_config={"sparse": models.SparseVectorParams()},
+            )
+
+    @pytest.mark.parametrize("invalid_size", [0, -1])
+    def test_create_collection_rejects_non_positive_vector_size(
+        self, mock_settings, mock_qdrant_client, mock_global_config, invalid_size
+    ):
+        """A non-positive vector_size is rejected before reaching Qdrant.
+
+        Qdrant requires a strictly positive dimensionality, so 0/negative
+        values must fail with a clear error instead of a cryptic failure
+        during collection creation.
+        """
+        mock_settings.llm_settings = SimpleNamespace(
+            embeddings=SimpleNamespace(vector_size=invalid_size)
+        )
+        mock_qdrant_client.get_collections.return_value = Mock(collections=[])
+
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+        ):
+            manager = QdrantManager(mock_settings)
+            with pytest.raises(ValueError, match="positive integer"):
+                manager.create_collection()
 
     def test_create_collection_error(
         self, mock_settings, mock_qdrant_client, mock_global_config

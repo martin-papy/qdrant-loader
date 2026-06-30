@@ -179,8 +179,14 @@ async def _serve_main(
         session_factory=session_factory,
     )
 
-    logger.info("serve.pool_init")
     worker_runtime = config_obj.workers.runtime
+    logger.info(
+        "serve.pool_init",
+        worker_count=worker_runtime.worker_count,
+        lease_seconds=worker_runtime.lease_seconds,
+        max_attempts=worker_runtime.max_attempts,
+        retry_backoff_base_seconds=worker_runtime.retry_backoff_base_seconds,
+    )
     worker_pool = QueueWorkerPool(
         queue=job_queue,
         handler=job_handler,
