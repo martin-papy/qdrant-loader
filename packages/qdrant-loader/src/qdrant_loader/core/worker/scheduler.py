@@ -38,7 +38,9 @@ class IncrementalPullScheduler:
             return
 
         interval = float(self._schedule.interval_seconds)
-        next_run_at = self._monotonic() + interval
+        # First scheduling pass should happen immediately on service startup.
+        # Subsequent passes run at the configured interval.
+        next_run_at = self._monotonic()
 
         logger.info(
             "scheduler.incremental_pull.started",

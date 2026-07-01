@@ -127,21 +127,18 @@ class SQLiteJobQueue:
             (Job.status == self.RUNNING) & (Job.visibility_deadline <= now),
         )
 
+        candidate_job_id_subquery = (
+            select(Job.id)
+            .where(claimable_filter)
+            .order_by(Job.enqueued_at.asc(), Job.id.asc())
+            .limit(1)
+            .scalar_subquery()
+        )
+
         async with self._session_factory() as session:
-            candidate_job_id = await session.scalar(
-                select(Job.id)
-                .where(claimable_filter)
-                .order_by(Job.enqueued_at.asc(), Job.id.asc())
-                .limit(1)
-            )
-
-            if candidate_job_id is None:
-                await session.commit()
-                return None
-
             result = await session.execute(
                 update(Job)
-                .where(Job.id == candidate_job_id, claimable_filter)
+                .where(Job.id == candidate_job_id_subquery, claimable_filter)
                 .values(
                     status=self.RUNNING,
                     started_at=now,
@@ -150,13 +147,20 @@ class SQLiteJobQueue:
                     attempts=Job.attempts + 1,
                     last_error=None,
                 )
+                .returning(Job.id)
             )
-            claimed = result.rowcount > 0
-            if not claimed:
+
+            # SQLite requires RETURNING cursors to be finalized before commit.
+            try:
+                claimed_job_id = result.scalar_one_or_none()
+            finally:
+                result.close()
+
+            if claimed_job_id is None:
                 await session.commit()
                 return None
 
-            claimed_job = await session.get(Job, candidate_job_id)
+            claimed_job = await session.get(Job, claimed_job_id)
             await session.commit()
             return claimed_job
 

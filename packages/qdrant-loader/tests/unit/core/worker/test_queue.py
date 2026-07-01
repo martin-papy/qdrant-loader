@@ -80,6 +80,29 @@ async def test_claim_next_no_duplicates_under_race(sqlite_job_queue: SQLiteJobQu
 
 
 @pytest.mark.asyncio
+async def test_claim_next_no_duplicate_claims_across_queue_instances(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    # Simulate multiple independent workers/processes sharing the same DB.
+    queues = [sqlite_job_queue] + [
+        SQLiteJobQueue(sqlite_job_queue._session_factory) for _ in range(7)
+    ]
+
+    for i in range(50):
+        job = await sqlite_job_queue.enqueue(
+            "INCREMENTAL_PULL", {"source": f"docs-{i}"}
+        )
+        claims = await asyncio.gather(
+            *(queue.claim_next(lease_seconds=30) for queue in queues)
+        )
+
+        claimed = [claim for claim in claims if claim is not None]
+        assert len(claimed) == 1
+        assert claimed[0].id == job.id
+        assert claimed[0].attempts == 1
+
+
+@pytest.mark.asyncio
 async def test_mark_failed_sets_error(sqlite_job_queue: SQLiteJobQueue):
     job = await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source": "docs"})
 

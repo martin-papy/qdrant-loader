@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 
@@ -139,3 +140,21 @@ async def test_scheduler_keeps_canonical_identity_over_payload_defaults():
     }
     assert first_payload["force"] is False
     assert first_payload["custom"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_scheduler_run_ticks_immediately_on_startup():
+    queue = _FakeQueue()
+    schedule = IncrementalPullScheduleConfig(enabled=True, interval=300)
+    scheduler = IncrementalPullScheduler(queue, _projects_config(), schedule)
+    stop_event = asyncio.Event()
+
+    async def _stop_soon():
+        await asyncio.sleep(0.05)
+        stop_event.set()
+
+    await asyncio.gather(scheduler.run(stop_event), _stop_soon())
+
+    # Startup tick should enqueue once immediately (without waiting 300s).
+    assert len(queue.enqueued) == 2
+    assert {payload["source"] for _, payload in queue.enqueued} == {"repo-a", "jira-a"}
