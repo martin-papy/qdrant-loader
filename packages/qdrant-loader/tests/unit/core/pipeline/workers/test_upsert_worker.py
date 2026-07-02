@@ -25,6 +25,23 @@ class TestPipelineResult:
         assert result.errors == []
 
 
+def _make_chunk(chunk_id: str, parent_doc=None, total_chunks: int | None = None):
+    """Build a mock chunk with attributes UpsertWorker touches."""
+    chunk = Mock()
+    chunk.id = chunk_id
+    chunk.context = f"Content {chunk_id}"
+    chunk.source = "test_source"
+    chunk.source_type = "test"
+    chunk.created_at = datetime(2023, 1, 1, 12, 0, 0)
+    metadata = {}
+    if parent_doc is not None:
+        metadata["parent_document"] = parent_doc
+        if total_chunks is not None:
+            metadata["parent_document_total_chunks"] = total_chunks
+    chunk.metadata = metadata
+    return chunk
+
+
 class TestUpsertWorker:
     """Test cases for UpsertWorker."""
 
@@ -878,3 +895,161 @@ class TestUpsertWorker:
         # (>1) did happen, ruling out an accidental fully sequential
         # implementation.
         assert max_in_flight == 2
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_releases_reservation_on_failed_batch(self):
+        """A chunk ID from a batch where nothing was written must not poison a retry.
+
+        _merge_batch_outcome releases seen_chunk_ids reservations when
+        success_count == 0; otherwise the retried chunk would be miscounted
+        as a cross-batch duplicate.
+        """
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=1,
+            max_workers=1,  # failed batch merges (and releases) before retry dispatch
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+
+        # Same chunk ID twice: first attempt fails at Qdrant, retry succeeds.
+        attempt = _make_chunk("chunk-x")
+        retry = _make_chunk("chunk-x")
+
+        calls = 0
+
+        async def upsert_side_effect(points):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise Exception("Qdrant write failed")
+
+        self.mock_qdrant_manager.upsert_points = AsyncMock(
+            side_effect=upsert_side_effect
+        )
+
+        async def embedded_chunks_iterator():
+            yield (attempt, [0.1, 0.2, 0.3])
+            yield (retry, [0.1, 0.2, 0.3])
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            result = await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        # The retry counts as a genuine success, not a duplicate.
+        assert result.success_count == 1
+        # And no duplicate-collision error was recorded for the retried ID.
+        assert not any("duplicate chunk ids" in e.lower() for e in result.errors)
+        # The original failure is still accounted.
+        assert any("Upsert failed for chunk chunk-x" in e for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_reserves_ids_for_in_flight_batches(self):
+        """Reservation is synchronized at dispatch: a batch dispatched while an
+        earlier batch with the same chunk ID is still in flight must see it as
+        a cross-batch duplicate and not double-count the chunk."""
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=1,
+            max_workers=2,  # both single-chunk batches genuinely in flight together
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+
+        first = _make_chunk("chunk-x")
+        second = _make_chunk("chunk-x")  # same ID, dispatched while first runs
+
+        async def slow_upsert(points):
+            await asyncio.sleep(0.05)  # keep the first batch in flight
+
+        self.mock_qdrant_manager.upsert_points = AsyncMock(side_effect=slow_upsert)
+
+        async def embedded_chunks_iterator():
+            yield (first, [0.1, 0.2, 0.3])
+            yield (second, [0.4, 0.5, 0.6])
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            result = await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        # The ID is counted exactly once even though both writes happened.
+        assert result.success_count == 1
+        assert self.mock_qdrant_manager.upsert_points.call_count == 2
+        # The collision was detected and surfaced.
+        assert any("duplicate chunk ids" in e.lower() for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_batch_failure_fails_docs_but_continues(self):
+        """If a batch writes nothing, every parent doc in it lands in
+        failed_document_ids, and later batches are unaffected."""
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=2,
+            max_workers=1,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+
+        doc1, doc2 = Mock(id="doc1"), Mock(id="doc2")
+        batch1 = [_make_chunk(f"d1-c{i}", doc1, total_chunks=2) for i in (1, 2)]
+        batch2 = [_make_chunk(f"d2-c{i}", doc2, total_chunks=2) for i in (1, 2)]
+
+        calls = 0
+
+        async def upsert_side_effect(points):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise Exception("Qdrant write failed")
+
+        self.mock_qdrant_manager.upsert_points = AsyncMock(
+            side_effect=upsert_side_effect
+        )
+
+        async def embedded_chunks_iterator():
+            for chunk in (*batch1, *batch2):
+                yield (chunk, [0.1, 0.2, 0.3])
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            result = await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        assert result.failed_document_ids == {"doc1"}
+        assert result.successfully_processed_documents == {"doc2"}
+        assert result.success_count == 2  # only doc2's chunks were written
+        assert result.error_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_document_success_across_batches(self):
+        """A doc whose chunks span several batches is marked successful only
+        after ALL its chunks are accounted for — and does end up successful."""
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=2,
+            max_workers=1,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+        self.mock_qdrant_manager.upsert_points = AsyncMock()
+
+        doc = Mock(id="doc1")
+        chunks = [_make_chunk(f"d1-c{i}", doc, total_chunks=4) for i in range(4)]
+
+        async def embedded_chunks_iterator():
+            for chunk in chunks:
+                yield (chunk, [0.1, 0.2, 0.3])
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            result = await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        assert result.success_count == 4
+        assert result.successfully_processed_documents == {"doc1"}
+        assert result.failed_document_ids == set()
+
+
+
