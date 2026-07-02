@@ -39,11 +39,29 @@ services:
     networks:
       - qdrant-net
   
-  # ------------------------------------------------------------------------------
-  # IMPORTANT
-  # SQLite is intended for local CLI usage only.
-  # Container deployments should not rely on SQLite state (will implement in the future release).
-  # ------------------------------------------------------------------------------
+  postgres:
+    container_name: qdrant-loader-postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-qdrant_loader}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (see .env.example)}
+      - POSTGRES_DB=${POSTGRES_DB:-qdrant_loader}
+    ports:
+      # Bind to loopback only: internal services reach Postgres over qdrant-net;
+      # this avoids exposing the DB to the host's network.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-qdrant_loader} -d ${POSTGRES_DB:-qdrant_loader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - qdrant-net
+
   qdrant-loader:
     container_name: qdrant-loader
     build:
@@ -53,8 +71,12 @@ services:
     restart: unless-stopped
     ports:
       - "8081:8081"
+    environment:
+      - STATE_DB_URL=${STATE_DB_URL:-postgresql+asyncpg://${POSTGRES_USER:-qdrant_loader}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qdrant_loader}}
     depends_on: 
       qdrant:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     volumes:
       - ../.env:/qdrant-loader/.env
@@ -85,8 +107,12 @@ services:
     restart: unless-stopped
     ports:
       - "8082:8081"
+    environment:
+      - STATE_DB_URL=${STATE_DB_URL:-postgresql+asyncpg://${POSTGRES_USER:-qdrant_loader}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qdrant_loader}}
     depends_on: 
       qdrant:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     volumes:
       - ../.env:/qdrant-loader/.env
@@ -185,6 +211,8 @@ services:
 
 volumes:
   qdrant_data:
+    driver: local
+  postgres_data:
     driver: local
   # ollama:
   #   driver: local
