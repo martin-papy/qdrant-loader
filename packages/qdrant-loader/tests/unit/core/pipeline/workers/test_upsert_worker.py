@@ -635,6 +635,8 @@ class TestUpsertWorker:
         assert len(result.errors) == 1
         assert "duplicate chunk IDs" in result.errors[0]
         assert "affecting 1 document(s)" in result.errors[0]
+        assert result.successfully_processed_documents == {"doc1"}
+        assert result.failed_document_ids == {"doc2"}
         mock_logger.warning.assert_called()
 
     @pytest.mark.asyncio
@@ -730,3 +732,149 @@ class TestUpsertWorker:
         assert len(result.errors) == 1
         assert "duplicate chunk IDs" in result.errors[0]
         mock_logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_skips_upsert_on_failed_embedding(self):
+        """A (chunk, None) pair from a failed embedding must not reach Qdrant."""
+        mock_chunk = Mock()
+        mock_chunk.id = "chunk1"
+        mock_chunk.metadata = {"parent_document": Mock(id="doc1")}
+
+        async def embedded_chunks_iterator():
+            yield (mock_chunk, None)
+
+        with patch("qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"):
+            result = await self.upsert_worker.process_embedded_chunks(
+                embedded_chunks_iterator()
+            )
+
+        # Nothing should ever be sent to Qdrant for a chunk that failed to embed.
+        self.mock_qdrant_manager.upsert_points.assert_not_called()
+
+        assert result.success_count == 0
+        assert result.error_count == 1
+        assert len(result.errors) == 1
+        assert "Embedding failed for chunk chunk1" in result.errors[0]
+        # The document must not look successful just because nothing "failed to upsert" —
+        # it never had a chance to be upserted at all.
+        assert result.successfully_processed_documents == set()
+        assert result.failed_document_ids == {"doc1"}
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_partial_document_failure_not_marked_successful(
+        self,
+    ):
+        """A document is only 'successful' once every chunk it produced is accounted for."""
+        parent_doc = Mock(id="doc1")
+
+        # doc1 was chunked into 3 pieces; only 2 arrive with a real embedding.
+        good_chunk_1 = Mock()
+        good_chunk_1.id = "doc1-chunk-1"
+        good_chunk_1.content = "Content 1"
+        good_chunk_1.source = "test_source"
+        good_chunk_1.source_type = "test"
+        good_chunk_1.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        good_chunk_1.metadata = {
+            "parent_document": parent_doc,
+            "parent_document_total_chunks": 3,
+        }
+
+        good_chunk_2 = Mock()
+        good_chunk_2.id = "doc1-chunk-2"
+        good_chunk_2.content = "Content 2"
+        good_chunk_2.source = "test_source"
+        good_chunk_2.source_type = "test"
+        good_chunk_2.created_at = datetime(2023, 1, 1, 12, 0, 0)
+        good_chunk_2.metadata = {
+            "parent_document": parent_doc,
+            "parent_document_total_chunks": 3,
+        }
+
+        failed_chunk = Mock()
+        failed_chunk.id = "doc1-chunk-3"
+        failed_chunk.metadata = {
+            "parent_document": parent_doc,
+            "parent_document_total_chunks": 3,
+        }
+
+        async def embedded_chunks_iterator():
+            yield (good_chunk_1, [0.1, 0.2, 0.3])
+            yield (good_chunk_2, [0.4, 0.5, 0.6])
+            yield (failed_chunk, None)  # embedding failed upstream
+
+        self.upsert_worker.batch_size = 10  # keep the 2 good chunks in one batch
+
+        with patch("qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"):
+            result = await self.upsert_worker.process_embedded_chunks(
+                embedded_chunks_iterator()
+            )
+
+        # 2 of 3 chunks upserted fine...
+        assert result.success_count == 2
+        assert result.error_count == 1
+        # ...but the document as a whole must NOT be marked successful, since
+        # one of its three chunks never made it in. It should be retried.
+        assert result.successfully_processed_documents == set()
+        assert result.failed_document_ids == {"doc1"}
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_bounds_concurrent_batches_to_max_workers(
+        self,
+    ):
+        """No more than max_workers upsert batches should be in flight at once.
+
+        Regression guard for the dispatch loop: batches used to be created
+        eagerly with no cap, so max_upsert_workers only throttled execution,
+        not how many batches (and their embeddings) piled up in memory.
+        """
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=1,
+            max_workers=2,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+
+        chunks = []
+        for i in range(6):
+            chunk = Mock()
+            chunk.id = f"chunk{i}"
+            chunk.content = f"Test content {i}"
+            chunk.source = "test_source"
+            chunk.source_type = "test"
+            chunk.created_at = datetime(2023, 1, 1, 12, 0, 0)
+            chunk.metadata = {"parent_document": Mock(id=f"doc{i}")}
+            chunks.append(chunk)
+
+        async def embedded_chunks_iterator():
+            for i, chunk in enumerate(chunks):
+                yield (chunk, [0.1 * i, 0.2 * i, 0.3 * i])
+
+        in_flight = 0
+        max_in_flight = 0
+        lock = asyncio.Lock()
+
+        async def upsert_points_side_effect(points):
+            nonlocal in_flight, max_in_flight
+            async with lock:
+                in_flight += 1
+                max_in_flight = max(max_in_flight, in_flight)
+            await asyncio.sleep(0.01)
+            async with lock:
+                in_flight -= 1
+
+        self.mock_qdrant_manager.upsert_points = AsyncMock(
+            side_effect=upsert_points_side_effect
+        )
+
+        with patch("qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"):
+            result = await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        assert result.success_count == 6
+        assert result.successfully_processed_documents == {
+            f"doc{i}" for i in range(6)
+        }
+        # Concurrency never exceeded max_workers, and genuine concurrency
+        # (>1) did happen, ruling out an accidental fully sequential
+        # implementation.
+        assert max_in_flight == 2

@@ -87,6 +87,36 @@ class TestEmbeddingWorker:
         )
 
     @pytest.mark.asyncio
+    async def test_process_partial_empty_embeddings(self):
+        """A chunk with an empty embedding is kept in the result, paired with None."""
+        mock_chunk1 = Mock()
+        mock_chunk1.content = "Test content 1"
+        mock_chunk1.id = "chunk1"
+
+        mock_chunk2 = Mock()
+        mock_chunk2.content = "Test content 2"
+        mock_chunk2.id = "chunk2"
+
+        chunks = [mock_chunk1, mock_chunk2]
+
+        # Second chunk's content was invalid, so get_embeddings returns []
+        # for it instead of raising.
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            return_value=[[0.1, 0.2, 0.3], []]
+        )
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            result = await self.embedding_worker.process(chunks)
+
+        # Both chunks are present, not just the successful one, so callers
+        # can tell the second one failed instead of it silently disappearing.
+        assert len(result) == 2
+        assert result[0] == (mock_chunk1, [0.1, 0.2, 0.3])
+        assert result[1] == (mock_chunk2, None)
+
+    @pytest.mark.asyncio
     async def test_process_with_shutdown_during_processing(self):
         """Test processing with shutdown event set during processing."""
         mock_chunk = Mock()
@@ -306,8 +336,11 @@ class TestEmbeddingWorker:
                 ):
                     results.append(result)
 
-                # Should get no results due to exceptions
-                assert len(results) == 0
+                # Failed chunks are still surfaced (paired with None) so
+                # their parent documents can be accounted for downstream,
+                # instead of silently vanishing.
+                assert len(results) == 2
+                assert results == [(mock_chunk1, None), (mock_chunk2, None)]
 
                 # Verify error logging
                 assert mock_logger.error.call_count >= 2  # One for each chunk
@@ -359,9 +392,11 @@ class TestEmbeddingWorker:
                 ):
                     results.append(result)
 
-                # Should get result for first chunk only
-                assert len(results) == 1
+                # First chunk succeeds; second is still surfaced, paired
+                # with None, instead of disappearing from accounting.
+                assert len(results) == 2
                 assert results[0] == (mock_chunk1, [0.1, 0.2, 0.3])
+                assert results[1] == (mock_chunk2, None)
 
                 # Verify error logging for second chunk
                 mock_logger.error.assert_called()
@@ -418,3 +453,63 @@ class TestEmbeddingWorker:
 
         # Verify embedding service was not called
         self.mock_embedding_service.get_embeddings.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_chunks_bounds_concurrent_batches_to_max_workers(self):
+        """No more than max_workers embedding batches should be in flight at once.
+
+        Regression guard for the dispatch loop: batches used to be created
+        eagerly with no cap, so max_embed_workers only throttled execution,
+        not how many batches (and their chunk data) piled up in memory.
+        """
+        worker = EmbeddingWorker(
+            embedding_service=self.mock_embedding_service,
+            max_workers=2,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+        self.mock_embedding_service.batch_size = 1
+
+        chunks = []
+        for i in range(6):
+            chunk = Mock()
+            chunk.content = f"Test content {i}"
+            chunk.id = f"chunk{i}"
+            chunks.append(chunk)
+
+        async def chunk_iterator():
+            for chunk in chunks:
+                yield chunk
+
+        in_flight = 0
+        max_in_flight = 0
+        lock = asyncio.Lock()
+
+        async def get_embeddings_side_effect(contents):
+            nonlocal in_flight, max_in_flight
+            async with lock:
+                in_flight += 1
+                max_in_flight = max(max_in_flight, in_flight)
+            await asyncio.sleep(0.01)
+            async with lock:
+                in_flight -= 1
+            return [[0.1, 0.2, 0.3] for _ in contents]
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            side_effect=get_embeddings_side_effect
+        )
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            results = []
+            async for result in worker.process_chunks(chunk_iterator()):
+                results.append(result)
+
+        # All chunks still get processed, in submission order...
+        assert len(results) == 6
+        assert [chunk.id for chunk, _ in results] == [c.id for c in chunks]
+        # ...but concurrency never exceeded max_workers, and genuine
+        # concurrency (>1) did happen, ruling out an accidental fully
+        # sequential implementation.
+        assert max_in_flight == 2
