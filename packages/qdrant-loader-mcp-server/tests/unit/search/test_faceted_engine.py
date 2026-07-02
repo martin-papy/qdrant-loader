@@ -73,7 +73,7 @@ def test_search_with_facets_basic():
         assert resp["filtered_count"] == 2
         assert resp["facets"][0]["type"] == "source"
 
-    asyncio.get_event_loop().run_until_complete(run())
+    asyncio.run(run())
 
 
 def test_get_facet_suggestions_basic(monkeypatch):
@@ -135,4 +135,4 @@ def test_get_facet_suggestions_basic(monkeypatch):
         assert out["suggested_facets"][0]["type"] == "source"
         assert out["generation_metadata"]["total_documents_analyzed"] == 1
 
-    asyncio.get_event_loop().run_until_complete(run())
+    asyncio.run(run())

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # pyright: reportGeneralTypeIssues=false, reportAttributeAccessIssue=false
+import asyncio
 import importlib
 import os
 from logging.config import fileConfig
@@ -8,8 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from qdrant_loader.core.state.models import Base
+from qdrant_loader.core.state.utils import _normalize_async_url
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 context: Any = importlib.import_module("alembic.context")
 config = context.config
@@ -30,6 +33,11 @@ def _is_special_sqlite_form(raw_path: str) -> bool:
 
 def _deterministic_sqlalchemy_url() -> str:
     """Resolve DB URL consistently regardless of current working directory."""
+    # STATE_DB_URL (Postgres or any full URL) takes precedence over the SQLite path,
+    # normalized to an async driver (postgresql+asyncpg, sqlite+aiosqlite).
+    state_db_url = os.getenv("STATE_DB_URL")
+    if state_db_url:
+        return _normalize_async_url(state_db_url)
     state_db_path = os.getenv("STATE_DB_PATH")
     if state_db_path:
         if _is_special_sqlite_form(state_db_path):
@@ -82,22 +90,39 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def _do_run_migrations(connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def _run_async_migrations() -> None:
+    """Online migrations for async drivers (postgresql+asyncpg, sqlite+aiosqlite)."""
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(_do_run_migrations)
+    await connectable.dispose()
+
+
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Run migrations in 'online' mode (async path when the driver is async)."""
+    url = config.get_main_option("sqlalchemy.url")
+    if url and make_url(url).get_dialect().is_async:
+        asyncio.run(_run_async_migrations())
+        return
+
+    # Sync path (unchanged) — used by the SQLite sqlite:// form
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+        _do_run_migrations(connection)
 
 
 if context.is_offline_mode():

@@ -26,13 +26,14 @@ venv/
 env/
 ENV/
 
-# IDE
+# IDE + AI tools
 .idea/
 .vscode/
 .cursor/*
 !.cursor/rules/
 *.swp
 *.swo
+.claude/
 
 # Environment variables
 .env
@@ -102,6 +103,12 @@ internal/
 
 # Beads issue tracking
 .beads/
+
+# FalkorDB / Redis snapshots
+packages/qdrant-loader-core/data/*.rdb
+
+# local workspaces
+*-qdrant-workspace
 
 # Claude skills
 docs/superpowers

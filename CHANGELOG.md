@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### State Management
+
+- Optional **PostgreSQL** backend for the state database, alongside the default SQLite. Set `STATE_DB_URL` (or `state_management.database_url`) to a full SQLAlchemy URL — e.g. `postgresql+asyncpg://user:pass@host:5432/db` — to switch backends; SQLite remains the default when `STATE_DB_URL` is unset. A bare `postgresql://` is auto-normalized to the async `asyncpg` driver. Postgres uses a real connection pool (sized from `state_management.connection_pool`) with `pool_pre_ping` + `pool_recycle` for AWS RDS resilience. The `asyncpg` driver is an optional extra — install with `pip install qdrant-loader[postgres]`; SQLite-only installs don't pull it.
+- `docker-compose.yaml` now bundles a `postgres:16` service and defaults the Docker deployment's state DB to Postgres (override `STATE_DB_URL` to point at AWS RDS later with no code change). Local/CLI usage without Docker stays SQLite.
+- Alembic migrations are now Postgres-capable (async `env.py`, reusing `asyncpg`).
+
+### Changed
+
+#### MCP Server
+
+- Rebuilt the MCP server on [FastMCP](https://gofastmcp.com) v3. Tool input/output schemas are now generated from typed Python signatures instead of hand-written JSON Schema, and both stdio and streamable-HTTP transports are provided by the framework. All 11 tools are preserved with the same names (including `detect_document_conflicts`).
+- The HTTP transport runs in **stateless JSON mode**: it returns `application/json` (not SSE) and does not require an `initialize`/session handshake — each request is an independent `POST /mcp`. Clients must still send `Accept: application/json, text/event-stream`. Tool failures are reported the standard MCP way (`result.isError: true` with the message in `result.content[0].text`), not as a top-level JSON-RPC `error` object. The stdio transport is unaffected.
+
+### Removed
+
+#### MCP Server
+
+- Removed the hand-rolled JSON-RPC layer: the `MCPHandler` dispatcher, the `mcp/schemas/` tool-schema definitions, the `mcp/models.py` request/response models, the legacy `server.py` + `transport/` HTTP stack, and the hand-written stdio loop in `cli.py`.
+- Removed the non-standard `listOfferings` method and the ability to invoke tools as top-level JSON-RPC methods (e.g. `{"method": "search"}`). Use the standard MCP `tools/list` and `tools/call` instead.
+- Dropped the now-unused `fastapi`, `jsonrpcclient`, and `jsonrpcserver` dependencies.
+
 ## [1.0.3] - 2026-06-08
 
 ### Added

@@ -45,8 +45,9 @@ def setup_test_environment():
     data_dir.mkdir(parents=True, exist_ok=True)
 
     # Load test configuration
-    config_path = Path("tests/config.test.yaml")
-    env_path = Path("tests/.env.test")
+    tests_dir = Path(__file__).resolve().parent
+    config_path = tests_dir / "config.test.yaml"
+    env_path = tests_dir / ".env.test"
 
     # Load environment variables first
     load_dotenv(env_path, override=True)
@@ -60,6 +61,10 @@ def setup_test_environment():
         "CONFLUENCE_EMAIL": "test@example.com",
         "JIRA_TOKEN": "test-jira-token",
         "JIRA_EMAIL": "test@example.com",
+        "GRAPH_HOST": "localhost",
+        "GRAPH_PORT": "6379",
+        "GRAPH_NAME": "test_graph",
+        "GRAPH_PASSWORD": "",
     }
     for key, value in fallback_env.items():
         os.environ.setdefault(key, value)

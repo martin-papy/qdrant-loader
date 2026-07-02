@@ -52,6 +52,9 @@ ollama = [
 gemini = [
     "google-genai>=0.3.0",
 ]
+graph = [
+    "FalkorDB>=1.0"
+]
 
 [project.urls]
 Homepage = "https://qdrant-loader.net"

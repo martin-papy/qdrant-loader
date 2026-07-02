@@ -164,14 +164,6 @@ def mock_query_processor():
 
 
 @pytest.fixture
-def mcp_handler(mock_search_engine, mock_query_processor):
-    """Create an MCP handler with mocked dependencies."""
-    from qdrant_loader_mcp_server.mcp.handler import MCPHandler
-
-    return MCPHandler(mock_search_engine, mock_query_processor)
-
-
-@pytest.fixture
 def config():
     """Create test configuration."""
     from qdrant_loader_mcp_server.config import Config

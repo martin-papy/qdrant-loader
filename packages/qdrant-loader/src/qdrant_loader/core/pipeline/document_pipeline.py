@@ -2,8 +2,15 @@
 
 import asyncio
 import time
+from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any
 
+import qdrant_loader_core.graph.registry as _registry  # noqa: F401
+from qdrant_loader_core.graph import get_graph_store
+from qdrant_loader_core.graph.extractor.base_extractor import EntityExtractor
+
+from qdrant_loader.config import get_settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -46,11 +53,151 @@ class DocumentPipeline:
         self.embedding_worker = embedding_worker
         self.upsert_worker = upsert_worker
 
-    async def process_batch(self, batch: list[Document]) -> BatchResult:
+    async def _process_graph(
+        self,
+        documents: list[Document],
+        current_project_id: str | None = None,
+    ) -> None:
+        """
+        Graph write hook (optional):
+        - Extract entities + relations from documents
+        - Build nodes/edges
+        - Deduplicate
+        - Batch upsert into GraphStore
+        - Must NOT affect ingestion if fails
+        """
+
+        # ---------------------------
+        # 1. Load config safely
+        # ---------------------------
+        try:
+            settings = get_settings()
+            graph_cfg = getattr(settings.global_config, "graph", None)
+            graph_enabled = (
+                bool(getattr(graph_cfg, "enabled", False)) if graph_cfg else False
+            )
+        except Exception:
+            logger.warning("Graph config not available → graph disabled")
+            return
+
+        if not graph_enabled:
+            return
+
+        logger.info("🔄 Graph extraction started (batch size=%s)", len(documents))
+
+        # ---------------------------
+        # 2. Prepare dedup storage
+        # ---------------------------
+        nodes_dict: dict[str, Any] = {}
+        edges_dict: dict[tuple[str, str, str], Any] = {}
+
+        # Optional: group by source_type for efficiency
+        grouped_docs: dict[str, list[Document]] = defaultdict(list)
+        for doc in documents:
+            grouped_docs[doc.source_type].append(doc)
+
+        # ---------------------------
+        # 3. Extract graph per source_type
+        # ---------------------------
+        for source_type, docs in grouped_docs.items():
+            try:
+                extractor = EntityExtractor.for_source(source_type)
+                if not extractor:
+                    logger.warning("No extractor found for source_type=%s", source_type)
+                    continue
+
+                for doc in docs:
+                    try:
+                        subgraph = await extractor.extract(doc)
+
+                        if getattr(subgraph, "nodes", None):
+                            for node in subgraph.nodes:
+                                nodes_dict[node.id] = node
+
+                        if getattr(subgraph, "edges", None):
+                            for edge in subgraph.edges:
+                                edge_key = (edge.source, edge.target, edge.edge_type)
+                                edges_dict[edge_key] = edge
+
+                    except Exception as e:
+                        logger.error(
+                            "⚠️ Graph extract failed doc_id=%s error=%s",
+                            getattr(doc, "id", "<unknown>"),
+                            e,
+                            exc_info=True,
+                        )
+
+            except Exception as e:
+                logger.error(
+                    "⚠️ Extractor failed for source_type=%s error=%s",
+                    source_type,
+                    e,
+                    exc_info=True,
+                )
+
+        # ---------------------------
+        # 4. Build batches
+        # ---------------------------
+        nodes_batch = list(nodes_dict.values())
+        edges_batch = list(edges_dict.values())
+
+        # ---------------------------
+        # 5. Attach project context
+        # ---------------------------
+        if current_project_id:
+            for node in nodes_batch:
+                if not hasattr(node, "properties") or node.properties is None:
+                    node.properties = {}
+                node.properties["project"] = current_project_id
+
+            for edge in edges_batch:
+                if not hasattr(edge, "properties") or edge.properties is None:
+                    edge.properties = {}
+                edge.properties["project"] = current_project_id
+
+        # ---------------------------
+        # 6. Batch upsert
+        # ---------------------------
+        if not nodes_batch and not edges_batch:
+            logger.info("Graph extraction result is empty → skip upsert")
+            return
+
+        try:
+            graph_store = await get_graph_store()
+
+            if nodes_batch:
+                await graph_store.upsert_nodes_batch(nodes_batch)
+
+            if edges_batch:
+                await graph_store.upsert_edges_batch(edges_batch)
+
+            logger.info(
+                "✅ Graph upsert success | nodes=%s edges=%s",
+                len(nodes_batch),
+                len(edges_batch),
+            )
+            logger.info("=== NODES ===")
+            for i, node in enumerate(nodes_batch, start=1):
+                logger.info("Node %s: %s", i, node)
+
+            logger.info("=== EDGES ===")
+            for i, edge in enumerate(edges_batch, start=1):
+                logger.info("Edge %s: %s", i, edge)
+        except Exception as e:
+            logger.error(
+                "⚠️ Graph upsert failed (non-fatal): %s",
+                e,
+                exc_info=True,
+            )
+
+    async def process_batch(
+        self, batch: list[Document], current_project_id: str | None = None
+    ) -> BatchResult:
         """Process a bounded batch of documents through the pipeline.
 
         Args:
             batch: List of documents to process (bounded size, typically 256)
+            current_project_id: Optional project id context for graph extraction/upsert.
 
         Returns:
             BatchResult with processing statistics.
@@ -94,6 +241,18 @@ class DocumentPipeline:
                 f"✅ Batch processing completed: {pipeline_result.success_count} chunks, "
                 f"{pipeline_result.error_count} errors in {total_duration:.2f}s"
             )
+
+            # add node and edge
+            if (
+                pipeline_result.successfully_processed_documents
+            ):  # get list of strings of successful Qdrant upsert docs
+                ok_docs = [
+                    doc
+                    for doc in batch
+                    if doc.id in pipeline_result.successfully_processed_documents
+                ]
+                if ok_docs:
+                    await self._process_graph(ok_docs, current_project_id)
 
             return BatchResult(
                 success_count=pipeline_result.success_count,

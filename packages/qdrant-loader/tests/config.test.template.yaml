@@ -4,6 +4,17 @@
 
 # Global configuration for all projects
 global:
+  # Graph configuration
+  graph:
+    enabled: true
+    backend: "falkordb"
+    connection:
+      host: "${GRAPH_HOST}"
+      port: "${GRAPH_PORT}"
+      password: "${GRAPH_PASSWORD}"
+    graph_name: "${GRAPH_NAME}"
+    pool:
+      max_connections: 20
   # Unified LLM configuration for tests (provider-agnostic)
   llm:
     provider: "openai"
