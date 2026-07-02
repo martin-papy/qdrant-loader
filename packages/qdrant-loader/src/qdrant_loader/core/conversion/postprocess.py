@@ -23,11 +23,12 @@ Defect 1 — merged-cell duplication
     live in ``table_cells``, which is what this does.
 
 Defect 2 — sheet names dropped
-    Each sheet survives as a body group whose ``name`` is ``"sheet: <name>"``,
-    but neither markdown export nor chunk contextualization surfaces it
-    (markitdown emitted ``## Sheet: <name>`` headings). We insert a
-    ``SECTION_HEADER`` text item as the first child of each sheet group, so the
-    name becomes a markdown heading and rides into each chunk's heading path.
+    Each sheet survives as a body group labeled ``GroupLabel.SHEET`` whose
+    ``name`` is the bare sheet name, but neither markdown export nor chunk
+    contextualization surfaces it (markitdown emitted ``## Sheet: <name>``
+    headings). We insert a ``SECTION_HEADER`` text item as the first child of
+    each sheet group, so the name becomes a markdown heading and rides into
+    each chunk's heading path.
 
 Both repairs are strictly-better, default-on, and apply *only* to spreadsheet
 inputs — prose formats (PDF/DOCX) are untouched.
@@ -40,10 +41,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from docling_core.types.doc import DoclingDocument
 
-# docling's InputFormat.value for spreadsheets, and the prefix its Excel backend
-# stamps onto each sheet group's name.
+# docling's InputFormat.value for spreadsheets.
 _XLSX_FORMAT = "xlsx"
-_SHEET_PREFIX = "sheet:"
 
 
 def postprocess_spreadsheet(document: DoclingDocument, source_format: str) -> None:
@@ -100,18 +99,20 @@ def _dedupe_merged_cells(document: DoclingDocument) -> None:
 def _surface_sheet_headings(document: DoclingDocument) -> None:
     """Insert a SECTION_HEADER as the first child of each sheet group.
 
-    The docling Excel backend names each body group ``"sheet: <name>"``; we lift
-    that name into a heading so it shows up in the markdown export and in each
-    chunk's heading path. Inserting before the group's current first child (with
-    ``after=False``) parents the header on the group and makes it lead the sheet.
+    The docling Excel backend labels each body group ``GroupLabel.SHEET`` with
+    the bare sheet name; we lift that name into a heading so it shows up in the
+    markdown export and in each chunk's heading path. Inserting before the
+    group's current first child (with ``after=False``) parents the header on
+    the group and makes it lead the sheet.
     """
-    from docling_core.types.doc import DocItemLabel
+    from docling_core.types.doc import DocItemLabel, GroupLabel
 
     for group in document.groups:
-        name = group.name or ""
-        if not name.lower().startswith(_SHEET_PREFIX) or not group.children:
+        if group.label != GroupLabel.SHEET or not group.children:
             continue
-        sheet_name = name.split(":", 1)[1].strip()
+        sheet_name = (group.name or "").strip()
+        if not sheet_name:
+            continue
         first_child = group.children[0].resolve(document)
         document.insert_text(
             sibling=first_child,
