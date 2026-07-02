@@ -61,11 +61,12 @@ logger = LoggingConfig.get_logger(__name__)
 class BaseJiraConnector(BaseConnector):
     """Base class for all Jira connectors."""
 
-    def __init__(self, config: JiraProjectConfig):
+    def __init__(self, config: JiraProjectConfig, checkpoint_cursor: str | None = None):
         """Initialize the Jira connector.
 
         Args:
             config: The Jira configuration.
+            checkpoint_cursor: Optional pagination cursor to resume from (WS-2 feature).
 
         Raises:
             ValueError: If required authentication parameters are not set.
@@ -83,6 +84,9 @@ class BaseJiraConnector(BaseConnector):
         self._last_sync: datetime | None = None
         self._rate_limiter = RateLimiter.per_minute(self.config.requests_per_minute)
         self._initialized = False
+
+        # Checkpoint support (WS-2 feature)
+        self._checkpoint_cursor = checkpoint_cursor
 
         # Initialize file conversion components if enabled
         self.file_converter: FileConverter | None = None
@@ -294,7 +298,7 @@ class BaseJiraConnector(BaseConnector):
 
         # Add updated_after filter if provided
         if updated_after:
-            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M:%S')}'"
+            jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
 
         return jql
 
@@ -451,16 +455,18 @@ class BaseJiraConnector(BaseConnector):
         """Fetch a single Jira issue by key or numeric ID."""
         try:
             raw_issue = await self._make_request("GET", f"issue/{entity_id}")
+            issue = self._parse_issue(raw_issue, self.config.extra_fields)
+            documents = await self._issues_to_documents(
+                [issue], include_attachments=False
+            )
         except Exception as exc:
             logger.error(
-                "Failed to fetch Jira issue by id",
+                "Failed to fetch/parse Jira issue by id",
                 entity_id=entity_id,
                 error=str(exc),
             )
             return None
 
-        issue = self._parse_issue(raw_issue, self.config.extra_fields)
-        documents = await self._issues_to_documents([issue])
         return documents[0] if documents else None
 
     async def list_entity_ids(self) -> AsyncIterator[str]:
@@ -468,19 +474,27 @@ class BaseJiraConnector(BaseConnector):
         async for issue in self.get_issues():
             yield issue.key
 
-    async def _issues_to_documents(self, issues: list[JiraIssue]) -> list[Document]:
-        """Convert Jira issues to Document objects (including attachments).
+    async def _issues_to_documents(
+        self, issues: list[JiraIssue], include_attachments: bool = True
+    ) -> list[Document]:
+        """Convert Jira issues to Document objects.
+
+        Set ``include_attachments=False`` for single-entity fetches where the
+        parent document must remain available even if attachment materialization
+        fails.
 
         .. deprecated:: WS-1
             Use :meth:`_stream_issues_to_documents` for streaming.
         """
         documents: list[Document] = []
-        async for document in self._stream_issues_to_documents(issues):
+        async for document in self._stream_issues_to_documents(
+            issues, include_attachments=include_attachments
+        ):
             documents.append(document)
         return documents
 
     async def _stream_issues_to_documents(
-        self, issues: list[JiraIssue]
+        self, issues: list[JiraIssue], include_attachments: bool = True
     ) -> AsyncGenerator[Document, None]:
         """Stream Jira issues as Document objects, including attachments.
 
@@ -546,6 +560,10 @@ class BaseJiraConnector(BaseConnector):
             if self.config.extra_fields:
                 for field in self.config.extra_fields:
                     metadata[field.name] = getattr(issue, field.name)
+            # Propagate checkpoint info into document metadata if present
+            cp = getattr(issue, "ingestion_checkpoint", None)
+            if cp:
+                metadata["__ingestion_checkpoint"] = cp
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,
@@ -569,7 +587,11 @@ class BaseJiraConnector(BaseConnector):
             )
             yield document
 
-            if self.config.download_attachments and self.attachment_reader:
+            if (
+                include_attachments
+                and self.config.download_attachments
+                and self.attachment_reader
+            ):
                 attachment_metadata = self._get_issue_attachments(issue)
                 if attachment_metadata:
                     logger.info(
@@ -596,7 +618,8 @@ class BaseJiraConnector(BaseConnector):
         self, since: datetime | None = None
     ) -> AsyncGenerator[Document, None]:
         """Stream documents from Jira (WS-1 connector contract)."""
-        async for issue in self.get_issues(updated_after=since):
+        effective_since = since if since is not None else self.config.updated_after
+        async for issue in self.get_issues(updated_after=effective_since):
             async for document in self._stream_issues_to_documents([issue]):
                 yield document
 

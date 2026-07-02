@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader"
-version = "1.0.1"
+version = "1.0.3"
 description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,7 +35,7 @@ dependencies = [
     "structlog>=23.0.0",
     "httpx>=0.24.0",
     "openai>=1.0.0",
-    "qdrant-loader-core[openai]==1.0.1",
+    "qdrant-loader-core[openai]==1.0.3",
     "qdrant-client>=1.10.0",
     "PyYAML>=6.0.0",
     "beautifulsoup4>=4.12.0",
@@ -46,7 +46,7 @@ dependencies = [
     "langchain-community>=0.0.38",
     "langchain-text-splitters>=0.3.9",
     "numpy>=1.26.0,<2.0.0",
-    "GitPython>=3.1.40",
+    "GitPython>=3.1.50",
     "atlassian-python-api>=3.41.0",
     "tqdm>=4.66.0",
     "SQLAlchemy>=2.0.0",
@@ -61,8 +61,24 @@ dependencies = [
     "faiss-cpu>=1.7.4",
     "psutil>=5.9.0",
     "tree-sitter-languages>=1.10.0",
-    "tree-sitter<0.21",
+    # Bumped from <0.21 to satisfy docling-core[chunking] (needs >=0.25,<0.27) — the
+    # bump is required, not optional. code_document_parser DOES call
+    # tree-sitter-languages' get_parser, but tree-sitter-languages 1.10.x ships parsers
+    # built against the pre-0.22 ABI, so get_parser raises at runtime under 0.25
+    # (TypeError in Language.__init__). That call is wrapped in try/except and degrades
+    # to non-tree-sitter code parsing, so the suite stays green; tree-sitter AST
+    # chunking is the accepted casualty until we move off the unmaintained
+    # tree-sitter-languages (e.g. to tree-sitter-language-pack).
+    "tree-sitter>=0.25,<0.27",
     "markitdown[all]>=0.1.3",
+    # docling's DocumentConverter eagerly imports every format backend (pdf, office,
+    # email, latex, ...) at construction, so the engine needs all of their deps even
+    # to be built. The `standard` extra is docling's complete, non-exotic backend +
+    # models bundle (pdf parser, layout/table models via torch, office, email, html,
+    # latex, image, rapidocr). It pulls torch + models, so expect a larger image.
+    # (`all` would additionally bring easyocr/tesseract/whisper/VLM/playwright — not needed.)
+    "docling-slim[standard]>=2.97.0",
+    "docling-core>=2.78.0",
     "networkx>=3.0.0",
     "rich>=13.0.0",
     "questionary>=2.0.0",

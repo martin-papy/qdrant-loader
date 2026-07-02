@@ -105,7 +105,7 @@ jobs:
                 }
               }]
             }')
-          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          curl -fsS --max-time 30 -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Notify teams on failure
         if: ${{ always() && steps.publish_loader.conclusion == 'failure' }}
@@ -211,7 +211,7 @@ jobs:
                 }
               }]
             }')
-          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          curl -fsS --max-time 30 -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Notify teams on failure
         if: ${{ always() && steps.publish_mcp_server.conclusion == 'failure' }}
@@ -317,7 +317,7 @@ jobs:
                 }
               }]
             }')
-          curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          curl -fsS --max-time 30 -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Notify teams on failure
         if: ${{ always() && steps.publish_core.conclusion == 'failure' }}

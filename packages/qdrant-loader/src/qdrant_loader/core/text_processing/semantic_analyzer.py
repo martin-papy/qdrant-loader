@@ -78,6 +78,18 @@ class SemanticAnalyzer:
         self.lda_model = None
         self.dictionary = None
 
+        # Front-loaded (per-document) topic model: trained once over all of a
+        # document's chunks via fit_topic_model(), then inferred per chunk. Until it
+        # is fitted, _extract_topics falls back to the legacy single-chunk path.
+        self._topic_model_fitted = False
+        # A corpus smaller than this trains a degenerate model, so we skip fitting
+        # and let those chunks use the per-chunk fallback instead.
+        self._min_topic_corpus_docs = 3
+        # How many of a chunk's most-probable topics to surface, and how many terms
+        # per topic — matched to the legacy producer's output shape.
+        self._topics_per_chunk = 3
+        self._topic_top_n = 10
+
         # Cache for processed documents
         self._doc_cache: dict = {}
         self._doc_cache_lock = threading.Lock()
@@ -325,14 +337,67 @@ class SemanticAnalyzer:
             )
         return dependencies
 
+    def fit_topic_model(self, texts: list[str]) -> None:
+        """Train one document-level LDA over all of a document's chunk texts.
+
+        Front-loading the model once lets :meth:`_extract_topics` *infer* each
+        chunk's topics against a shared corpus model, instead of training a
+        degenerate single-document LDA per chunk. When the corpus is too small to be
+        meaningful the model is left unfitted, so those chunks fall back to the
+        legacy per-chunk path.
+
+        Args:
+            texts: The contents of every chunk produced for one document.
+        """
+        try:
+            processed = [preprocess_string(text) for text in texts]
+            processed = [tokens for tokens in processed if len(tokens) >= 5]
+
+            if len(processed) < self._min_topic_corpus_docs:
+                self.logger.debug(
+                    "Corpus too small to fit a document-level topic model "
+                    f"({len(processed)} usable chunks); using per-chunk fallback"
+                )
+                self.dictionary = None
+                self.lda_model = None
+                self._topic_model_fitted = False
+                return
+
+            dictionary = corpora.Dictionary(processed)
+            corpus = [dictionary.doc2bow(tokens) for tokens in processed]
+            self.dictionary = dictionary
+            self.lda_model = LdaModel(
+                corpus,
+                num_topics=min(self.num_topics, len(processed)),
+                passes=self.passes,
+                id2word=dictionary,
+                random_state=42,  # For reproducibility
+                alpha=0.1,  # Fixed positive value for document-topic density
+                eta=0.01,  # Fixed positive value for topic-word density
+            )
+            self._topic_model_fitted = True
+        except Exception as e:
+            self.logger.warning(
+                f"Topic model fit failed; using per-chunk fallback: {e}",
+                exc_info=True,
+            )
+            self.dictionary = None
+            self.lda_model = None
+            self._topic_model_fitted = False
+
     def _extract_topics(self, text: str) -> list[dict[str, Any]]:
-        """Extract topics using LDA.
+        """Extract topics for one chunk.
+
+        Uses the front-loaded document-level model when one has been fitted (see
+        :meth:`fit_topic_model`), inferring the chunk's dominant topics against it
+        without retraining. Otherwise falls back to the legacy per-chunk model.
 
         Args:
             text: Text to analyze
 
         Returns:
-            List of topic dictionaries
+            List of topic dictionaries:
+            ``{"id", "terms": [{"term", "weight"}], "coherence"}``.
         """
         try:
             # Preprocess text
@@ -349,36 +414,33 @@ class SemanticAnalyzer:
                     }
                 ]
 
-            # If we have existing models, use and update them
-            if self.dictionary is not None and self.lda_model is not None:
-                # Add new documents to existing dictionary
-                self.dictionary.add_documents([processed_text])
+            # A document-level model was front-loaded: infer this chunk's topics
+            # against it, without retraining or mutating the shared model.
+            if (
+                self._topic_model_fitted
+                and self.lda_model is not None
+                and self.dictionary is not None
+            ):
+                return self._infer_chunk_topics(processed_text)
 
-                # Create corpus for the new text
-                corpus = [self.dictionary.doc2bow(processed_text)]
+            # Unfitted (the markdown path, or a corpus too small to fit): legacy
+            # per-chunk model. Degenerate by construction, but retained so behavior
+            # for unfitted callers is unchanged.
+            temp_dictionary = corpora.Dictionary([processed_text])
+            corpus = [temp_dictionary.doc2bow(processed_text)]
 
-                # Update existing LDA model
-                self.lda_model.update(corpus)
-
-                # Use the updated model for topic extraction
-                current_lda_model = self.lda_model
-            else:
-                # Create fresh models for first use or when models aren't available
-                temp_dictionary = corpora.Dictionary([processed_text])
-                corpus = [temp_dictionary.doc2bow(processed_text)]
-
-                # Create a fresh LDA model for this specific text
-                current_lda_model = LdaModel(
-                    corpus,
-                    num_topics=min(
-                        self.num_topics, len(processed_text) // 2
-                    ),  # Ensure reasonable topic count
-                    passes=self.passes,
-                    id2word=temp_dictionary,
-                    random_state=42,  # For reproducibility
-                    alpha=0.1,  # Fixed positive value for document-topic density
-                    eta=0.01,  # Fixed positive value for topic-word density
-                )
+            # Create a fresh LDA model for this specific text
+            current_lda_model = LdaModel(
+                corpus,
+                num_topics=min(
+                    self.num_topics, len(processed_text) // 2
+                ),  # Ensure reasonable topic count
+                passes=self.passes,
+                id2word=temp_dictionary,
+                random_state=42,  # For reproducibility
+                alpha=0.1,  # Fixed positive value for document-topic density
+                eta=0.01,  # Fixed positive value for topic-word density
+            )
 
             # Get topics
             topics = []
@@ -423,6 +485,49 @@ class SemanticAnalyzer:
                     "coherence": 0.5,
                 }
             ]
+
+    def _infer_chunk_topics(self, processed_text: list[str]) -> list[dict[str, Any]]:
+        """Infer a chunk's dominant topics against the front-loaded model.
+
+        Args:
+            processed_text: The chunk's preprocessed tokens.
+
+        Returns:
+            The chunk's most-probable topics, in the legacy producer's shape. An
+            empty bag-of-words (all tokens out of the trained vocabulary) still
+            yields the model's topics ranked by the prior distribution.
+        """
+        bow = self.dictionary.doc2bow(processed_text)
+        distribution = self.lda_model.get_document_topics(bow, minimum_probability=0.0)
+        ranked = sorted(distribution, key=lambda pair: pair[1], reverse=True)
+
+        topics: list[dict[str, Any]] = []
+        for topic_id, _probability in ranked[: self._topics_per_chunk]:
+            terms = [
+                {"term": word, "weight": float(weight)}
+                for word, weight in self.lda_model.show_topic(
+                    topic_id, topn=self._topic_top_n
+                )
+            ]
+            topics.append(
+                {
+                    "id": int(topic_id),
+                    "terms": terms,
+                    "coherence": self._calculate_topic_coherence(terms),
+                }
+            )
+
+        return (
+            topics
+            if topics
+            else [
+                {
+                    "id": 0,
+                    "terms": [{"term": "general", "weight": 1.0}],
+                    "coherence": 0.5,
+                }
+            ]
+        )
 
     def _extract_key_phrases(self, doc: Doc) -> list[str]:
         """Extract key phrases from text.
@@ -567,6 +672,10 @@ class SemanticAnalyzer:
         # Clear document cache
         with self._doc_cache_lock:
             self._doc_cache.clear()
+
+        # A released model is no longer fitted; reset so reuse doesn't infer
+        # against a torn-down model.
+        self._topic_model_fitted = False
 
         # Release LDA model resources
         if hasattr(self, "lda_model") and self.lda_model is not None:

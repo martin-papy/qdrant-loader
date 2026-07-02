@@ -4,6 +4,7 @@ import fnmatch
 import logging
 import warnings
 from collections import deque
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import cast
 from urllib.parse import urljoin, urlparse
@@ -176,11 +177,33 @@ class PublicDocsConnector(BaseConnector):
         self.logger.debug(f"URL passed all checks, will be processed: {url}")
         return True
 
-    async def get_documents(self) -> list[Document]:
-        """Get documentation pages from the source.
+    def _build_page_document(self, page: str, content: str, title: str) -> Document:
+        """Build a Document for a documentation page (used by stream_documents and fetch_by_id)."""
+        return Document(
+            title=title,
+            content=content,
+            content_type="html",
+            metadata={
+                "title": title,
+                "url": page,
+                "version": self.version,
+            },
+            source_type=self.config.source_type,
+            source=self.config.source,
+            url=page,
+            # For public docs, we don't have a created or updated date. So we use a very old date.
+            # The content hash will be the same for the same page, so it will be update if the hash changes.
+            created_at=datetime(1970, 1, 1, 0, 0, 0, 0, UTC),
+            updated_at=datetime(1970, 1, 1, 0, 0, 0, 0, UTC),
+        )
 
-        Returns:
-            List of documents
+    async def stream_documents(
+        self, since: datetime | None = None
+    ) -> AsyncIterator[Document]:
+        """Stream documentation pages from the source (WS-1 connector contract).
+
+        Yields:
+            Document objects from the source.
 
         Raises:
             RuntimeError: If connector is not initialized
@@ -195,7 +218,7 @@ class PublicDocsConnector(BaseConnector):
             # Get all pages
             pages = await self._get_all_pages()
             self.logger.debug(f"Found {len(pages)} pages to process", pages=pages)
-            documents = []
+            yielded_count = 0
 
             for page in pages:
                 try:
@@ -208,27 +231,9 @@ class PublicDocsConnector(BaseConnector):
                     content, title = await self._process_page(page)
                     if (
                         content and content.strip()
-                    ):  # Only add documents with non-empty content
-                        # Generate a consistent document ID based on the URL
-                        doc_id = str(hash(page))  # Use URL hash as document ID
-                        doc = Document(
-                            id=doc_id,
-                            title=title,
-                            content=content,
-                            content_type="html",
-                            metadata={
-                                "title": title,
-                                "url": page,
-                                "version": self.version,
-                            },
-                            source_type=self.config.source_type,
-                            source=self.config.source,
-                            url=page,
-                            # For public docs, we don't have a created or updated date. So we use a very old date.
-                            # The content hash will be the same for the same page, so it will be update if the hash changes.
-                            created_at=datetime(1970, 1, 1, 0, 0, 0, 0, UTC),
-                            updated_at=datetime(1970, 1, 1, 0, 0, 0, 0, UTC),
-                        )
+                    ):  # Only yield documents with non-empty content
+                        doc = self._build_page_document(page, content, title)
+                        doc_id = doc.id
                         self.logger.debug(
                             "Created document",
                             url=page,
@@ -236,7 +241,8 @@ class PublicDocsConnector(BaseConnector):
                             title=title,
                             doc_id=doc_id,
                         )
-                        documents.append(doc)
+                        yield doc
+                        yielded_count += 1
                         self.logger.debug(
                             "Document created",
                             url=page,
@@ -284,7 +290,9 @@ class PublicDocsConnector(BaseConnector):
                                     attachment_documents = await self.attachment_downloader.download_and_process_attachments(
                                         attachment_metadata, doc
                                     )
-                                    documents.extend(attachment_documents)
+                                    for attachment_doc in attachment_documents:
+                                        yield attachment_doc
+                                        yielded_count += 1
 
                                     self.logger.debug(
                                         "Processed attachments for PublicDocs page",
@@ -306,15 +314,44 @@ class PublicDocsConnector(BaseConnector):
                     self.logger.error(f"Failed to process page {page}: {e}")
                     continue
 
-            if not documents:
+            if yielded_count == 0:
                 self.logger.warning("No valid documents found to process")
-                return []
-
-            return documents
 
         except Exception as e:
             self.logger.error("Failed to get documentation", error=str(e))
             raise
+
+    async def get_documents(self) -> list[Document]:
+        """Get documents from PublicDocs (DEPRECATED - use stream_documents)."""
+        return await super().get_documents()
+
+    async def fetch_by_id(self, entity_id: str) -> Document | None:
+        """Fetch a single documentation page by its URL."""
+        parsed = urlparse(entity_id)
+        base = urlparse(self.base_url)
+        base_path = base.path.rstrip("/")
+        entity_path = parsed.path.rstrip("/")
+        in_scope = (
+            parsed.scheme in {"http", "https"}
+            and parsed.netloc == base.netloc
+            and (entity_path == base_path or entity_path.startswith(base_path + "/"))
+        )
+        if not in_scope or not self._should_process_url(entity_id):
+            return None
+        try:
+            content, title = await self._process_page(entity_id)
+        except Exception as e:
+            self.logger.error(f"Failed to fetch page {entity_id}: {e}")
+            return None
+        if not content or not content.strip():
+            return None
+        return self._build_page_document(entity_id, content, title)
+
+    async def list_entity_ids(self) -> AsyncIterator[str]:
+        """Stream the URLs of all processable documentation pages."""
+        for page in await self._get_all_pages():
+            if self._should_process_url(page):
+                yield page
 
     async def _process_page(self, url: str) -> tuple[str | None, str | None]:
         """Process a single documentation page.

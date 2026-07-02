@@ -260,3 +260,157 @@ async def test_worker_pool_marks_failed_for_missing_source_lock(
     assert len(done_jobs) == 0
     assert len(failed_jobs) == 1
     assert "source_lock" in failed_jobs[0].last_error
+
+
+@pytest.mark.asyncio
+async def test_worker_pool_extends_visibility_during_long_handler(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """Lease renewal should prevent reclaim of long-running jobs.
+
+    Test that when a handler takes longer than (lease_seconds / 3),
+    the renewal task extends the visibility deadline periodically,
+    preventing false reclaim by another worker.
+    """
+    job = await sqlite_job_queue.enqueue("TEST", {"source_lock": "test"})
+
+    handler_duration = 0.15  # 150ms
+    lease_seconds = 10  # 10s lease
+    # renewal_interval = max(1, 10 // 3) = 3s
+
+    call_count = [0]  # Track handler invocations
+
+    async def long_handler(_type: str, _payload: dict) -> None:
+        call_count[0] += 1
+        await asyncio.sleep(handler_duration)
+
+    pool = QueueWorkerPool(
+        sqlite_job_queue,
+        handler=long_handler,
+        worker_count=1,
+        lease_seconds=lease_seconds,
+    )
+
+    # Run pool once
+    processed = await pool.run_until_empty()
+
+    # Job should be processed exactly once (no false reclaim)
+    assert processed == 1
+    assert call_count[0] == 1
+
+    # Job should be DONE
+    done_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.DONE)
+    assert len(done_jobs) == 1
+    assert done_jobs[0].id == job.id
+
+    # No jobs should be left RUNNING
+    running_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.RUNNING)
+    assert len(running_jobs) == 0
+
+
+@pytest.mark.asyncio
+async def test_worker_pool_cancels_handler_and_skips_update_on_claim_loss(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """extend_visibility returning False must cancel the handler and skip status update.
+
+    If the job's claim was silently lost (reclaimed by another worker or cancelled
+    externally), the renewal task detects it via extend_visibility → False, cancels
+    the handler to abort side-effects, and the pool must NOT call mark_done/mark_failed,
+    leaving the job in RUNNING state (owned by the new claimant).
+    """
+    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source_lock": "jira-main"})
+
+    handler_started = asyncio.Event()
+    handler_completed = asyncio.Event()
+
+    async def long_handler(_job_type: str, _payload: dict) -> None:
+        handler_started.set()
+        await asyncio.sleep(10)  # Would block for 10s without cancellation
+        handler_completed.set()  # Must NOT be reached
+
+    original_extend = sqlite_job_queue.extend_visibility
+
+    async def claim_lost_extend(
+        _job_id: int, _lease_seconds: int, claim_attempt: int
+    ) -> bool:
+        return False  # Signal: claim is no longer ours
+
+    sqlite_job_queue.extend_visibility = claim_lost_extend  # type: ignore[method-assign]
+
+    pool = QueueWorkerPool(
+        sqlite_job_queue,
+        handler=long_handler,
+        worker_count=1,
+        lease_seconds=3,  # deadline = now+3s; renewal_interval = max(1, 3//3) = 1s
+        # With lease_seconds=3 the visibility deadline is 3s in the future when the
+        # job is claimed. The renewal fires at 1s and returns False (claim lost).
+        # At that point 2s of deadline remain, so claim_next() won't re-claim the job.
+    )
+
+    try:
+        processed = await pool.run_until_empty()
+    finally:
+        sqlite_job_queue.extend_visibility = original_extend
+
+    assert processed == 1
+    assert handler_started.is_set(), "Handler must have started"
+    assert (
+        not handler_completed.is_set()
+    ), "Handler must have been cancelled before completing"
+
+    # Claim was lost: pool must NOT have transitioned the job to DONE or FAILED
+    done_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.DONE)
+    failed_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.FAILED)
+    running_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.RUNNING)
+
+    assert len(done_jobs) == 0
+    assert len(failed_jobs) == 0
+    assert len(running_jobs) == 1  # Job remains RUNNING; the "new owner" is responsible
+
+
+@pytest.mark.asyncio
+async def test_lease_renew_errors_do_not_mask_handler_error(
+    sqlite_job_queue: SQLiteJobQueue,
+):
+    """Renewal DB failures must not replace the handler exception.
+
+    If extend_visibility fails while handler is still running, final job failure
+    should reflect the handler error, not the renewal-task error.
+    """
+    await sqlite_job_queue.enqueue("INCREMENTAL_PULL", {"source_lock": "jira-main"})
+
+    original_extend_visibility = sqlite_job_queue.extend_visibility
+
+    async def flaky_extend_visibility(
+        _job_id: int, _lease_seconds: int, _claim_attempt: int
+    ) -> bool:
+        raise RuntimeError("db down during extend_visibility")
+
+    sqlite_job_queue.extend_visibility = flaky_extend_visibility  # type: ignore[method-assign]
+
+    async def handler(_job_type: str, _payload: dict[str, str]) -> None:
+        # Ensure renewal loop has time to run and fail first.
+        await asyncio.sleep(1.2)
+        raise ValueError("handler boom")
+
+    pool = QueueWorkerPool(
+        sqlite_job_queue,
+        handler=handler,
+        worker_count=1,
+        lease_seconds=1,
+        max_attempts=1,
+    )
+
+    try:
+        processed = await pool.run_until_empty()
+    finally:
+        sqlite_job_queue.extend_visibility = original_extend_visibility
+
+    failed_jobs = await sqlite_job_queue.list(status=SQLiteJobQueue.FAILED)
+
+    assert processed == 1
+    assert len(failed_jobs) == 1
+    assert failed_jobs[0].last_error is not None
+    assert "handler boom" in failed_jobs[0].last_error
+    assert "extend_visibility" not in failed_jobs[0].last_error

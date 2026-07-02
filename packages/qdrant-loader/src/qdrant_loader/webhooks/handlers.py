@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from qdrant_loader.core.worker.job_types import JobType
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.webhooks.queue_backend import (
     FULL_SCAN,
@@ -147,9 +148,11 @@ async def enqueue_ingest_request(
     source: str | None,
     force: bool = False,
 ) -> dict[str, Any]:
-    """Enqueue a direct ingestion job (replaces CLI `qdrant-loader ingest`).
+    """Enqueue a BULK_INGEST job processed by the serve worker pool.
 
-    Always uses FULL_SCAN; the worker runs the same pipeline as the ingest command.
+    Routes through IngestionJobHandler so the job reuses the already-warmed
+    PipelineOrchestrator rather than spawning a standalone AsyncIngestionPipeline.
+    source_type / source / project_id may all be None to mean "ingest everything".
     """
     if source is not None and source_type is None:
         raise ValueError("source_type must be provided when source is specified.")
@@ -157,7 +160,7 @@ async def enqueue_ingest_request(
     normalized_source_type = (
         normalize_ingest_source_type(source_type) if source_type else None
     )
-    queue = QueueBackendManager.get_backend()
+    job_queue = QueueBackendManager.get_job_queue()
 
     logger.info(
         "Received direct ingest request",
@@ -167,16 +170,25 @@ async def enqueue_ingest_request(
         force=force,
     )
 
-    event = ChangeEvent(
-        source=source or "",
-        source_type=normalized_source_type,
-        project_id=project_id,
-        operation=FULL_SCAN,
-        force=force,
+    # source_lock serialises concurrent ingest requests for the same scope.
+    # Use "*" as a wildcard token when a field is absent (meaning "all").
+    source_lock = ":".join(
+        [
+            project_id or "*",
+            normalized_source_type or "*",
+            source or "*",
+        ]
     )
-    message_id = await queue.enqueue(event)
+    payload: dict[str, Any] = {
+        "project_id": project_id or "",
+        "source_type": normalized_source_type or "",
+        "source": source or "",
+        "source_lock": source_lock,
+        "force": force,
+    }
+    job = await job_queue.enqueue(JobType.BULK_INGEST, payload)
     return {
-        "operation": FULL_SCAN,
-        "message_id": message_id,
+        "operation": JobType.BULK_INGEST,
+        "message_id": str(job.id),
         "queued": True,
     }

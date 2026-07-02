@@ -23,7 +23,8 @@ class MarkdownProcessor:
 
             md = markdown.Markdown(
                 extensions=[
-                    "fenced_code",
+                    # Supports fenced code blocks reliably inside list items (superset of fenced_code).
+                    "pymdownx.superfences",
                     "codehilite",
                     "tables",
                     "toc",
@@ -34,11 +35,14 @@ class MarkdownProcessor:
                     "sane_lists",
                 ],
                 extension_configs={
+                    "pymdownx.superfences": {
+                        "custom_fences": []  # Disable custom fences that might use Pygments
+                    },
                     "codehilite": {
                         "css_class": "codehilite",
                         "use_pygments": False,  # Use simple highlighting without Pygments
                         "guess_lang": True,
-                    }
+                    },
                 },
             )
             html = md.convert(markdown_content)
@@ -97,7 +101,8 @@ class MarkdownProcessor:
 
         for line in lines:
             raw = line.rstrip("\n")
-            if raw.startswith("```"):
+            stripped = raw.lstrip()
+            if stripped.startswith("```"):
                 if in_code_block:
                     html_lines.append("</code></pre>")
                     in_code_block = False
@@ -191,14 +196,14 @@ class MarkdownProcessor:
 
         # Fix paragraphs with bash/shell commands (with or without language prefix)
         html_content = re.sub(
-            r'<p><code class="inline-code">(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|qdrant-loader|mcp-)[^<]*)</code></p>',
+            r'<p><code class="inline-code">(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|uv|qdrant-loader|mcp-)[^<]*)</code></p>',
             r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-bash">\1</code></pre></div>',
             html_content,
         )
 
         # Also handle cases where there's no class attribute
         html_content = re.sub(
-            r"<p><code>(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|qdrant-loader|mcp-)[^<]*)</code></p>",
+            r"<p><code>(?:bash\s*\n\s*)?([^<]*(?:mkdir|cd|pip|uv|qdrant-loader|mcp-)[^<]*)</code></p>",
             r'<div class="code-block-wrapper"><pre class="code-block"><code class="language-bash">\1</code></pre></div>',
             html_content,
         )
@@ -294,6 +299,21 @@ class MarkdownProcessor:
     def add_bootstrap_classes(self, html_content: str) -> str:
         """Add Bootstrap classes to HTML elements."""
 
+        def add_classes_to_tag(attrs: str, classes_to_add: str) -> str:
+            class_match = re.search(r'class="([^"]*)"', attrs)
+            if class_match:
+                existing = class_match.group(1).split()
+                for cls in classes_to_add.split():
+                    if cls not in existing:
+                        existing.append(cls)
+                return re.sub(
+                    r'class="([^"]*)"',
+                    f'class="{" ".join(existing)}"',
+                    attrs,
+                    count=1,
+                )
+            return f'{attrs} class="{classes_to_add}"'
+
         # Add Bootstrap header classes
         html_content = re.sub(
             r"<h1([^>]*)>",
@@ -349,6 +369,11 @@ class MarkdownProcessor:
             html_content,
             flags=re.DOTALL,
         )
+
+        # Normalize codehilite/Pygments token spans so code text stays contiguous.
+        # This keeps HTML stable for tests and lets our client-side highlighter style code.
+        html_content = re.sub(r"<span[^>]*>", "", html_content)
+        html_content = re.sub(r"</span>", "", html_content)
         # Add Bootstrap inline code classes
         # First handle code blocks, then inline code
         html_content = re.sub(
@@ -371,14 +396,36 @@ class MarkdownProcessor:
             html_content,
         )
 
+        # Normalize numbered step paragraphs into ordered-list items.
+        # Some markdown flows with fenced code blocks are rendered as:
+        # <p>1. <strong>Step</strong></p>
+        # ...code block...
+        # <p>2. <strong>Step</strong></p>
+        # Converting these to <ol start="N"><li>...</li></ol> preserves the
+        # existing list-card CSS while keeping numbering stable.
+        html_content = re.sub(
+            r"<p>\s*(\d+)\.\s*(<strong>.*?</strong>.*?)</p>",
+            r'<ol start="\1"><li>\2</li></ol>',
+            html_content,
+            flags=re.DOTALL,
+        )
+
         # Add Bootstrap list classes
         html_content = re.sub(
-            r"<ul>", '<ul class="list-group list-group-flush">', html_content
+            r"<ul([^>]*)>",
+            lambda m: f'<ul{add_classes_to_tag(m.group(1), "list-group list-group-flush")}>',
+            html_content,
         )
         html_content = re.sub(
-            r"<ol>", '<ol class="list-group list-group-numbered">', html_content
+            r"<ol([^>]*)>",
+            lambda m: f'<ol{add_classes_to_tag(m.group(1), "list-group list-group-numbered")}>',
+            html_content,
         )
-        html_content = re.sub(r"<li>", '<li class="list-group-item">', html_content)
+        html_content = re.sub(
+            r"<li([^>]*)>",
+            lambda m: f'<li{add_classes_to_tag(m.group(1), "list-group-item")}>',
+            html_content,
+        )
 
         # Add Bootstrap table classes
         html_content = re.sub(

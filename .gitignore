@@ -109,3 +109,9 @@ packages/qdrant-loader-core/data/*.rdb
 
 # local workspaces
 *-qdrant-workspace
+
+# Claude skills
+docs/superpowers
+
+# Claude mcp
+.mcp.json

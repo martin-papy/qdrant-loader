@@ -1,11 +1,14 @@
 import hashlib
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from qdrant_loader.utils.logging import LoggingConfig
+
+if TYPE_CHECKING:
+    from qdrant_loader.core.conversion.outcome import ConvertedDocument
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -29,7 +32,24 @@ class Document(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    # Transient, in-process only: the structured artifact produced by the docling
+    # conversion engine. It rides this Document by reference from the connector to the
+    # docling chunking strategy (the pipeline never serializes Documents between those
+    # stages). Held as a PrivateAttr — not a pydantic field — so it stays out of the
+    # schema, model_dump, the Qdrant payload and the content hash, and so pydantic never
+    # has to resolve docling's types (which are import-light / TYPE_CHECKING-only here).
+    _converted_document: "ConvertedDocument | None" = PrivateAttr(default=None)
+
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+    @property
+    def converted_document(self) -> "ConvertedDocument | None":
+        """The structured docling artifact for the docling chunking path, if any."""
+        return self._converted_document
+
+    @converted_document.setter
+    def converted_document(self, value: "ConvertedDocument | None") -> None:
+        self._converted_document = value
 
     def __init__(self, **data):
         # Generate ID only if not provided

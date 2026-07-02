@@ -1,3 +1,5 @@
+import sys
+import types
 from importlib import import_module
 
 
@@ -66,6 +68,22 @@ def test_factory_azure_error_returns_noop(monkeypatch):
             _settings("azure_openai", base_url="https://x.openai.azure.com")
         )
         assert provider.__class__.__name__ == "_NoopProvider"
+
+
+def test_factory_routes_bedrock_to_noop_on_init_failure(monkeypatch):
+    factory = import_module("qdrant_loader_core.llm.factory")
+
+    class _BadBedrockProvider:
+        def __init__(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            raise RuntimeError("boom")
+
+    fake_module = types.ModuleType("qdrant_loader_core.llm.providers.bedrock")
+    fake_module.BedrockProvider = _BadBedrockProvider
+    monkeypatch.setitem(sys.modules, fake_module.__name__, fake_module)
+
+    provider = factory.create_provider(_settings("bedrock"))
+
+    assert provider.__class__.__name__ == "_NoopProvider"
 
 
 def test_factory_routes_ollama_by_host_local():

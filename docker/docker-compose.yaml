@@ -1,0 +1,223 @@
+# ============================================================================
+# Docker Compose (Production Environment)
+#
+# ▶ Start local Qdrant database:
+#    docker compose -f docker/docker-compose.yaml up -d qdrant
+#
+# ▶ Run data ingestion (full mode):
+#    docker compose -f docker/docker-compose.yaml up -d qdrant-loader
+#
+# ▶ Run data ingestion (pilot mode) (EXPERIMENT with Jira DC / Jira Cloud):
+#    ⚠ Make sure to set the number of issues to ingest in the env file (MAX_ISSUES)
+#    docker compose -f docker/docker-compose.yaml --profile pilot up -d qdrant-loader-pilot
+#
+# ▶ Start MCP server:
+#    docker compose -f docker/docker-compose.yaml up -d qdrant-loader-mcp-server
+# ============================================================================
+
+services:
+  qdrant:
+    container_name: qdrant
+    image: qdrant/qdrant:v1.18.0
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    # QDrant DB doesn't have curl and wget available in the image
+    healthcheck:
+      test: bash -c ':> /dev/tcp/localhost/6333'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - qdrant-net
+  
+  postgres:
+    container_name: qdrant-loader-postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-qdrant_loader}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (see .env.example)}
+      - POSTGRES_DB=${POSTGRES_DB:-qdrant_loader}
+    ports:
+      # Bind to loopback only: internal services reach Postgres over qdrant-net;
+      # this avoids exposing the DB to the host's network.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-qdrant_loader} -d ${POSTGRES_DB:-qdrant_loader}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - qdrant-net
+
+  qdrant-loader:
+    container_name: qdrant-loader
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.qdrant-loader
+    image: qdrant-loader:latest
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - STATE_DB_URL=${STATE_DB_URL:-postgresql+asyncpg://${POSTGRES_USER:-qdrant_loader}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qdrant_loader}}
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../.env:/qdrant-loader/.env
+      - ../config.yaml:/qdrant-loader/config.yaml
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8081/healthz').getcode() == 200 else 1)"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s   
+    networks:
+      - qdrant-net
+
+  # EXPERIMENT with Jira DC / Jira Cloud
+  qdrant-loader-pilot:
+    profiles: ["pilot"]
+    container_name: qdrant-loader-pilot
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.qdrant-loader
+    image: qdrant-loader-pilot:latest
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      - STATE_DB_URL=${STATE_DB_URL:-postgresql+asyncpg://${POSTGRES_USER:-qdrant_loader}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qdrant_loader}}
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../.env:/qdrant-loader/.env
+      - ../config.yaml:/qdrant-loader/config.yaml
+      - ../docker/pilot_ingest.py:/qdrant-loader/pilot_ingest.py      
+    command: ["sh", "-c", "qdrant-loader init --config config.yaml --env .env && python /qdrant-loader/pilot_ingest.py"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8081/healthz').getcode() == 200 else 1)"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - qdrant-net
+
+  # ------------------------------------------------------------------------------
+  # NOTE
+  # This MCP server is stateless:
+  # - No SQL database
+  # - No background job state
+  #
+  # Persistent storage is not required.
+  # ------------------------------------------------------------------------------
+  qdrant-loader-mcp-server:
+    container_name: qdrant-loader-mcp-server
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.qdrant-loader-mcp-server
+    image: qdrant-loader-mcp-server:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env
+    depends_on: 
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').getcode() == 200 else 1)"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - qdrant-net
+
+  # ==============================================================================
+  # OLLAMA SETUP
+  # ==============================================================================
+  #
+  # Required only when LLM_PROVIDER=ollama.
+  #
+  # Startup order:
+  #   1. ollama
+  #   2. ollama pull <model_name>
+  #   3. qdrant-loader / qdrant-loader-mcp-server
+  #
+  # Example:
+  #   docker exec -it ollama bash
+  #   ollama pull llama3.2
+  #
+  # ==============================================================================
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - 11434:11434
+  #   volumes:
+  #     - ollama:/root/.ollama
+  #   container_name: ollama
+  #   tty: true
+  #   restart: always
+  #   environment:
+  #     - OLLAMA_KEEP_ALIVE=24h
+  #     - OLLAMA_HOST=0.0.0.0
+  #   command: ["serve"]
+  #   networks:
+  #     - qdrant-net
+  #   healthcheck:
+  #     test: ["CMD", "ollama", "ps"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+volumes:
+  qdrant_data:
+    driver: local
+  postgres_data:
+    driver: local
+  # ollama:
+  #   driver: local
+
+networks:
+  qdrant-net:
+    driver: bridge
+

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from dotenv import load_dotenv
 from qdrant_loader.config import get_settings, initialize_config
 
@@ -135,3 +136,22 @@ def mock_requests():
 def test_data_dir():
     """Return the path to the test data directory."""
     return os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+@pytest_asyncio.fixture
+async def state_manager():
+    """Provide a StateManager instance with an in-memory database for testing."""
+    from qdrant_loader.config.state import StateManagementConfig
+    from qdrant_loader.core.state.state_manager import StateManager
+
+    # Create a state manager with in-memory SQLite database
+    config = StateManagementConfig(database_path="sqlite:///:memory:")
+    manager = StateManager(config)
+
+    # Initialize the manager
+    await manager.initialize()
+
+    yield manager
+
+    # Clean up
+    await manager.dispose()

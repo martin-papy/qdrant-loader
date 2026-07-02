@@ -67,6 +67,7 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
         since=None,
         project_id=None,
         seen_uris=None,
+        resume=True,
     ):
         recorded_calls.append(
             {
@@ -75,6 +76,7 @@ async def test_incremental_pull_accepts_since_param(monkeypatch):
                 "since": since,
                 "project_id": project_id,
                 "seen_uris": seen_uris,
+                "resume": resume,
             }
         )
         if False:

@@ -1,9 +1,9 @@
 """Refactored async ingestion pipeline using the new modular architecture."""
 
+import asyncio
 from pathlib import Path
 
 from qdrant_loader.config import Settings, SourcesConfig
-from qdrant_loader.core.document import Document
 from qdrant_loader.core.monitoring import prometheus_metrics
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 from qdrant_loader.core.project_manager import ProjectManager
@@ -140,6 +140,12 @@ class AsyncIngestionPipeline:
         logger.debug("Starting pipeline initialization")
 
         try:
+            # Ensure the Qdrant collection and its payload indexes exist.
+            # create_collection() is idempotent: it returns early when the
+            # collection already exists, but now also ensures indexes are
+            # present on existing collections (required for filter-based deletes).
+            await asyncio.to_thread(self.qdrant_manager.create_collection)
+
             # Initialize state manager first
             if not self.state_manager.is_initialized:
                 logger.debug("Initializing state manager")
@@ -186,7 +192,8 @@ class AsyncIngestionPipeline:
         source: str | None = None,
         project_id: str | None = None,
         force: bool = False,
-    ) -> list[Document]:
+        resume: bool = True,
+    ) -> int:
         """Process documents from all configured sources.
 
         Args:
@@ -197,7 +204,7 @@ class AsyncIngestionPipeline:
             force: Force processing of all documents, bypassing change detection
 
         Returns:
-            List of processed documents
+            Number of documents successfully processed.
         """
         # Ensure the pipeline is initialized
         await self.initialize()
@@ -214,37 +221,31 @@ class AsyncIngestionPipeline:
             },
         )
 
-        documents = []  # Initialize to avoid UnboundLocalError in exception handler
+        processed_count = 0  # Initialize to avoid UnboundLocalError in exception handler
         try:
             logger.debug("Starting document processing with new pipeline architecture")
 
             # Use the orchestrator to process documents with project support
-            documents = await self.orchestrator.process_documents(
+            processed_count = await self.orchestrator.process_documents(
                 sources_config=sources_config,
                 source_type=source_type,
                 source=source,
                 project_id=project_id,
                 force=force,
+                resume=resume,
             )
 
             # Update metrics
-            if documents:
+            if processed_count:
                 pipeline_result = getattr(
                     self.orchestrator, "last_pipeline_result", None
                 )
                 total_chunks = getattr(pipeline_result, "success_count", 0)
-
-                def _safe_document_size(doc: Document) -> int:
-                    try:
-                        return int(doc.metadata.get("size", 0))
-                    except (TypeError, ValueError):
-                        return 0
-
-                total_size_bytes = sum(_safe_document_size(doc) for doc in documents)
+                total_size_bytes = getattr(pipeline_result, "total_size_bytes", 0)
 
                 self.monitor.start_batch(
                     "document_batch",
-                    batch_size=len(documents),
+                    batch_size=processed_count,
                     metadata={
                         "source_type": source_type,
                         "source": source,
@@ -255,7 +256,7 @@ class AsyncIngestionPipeline:
                 # Note: Success/error counts are handled internally by the new architecture
                 self.monitor.end_batch(
                     "document_batch",
-                    len(documents),
+                    processed_count,
                     0,
                     [],
                     total_chunks=total_chunks,
@@ -265,9 +266,9 @@ class AsyncIngestionPipeline:
             self.monitor.end_operation("ingestion_process")
 
             logger.debug(
-                f"Document processing completed. Processed {len(documents)} documents"
+                f"Document processing completed. Processed {processed_count} documents"
             )
-            return documents
+            return processed_count
 
         except Exception as e:
             safe_error = sanitize_exception_message(e)
@@ -275,7 +276,7 @@ class AsyncIngestionPipeline:
                 "Document processing pipeline failed during ingestion",
                 error=safe_error,
                 error_type=type(e).__name__,
-                documents_attempted=len(documents),
+                documents_attempted=processed_count,
                 suggestion="Check data source connectivity, document formats, and system resources",
             )
             self.monitor.end_operation(
