@@ -1053,3 +1053,112 @@ class TestUpsertWorker:
 
 
 
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_cancellation_cancels_in_flight_batches(
+        self,
+    ):
+        """Cancelling the consumer must cancel dispatched-but-unfinished upsert
+        tasks so no orphaned Qdrant writes keep running after teardown."""
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=1,
+            max_workers=2,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+
+        hold = asyncio.Event()
+        started: list = []
+        cancelled: list = []
+
+        async def blocking_upsert(points):
+            started.append(points)
+            try:
+                await hold.wait()
+            except asyncio.CancelledError:
+                cancelled.append(points)
+                raise
+
+        self.mock_qdrant_manager.upsert_points = AsyncMock(
+            side_effect=blocking_upsert
+        )
+
+        chunks = [_make_chunk(f"chunk{i}") for i in range(3)]
+
+        async def embedded_chunks_iterator():
+            for chunk in chunks:
+                yield (chunk, [0.1, 0.2, 0.3])
+
+        async def consume():
+            with patch(
+                "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+            ):
+                await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        consumer = asyncio.create_task(consume())
+        try:
+            while len(started) < 2:
+                await asyncio.sleep(0.01)
+
+            consumer.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await consumer
+
+            await asyncio.sleep(0.05)
+            assert len(cancelled) == 2, (
+                f"expected both in-flight upsert batches cancelled, got "
+                f"{len(cancelled)}"
+            )
+        finally:
+            hold.set()
+            await asyncio.sleep(0)
+
+    @pytest.mark.asyncio
+    async def test_process_embedded_chunks_shutdown_merges_dispatched_batches(self):
+        """Batches dispatched before shutdown are still merged into the result;
+        chunks arriving after shutdown are never upserted."""
+        shutdown_event = asyncio.Event()
+        worker = UpsertWorker(
+            qdrant_manager=self.mock_qdrant_manager,
+            batch_size=1,
+            max_workers=2,
+            queue_size=1000,
+            shutdown_event=shutdown_event,
+        )
+
+        completed = 0
+
+        async def fast_upsert(points):
+            nonlocal completed
+            completed += 1
+
+        self.mock_qdrant_manager.upsert_points = AsyncMock(side_effect=fast_upsert)
+
+        doc1, doc2, doc3 = (Mock(id=f"doc{i}") for i in (1, 2, 3))
+        chunk1 = _make_chunk("chunk1", doc1, total_chunks=1)
+        chunk2 = _make_chunk("chunk2", doc2, total_chunks=1)
+        chunk3 = _make_chunk("chunk3", doc3, total_chunks=1)
+
+        async def embedded_chunks_iterator():
+            yield (chunk1, [0.1, 0.2, 0.3])
+            yield (chunk2, [0.4, 0.5, 0.6])
+            # Let both dispatched batches finish, then signal shutdown before
+            # producing a third chunk that must NOT be upserted.
+            while completed < 2:
+                await asyncio.sleep(0.01)
+            shutdown_event.set()
+            yield (chunk3, [0.7, 0.8, 0.9])
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"
+        ):
+            result = await worker.process_embedded_chunks(embedded_chunks_iterator())
+
+        # Pre-shutdown batches fully merged...
+        assert result.success_count == 2
+        assert result.successfully_processed_documents == {"doc1", "doc2"}
+        # ...and the post-shutdown chunk never reached Qdrant.
+        assert self.mock_qdrant_manager.upsert_points.call_count == 2
+        assert "doc3" not in result.successfully_processed_documents
+        assert "doc3" not in result.failed_document_ids

@@ -263,7 +263,16 @@ class TestEmbeddingWorker:
 
     @pytest.mark.asyncio
     async def test_process_chunks_with_shutdown_during_iteration(self):
-        """Test chunk processing with shutdown during iteration."""
+        """Shutdown mid-stream: a batch still in flight when shutdown lands is
+        dropped (its document stays unfinished and is retried on the next run),
+        and chunks arriving after shutdown are never dispatched.
+
+        Under the concurrent dispatch model the first chunk's batch is created
+        before shutdown but *executes* after the flag is set, so process()'s
+        shutdown check discards its result. The completed-before-shutdown case
+        (results still yielded) is covered by
+        test_process_chunks_shutdown_drains_dispatched_batches.
+        """
         # Setup mock chunks
         mock_chunk1 = Mock()
         mock_chunk1.content = "Test content 1"
@@ -295,9 +304,11 @@ class TestEmbeddingWorker:
             async for result in self.embedding_worker.process_chunks(chunk_iterator()):
                 results.append(result)
 
-        # Should only get result for first chunk before shutdown
-        assert len(results) == 1
-        assert results[0] == (mock_chunk1, [0.1, 0.2, 0.3])
+        # The in-flight batch was discarded at the shutdown check: nothing is
+        # yielded, so the parent document is left unfinished for a later retry.
+        assert results == []
+        # chunk1 was dispatched (and embedded) before the drop; chunk2 never was.
+        self.mock_embedding_service.get_embeddings.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_process_chunks_with_batch_processing_exception(self):
@@ -513,3 +524,178 @@ class TestEmbeddingWorker:
         # concurrency (>1) did happen, ruling out an accidental fully
         # sequential implementation.
         assert max_in_flight == 2
+
+    @pytest.mark.asyncio
+    async def test_process_chunks_cancellation_cancels_in_flight_batches(self):
+        """Cancelling the consumer must cancel dispatched-but-unfinished batch tasks.
+
+        Guards the `except CancelledError: for task in pending: task.cancel()`
+        cleanup: without it, in-flight embedding calls (up to the 300s timeout)
+        keep running after the pipeline is torn down.
+        """
+        worker = EmbeddingWorker(
+            embedding_service=self.mock_embedding_service,
+            max_workers=2,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+        self.mock_embedding_service.batch_size = 1
+
+        hold = asyncio.Event()
+        started: list = []
+        cancelled: list = []
+
+        async def blocking_get_embeddings(contents):
+            started.append(contents)
+            try:
+                await hold.wait()
+            except asyncio.CancelledError:
+                cancelled.append(contents)
+                raise
+            return [[0.1, 0.2, 0.3] for _ in contents]
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            side_effect=blocking_get_embeddings
+        )
+
+        chunks = []
+        for i in range(3):
+            chunk = Mock()
+            chunk.content = f"content {i}"
+            chunk.id = f"chunk{i}"
+            chunks.append(chunk)
+
+        async def chunk_iterator():
+            for chunk in chunks:
+                yield chunk
+
+        async def consume():
+            with patch(
+                "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+            ):
+                async for _ in worker.process_chunks(chunk_iterator()):
+                    pass
+
+        consumer = asyncio.create_task(consume())
+        try:
+            # Wait until both batch tasks are genuinely in flight.
+            while len(started) < 2:
+                await asyncio.sleep(0.01)
+
+            consumer.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await consumer
+
+            # Give cancellation a tick to propagate into the batch tasks.
+            await asyncio.sleep(0.05)
+            assert len(cancelled) == 2, (
+                f"expected both in-flight batches cancelled, got {len(cancelled)}: "
+                f"{cancelled}"
+            )
+        finally:
+            hold.set()  # unblock any leaked task so the loop can close cleanly
+            await asyncio.sleep(0)
+
+    @pytest.mark.asyncio
+    async def test_process_chunks_mixed_failures_conserve_all_chunks(self):
+        """With concurrent batches where some fail outright, every dispatched
+        chunk is yielded exactly once, in submission order, with None pairing
+        for the failed ones — even when later batches finish first."""
+        worker = EmbeddingWorker(
+            embedding_service=self.mock_embedding_service,
+            max_workers=3,
+            queue_size=1000,
+            shutdown_event=self.mock_shutdown_event,
+        )
+        self.mock_embedding_service.batch_size = 1
+
+        async def flaky_get_embeddings(contents):
+            idx = int(contents[0].rsplit(" ", 1)[1])
+            # Stagger so completion order is roughly reversed vs submission.
+            await asyncio.sleep(0.03 - idx * 0.004)
+            if idx % 2 == 0:
+                raise Exception(f"embedding service down for batch {idx}")
+            return [[float(idx), 0.2, 0.3] for _ in contents]
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            side_effect=flaky_get_embeddings
+        )
+
+        chunks = []
+        for i in range(6):
+            chunk = Mock()
+            chunk.content = f"content {i}"
+            chunk.id = f"chunk{i}"
+            chunks.append(chunk)
+
+        async def chunk_iterator():
+            for chunk in chunks:
+                yield chunk
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            results = []
+            async for result in worker.process_chunks(chunk_iterator()):
+                results.append(result)
+
+        # Conservation: all 6 yielded exactly once, in submission order.
+        assert [chunk.id for chunk, _ in results] == [c.id for c in chunks]
+        # Even-indexed batches failed -> None; odd-indexed succeeded.
+        assert [emb is None for _, emb in results] == [
+            True, False, True, False, True, False,
+        ]
+
+    @pytest.mark.asyncio
+    async def test_process_chunks_shutdown_drains_dispatched_batches(self):
+        """Batches dispatched (and completed) before shutdown are still yielded;
+        chunks arriving after shutdown are never dispatched."""
+        shutdown_event = asyncio.Event()
+        worker = EmbeddingWorker(
+            embedding_service=self.mock_embedding_service,
+            max_workers=2,
+            queue_size=1000,
+            shutdown_event=shutdown_event,
+        )
+        self.mock_embedding_service.batch_size = 1
+
+        completed = 0
+
+        async def fast_get_embeddings(contents):
+            nonlocal completed
+            result = [[0.1, 0.2, 0.3] for _ in contents]
+            completed += 1
+            return result
+
+        self.mock_embedding_service.get_embeddings = AsyncMock(
+            side_effect=fast_get_embeddings
+        )
+
+        chunks = []
+        for i in range(3):
+            chunk = Mock()
+            chunk.content = f"content {i}"
+            chunk.id = f"chunk{i}"
+            chunks.append(chunk)
+
+        async def chunk_iterator():
+            yield chunks[0]
+            yield chunks[1]
+            # Let both dispatched batches finish before signalling shutdown,
+            # then produce one more chunk that must NOT be dispatched.
+            while completed < 2:
+                await asyncio.sleep(0.01)
+            shutdown_event.set()
+            yield chunks[2]
+
+        with patch(
+            "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"
+        ):
+            results = []
+            async for result in worker.process_chunks(chunk_iterator()):
+                results.append(result)
+
+        # The two pre-shutdown chunks were drained and yielded...
+        assert [chunk.id for chunk, _ in results] == ["chunk0", "chunk1"]
+        # ...and the post-shutdown chunk never reached the embedding service.
+        assert self.mock_embedding_service.get_embeddings.call_count == 2
